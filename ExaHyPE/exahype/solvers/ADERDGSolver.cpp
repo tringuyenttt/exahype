@@ -461,6 +461,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _DMPObservables(DMPObservables),
      _minimumLimiterStatusForActiveFVPatch(limiterHelperLayers+1),
      _minimumLimiterStatusForTroubledCell (2*limiterHelperLayers+1) {
+
   // register tags with profiler
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
