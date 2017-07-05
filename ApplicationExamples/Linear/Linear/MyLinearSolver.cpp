@@ -114,16 +114,6 @@ void Linear::MyLinearSolver::nonConservativeProduct(const double* const Q,const 
   BgradQ[3]= -lam*gradQ[5];
   BgradQ[4]= 0;
   BgradQ[5]= -1/rho*gradQ[3];
-
-  BgradQ[0] = 0;
-  BgradQ[1] = 0;
-  BgradQ[2] = 0;
-
-  BgradQ[3]= 0;
-  BgradQ[4]= 0;
-  BgradQ[5]= 0;
-
-
 }
 
 
