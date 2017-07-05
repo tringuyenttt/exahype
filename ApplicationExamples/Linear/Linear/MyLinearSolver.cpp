@@ -115,6 +115,15 @@ void Linear::MyLinearSolver::nonConservativeProduct(const double* const Q,const 
   BgradQ[4]= 0;
   BgradQ[5]= -1/rho*gradQ[3];
 
+  BgradQ[0] = 0;
+  BgradQ[1] = 0;
+  BgradQ[2] = 0;
+
+  BgradQ[3]= 0;
+  BgradQ[4]= 0;
+  BgradQ[5]= 0;
+
+
 }
 
 
@@ -257,3 +266,9 @@ void Linear::MyLinearSolver::pointSource(const double* const x,const double t,co
    v_hat_p=(q+phi)/z_m;
 
  }
+
+ void Linear::MyLinearSolver::algebraicSource(const double* const Q,double* S){
+  S[0]=+10*Q[0];
+  S[1]=+10*Q[1];
+  S[2]=+10*Q[2];  
+}
