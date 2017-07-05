@@ -89,16 +89,138 @@ void Linear::MyLinearSolver::boundaryValues(const double* const x,const double t
   fluxOut[0] =  fluxIn[0];
   fluxOut[1] = fluxIn[1];
   fluxOut[2] = fluxIn[2];
+
+  double cp = 6.0;
+  double rho = 2.7;
+  double z = rho*cp;
+
+
+  if (faceIndex == 0) {
     
-  if (faceIndex == 0){
-    stateOut[0] = 0*stateIn[0];
+    stateOut[0] = stateIn[0];
     stateOut[1] = stateIn[1];
     stateOut[2] = stateIn[2];
-    fluxOut[0] =  fluxIn[0];
-    fluxOut[1] = 0*fluxIn[1];
-    fluxOut[2] = 0*fluxIn[2];
+   
+    fluxOut[0] = fluxIn[0];
+    fluxOut[1] = fluxIn[1];
+    fluxOut[2] = fluxIn[2];
+ 
+    
+    double v_x =  stateIn[1];
+    double p  =  stateIn[0];
+    
+    
+    double vx_hat =  0.;
+    double p_hat =  0.;
+   
+    
+    double r = 0.;
+    
+    riemannSolver_BC0(v_x, p, z, r, vx_hat, p_hat);
+   
+    
+    stateOut[0] = p_hat;
+    stateOut[1] = vx_hat;
+    
+  }
+  
+  
+  if (faceIndex == 1) {
+
+    stateOut[0] = stateIn[0];
+    stateOut[1] = stateIn[1];
+    stateOut[2] = stateIn[2];
+    
+    
+    
+    fluxOut[0] = fluxIn[0];
+    fluxOut[1] = fluxIn[1];
+    fluxOut[2] = fluxIn[2];
+ 
+    
+    double v_x =  stateIn[1];
+    double p  =  stateIn[0];
+    
+    
+    double vx_hat =  0.;
+    double p_hat =  0.;
+   
+    
+    double r = 0.;
+    
+    riemannSolver_BCn(v_x, p, z, r, vx_hat, p_hat);
+   
+    stateOut[0] = p_hat;
+    stateOut[1] = vx_hat;
+
+      
+  }
+
+
+  if (faceIndex == 2) {
+    stateOut[0] = stateIn[0];
+    stateOut[1] = stateIn[1];
+    stateOut[2] = stateIn[2];
+    
+    
+    
+    fluxOut[0] = fluxIn[0];
+    fluxOut[1] = fluxIn[1];
+    fluxOut[2] = fluxIn[2];
+ 
+    
+    double v_y =  stateIn[2];
+    double p  =  stateIn[0];
+    
+    
+    
+    double vy_hat =  0.;
+    
+    double p_hat =  0.;
+   
+    
+    double r = 0.;
+    
+    riemannSolver_BC0(v_y, p, z, r, vy_hat, p_hat);
+   
+    
+    stateOut[0] = p_hat;
+    stateOut[2] = vy_hat;
+
+   
+  }
+
+  if (faceIndex == 3) {
+    
+    stateOut[0] = stateIn[0];
+    stateOut[1] = stateIn[1];
+    stateOut[2] = stateIn[2];
+    
+    
+    
+    fluxOut[0] = fluxIn[0];
+    fluxOut[1] = fluxIn[1];
+    fluxOut[2] = fluxIn[2];
+ 
+    
+    double v_y =  stateIn[2];
+    double p  =  stateIn[0];
+    
+    
+    double vy_hat =  0.;
+    double p_hat =  0.;
+   
+    
+    double r = 1.;
+    
+    riemannSolver_BCn(v_y, p, z, r, vy_hat, p_hat);
+   
+    
+    stateOut[0] = p_hat;
+    stateOut[2] = vy_hat;
   }
 }
+    
 
 
 exahype::solvers::Solver::RefinementControl Linear::MyLinearSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
@@ -264,5 +386,25 @@ void Linear::MyLinearSolver::pointSource(const double* const x,const double t,co
 
    v_hat_m=(p-phi)/z_p;
    v_hat_p=(q+phi)/z_m;
+
+ }
+
+
+void Linear::MyLinearSolver::riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat){
+  
+   double p = 0.5*(z*v + sigma);
+
+   v_hat = (1+r)/z*p;
+   sigma_hat = (1-r)*p;
+
+ }
+
+
+void Linear::MyLinearSolver::riemannSolver_BCn(double v,double sigma, double z, double r, double& v_hat, double& sigma_hat){
+  
+   double q = 0.5*(z*v - sigma);
+
+   v_hat = (1+r)/z*q;
+   sigma_hat = -(1-r)*q;
 
  }

@@ -31,7 +31,7 @@ namespace c {
  * 
  * TODO(Dominic): We should distinguish between Linear and NonLinear ADERDGSolvers
  */
-  template <bool usePointSource, bool useSource, bool useFlux, bool useNCP, typename SolverType>
+  template <bool usePointSource, bool useSource, bool useFlux, bool useNCP, bool useMM ,typename SolverType>
 void spaceTimePredictorLinear(SolverType& solver,
     double* lQbnd, double* lFbnd,
     double** tempSpaceTimeUnknowns,
@@ -194,6 +194,14 @@ void spaceTimePredictorLinear(SolverType& solver,
       }
     }
 
+    if(useMM){
+      for (int k = 0; k < basisSize; k++) {
+	for (int l = 0; l < basisSize; l++) {
+	  solver.multiplyMaterialParameterMatrix(lQi+idx_lQi(i, k, l, 0),
+						 lFi+idx_lFi(i, k, l, 0, 0));
+	}
+      }
+    }
 
     if(useSource){
       for (int k = 0; k < basisSize; k++) {
@@ -202,8 +210,6 @@ void spaceTimePredictorLinear(SolverType& solver,
 	}
       }
     }
-
-
 
     for (int k = 0; k < basisSize; k++) {
       for (int l = 0; l < basisSize; l++) {

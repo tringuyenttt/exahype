@@ -52,6 +52,7 @@ public:
   virtual int constexpr_getNumberOfParameters() const = 0;
   virtual double constexpr_getCFLNumber()       const = 0;
   ///@}
+
   
   /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
@@ -114,6 +115,8 @@ public:
    *
    **/
   virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) = 0;
+
+  virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) = 0;
   
   /**
    * Compute the conserved flux.

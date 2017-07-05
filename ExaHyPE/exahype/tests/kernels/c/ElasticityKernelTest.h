@@ -56,6 +56,9 @@ class ElasticityKernelTest : public tarch::tests::TestCase {
   void flux(const double* const Q, double** F);
 
   void algebraicSource(const double* Q, double* S);
+  void multiplyMaterialParameterMatrix(const double *Q, double *rhs);
+
+  
 
   void eigenvalues(const double* const Q,const int normalNonZeroIndex, double* lambda);
 

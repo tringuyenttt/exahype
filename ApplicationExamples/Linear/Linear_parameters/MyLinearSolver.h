@@ -107,7 +107,8 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
 
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
 
-
+    void riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
+    void riemannSolver_BCn(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
 
     
     /**

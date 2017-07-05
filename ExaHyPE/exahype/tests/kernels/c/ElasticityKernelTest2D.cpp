@@ -98,6 +98,12 @@ void ElasticityKernelTest::algebraicSource(const double *Q, double *S) {
   std::fill_n (S, nVar, 0.0);
 }
 
+
+void ElasticityKernelTest::multiplyMaterialParameterMatrix(const double *Q, double *rhs) {
+  return;
+}
+
+
 void ElasticityKernelTest::eigenvalues(const double *const Q,
                                            const int normalNonZeroIndex,
                                            double *lambda) {
@@ -368,7 +374,7 @@ void ElasticityKernelTest::testSpaceTimePredictorLinear() {
 
   // Execute kernel
   // TODO(Dominic): Fix test
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<false,false,false,true,ElasticityKernelTest>(
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<false,false,false,true,false,ElasticityKernelTest>(
       *this,
       lQbnd, lFbnd,
       tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,
