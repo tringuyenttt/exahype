@@ -59,10 +59,15 @@ exahype-project  Linear
 
   solver ADER-DG MyLinearSolver
     variables const   = p:1,v:2
+<<<<<<< 79f2344bcf2f264f20a2c75ab3751fd9cc0303ba:ApplicationExamples/Linear_parameters.exahype
     parameters const  = jacobian:1,metric_derivative:4,curve_grid:2    
     order const       = 9
+=======
+    parameters const  = jacobian:1,metric_derivative:4,curve_grid:2
+    order const       = 5
+>>>>>>> implemented curvilinear transformations with non-trivial free-surface topography. tested with 2D acoustic wave equation.:ApplicationExamples/Linear_Topo.exahype
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size = 1.0
+    maximum-mesh-size = 0.5
     time-stepping     = globalfixed
     kernel const      = generic::fluxes::linear
     language const    = C

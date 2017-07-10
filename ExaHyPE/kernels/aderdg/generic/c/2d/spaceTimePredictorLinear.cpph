@@ -117,7 +117,8 @@ void spaceTimePredictorLinear(SolverType& solver,
         // Skip parameters
         for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
           for (int n = 0; n < basisSize; n++) {
-            gradQ[idx_gradQ(i, k, l, 0, m)] += 1.0 / dx[0] *
+	    gradQ[idx_gradQ(i, k, l, 0, m)] += 1.0 / dx[0] *
+	      //gradQ[idx_gradQ(i, k, l, 0, m)] += 1.0 *	    
                 lQi[idx_lQi(i, k, n, m)] *
                 kernels::dudx[order][l][n];
           }
@@ -133,7 +134,8 @@ void spaceTimePredictorLinear(SolverType& solver,
         // Skip parameters
         for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
           for (int n = 0; n < basisSize; n++) {
-            gradQ[idx_gradQ(i, l, k, 1, m)] += 1.0 / dx[1] *
+	    gradQ[idx_gradQ(i, l, k, 1, m)] += 1.0 / dx[1] *
+	    //gradQ[idx_gradQ(i, l, k, 1, m)] += 1.0 *	    
                 lQi[idx_lQi(i, n, k, m)] *
                 kernels::dudx[order][l][n];
           }
@@ -173,6 +175,7 @@ void spaceTimePredictorLinear(SolverType& solver,
 	    for (int n = 0; n < basisSize; n++) {
 	      lFi[idx_lFi(i, k, l, 0, m)] += lFi[idx_lFi(i, k, n, 2, m)]*
 		kernels::dudx[order][l][n] * 1.0 / dx[0] ;
+		//kernels::dudx[order][l][n] * 1.0;		
 	      
 	    }
 	  }
@@ -188,6 +191,7 @@ void spaceTimePredictorLinear(SolverType& solver,
 	    for (int n = 0; n < basisSize; n++) {
 	      lFi[idx_lFi(i, l, k, 1, m)] += lFi[idx_lFi(i, n, k, 3, m)]*
 		kernels::dudx[order][l][n] * 1.0 / dx[1] ;
+	      //kernels::dudx[order][l][n] * 1.0;		
 	    }
 	  }
 	}
@@ -424,4 +428,4 @@ void spaceTimePredictorLinear(SolverType& solver,
 }  // namespace aderdg
 }  // namespace kernels
 
-#endif  // DIMENSINS == 3
+#endif  // DIMENSI0NS == 2

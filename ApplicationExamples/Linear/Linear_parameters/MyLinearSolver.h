@@ -126,6 +126,36 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
     exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+
+    virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ);
+
+    virtual void coefficientMatrix(const double* const Q,const int d,double* Bn);
+    virtual void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0);
+
+    virtual bool useCoefficientMatrix() const {return false;}
+    virtual bool useNonConservativeProduct() const {return true;}    
+    virtual bool useConservativeFlux() const {return true;}    
+    virtual bool usePointSource()       const {return false;}
+    virtual bool useSource()       const {return false;}
+    virtual bool useMaterialParameterMatrix()       const {return true;};
+    
+    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) override; 
+
+    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace) override;
+
+    void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
+
+    void riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
+    void riemannSolver_BCn(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
+
+
+    void adjustPatchSolution(
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double t,
+      const double dt,
+      double* luh);
+    
 };
 
 #endif // __MyLinearSolver_CLASS_HEADER__
