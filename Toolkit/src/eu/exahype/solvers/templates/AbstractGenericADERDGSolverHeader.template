@@ -60,35 +60,6 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
      * return false.
      */
     void flux(const double* const Q,double** F) override;
-<<<<<<< cd5e5682cc53b18d1983990525e9a21bb958d2d2
-        
-=======
-
-    /**
-     * Default implementation, can/should be overwritten by user's solver. See superclass for documentation
-     */
-    bool useAlgebraicSource()        const override {return false;}
-
-    /**
-     * Default implementation, can/should be overwritten by user's solver. See superclass for documentation
-     */
-    bool usePointSource()            const override {return false;}
-
-    /**
-     * Default implementation, can/should be overwritten by user's solver. See superclass for documentation
-     */
-    bool useNonConservativeProduct() const override {return false;}
-
-
-    /**
-     * Default implementation, can/should be overwritten by user's solver. See superclass for documentation
-     */
-    bool useMaterialParameterMatrix() const override {return false;}
-
-
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) override;  
-    
->>>>>>> Added material parameter matrix to AbstractSolver and linear spaceTimePredictor
     /**
      * Default implementation. Has to be be overwritten by user's solver if you 
      * make the corresponding use operation activate the feature.
@@ -151,7 +122,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     void solutionUpdate(double* luh,const double* const lduh,const double dt) override;
     void volumeIntegral(double* lduh,const double* const lFi,const double* const lFhi,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
-    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace) override;
+    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
     void boundaryConditions(double* fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) override;
     double stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) override;
     void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) override;

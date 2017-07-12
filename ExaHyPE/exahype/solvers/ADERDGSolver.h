@@ -1012,8 +1012,9 @@ public:
   virtual void riemannSolver(double* FL, double* FR,
                              const double* const QL,const double* const QR,
                              const double dt,
-                             const int direction,
-                             bool isBoundaryFace) = 0;
+                             const int normalNonZero,
+                             bool isBoundaryFace,
+			     int faceIndex) = 0;
 
   /**
    * Return the normal fluxes (or fluctuations) and state variables at the boundary.

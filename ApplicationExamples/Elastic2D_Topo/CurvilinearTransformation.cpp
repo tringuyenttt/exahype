@@ -9,11 +9,9 @@
 // }
 
 
-void getBoundaryCurves(int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y){
+void getBoundaryCurves(int num_points,double offset_x, double offset_y,double width_x, double width_y ,double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y){
 
-  double dy= 1.0/(num_points-1);
-  double dx= 1.0/(num_points-1);
-  
+ 
   double pi = 3.14159265359;
 
   int nx = 1/width_x*num_points;
@@ -49,9 +47,10 @@ void getBoundaryCurves(int num_points, double* left_bnd_x, double* left_bnd_y, d
     
     bottom_bnd_x[i] = 0 + dx*i;
     top_bnd_x[i]    = 0 + dx*i;
+
     
     bottom_bnd_y[i] = 0.0;
-    top_bnd_y[i]    = 1 + 0.0*std::sin(2*pi*top_bnd_x[i]);
+    top_bnd_y[i]    = 1 + 0.1*std::sin(2*pi*top_bnd_x[i]);
 
     //std::cout<<top_bnd_x[i]<<std::endl;
     //std::cout<<i<<std::endl;
@@ -62,56 +61,74 @@ void getBoundaryCurves(int num_points, double* left_bnd_x, double* left_bnd_y, d
   
   for(int i = 0 ; i< ny; i++){
     
+    // left_bnd_x[i]  = 0;
+    // right_bnd_x[i] = 1;
+    
     left_bnd_x[i]  = 0;
     right_bnd_x[i] = 1;
-    bottom_bnd_x[i] = dx*i;
-    top_bnd_x[i] = dx*i;
 
-    left_bnd_y[i] = dy*i;
+    left_bnd_y[i]  = dy*i;
     right_bnd_y[i] = dy*i;
-    bottom_bnd_y[i] = 0;
-    top_bnd_y[i] = 1;
   }
+
+
+  double h0y = (top_bnd_y[0] - bottom_bnd_y[0])/(ny-1);
+  double hny = (top_bnd_y[nx-1] - bottom_bnd_y[nx-1])/(ny-1);
+
+  for(int i = 0 ; i< ny; i++){
+    left_bnd_y[i]  = bottom_bnd_y[0] + h0y*i;
+    right_bnd_y[i] = bottom_bnd_y[nx-1] + hny*i;
+  }
+  
 }
 
-void transFiniteInterpolation(int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y, double* curvilinear_x , double* curvilinear_y ){
+void transFiniteInterpolation(int mx, int my, int j_m, int j_p, int i_m, int i_p, int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y, double* curvilinear_x , double* curvilinear_y ){
 
 
-   double mesh_size_x = 1.0/(num_points-1);
-   double mesh_size_y = 1.0/(num_points-1);
+   double mesh_size_x = 1.0/(mx-1);
+   double mesh_size_y = 1.0/(my-1);
 
    double r;
    double q;
    kernels::idx2 id_xy(num_points,num_points);
+   
+   int j_0 = 0;
+  
+   for(int j =j_m ; j < j_p ; j++) {
 
-
-   for(int j = 0 ; j < num_points ; j ++){
-     //printf("%f \n",top_bnd_y[j]);
-} 
-   //printf("\n");
-   for(int j =0 ; j < num_points ; j++) {
-   for(int i =0 ; i < num_points ; i++) {
-
-      	q = (i)*mesh_size_x;
-        r = (j)*mesh_size_y;
-        
-        curvilinear_x[id_xy(j,i)] = (1-q)*left_bnd_x[j]+q*right_bnd_x[j]+(1-r)*bottom_bnd_x[i]+r*top_bnd_x[i]-
-               (1-q)*(1-r)*left_bnd_x[0]-q*(1-r)*right_bnd_x[0]-r*(1-q)*top_bnd_x[0]-
-               (r*q)*top_bnd_x[num_points-1];
-
-
-        curvilinear_y[id_xy(j,i)] = (1-q)*left_bnd_y[j]+q*right_bnd_y[j]+(1-r)*bottom_bnd_y[i]+r*top_bnd_y[i]-
-               (1-q)*(1-r)*left_bnd_y[0]-q*(1-r)*right_bnd_y[0]-r*(1-q)*top_bnd_y[0]-
-               (r*q)*top_bnd_y[num_points-1];
-
-
+     
+     
+     int i_0 = 0;
+     
+     for(int i =i_m ; i < i_p ; i++) {
+       
+       //std::cout<<i<<std::endl;
+       
+       q = (i)*mesh_size_x;
+       r = (j)*mesh_size_y;
+       
+       curvilinear_x[id_xy(j_0,i_0)] = (1-q)*left_bnd_x[j]+q*right_bnd_x[j]+(1-r)*bottom_bnd_x[i]+r*top_bnd_x[i]-
+	 (1-q)*(1-r)*left_bnd_x[0]-q*(1-r)*right_bnd_x[0]-r*(1-q)*top_bnd_x[0]-
+	 (r*q)*top_bnd_x[mx-1];
+       
+       
+       curvilinear_y[id_xy(j_0,i_0)] = (1-q)*left_bnd_y[j]+q*right_bnd_y[j]+(1-r)*bottom_bnd_y[i]+r*top_bnd_y[i]-
+	 (1-q)*(1-r)*left_bnd_y[0]-q*(1-r)*right_bnd_y[0]-r*(1-q)*top_bnd_y[0]-
+	 (r*q)*top_bnd_y[mx-1];
+       
+       i_0 = i_0+1; 
+	 
+       
+       
+     }
+     //std::exit(-1);
+     j_0 = j_0+1;
    }
-   }
-
+   
    //  for(int j = 0 ; j < num_points_y ; j ++){
-    // printf("%f \n",curvilinear_y[id_xy(j,num_points_y-1)]);
+   // printf("%f \n",curvilinear_y[id_xy(j,num_points_y-1)]);
    //} 
-
+   
 }
 
 
@@ -158,7 +175,7 @@ void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* des
   }
 }
 
-void computeDerivatives_x(int i, int j , double* values , int num_nodes, double& der_x){
+void computeDerivatives_x(int i, int j , double* values , int num_nodes, double& der_x, double dx){
   //  double* vals_x;
   //  double* vals_y
 
@@ -176,14 +193,14 @@ void computeDerivatives_x(int i, int j , double* values , int num_nodes, double&
   // for (int j = 0 ; j< num_nodes ; j ++){
   //   for (int i = 0 ; i< num_nodes ; i ++){
    for (int n = 0 ; n< num_nodes ; n ++){
-     der_x += kernels::dudx[num_nodes-1][i][n] * values[id_xy(j,n)];
+     der_x += kernels::dudx[num_nodes-1][i][n] * values[id_xy(j,n)]/dx;
    }
   //   }
   // }
 
 }
 
-void computeDerivatives_y (int i, int j , double* values , int num_nodes, double& der_y){
+void computeDerivatives_y (int i, int j , double* values , int num_nodes, double& der_y, double dy){
   //  double* vals_x;
   //  double* vals_y
     //  vals_x = malloc(sizeof(double)*num_nodes*num_nodes);
@@ -197,7 +214,7 @@ void computeDerivatives_y (int i, int j , double* values , int num_nodes, double
   // for (int j = 0 ; j< num_nodes ; j ++){
   //   for (int i = 0 ; i< num_nodes ; i ++){
       for (int n = 0 ; n< num_nodes ; n ++){
-         der_y += kernels::dudx[num_nodes-1][j][n] * values[id_xy(n,i)];
+         der_y += kernels::dudx[num_nodes-1][j][n] * values[id_xy(n,i)]/dy;
       }
   //   }
   // }
@@ -205,7 +222,7 @@ void computeDerivatives_y (int i, int j , double* values , int num_nodes, double
 
 
 
-void metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* curvilinear_y,double* gl_vals_x,double* gl_vals_y,double* q_x,double* q_y,double* r_x,double* r_y,double* jacobian){
+void metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* curvilinear_y,double* gl_vals_x,double* gl_vals_y,double* q_x,double* q_y,double* r_x,double* r_y,double* jacobian, double dx, double dy){
 
   double* unif_mesh= new double[num_nodes];
   for(int i = 0; i< num_nodes ; i++){
@@ -225,11 +242,11 @@ void metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* 
   for(int j = 0 ; j < num_nodes ; j ++){
     for(int i = 0 ; i< num_nodes ; i ++){
 
-     computeDerivatives_x(j,i,gl_vals_x,num_nodes,x_der_x);
-     computeDerivatives_y(j,i,gl_vals_x,num_nodes,x_der_y);
+      computeDerivatives_x(j,i,gl_vals_x,num_nodes,x_der_x, dx);
+      computeDerivatives_y(j,i,gl_vals_x,num_nodes,x_der_y, dy);
 
-     computeDerivatives_x(j,i,gl_vals_y,num_nodes,y_der_x);
-     computeDerivatives_y(j,i,gl_vals_y,num_nodes,y_der_y);
+      computeDerivatives_x(j,i,gl_vals_y,num_nodes,y_der_x, dx);
+      computeDerivatives_y(j,i,gl_vals_y,num_nodes,y_der_y, dy);
 
 // J = x_q.*y_r - y_q.*x_r; % Jacobian (determinant of metric)
 // q_x = y_r./J;   % 1/J y_r
