@@ -18,13 +18,13 @@
 
 #if DIMENSIONS == 3
 
-template <bool useSourceOrNCP, bool useFlux, int numberOfVariables, int basisSize>
+template <bool useSource, bool useFlux, int numberOfVariables, int basisSize>
 void kernels::aderdg::generic::c::volumeIntegralLinear(double* lduh, const double* const lFhi,
     const tarch::la::Vector<DIMENSIONS, double>& dx) {
   // for linear non-conservative PDE, the volume integral is trivial, since it
   // only involves the element mass matrix, which later will cancel
 
-  idx5 idx_lFhi(DIMENSIONS, basisSize, basisSize, basisSize, numberOfVariables);
+  idx5 idx_lFhi(DIMENSIONS+1, basisSize, basisSize, basisSize, numberOfVariables);
   idx4 idx_lduh(basisSize, basisSize, basisSize, numberOfVariables);
 
   constexpr int order      = basisSize - 1;
@@ -47,6 +47,10 @@ void kernels::aderdg::generic::c::volumeIntegralLinear(double* lduh, const doubl
             //sum = sum  +   lFhi[idx_lFhi(m, i, j, k, l)];
             lduh[idx_lduh(i, j, k, l)] -= weight * lFhi[idx_lFhi(m, i, j, k, l)];
           }
+	  if(useSource){
+	    int m=3;
+	    lduh[idx_lduh(i, j, k, l)] -= weight * lFhi[idx_lFhi(m, i, j, k, l)];
+	  }
           //lduh[idx_lduh(i, j, k, l)] = -weight *sum;
         }
       }

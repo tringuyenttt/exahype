@@ -80,8 +80,17 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
     virtual void flux(const double* const Q,double** F);
 
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
+    void coefficientMatrix(const double* const Q,const int d,double* Bn) override;
+    void algebraicSource(const double* const Q,double* S) override;
+    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) override;      
+
+
+    
     bool useNonConservativeProduct() const override {return true;}
-    bool useConservativeFlux()       const override {return false;}    
+    bool useConservativeFlux()       const override {return true;}
+    bool useAlgebraicSource()        const override {return false;}
+    bool useMaterialParameterMatrix()const override {return true;}    
+
     
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.

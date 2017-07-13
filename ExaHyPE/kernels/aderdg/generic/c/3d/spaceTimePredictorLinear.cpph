@@ -101,7 +101,7 @@ void spaceTimePredictorLinear(SolverType& solver,
    }
    }
    double* lFi = tempSpaceTimeFluxUnknowns[0]; // size: basisSize4 * DIMENSIONS * numberOfData
-   std::fill_n(lFi+basisSize4*DIMENSIONS*numberOfVariables, basisSize4*numberOfVariables, 0.0); // zero out sources; We should distinguish between Linear and NonLinear solvers
+   std::fill_n(lFi,basisSize4*(2*DIMENSIONS+1)*numberOfVariables, 0.0); // zero out sources; We should distinguish between Linear and NonLinear solvers
    idx6 idx_lFi(basisSize, basisSize, basisSize, basisSize, 2*DIMENSIONS+1, numberOfVariables);
 
    // spatial gradient of q
@@ -193,7 +193,7 @@ void spaceTimePredictorLinear(SolverType& solver,
      }
 
 
-    if(useFlux){
+     if(useFlux){
       for (int j = 0; j < basisSize; j++) {
 	for (int k = 0; k < basisSize; k++) {
 	  for (int l = 0; l < basisSize; l++) {
@@ -201,7 +201,7 @@ void spaceTimePredictorLinear(SolverType& solver,
 	    F[0]      = lFi + idx_lFi(i, j, k, l, 3, 0);
 	    F[1]      = lFi + idx_lFi(i, j, k, l, 4, 0);
 	    F[2]      = lFi + idx_lFi(i, j, k, l, 5, 0);	  
-	    solver.flux( lQi + idx_lQi(i, k, l, 0), F );
+	    solver.flux( lQi + idx_lQi(i, j, k, l, 0), F );
 	  }
 	}
       }
@@ -214,7 +214,7 @@ void spaceTimePredictorLinear(SolverType& solver,
 	    //        for (int m = 0; m < DIMENSIONS; m++) {
 	    for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
 	      for (int n = 0; n < basisSize; n++) {
-		lFi[idx_lFi(i, k, l, 0, m)] += lFi[idx_lFi(i, j, k, n, 3, m)]*
+		lFi[idx_lFi(i, j, k, l, 0, m)] += lFi[idx_lFi(i, j, k, n, 3, m)]*
 		  kernels::dudx[order][l][n] * 1.0 / dx[0] ;
 	      }
 	    }
@@ -230,7 +230,7 @@ void spaceTimePredictorLinear(SolverType& solver,
 	    //        for (int m = 0; m < DIMENSIONS; m++) {
 	    for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
 	      for (int n = 0; n < basisSize; n++) {
-		lFi[idx_lFi(i, l, k, 1, m)] += lFi[idx_lFi(i, j, n, k, 4, m)]*
+		lFi[idx_lFi(i, j, l, k, 1, m)] += lFi[idx_lFi(i, j, n, k, 4, m)]*
 		  kernels::dudx[order][l][n] * 1.0 / dx[1] ;
 	      }
 	    }
@@ -247,7 +247,7 @@ void spaceTimePredictorLinear(SolverType& solver,
 	    //        for (int m = 0; m < DIMENSIONS; m++) {
 	    for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
 	      for (int n = 0; n < basisSize; n++) {
-		lFi[idx_lFi(i, l, k, 2, m)] += lFi[idx_lFi(i, n, j, k, 5, m)]*
+		lFi[idx_lFi(i, l, j, k, 2, m)] += lFi[idx_lFi(i, n, j, k, 5, m)]*
 		  kernels::dudx[order][l][n] * 1.0 / dx[2] ;
 	      }
 	    }
@@ -255,8 +255,29 @@ void spaceTimePredictorLinear(SolverType& solver,
 	}
       }
 
-     
+     }
 
+     if(useMM){
+       for (int j = 0; j < basisSize; j++) {
+	 for (int k = 0; k < basisSize; k++) {
+	   for (int l = 0; l < basisSize; l++) {
+	     solver.multiplyMaterialParameterMatrix(lQi+idx_lQi(i, j, k, l, 0),
+						    lFi+idx_lFi(i, j, k, l, 0, 0));
+	   }
+	 }
+       }
+     }
+     
+     if(useSource){
+       for (int j = 0; j < basisSize; j++) {
+	 for (int k = 0; k < basisSize; k++) {
+	   for (int l = 0; l < basisSize; l++) {
+	     solver.algebraicSource(&lQi[idx_lQi(i, j, k, l, 0)], &lFi[idx_lFi(i, j, k, l, 6, 0)]); // gradQ(..,..,0,0) and Fi(..,..,0,0) 3xnVar tensors
+	   }
+	 }
+       }
+     }
+     
      for (int j = 0; j < basisSize; j++) {
        for (int k = 0; k < basisSize; k++) {
          for (int l = 0; l < basisSize; l++) {
@@ -266,6 +287,12 @@ void spaceTimePredictorLinear(SolverType& solver,
                lQi[idx_lQi(i + 1, j, k, l, n)] -= lFi[idx_lFi(i, j, k, l, m, n)];
              }
            }
+	   if(useSource){
+	     int m = 6;
+	     for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
+	       lQi[idx_lQi(i + 1, j, k, l, n)] -= lFi[idx_lFi(i, j, k, l, m, n)];
+	     }
+	   }
          }
        }
      }
@@ -319,7 +346,7 @@ void spaceTimePredictorLinear(SolverType& solver,
 
    double* lFh = tempFluxUnknowns;
    std::fill_n(lFh+basisSize3*DIMENSIONS*numberOfVariables, basisSize3*numberOfVariables, 0.0); // zero out sources; TODO(Dominic): We should distinguish between Linear and NonLinear solvers
-   idx5 idx_lFh(DIMENSIONS, basisSize, basisSize, basisSize, numberOfVariables);
+   idx5 idx_lFh(DIMENSIONS+1, basisSize, basisSize, basisSize, numberOfVariables);
 
    // lFh(m,l,k,j,i) = lFi(m,i,l,k,j,1)
    for (int i = 0; i < DIMENSIONS; i++) {
@@ -329,6 +356,20 @@ void spaceTimePredictorLinear(SolverType& solver,
            // Skip parameters
            for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
              lFh[idx_lFh(i, j, k, l, m)] = lFi[idx_lFi(0, j, k, l, i, m)];
+           }
+         }
+       }
+     }
+   }
+
+   if(useSource){
+     int i=3;
+     for (int j = 0; j < basisSize; j++) {
+       for (int k = 0; k < basisSize; k++) {
+         for (int l = 0; l < basisSize; l++) {
+           // Skip parameters
+           for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
+             lFh[idx_lFh(i, j, k, l, m)] = lFi[idx_lFi(0, j, k, l, 6, m)];
            }
          }
        }
@@ -346,6 +387,21 @@ void spaceTimePredictorLinear(SolverType& solver,
              for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
                lFh[idx_lFh(j, k, l, m, n)] +=
                    dtavFac * lFi[idx_lFi(i, k, l, m, j, n)];
+             }
+           }
+         }
+       }
+     }
+
+     if(useSource){
+       int j=3;
+       for (int k = 0; k < basisSize; k++) {
+	 for (int l = 0; l < basisSize; l++) {
+	   for (int m = 0; m < basisSize; m++) {
+	     // Skip parameters
+	     for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
+	       lFh[idx_lFh(j, k, l, m, n)] +=
+		 dtavFac * lFi[idx_lFi(i, k, l, m, 6, n)];
              }
            }
          }

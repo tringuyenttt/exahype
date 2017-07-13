@@ -46,10 +46,10 @@ exahype-project  Linear
 
   solver ADER-DG MyLinearSolver
     variables const   = p:1,v:3
-    parameters const  = jacobian:1,metric_derivative:4,curve_grid:2
-    order const       = 9
+    parameters const  = rho:1,c:1,jacobian:1,metric_derivative:9,curve_grid:3
+    order const       = 3
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size = 1.0
+    maximum-mesh-size = 0.5
     time-stepping     = globalfixed
     kernel const      = generic::fluxes::linear
     language const    = C
