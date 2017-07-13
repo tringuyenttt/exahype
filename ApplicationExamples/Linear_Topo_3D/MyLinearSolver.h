@@ -122,6 +122,19 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
     void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut);
+
+
+    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) override;
+
+    void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
+
+    void riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
+    void riemannSolver_BCn(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
+
+    void localBasis(double* n, double * m, double* l, int d);
+    void Gram_Schmidt(double* y, double* z);
+
+
     
     /**
      * Evaluate the refinement criterion within a cell.
