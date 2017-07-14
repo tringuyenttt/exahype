@@ -82,14 +82,16 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) override;
     void coefficientMatrix(const double* const Q,const int d,double* Bn) override;
     void algebraicSource(const double* const Q,double* S) override;
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) override;      
+    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) override;
+    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) override;
 
 
     
     bool useNonConservativeProduct() const override {return true;}
     bool useConservativeFlux()       const override {return true;}
     bool useAlgebraicSource()        const override {return false;}
-    bool useMaterialParameterMatrix()const override {return true;}    
+    bool useMaterialParameterMatrix()const override {return true;}
+    bool usePointSource()            const override {return true;}
 
     
     /**

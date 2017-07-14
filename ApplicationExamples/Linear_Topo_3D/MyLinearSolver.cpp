@@ -29,7 +29,7 @@ void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const dou
     exponent = exponent + (x[i]-x_0[i])*(x[i]-x_0[i]);
   }
     
-  Q[ 0] = std::exp(-exponent/0.01);
+  Q[ 0] = 0.0; //std::exp(-exponent/0.01);
   Q[ 1] = 0.0;
   Q[ 2] = 0.0;
   Q[ 3] = 0.0;   // Material parameters:
@@ -199,6 +199,27 @@ void Linear::MyLinearSolver::algebraicSource(const double* const Q,double* S) {
 }
 
 
+void Linear::MyLinearSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0){
+
+  double pi = 3.14159265359;
+  double sigma = 0.1149;
+  double t0 = 0.7;
+  double f = 0.0;
+  double M0 = 1000.0;
+  
+  
+  f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+
+  x0[0] = 0.5;
+  x0[1] = 0.5;
+  x0[2] = 0.5;
+  
+  forceVector[0] = 1.*f;
+  forceVector[1] = 0.0;
+  forceVector[2] = 0.0;
+  forceVector[3] = 0.0;
+
+}
 void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs){
 
   double rho = Q[4];  
@@ -210,7 +231,7 @@ void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const
   rhs[2]=1/rho * rhs[2];
   rhs[3]=1/rho * rhs[3];
 
-  rhs[4]=   mu * rhs[4];
+  rhs[4]=  mu * rhs[4];
   rhs[5]=1/rho * rhs[5];
   rhs[6]=1/rho * rhs[6];
   rhs[7]=1/rho * rhs[7];
