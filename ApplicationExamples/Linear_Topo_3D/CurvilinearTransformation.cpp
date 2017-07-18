@@ -20,8 +20,7 @@ void getBoundaryCurves3D(int num_points,
 			 double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
 			 double* back_bnd_x, double* back_bnd_y, double* back_bnd_z){
 
-  double dy= 1.0/(num_points-1);
-  double dx= 1.0/(num_points-1);
+ 
   
   double pi = 3.14159265359;
 
@@ -68,12 +67,12 @@ void getBoundaryCurves3D(int num_points,
   for(int i = 0 ; i< nx; i++){
     for(int k = 0 ; k< nz; k++){      
       bottom_bnd_x[id_xz(k,i)] = 0+dx*i;      
-      bottom_bnd_y[id_xz(k,i)] = 0;
+      bottom_bnd_y[id_xz(k,i)] = 1;
       bottom_bnd_z[id_xz(k,i)] = 0+dz*k;      
 
       top_bnd_x[id_xz(k,i)] = 0+dx*i;      
-      top_bnd_y[id_xz(k,i)] = 1;
-      top_bnd_z[id_xz(k,i)] = 0+dz*k;      
+      top_bnd_z[id_xz(k,i)] = 0+dz*k;
+      top_bnd_y[id_xz(k,i)] = 0+0.1*std::sin(2*pi*top_bnd_x[id_xz(k,i)])*std::sin(2*pi*top_bnd_z[id_xz(k,i)]);      
     }
   }
 
@@ -176,14 +175,22 @@ void getBoundaryCurves(int num_points,double offset_x, double offset_y,double wi
     
     left_bnd_x[i]  = 0;
     right_bnd_x[i] = 1;
-    bottom_bnd_x[i] = dx*i;
-    top_bnd_x[i] = dx*i;
 
-    left_bnd_y[i] = dy*i;
+    left_bnd_y[i]  = dy*i;
     right_bnd_y[i] = dy*i;
-    bottom_bnd_y[i] = 0;
-    top_bnd_y[i] = 1;
   }
+
+
+  double h0y = (top_bnd_y[0] - bottom_bnd_y[0])/(ny-1);
+  double hny = (top_bnd_y[nx-1] - bottom_bnd_y[nx-1])/(ny-1);
+
+  for(int i = 0 ; i< ny; i++){
+
+    left_bnd_y[i]  = bottom_bnd_y[0] + h0y*i;
+    right_bnd_y[i] = bottom_bnd_y[nx-1] + hny*i;
+    
+  }
+  
 }
 
 
@@ -198,7 +205,7 @@ void transFiniteInterpolation3D(int mx, int my, int mz,
 				double* top_bnd,
 				double* front_bnd,
 				double* back_bnd,
-				double* curvilinear, int dim
+				double* curvilinear
 				){
   kernels::idx3 id_xyz(num_points,num_points,num_points);
   kernels::idx2 id_xy(my,mx);// back front
@@ -235,30 +242,30 @@ void transFiniteInterpolation3D(int mx, int my, int mz,
 
 	w=(1-s)*front_bnd[id_xy(j,i)]+s*back_bnd[id_xy(j,i)];
 
-	uw=(1-q)* ((1 -r)*left_bnd[id_yz(k,1)] 
-		   +r *left_bnd[id_yz(k,my)])
-	  +q*((1-r)*right_bnd[id_yz(k,1)] 
-	      +r *right_bnd[id_yz(k,my)]);
+	uw=(1-q)* ((1 -r)*left_bnd[id_yz(k,0)] 
+		   +r *left_bnd[id_yz(k,my-1)])
+	  +q*((1-r)*right_bnd[id_yz(k,0)] 
+	      +r *right_bnd[id_yz(k,my-1)]);
 
-	uv=(1-r)*((1-s)*top_bnd[id_xz(1,i)]
-		  + s*top_bnd[id_xz(mz,i)])
-	  + r*((1-s)*bottom_bnd[id_xz(1,i)]
-	       + s*bottom_bnd[id_xz(mz,i)]);
+	uv=(1-r)*((1-s)*top_bnd[id_xz(0,i)]
+		  + s*top_bnd[id_xz(mz-1,i)])
+	  + r*((1-s)*bottom_bnd[id_xz(0,i)]
+	       + s*bottom_bnd[id_xz(mz-1,i)]);
 
-	vw = (1-s)*((1-q)*front_bnd[id_xy(j,1)] 
-		    + q*front_bnd[id_xy(j,mx)])
-	       + s*((1-q)*back_bnd[id_xy(j,1)] 
-	              + q*back_bnd[id_xy(j,mx)]);
+	vw = (1-s)*((1-q)*front_bnd[id_xy(j,0)] 
+		    + q*front_bnd[id_xy(j,mx-1)])
+	       + s*((1-q)*back_bnd[id_xy(j,0)] 
+	              + q*back_bnd[id_xy(j,mx-1)]);
 	
-	uvw1=(1-q)*((1-r)*((1-s)*top_bnd[id_xz(1,1)] 
-		              +s*top_bnd[id_xz(mz,1)])
-		       +r*((1-s)*bottom_bnd[id_xz(1,1)]
-			   +s*bottom_bnd[id_xz(mz,1)]));
+	uvw1=(1-q)*((1-r)*((1-s)*top_bnd[id_xz(0,0)] 
+		              +s*top_bnd[id_xz(mz-1,0)])
+		       +r*((1-s)*bottom_bnd[id_xz(0,0)]
+			   +s*bottom_bnd[id_xz(mz-1,0)]));
 
-	uvw2=q*((1-r)*((1-s)*top_bnd[id_xz(1,mx)] 
-			 + s*top_bnd[id_xz(mz,mx)])
-		  + r*((1-s)*bottom_bnd[id_xz(1,mx)]
-		       + s*bottom_bnd[id_xz(mz,mx)]));
+	uvw2=q*((1-r)*((1-s)*top_bnd[id_xz(0,mx-1)] 
+			 + s*top_bnd[id_xz(mz-1,mx-1)])
+		+ r*((1-s)*bottom_bnd[id_xz(0,mx-1)]
+		       + s*bottom_bnd[id_xz(mz-1,mx-1)]));
 
 	curvilinear[id_xyz(k_0,j_0,i_0)] = u + v + w - uv - uw - vw + uvw1 + uvw2;
 
@@ -273,41 +280,51 @@ void transFiniteInterpolation3D(int mx, int my, int mz,
 
 void transFiniteInterpolation(int mx, int my, int j_m, int j_p, int i_m, int i_p, int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y, double* curvilinear_x , double* curvilinear_y ){
 
-   double mesh_size_x = 1.0/(num_points-1);
-   double mesh_size_y = 1.0/(num_points-1);
+
+   double mesh_size_x = 1.0/(mx-1);
+   double mesh_size_y = 1.0/(my-1);
 
    double r;
    double q;
    kernels::idx2 id_xy(num_points,num_points);
+   
+   int j_0 = 0;
+  
+   for(int j =j_m ; j < j_p ; j++) {
 
-
-   for(int j = 0 ; j < num_points ; j ++){
-     //printf("%f \n",top_bnd_y[j]);
-} 
-   //printf("\n");
-   for(int j =0 ; j < num_points ; j++) {
-   for(int i =0 ; i < num_points ; i++) {
-
-      	q = (i)*mesh_size_x;
-        r = (j)*mesh_size_y;
-        
-        curvilinear_x[id_xy(j,i)] = (1-q)*left_bnd_x[j]+q*right_bnd_x[j]+(1-r)*bottom_bnd_x[i]+r*top_bnd_x[i]-
-               (1-q)*(1-r)*left_bnd_x[0]-q*(1-r)*right_bnd_x[0]-r*(1-q)*top_bnd_x[0]-
-               (r*q)*top_bnd_x[num_points-1];
-
-
-        curvilinear_y[id_xy(j,i)] = (1-q)*left_bnd_y[j]+q*right_bnd_y[j]+(1-r)*bottom_bnd_y[i]+r*top_bnd_y[i]-
-               (1-q)*(1-r)*left_bnd_y[0]-q*(1-r)*right_bnd_y[0]-r*(1-q)*top_bnd_y[0]-
-               (r*q)*top_bnd_y[num_points-1];
-
-
+     
+     
+     int i_0 = 0;
+     
+     for(int i =i_m ; i < i_p ; i++) {
+       
+       //std::cout<<i<<std::endl;
+       
+       q = (i)*mesh_size_x;
+       r = (j)*mesh_size_y;
+       
+       curvilinear_x[id_xy(j_0,i_0)] = (1-q)*left_bnd_x[j]+q*right_bnd_x[j]+(1-r)*bottom_bnd_x[i]+r*top_bnd_x[i]-
+	 (1-q)*(1-r)*left_bnd_x[0]-q*(1-r)*right_bnd_x[0]-r*(1-q)*top_bnd_x[0]-
+	 (r*q)*top_bnd_x[mx-1];
+       
+       
+       curvilinear_y[id_xy(j_0,i_0)] = (1-q)*left_bnd_y[j]+q*right_bnd_y[j]+(1-r)*bottom_bnd_y[i]+r*top_bnd_y[i]-
+	 (1-q)*(1-r)*left_bnd_y[0]-q*(1-r)*right_bnd_y[0]-r*(1-q)*top_bnd_y[0]-
+	 (r*q)*top_bnd_y[mx-1];
+       
+       i_0 = i_0+1; 
+	 
+       
+       
+     }
+     //std::exit(-1);
+     j_0 = j_0+1;
    }
-   }
-
+   
    //  for(int j = 0 ; j < num_points_y ; j ++){
-    // printf("%f \n",curvilinear_y[id_xy(j,num_points_y-1)]);
+   // printf("%f \n",curvilinear_y[id_xy(j,num_points_y-1)]);
    //} 
-
+   
 }
 
 
@@ -322,6 +339,33 @@ double lagrangeBasis(double x,double* points,int i,int num_points){
    
   return result;
 }
+
+
+
+void interpolate3D(double x, double y, double z, double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes,double& result){
+
+  double a_x=0;
+  double a_y=0;
+  double a_z=0;  
+  
+  result=0;
+  
+  kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes);
+
+
+
+  for (int k = 0 ; k< num_nodes ; k++){    
+    for (int j = 0 ; j< num_nodes ; j ++){
+      for (int i = 0 ; i< num_nodes ; i ++){
+	a_x=lagrangeBasis(x,orig_mesh_x,i,num_nodes);
+	a_y=lagrangeBasis(y,orig_mesh_y,j,num_nodes);
+	a_z=lagrangeBasis(z,orig_mesh_z,k,num_nodes);
+	result += dest_mesh[id_xyz(k,j,i)] * a_x*a_y*a_z;
+      }
+    }
+  }
+}
+
 
 
 void interpolate(double x, double y, double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes,double& result){
@@ -343,6 +387,24 @@ void interpolate(double x, double y, double* orig_mesh_x , double* orig_mesh_y, 
   }
 }
 
+
+
+void getValuesAtQuadNodes3D(double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes, double* results){
+
+  kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes);
+
+
+  for (int k = 0 ; k< num_nodes ; k ++){
+    for (int j = 0 ; j< num_nodes ; j ++){
+      for (int i = 0 ; i< num_nodes ; i ++){
+	interpolate3D(kernels::gaussLegendreNodes[num_nodes-1][i],kernels::gaussLegendreNodes[num_nodes-1][j],kernels::gaussLegendreNodes[num_nodes-1][k],orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
+      }
+    }
+  }
+}
+
+
+
 void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes, double* results){
 
   kernels::idx2 id_xy(num_nodes,num_nodes);
@@ -354,54 +416,60 @@ void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* des
   }
 }
 
-void computeDerivatives_x(int i, int j , double* values , int num_nodes, double& der_x){
-  //  double* vals_x;
-  //  double* vals_y
-
-    //  vals_x = malloc(sizeof(double)*num_nodes*num_nodes);
-    //  vals_y = malloc(sizeof(double)*num_nodes*num_nodes);
-
-
-  //  free(vals_x);
-  //  free(vals_y);
-  
+void computeDerivatives_x(int i, int j , double* values , int num_nodes, double& der_x, double dx){
    kernels::idx2 id_xy(num_nodes,num_nodes);
 
    der_x = 0.0;
 
-  // for (int j = 0 ; j< num_nodes ; j ++){
-  //   for (int i = 0 ; i< num_nodes ; i ++){
    for (int n = 0 ; n< num_nodes ; n ++){
-     der_x += kernels::dudx[num_nodes-1][i][n] * values[id_xy(j,n)];
+     der_x += kernels::dudx[num_nodes-1][i][n] * values[id_xy(j,n)]/dx;
    }
-  //   }
-  // }
-
 }
 
-void computeDerivatives_y (int i, int j , double* values , int num_nodes, double& der_y){
-  //  double* vals_x;
-  //  double* vals_y
-    //  vals_x = malloc(sizeof(double)*num_nodes*num_nodes);
-    //  vals_y = malloc(sizeof(double)*num_nodes*num_nodes);
-  //  free(vals_x);
-  //  free(vals_y);
-  
+void computeDerivatives_y (int i, int j , double* values , int num_nodes, double& der_y, double dy){
   kernels::idx2 id_xy(num_nodes,num_nodes); 
 
   der_y = 0.0;
-  // for (int j = 0 ; j< num_nodes ; j ++){
-  //   for (int i = 0 ; i< num_nodes ; i ++){
-      for (int n = 0 ; n< num_nodes ; n ++){
-         der_y += kernels::dudx[num_nodes-1][j][n] * values[id_xy(n,i)];
-      }
-  //   }
-  // }
+  for (int n = 0 ; n< num_nodes ; n ++){
+    der_y += kernels::dudx[num_nodes-1][j][n] * values[id_xy(n,i)]/dy;
+  }
 }
 
 
+void computeDerivatives_x_3D(int i, int j , int k, double* values , int num_nodes, double& der_x, double dx){
+  
+  kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes);
 
-void metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* curvilinear_y,double* gl_vals_x,double* gl_vals_y,double* q_x,double* q_y,double* r_x,double* r_y,double* jacobian){
+  der_x = 0.0;
+
+  for (int n = 0 ; n< num_nodes ; n ++){
+    der_x += kernels::dudx[num_nodes-1][i][n] * values[id_xyz(k,j,n)]/dx;
+  }
+
+}
+
+void computeDerivatives_y_3D (int i, int j,int k, double* values , int num_nodes, double& der_y, double dy){
+  kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes); 
+
+  der_y = 0.0;
+
+  for (int n = 0 ; n< num_nodes ; n ++){
+    der_y += kernels::dudx[num_nodes-1][j][n] * values[id_xyz(k,n,i)]/dy;
+  }
+}
+
+void computeDerivatives_z_3D (int i, int j , int k ,double* values , int num_nodes, double& der_z, double dz){
+  kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes); 
+
+  der_z = 0.0;
+
+  for (int n = 0 ; n< num_nodes ; n ++){
+    der_z += kernels::dudx[num_nodes-1][k][n] * values[id_xyz(n,j,i)]/dz;
+  }
+
+}
+
+void metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* curvilinear_y,double* gl_vals_x,double* gl_vals_y,double* q_x,double* q_y,double* r_x,double* r_y,double* jacobian, double dx, double dy){
 
   double* unif_mesh= new double[num_nodes];
   for(int i = 0; i< num_nodes ; i++){
@@ -421,11 +489,11 @@ void metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* 
   for(int j = 0 ; j < num_nodes ; j ++){
     for(int i = 0 ; i< num_nodes ; i ++){
 
-     computeDerivatives_x(j,i,gl_vals_x,num_nodes,x_der_x);
-     computeDerivatives_y(j,i,gl_vals_x,num_nodes,x_der_y);
+      computeDerivatives_x(j,i,gl_vals_x,num_nodes,x_der_x, dx);
+      computeDerivatives_y(j,i,gl_vals_x,num_nodes,x_der_y, dy);
 
-     computeDerivatives_x(j,i,gl_vals_y,num_nodes,y_der_x);
-     computeDerivatives_y(j,i,gl_vals_y,num_nodes,y_der_y);
+      computeDerivatives_x(j,i,gl_vals_y,num_nodes,y_der_x, dx);
+      computeDerivatives_y(j,i,gl_vals_y,num_nodes,y_der_y, dy);
 
 // J = x_q.*y_r - y_q.*x_r; % Jacobian (determinant of metric)
 // q_x = y_r./J;   % 1/J y_r
@@ -451,16 +519,79 @@ void metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* 
 }
 
 
-// void computeCurvilinearTransformationCoefficients(double* dest_mesh_x,double* dest_mesh_y, int num_nodes){
+void metricDerivativesAndJacobian3D(int num_nodes,
+				  double* curvilinear_x, double* curvilinear_y, double* curvilinear_z,
+				  double* gl_vals_x, double* gl_vals_y, double* gl_vals_z,
+				  double* q_x, double* q_y, double* q_z,
+				  double* r_x, double* r_y, double* r_z,
+				  double* s_x, double* s_y, double* s_z,				  
+				  double* jacobian,
+				  double dx, double dy, double dz
+				  ){
 
-// double* dest_mesh_x_der_x;
-// double* dest_mesh_x_der_y;
-// double* dest_mesh_y_der_x;
-// double* dest_mesh_y_der_y;
+  double* unif_mesh= new double[num_nodes];
 
-// dest_mesh_x_der_x= malloc(sizeof(double)*num_nodes*num_nodes);
-// dest_mesh_x_der_y= malloc(sizeof(double)*num_nodes*num_nodes);
-// dest_mesh_x_der_y= malloc(sizeof(double)*num_nodes*num_nodes);
+  for(int i = 0; i< num_nodes ; i++){
+    unif_mesh[i]=i*1.0/(num_nodes-1);
+  }
+
+  getValuesAtQuadNodes3D(unif_mesh,unif_mesh,unif_mesh,curvilinear_x,num_nodes,gl_vals_x);
+  getValuesAtQuadNodes3D(unif_mesh,unif_mesh,unif_mesh,curvilinear_y,num_nodes,gl_vals_y);
+  getValuesAtQuadNodes3D(unif_mesh,unif_mesh,unif_mesh,curvilinear_z,num_nodes,gl_vals_z);  
+
+  double x_der_x; 
+  double x_der_y;
+  double x_der_z;  
+  
+  double y_der_x; 
+  double y_der_y;
+  double y_der_z;
+
+  double z_der_x; 
+  double z_der_y;
+  double z_der_z;  
+
+  
+  kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes);
+  
+  for(int k = 0 ; k < num_nodes ; k ++){
+    for(int j = 0 ; j < num_nodes ; j ++){
+      for(int i = 0 ; i< num_nodes ; i ++){
+
+  	computeDerivatives_x_3D(i,j,k,gl_vals_x,num_nodes,x_der_x, dx);
+  	computeDerivatives_y_3D(i,j,k,gl_vals_x,num_nodes,x_der_y, dy);
+  	computeDerivatives_z_3D(i,j,k,gl_vals_x,num_nodes,x_der_z, dz);
+
+	computeDerivatives_x_3D(i,j,k,gl_vals_y,num_nodes,y_der_x, dx);
+	computeDerivatives_y_3D(i,j,k,gl_vals_y,num_nodes,y_der_y, dy);
+	computeDerivatives_z_3D(i,j,k,gl_vals_y,num_nodes,y_der_z, dz);
+
+	computeDerivatives_x_3D(i,j,k,gl_vals_z,num_nodes,z_der_x, dx);
+	computeDerivatives_y_3D(i,j,k,gl_vals_z,num_nodes,z_der_y, dy);
+	computeDerivatives_z_3D(i,j,k,gl_vals_z,num_nodes,z_der_z, dz);
+	
+	jacobian[id_xyz(k,j,i)]=x_der_x*(y_der_y*z_der_z-y_der_z*z_der_y)
+	  -x_der_y*(y_der_x*z_der_z-y_der_z*z_der_x)
+	  +x_der_z*(y_der_x*z_der_y-y_der_y*z_der_x);
+	
+	q_x[id_xyz(k,j,i)] = (1.0/jacobian[id_xyz(k,j,i)])*(y_der_y*z_der_z - z_der_y*y_der_z);
+	r_x[id_xyz(k,j,i)] = (1.0/jacobian[id_xyz(k,j,i)])*(z_der_x*y_der_z - y_der_x*z_der_z);
+	s_x[id_xyz(k,j,i)] = (1.0/jacobian[id_xyz(k,j,i)])*(y_der_x*z_der_y - z_der_x*y_der_y);
+	
+	q_y[id_xyz(k,j,i)] = (1.0/jacobian[id_xyz(k,j,i)])*(z_der_y*x_der_z - x_der_y*z_der_z);
+	r_y[id_xyz(k,j,i)] = (1.0/jacobian[id_xyz(k,j,i)])*(x_der_x*z_der_z - z_der_x*x_der_z);
+	s_y[id_xyz(k,j,i)] = (1.0/jacobian[id_xyz(k,j,i)])*(z_der_x*x_der_y - x_der_x*z_der_y);
+	
+	q_z[id_xyz(k,j,i)] = (1.0/jacobian[id_xyz(k,j,i)])*(x_der_y*y_der_z - y_der_y*x_der_z);
+	r_z[id_xyz(k,j,i)] = (1.0/jacobian[id_xyz(k,j,i)])*(y_der_x*x_der_z - x_der_x*y_der_z);
+	s_z[id_xyz(k,j,i)] = (1.0/jacobian[id_xyz(k,j,i)])*(x_der_x*y_der_y - y_der_x*x_der_y);
+
+      }
+    }
+  }
+
+  
 
 
-// }
+}
+

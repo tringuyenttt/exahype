@@ -406,7 +406,7 @@ void Elastodynamics::MyElastodynamicsSolver::coefficientMatrix(const double* con
 }
 
 
-void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBounaryFace, int faceIndex){
+void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
 
   constexpr int numberOfVariables  = MyElastodynamicsSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
@@ -574,7 +574,7 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
     // physical interface conditions
     
 
-    if (isBounaryFace) {
+    if (isBoundaryFace) {
       if (faceIndex == 0) {
 	
 	double r = 0.;

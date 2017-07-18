@@ -3,6 +3,9 @@
 #include "MyLinearSolver_Variables.h"
 
 #include "../../ExaHyPE/kernels/KernelUtils.h"
+#include "../../ExaHyPE/kernels/DGMatrices.h"
+
+#include "CurvilinearTransformation.h"
 
 tarch::logging::Log Linear::MyLinearSolver::_log( "Linear::MyLinearSolver" );
 
@@ -13,7 +16,208 @@ void Linear::MyLinearSolver::init(std::vector<std::string>& cmdlineargs) {
 
 exahype::solvers::ADERDGSolver::AdjustSolutionValue Linear::MyLinearSolver::useAdjustSolution(const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) const {
   // @todo Please implement/augment if required
-  return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PointWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
+  return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PatchWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
+}
+
+
+
+void Linear::MyLinearSolver::adjustPatchSolution(
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double t,
+      const double dt,
+      double* luh) {
+
+  constexpr int basisSize = MyLinearSolver::Order+1;
+  int num_nodes = basisSize;
+  int numberOfData=MyLinearSolver::NumberOfParameters+MyLinearSolver::NumberOfVariables;
+
+  int nx = 1/dx[0]*num_nodes;
+  int ny = 1/dx[1]*num_nodes;
+  int nz = 1/dx[2]*num_nodes;  
+
+
+  kernels::idx4 id_4(basisSize,basisSize,basisSize,numberOfData);
+  kernels::idx3 id_3(basisSize,basisSize,basisSize);
+
+  double* left_bnd_x = new double[ny*nz];
+  double* left_bnd_y = new double[ny*nz];
+  double* left_bnd_z = new double[ny*nz];  
+
+  double* right_bnd_x = new double[ny*nz];
+  double* right_bnd_y = new double[ny*nz];
+  double* right_bnd_z = new double[ny*nz];  
+
+  double* bottom_bnd_x = new double[nx*nz];
+  double* bottom_bnd_y = new double[nx*nz];
+  double* bottom_bnd_z = new double[nx*nz];  
+
+  double* top_bnd_x = new double[nx*nz];
+  double* top_bnd_y = new double[nx*nz];
+  double* top_bnd_z = new double[nx*nz];  
+
+  double* front_bnd_x = new double[nx*ny];
+  double* front_bnd_y = new double[nx*ny];
+  double* front_bnd_z = new double[nx*ny];  
+
+  double* back_bnd_x = new double[nx*ny];
+  double* back_bnd_y = new double[nx*ny];
+  double* back_bnd_z = new double[nx*ny];  
+  
+
+  double offset_x=cellCentre[0]-0.5*dx[0];
+  double offset_y=cellCentre[1]-0.5*dx[1];
+  double offset_z=cellCentre[2]-0.5*dx[2];  
+
+  double width_x=dx[0];
+  double width_y=dx[1];
+  double width_z=dx[2];     
+
+  getBoundaryCurves3D( num_nodes,
+  		       offset_x,  offset_y,  offset_z,
+  		       width_x,  width_y ,  width_z ,
+  		       left_bnd_x,  left_bnd_y,  left_bnd_z,
+  		       right_bnd_x,  right_bnd_y,  right_bnd_z,
+  		       bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
+  		       top_bnd_x,  top_bnd_y,  top_bnd_z,
+  		       front_bnd_x,  front_bnd_y,  front_bnd_z,
+  		       back_bnd_x,  back_bnd_y,  back_bnd_z);
+
+  kernels::idx2 id_xy(ny,nx);// back front
+  kernels::idx2 id_xz(nz,nx);// botton top
+  kernels::idx2 id_yz(nz,ny);//left right
+
+  double* curvilinear_x = new double[num_nodes*num_nodes*num_nodes];
+  double* curvilinear_y = new double[num_nodes*num_nodes*num_nodes];
+  double* curvilinear_z = new double[num_nodes*num_nodes*num_nodes];  
+
+  int i_m =  (offset_x-0.0)/width_x *num_nodes;
+  int j_m =  (offset_y-0.0)/width_y *num_nodes;
+  int k_m =  (offset_z-0.0)/width_z *num_nodes;  
+	
+  int i_p = i_m + num_nodes;
+  int j_p = j_m + num_nodes;
+  int k_p = k_m + num_nodes;   
+
+  
+  transFiniteInterpolation3D( nx,  ny,  nz,
+  			      k_m,  k_p ,
+  			      j_m,  j_p ,
+  			      i_m,  i_p ,
+  			      num_nodes,
+  			      left_bnd_x,
+  			      right_bnd_x,
+  			      bottom_bnd_x,
+  			      top_bnd_x,
+  			      front_bnd_x,
+  			      back_bnd_x,
+  			      curvilinear_x
+  			      );
+
+  transFiniteInterpolation3D( nx,  ny,  nz,
+  			      k_m,  k_p ,
+  			      j_m,  j_p ,
+  			      i_m,  i_p ,
+  			      num_nodes,
+  			      left_bnd_y,
+  			      right_bnd_y,
+  			      bottom_bnd_y,
+  			      top_bnd_y,
+  			      front_bnd_y,
+  			      back_bnd_y,
+  			      curvilinear_y
+  			      );
+
+  transFiniteInterpolation3D( nx,  ny,  nz,
+  			      k_m,  k_p ,
+  			      j_m,  j_p ,
+  			      i_m,  i_p ,
+  			      num_nodes,
+  			      left_bnd_z,
+  			      right_bnd_z,
+  			      bottom_bnd_z,
+  			      top_bnd_z,
+  			      front_bnd_z,
+  			      back_bnd_z,
+  			      curvilinear_z
+  			      );
+ 
+  double* gl_vals_x = new double[num_nodes*num_nodes*num_nodes];
+  double* gl_vals_y = new double[num_nodes*num_nodes*num_nodes];
+  double* gl_vals_z = new double[num_nodes*num_nodes*num_nodes];
+
+  double* jacobian = new double[num_nodes*num_nodes*num_nodes];
+
+  double* q_x = new double[num_nodes*num_nodes*num_nodes];
+  double* q_y = new double[num_nodes*num_nodes*num_nodes];
+  double* q_z = new double[num_nodes*num_nodes*num_nodes];
+  
+  double* r_x = new double[num_nodes*num_nodes*num_nodes];
+  double* r_y = new double[num_nodes*num_nodes*num_nodes];
+  double* r_z = new double[num_nodes*num_nodes*num_nodes];
+
+  double* s_x = new double[num_nodes*num_nodes*num_nodes];
+  double* s_y = new double[num_nodes*num_nodes*num_nodes];
+  double* s_z = new double[num_nodes*num_nodes*num_nodes];  
+  
+  
+  metricDerivativesAndJacobian3D(num_nodes,
+  				 curvilinear_x,  curvilinear_y,  curvilinear_z,
+  				 gl_vals_x,  gl_vals_y,  gl_vals_z,
+  				 q_x,  q_y,  q_z,
+  				 r_x,  r_y,  r_z,
+  				 s_x,  s_y,  s_z,				  
+  				 jacobian,
+  				 width_x,  width_y,  width_z
+  				 );
+
+  for (int k=0; k< num_nodes; k++){
+    for (int j=0; j< num_nodes; j++){
+      for (int i=0; i< num_nodes; i++){
+	double x= gl_vals_x[id_3(k,j,i)];
+	double y= gl_vals_y[id_3(k,j,i)];
+	double z= gl_vals_z[id_3(k,j,i)];	  
+
+	//Pressure
+	luh[id_4(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+	//luh[id_4(k,j,i,0)] = 0.1;
+	
+	// //Velocity
+	luh[id_4(k,j,i,1)]  = 0;
+	luh[id_4(k,j,i,2)]  = 0;
+	luh[id_4(k,j,i,3)]  = 0;
+
+	luh[id_4(k,j,i,4)]  = 1.0;   //rho
+	luh[id_4(k,j,i,5)]  = 1.484; //c	
+	  
+	luh[id_4(k,j,i,6)]  = jacobian[id_3(k,j,i)];
+
+	luh[id_4(k,j,i,7)]  = q_x[id_3(k,j,i)];
+	luh[id_4(k,j,i,8)]  = q_y[id_3(k,j,i)];
+	luh[id_4(k,j,i,9)]  = q_z[id_3(k,j,i)];
+	  
+	luh[id_4(k,j,i,10)] = r_x[id_3(k,j,i)];
+	luh[id_4(k,j,i,11)] = r_y[id_3(k,j,i)];
+	luh[id_4(k,j,i,12)] = r_z[id_3(k,j,i)];
+	  
+	luh[id_4(k,j,i,13)] = s_x[id_3(k,j,i)];
+	luh[id_4(k,j,i,14)] = s_y[id_3(k,j,i)];
+	luh[id_4(k,j,i,15)] = s_z[id_3(k,j,i)];
+	  
+	luh[id_4(k,j,i,16)] = gl_vals_x[id_3(k,j,i)];
+	luh[id_4(k,j,i,17)] = gl_vals_y[id_3(k,j,i)];
+	luh[id_4(k,j,i,18)] = gl_vals_z[id_3(k,j,i)];
+
+      }
+    }
+  }
+  
+  // //std::cout << jacobian[id_3(j,i)] << std::endl;
+	// // std::cout << q_x[id_xy(j,i)] << std::endl;
+	// // std::cout << q_y[id_xy(j,i)] << std::endl;
+	// // std::cout << r_x[id_xy(j,i)] << std::endl;	
+	// // std::cout << r_y[id_xy(j,i)] << std::endl;
+	// // std::cout <<  std::endl;
 }
 
 void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) {
@@ -33,8 +237,6 @@ void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const dou
   Q[ 1] = 0.0;
   Q[ 2] = 0.0;
   Q[ 3] = 0.0;   // Material parameters:
-  Q[ 4] = 1.0;   //rho
-  Q[ 5] = 1.484; //c
   Q[ 6] = 0.0;
   Q[ 7] = 0.0;
   Q[ 8] = 0.0;
@@ -76,18 +278,34 @@ void Linear::MyLinearSolver::flux(const double* const Q,double** F) {
   double v = Q[2];
   double w = Q[3];
 
+
+  double jacobian = Q[6];
+
+  double q_x=Q[7];
+  double q_y=Q[8];
+  double q_z=Q[9];
+
+  double r_x=Q[10];
+  double r_y=Q[11];
+  double r_z=Q[12];
+
+  double s_x=Q[13];
+  double s_y=Q[14];
+  double s_z=Q[15];
+
   
-  F[0][ 0] = -u;
+  
+  F[0][ 0] = -jacobian*(q_x*u+q_y*v+q_z*w);
   F[0][ 1] = 0.0;
   F[0][ 2] = 0.0;
   F[0][ 3] = 0.0;
 
-  F[1][ 0] = -v;
+  F[1][ 0] = -jacobian*(r_x*u+r_y*v+r_z*w);
   F[1][ 1] = 0.0;
   F[1][ 2] = 0.0;
   F[1][ 3] = 0.0;
 
-  F[2][ 0] = -w;
+  F[2][ 0] = -jacobian*(s_x*u+s_y*v+s_z*w);
   F[2][ 1] = 0.0;
   F[2][ 2] = 0.0;
   F[2][ 3] = 0.0;
@@ -96,38 +314,50 @@ void Linear::MyLinearSolver::flux(const double* const Q,double** F) {
 
 void Linear::MyLinearSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
 
-  double p_x = gradQ[0];  
-  double u_x = gradQ[1];
-  double v_x = gradQ[2];
-  double w_x = gradQ[3];
+  double p_q = gradQ[0];  
+  double u_q = gradQ[1];
+  double v_q = gradQ[2];
+  double w_q = gradQ[3];
 
-  double p_y = gradQ[4];  
-  double u_y = gradQ[5];
-  double v_y = gradQ[6];
-  double w_y = gradQ[7];
+  double p_r = gradQ[4];  
+  double u_r = gradQ[5];
+  double v_r = gradQ[6];
+  double w_r = gradQ[7];
 
-  double p_z = gradQ[8];  
-  double u_z = gradQ[9];
-  double v_z = gradQ[10];
-  double w_z = gradQ[11];    
+  double p_s = gradQ[8];  
+  double u_s = gradQ[9];
+  double v_s = gradQ[10];
+  double w_s = gradQ[11];
+
+
+  double jacobian = Q[6];
+
+  double q_x=Q[7];
+  double q_y=Q[8];
+  double q_z=Q[9];
+
+  double r_x=Q[10];
+  double r_y=Q[11];
+  double r_z=Q[12];
+
+  double s_x=Q[13];
+  double s_y=Q[14];
+  double s_z=Q[15];
   
-  //BgradQ[0]= -u_x;
   BgradQ[0]= 0;  
-  BgradQ[1]= -p_x;
-  BgradQ[2]= 0;
-  BgradQ[3]= 0;
+  BgradQ[1]= -q_x*p_q;
+  BgradQ[2]= -q_y*p_q;
+  BgradQ[3]= -q_z*p_q;
 
-  //BgradQ[4]=-v_y;
   BgradQ[4]=0;  
-  BgradQ[5]=0;
-  BgradQ[6]=-p_y;
-  BgradQ[7]=0;
+  BgradQ[5]=-r_x*p_r;
+  BgradQ[6]=-r_y*p_r;
+  BgradQ[7]=-r_z*p_r;
 
-  //BgradQ[8]=-w_z;
   BgradQ[8]=0;  
-  BgradQ[9]=0;
-  BgradQ[10]=0;
-  BgradQ[11]=-p_z; 
+  BgradQ[9] =-s_x*p_s;
+  BgradQ[10]=-s_y*p_s;
+  BgradQ[11]=-s_z*p_s;
 
 }
 
@@ -224,20 +454,21 @@ void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const
 
   double rho = Q[4];  
   double c   = Q[5];
+  double jacobian = Q[6];  
   double mu  = rho*c*c;
 
-  rhs[0]=   mu * rhs[0];
+  rhs[0]=mu/jacobian * rhs[0];
   rhs[1]=1/rho * rhs[1];
   rhs[2]=1/rho * rhs[2];
   rhs[3]=1/rho * rhs[3];
 
-  rhs[4]=  mu * rhs[4];
+  rhs[4]=mu/jacobian * rhs[4];
   rhs[5]=1/rho * rhs[5];
   rhs[6]=1/rho * rhs[6];
   rhs[7]=1/rho * rhs[7];
 
-  rhs[8]=   mu * rhs[8];
-  rhs[9]=1/rho * rhs[9];
+  rhs[8] =mu/jacobian * rhs[8];
+  rhs[9] =1/rho * rhs[9];
   rhs[10]=1/rho * rhs[10];
   rhs[11]=1/rho * rhs[11];
   
@@ -271,11 +502,10 @@ void Linear::MyLinearSolver::riemannSolver(double* FL,double* FR,const double* c
   double l_p[3]={0,0,0};  
   double l_m[3]={0,0,0};
 
-  double norm_p_qr=1.0;
-  double norm_m_qr=1.0;
-
   //std::cout<<isBoundaryFace<<std::endl;
   
+  double norm_p_qr=1.0;
+  double norm_m_qr=1.0;
 
   //std::cout<<isBoundaryFace<<std::endl;
 
@@ -290,76 +520,80 @@ void Linear::MyLinearSolver::riemannSolver(double* FL,double* FR,const double* c
       double rho_m=QL[idx_QLR(i,j,4)];
       double mu_m=c_m*c_m*rho_m;
 
-      // double qm_x=QL[idx_QLR(i,4)];
-      // double qm_y=QL[idx_QLR(i,5)];
-      // double rm_x=QL[idx_QLR(i,6)];
-      // double rm_y=QL[idx_QLR(i,7)];
-
-      // double qp_x=QR[idx_QLR(i,4)];
-      // double qp_y=QR[idx_QLR(i,5)];
-      // double rp_x=QR[idx_QLR(i,6)];
-      // double rp_y=QR[idx_QLR(i,7)];
+      double qm_x=QL[idx_QLR(i,j,7)];
+      double qm_y=QL[idx_QLR(i,j,8)];
+      double qm_z=QL[idx_QLR(i,j,9)];
       
-      // if (normalNonZeroIndex == 0){
-	
-      // 	norm_m_qr = std::sqrt(qm_x*qm_x + qm_y*qm_y);
-      // 	n_m[0] = qm_x/norm_m_qr;
-      // 	n_m[1] = qm_y/norm_m_qr;
+      double rm_x=QL[idx_QLR(i,j,10)];
+      double rm_y=QL[idx_QLR(i,j,11)];
+      double rm_z=QL[idx_QLR(i,j,12)];
+            
+      double sm_x=QL[idx_QLR(i,j,13)];
+      double sm_y=QL[idx_QLR(i,j,14)];
+      double sm_z=QL[idx_QLR(i,j,15)];
 
-      // 	norm_p_qr = std::sqrt(qp_x*qp_x + qp_y*qp_y);
-      // 	n_p[0] = qp_x/norm_p_qr;
-      // 	n_p[1] = qp_y/norm_p_qr;
-
-      // 	 m_m[0] = n_m[1];
-      // 	 m_m[1] =-n_m[0];
-
-      // 	 m_p[0] = n_p[1];
-      // 	 m_p[1] =-n_p[0];
-
-      // }
+      double qp_x=QR[idx_QLR(i,j,7)];
+      double qp_y=QR[idx_QLR(i,j,8)];
+      double qp_z=QR[idx_QLR(i,j,9)];
       
-      // if (normalNonZeroIndex == 1){
+      double rp_x=QR[idx_QLR(i,j,10)];
+      double rp_y=QR[idx_QLR(i,j,11)];
+      double rp_z=QR[idx_QLR(i,j,12)];
+            
+      double sp_x=QR[idx_QLR(i,j,13)];
+      double sp_y=QR[idx_QLR(i,j,14)];
+      double sp_z=QR[idx_QLR(i,j,15)];
 
-      // 	norm_m_qr = std::sqrt(rm_x*rm_x + rm_y*rm_y);
-      // 	n_m[0] = rm_x/norm_m_qr;
-      // 	n_m[1] = rm_y/norm_m_qr;
 
-      // 	norm_p_qr = std::sqrt(rp_x*rp_x + rp_y*rp_y);
-      // 	n_p[0] = rp_x/norm_p_qr;
-      // 	n_p[1] = rp_y/norm_p_qr;
-
-      // 	m_m[0] = n_m[1];
-      // 	m_m[1] =-n_m[0];
-
-      // 	m_p[0] = n_p[1];
-      // 	m_p[1] =-n_p[0];
+      
+      if (normalNonZeroIndex == 0){
 	
-      // 	// norm_qr = std::sqrt(r_x*r_x + r_y*r_y);
-      // 	// n[0] = r_x/norm_qr;
-      // 	// n[1] = r_y/norm_qr;
-      // }
+      	norm_m_qr = std::sqrt(qm_x*qm_x + qm_y*qm_y + qm_z*qm_z);
+      	n_m[0] = qm_x/norm_m_qr;
+      	n_m[1] = qm_y/norm_m_qr;
+      	n_m[2] = qm_z/norm_m_qr;	
 
-      for(int k = 0 ; k< 3 ;k++){
-	n_m[k] = n[k];
-	n_p[k] = n[k];
+      	norm_p_qr = std::sqrt(qp_x*qp_x + qp_y*qp_y  + qp_z*qp_z );
+      	n_p[0] = qp_x/norm_p_qr;
+      	n_p[1] = qp_y/norm_p_qr;
+      	n_p[2] = qp_z/norm_p_qr;	
       }
+      
+      if (normalNonZeroIndex == 1){
+
+      	norm_m_qr = std::sqrt(rm_x*rm_x + rm_y*rm_y + rm_z*rm_z);
+      	n_m[0] = rm_x/norm_m_qr;
+      	n_m[1] = rm_y/norm_m_qr;
+      	n_m[2] = rm_z/norm_m_qr;	
+
+      	norm_p_qr = std::sqrt(rp_x*rp_x + rp_y*rp_y  + rp_z*rp_z);
+      	n_p[0] = rp_x/norm_p_qr;
+      	n_p[1] = rp_y/norm_p_qr;
+      	n_p[2] = rp_z/norm_p_qr;	
+      }
+
+      if (normalNonZeroIndex == 2){
+
+      	norm_m_qr = std::sqrt(sm_x*sm_x + sm_y*sm_y + sm_z*sm_z);
+      	n_m[0] = sm_x/norm_m_qr;
+      	n_m[1] = sm_y/norm_m_qr;
+      	n_m[2] = sm_z/norm_m_qr;	
+
+      	norm_p_qr = std::sqrt(sp_x*sp_x + sp_y*sp_y  + sp_z*sp_z);
+      	n_p[0] = sp_x/norm_p_qr;
+      	n_p[1] = sp_y/norm_p_qr;
+      	n_p[2] = sp_z/norm_p_qr;	
+      }
+
+
+      // for(int k = 0 ; k< 3 ;k++){
+      // 	n_m[k] = n[k];
+      // 	n_p[k] = n[k];
+      // }
 
       localBasis(n_p, m_p, l_p, 3);
       localBasis(n_m, m_m, l_m, 3);     
 	
-
-      // 	norm_p_qr = std::sqrt(rp_x*rp_x + rp_y*rp_y);
-      // 	n_p[0] = rp_x/norm_p_qr;
-      // 	n_p[1] = rp_y/norm_p_qr;
-
-      // 	m_m[0] = n_m[1];
-      // 	m_m[1] =-n_m[0];
-
-      // 	m_p[0] = n_p[1];
-      // 	m_p[1] =-n_p[0];
-
-      
-      
       double v_m=QL[idx_QLR(i,j,1)]*n_m[0]+QL[idx_QLR(i,j,2)]*n_m[1]+QL[idx_QLR(i,j,3)]*n_m[2];
       double v_p=QR[idx_QLR(i,j,1)]*n_p[0]+QR[idx_QLR(i,j,2)]*n_p[1]+QR[idx_QLR(i,j,3)]*n_p[2];
 
@@ -402,7 +636,7 @@ void Linear::MyLinearSolver::riemannSolver(double* FL,double* FR,const double* c
       
 	if (faceIndex == 3) {
 	
-	  double r = 1.;
+	  double r = 0.;
 	
 	  riemannSolver_BCn(v_p, sigma_p, z_p, r, v_hat_p, sigma_hat_p);
 	  riemannSolver_BCn(v_m, sigma_m, z_m, r, v_hat_m, sigma_hat_m);
@@ -433,9 +667,6 @@ void Linear::MyLinearSolver::riemannSolver(double* FL,double* FR,const double* c
       else {
 	riemannSolver_Nodal(v_p,v_m, sigma_p, sigma_m, z_p , z_m, v_hat_p , v_hat_m, sigma_hat_p, sigma_hat_m);      
       }
-      
-
-
 
 
       FR[idx_FLR(i,j,0)] = -norm_p_qr*0.5*mu_p*((v_p-v_hat_p) - (sigma_p-sigma_hat_p)/z_p);

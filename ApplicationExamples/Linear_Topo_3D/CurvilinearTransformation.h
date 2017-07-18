@@ -43,22 +43,39 @@ void transFiniteInterpolation3D(int mx, int my, int mz,
 				double* top_bnd,
 				double* front_bnd,
 				double* back_bnd,
-				double* curvilinear, int dim
+				double* curvilinear
 				);
 
 
 void interpolate(double x, double y, double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes, double& result);
 
+void interpolate3D(double x, double y, double z, double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes,double& result);
+
 double lagrangeBasis(double x,double* points,int i,int num_points);
 
 void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes, double* results);
+
+void getValuesAtQuadNodes3D(double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes, double* results);
 
 void computeDerivatives_x(int i, int j, double* values , int num_nodes, double& der_x, double dx);
 
 void computeDerivatives_y(int i, int j, double* values , int num_nodes, double& der_y, double dy);
 
+void computeDerivatives_x_3D(int i, int j, int k, double* values , int num_nodes, double& der_x, double dx);
+void computeDerivatives_y_3D(int i, int j, int k, double* values , int num_nodes, double& der_y, double dy);
+void computeDerivatives_z_3D(int i, int j, int k ,double* values , int num_nodes, double& der_z, double dz);
+
+
 void metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* curvilinear_y,double* gl_vals_x,double* gl_vals_y,double* q_x,double* q_y,double* r_x,double* r_y,double* jacobian, double dx, double dy);
 
-//  void test();
 
-//};
+void metricDerivativesAndJacobian3D(int num_nodes,
+				  double* curvilinear_x, double* curvilinear_y, double* curvilinear_z,
+				  double* gl_vals_x, double* gl_vals_y, double* gl_vals_z,
+				  double* q_x, double* q_y, double* q_z,
+				  double* r_x, double* r_y, double* r_z,
+				  double* s_x, double* s_y, double* s_z,				  
+				  double* jacobian,
+				  double dx, double dy, double dz
+				    );
+

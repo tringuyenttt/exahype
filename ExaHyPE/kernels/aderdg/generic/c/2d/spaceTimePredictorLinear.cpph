@@ -223,7 +223,7 @@ void spaceTimePredictorLinear(SolverType& solver,
             lQi[idx_lQi(i + 1, k, l, n)] -= lFi[idx_lFi(i, k, l, m, n)];
           }
         }
-	if(useSorce){
+	if(useSource){
 	  int m = 4;
 	  for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
 	    lQi[idx_lQi(i + 1, k, l, n)] -= lFi[idx_lFi(i, k, l, m, n)];

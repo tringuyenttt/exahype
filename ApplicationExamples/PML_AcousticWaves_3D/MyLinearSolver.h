@@ -55,7 +55,6 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      * \return true if the solution has to be adjusted.
      */
     AdjustSolutionValue useAdjustSolution(const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) const override;
-
     
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
@@ -70,14 +69,6 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      *                         as C array (already allocated).
      */
     void adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) override;
-
-    void adjustPatchSolution(
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double t,
-      const double dt,
-      double* luh) override;
-
     
     /**
      * Compute the flux tensor.
@@ -98,9 +89,9 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
     
     bool useNonConservativeProduct() const override {return true;}
     bool useConservativeFlux()       const override {return true;}
-    bool useAlgebraicSource()        const override {return false;}
+    bool useAlgebraicSource()        const override {return true;}
     bool useMaterialParameterMatrix()const override {return true;}
-    bool usePointSource()            const override {return false;}
+    bool usePointSource()            const override {return true;}
 
     
     /**
