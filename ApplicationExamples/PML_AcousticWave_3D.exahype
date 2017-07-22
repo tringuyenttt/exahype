@@ -22,15 +22,15 @@ exahype-project  Linear
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/PML_AcousticWaves_3D
+  output-directory const  = ./ApplicationExamples/PML_AcousticWaved_3D_copy
   architecture const      = noarch
   log-file                = mylogfile.log
 
   computational-domain
     dimension const          = 3
-    width                    = 9.0, 9.0, 9.0
+    width                    = 5.0, 5.0, 5.0
     offset                   = 0.0, 0.0, 0.0
-    end-time                 = 5.0
+    end-time                 = 10.0
   end computational-domain
 
   optimisation
@@ -56,8 +56,8 @@ exahype-project  Linear
 
     plot vtu::Legendre::cells::ascii ConservedQuantitiesWriter
       variables const = 4
-      time            = 0.0
-      repeat          = 0.1
+      time            = 0.0000
+      repeat          = 0.00001
       output          = ./conserved
       //select          = x:0.0,y:0.0
     end plot
@@ -94,7 +94,7 @@ exahype-project  Linear
       time            = 0.0
       repeat          = 0.001
       output          = ./linear
-      select          = x:5.5,y:4.5,z:4.5
+      select          = x:3.5,y:2.5,z:2.5
     end plot
     
 

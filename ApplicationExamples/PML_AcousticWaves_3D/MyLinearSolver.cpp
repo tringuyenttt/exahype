@@ -40,27 +40,27 @@ void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const dou
   Q[ 3] = 0.0;
   Q[ 4] = 0.0;
   Q[ 5] = 0.0;   // Material parameters:
-  Q[ 6] = 2.7;   // density (g/cm^3)
-  Q[ 7] = 3.434;  // acoustic wave speed (km/s)
-  Q[ 8] = 0.0; //*(x[0]-x_0[0])*(x[0]-x_0[0]);
+  Q[ 6] = 1.0;   // density (g/cm^3)
+  Q[ 7] = 1.484;   // acoustic wave speed (km/s)
+  Q[ 8] = 0.0;  //*(x[0]-x_0[0])*(x[0]-x_0[0]);
   Q[ 9] = 0.0;
   Q[10] = 0.0;
 
   double c = Q[7];
 
-  double dpml = 1.0;
-  int n = 2;
+  double dpml = 0.55;
+  int n = 1;
   double tol = 1e-3; 
   
-  double d0 = 0.4*(n+1)*c/(2*dpml)* log(1/tol);
+  double d0 = 0.5*(n+1)*c/(2*dpml)* log(1/tol);
 
-  double xa = 1.0;
-  double xb = 8.0;
+  double xa = 0.55;
+  double xb = 4.45;
 
   // std::cout<<d0<<std::endl;
 
   // std::exit(-1);
-  //double d0 = 3.0;
+  //double d0 = 0.0;
   
   if (x[0] < xa){
     Q[ 8] = d0*pow((xa-x[0])/dpml, n);
@@ -104,7 +104,7 @@ void Linear::MyLinearSolver::eigenvalues(const double* const Q,const int d,doubl
   // @todo Please implement/augment if required
   double c   =  Q[7];
   
-  lambda[ 0] = c;
+  lambda[ 0] =  c;
   lambda[ 1] = -c;
   lambda[ 2] = 0.0;
   lambda[ 3] = 0.0;
@@ -292,14 +292,18 @@ void Linear::MyLinearSolver::pointSource(const double* const x,const double t,co
   double sigma = 0.1149;
   double t0 = 0.7;
   double f = 0.0;
-  double M0 = 1.0;
+  double c = 1.484;
+  double rho = 1.0;
+  double M0 = 1.;
+
+  
   
   
   f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
 
-  x0[0] = 3.;
-  x0[1] = 4.5;
-  x0[2] = 4.5;
+  x0[0] = 1.5;
+  x0[1] = 2.5;
+  x0[2] = 2.5;
   
   forceVector[0] = 1.*f;
   forceVector[1] = 0.0;

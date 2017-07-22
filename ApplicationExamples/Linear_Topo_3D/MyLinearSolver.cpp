@@ -72,7 +72,6 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   double width_x=dx[0];
   double width_y=dx[1];
   double width_z=dx[2];     
-
   getBoundaryCurves3D( num_nodes,
   		       offset_x,  offset_y,  offset_z,
   		       width_x,  width_y ,  width_z ,
@@ -83,6 +82,17 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   		       front_bnd_x,  front_bnd_y,  front_bnd_z,
   		       back_bnd_x,  back_bnd_y,  back_bnd_z);
 
+  // getBoundaryCurves3D_fixedTopFace( num_nodes,
+  // 				    offset_x,  offset_y,  offset_z,
+  // 		       width_x,  width_y ,  width_z ,
+  // 		       left_bnd_x,  left_bnd_y,  left_bnd_z,
+  // 		       right_bnd_x,  right_bnd_y,  right_bnd_z,
+  // 		       bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
+  // 		       top_bnd_x,  top_bnd_y,  top_bnd_z,
+  // 		       front_bnd_x,  front_bnd_y,  front_bnd_z,
+  // 		       back_bnd_x,  back_bnd_y,  back_bnd_z);
+
+
   kernels::idx2 id_xy(ny,nx);// back front
   kernels::idx2 id_xz(nz,nx);// botton top
   kernels::idx2 id_yz(nz,ny);//left right
@@ -91,9 +101,9 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   double* curvilinear_y = new double[num_nodes*num_nodes*num_nodes];
   double* curvilinear_z = new double[num_nodes*num_nodes*num_nodes];  
 
-  int i_m =  (offset_x-0.0)/width_x *num_nodes;
-  int j_m =  (offset_y-0.0)/width_y *num_nodes;
-  int k_m =  (offset_z-0.0)/width_z *num_nodes;  
+  int i_m =  offset_x/width_x *num_nodes;
+  int j_m =  offset_y/width_y *num_nodes;
+  int k_m =  offset_z/width_z *num_nodes;  
 	
   int i_p = i_m + num_nodes;
   int j_p = j_m + num_nodes;
@@ -105,6 +115,7 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   			      j_m,  j_p ,
   			      i_m,  i_p ,
   			      num_nodes,
+			      width_x,width_y,width_z,
   			      left_bnd_x,
   			      right_bnd_x,
   			      bottom_bnd_x,
@@ -119,6 +130,7 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   			      j_m,  j_p ,
   			      i_m,  i_p ,
   			      num_nodes,
+			      width_x,width_y,width_z,
   			      left_bnd_y,
   			      right_bnd_y,
   			      bottom_bnd_y,
@@ -128,11 +140,14 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   			      curvilinear_y
   			      );
 
+  //  double right_bnd_z_block = right_bnd_z[k_m:k_p]
+  
   transFiniteInterpolation3D( nx,  ny,  nz,
   			      k_m,  k_p ,
   			      j_m,  j_p ,
   			      i_m,  i_p ,
   			      num_nodes,
+			      width_x,width_y,width_z,			      
   			      left_bnd_z,
   			      right_bnd_z,
   			      bottom_bnd_z,
@@ -141,7 +156,8 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   			      back_bnd_z,
   			      curvilinear_z
   			      );
- 
+
+  
   double* gl_vals_x = new double[num_nodes*num_nodes*num_nodes];
   double* gl_vals_y = new double[num_nodes*num_nodes*num_nodes];
   double* gl_vals_z = new double[num_nodes*num_nodes*num_nodes];
@@ -159,7 +175,19 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   double* s_x = new double[num_nodes*num_nodes*num_nodes];
   double* s_y = new double[num_nodes*num_nodes*num_nodes];
   double* s_z = new double[num_nodes*num_nodes*num_nodes];  
-  
+
+
+  // std::cout << offset_x <<"," << offset_y <<"," << offset_z <<"," <<std::endl;
+  // for (int k=0; k< num_nodes; k++){
+  //   for (int j=0; j< num_nodes; j++){
+  //     for (int i=0; i< num_nodes; i++){
+  // 	std::cout << i <<"," << j<<"," << k << " :" << curvilinear_x[id_3(k,j,i)] << std::endl;    
+  // 	std::cout << i <<"," << j<<"," << k << " :" << curvilinear_y[id_3(k,j,i)] << std::endl;  
+  // 	std::cout << i <<"," << j<<"," << k << " :" << curvilinear_z[id_3(k,j,i)] << std::endl;
+  //     }
+  //   }
+  // }
+
   
   metricDerivativesAndJacobian3D(num_nodes,
   				 curvilinear_x,  curvilinear_y,  curvilinear_z,
@@ -171,12 +199,22 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   				 width_x,  width_y,  width_z
   				 );
 
+
   for (int k=0; k< num_nodes; k++){
     for (int j=0; j< num_nodes; j++){
       for (int i=0; i< num_nodes; i++){
+
+
+	
 	double x= gl_vals_x[id_3(k,j,i)];
 	double y= gl_vals_y[id_3(k,j,i)];
-	double z= gl_vals_z[id_3(k,j,i)];	  
+	double z= gl_vals_z[id_3(k,j,i)];
+
+
+	std::cout << std::endl;	
+	std::cout <<"x" << x -(offset_x+width_x*kernels::gaussLegendreNodes[num_nodes-1][i]) << std::endl;
+	std::cout <<"y" << y - (offset_y+width_y*kernels::gaussLegendreNodes[num_nodes-1][j]) << std::endl;
+	std::cout <<"z" << z - (offset_z+width_z*kernels::gaussLegendreNodes[num_nodes-1][k]) << std::endl;		
 
 	//Pressure
 	luh[id_4(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);

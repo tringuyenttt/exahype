@@ -58,6 +58,11 @@ void spaceTimePredictorLinear(SolverType& solver,
    idx5 idx_PSi(basisSize + 1, basisSize, basisSize, basisSize, numberOfVariables);
    idx5 idx_lQi(basisSize + 1, basisSize, basisSize, basisSize,numberOfData);
 
+   double* lFi = tempSpaceTimeFluxUnknowns[0]; // size: basisSize4 * DIMENSIONS * numberOfData
+   std::fill_n(lFi,basisSize4*(2*DIMENSIONS+1)*numberOfVariables, 0.0); // zero out sources; We should distinguish between Linear and NonLinear solvers
+   idx6 idx_lFi(basisSize, basisSize, basisSize, basisSize, 2*DIMENSIONS+1, numberOfVariables);
+
+
    // The zeroth time derivative (time dof number 1) is the initial condition
    // lqh(l,k,j,i,1) += luh(l,k,j,i)
    {
@@ -75,34 +80,70 @@ void spaceTimePredictorLinear(SolverType& solver,
 
    // Add point source to the zeroth time derivative
    if(usePointSource){
-   for (int j = 0; j < basisSize; j++) {
-     for (int k = 0; k < basisSize; k++) {
-       for (int l = 0; l < basisSize; l++) {
-         for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
-           double sum = 0.0;
-           for (int n = 1; n <  basisSize+1; n++) {
-             sum = sum +   gaussLegendreWeights[order][n-1]*PSi[idx_PSi(n, j, k, l, m)];
-           }
-           lQi[idx_lQi(0, j, k, l, m)] += dt*sum; 
-         }
+     for (int j = 0; j < basisSize; j++) {
+       for (int k = 0; k < basisSize; k++) {
+	 for (int l = 0; l < basisSize; l++) {
+	   for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
+	     double sum = 0.0;
+	     for (int n = 1; n <  basisSize+1; n++) {
+	       sum = sum +   gaussLegendreWeights[order][n-1]*PSi[idx_PSi(n, j, k, l, m)];
+	     }
+	     lQi[idx_lQi(0, j, k, l, m)] += dt*sum; 
+	   }
+	 }
        }
      }
-   }
 
-   // Add point source to the first time derivative
-   for (int j = 0; j < basisSize; j++) {
-     for (int k = 0; k < basisSize; k++) {
-       for (int l = 0; l < basisSize; l++) {
-         for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
-           lQi[idx_lQi(1, j, k, l, n)] += PSi[idx_PSi(0, j, k, l, n)];
-         }
+     // Add point source to the first time derivative
+     for (int j = 0; j < basisSize; j++) {
+       for (int k = 0; k < basisSize; k++) {
+	 for (int l = 0; l < basisSize; l++) {
+	   for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
+	     lQi[idx_lQi(1, j, k, l, n)] += PSi[idx_PSi(0, j, k, l, n)];
+	   }
+	 }
        }
      }
-   }
-   }
-   double* lFi = tempSpaceTimeFluxUnknowns[0]; // size: basisSize4 * DIMENSIONS * numberOfData
+
+
+     for (int i = 2; i < basisSize; i++) {
+       //int i = 2;
+       //compute i-th derivative in time of point source
+       for(int t = 1; t < basisSize + 1; t ++ ){
+	 for (int j = 0; j < basisSize; j++) {
+	   for (int k = 0; k < basisSize; k++) {
+	     for (int l = 0; l < basisSize; l++) {
+	       for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
+		 for (int s = 1; s < basisSize+1; s++) {
+		   lFi[idx_lFi(t-1, j, k, l, 0, n)] += PSi[idx_PSi(s, j, k , l ,n)]*
+		     kernels::dudx[order][t-1][s-1] * 1.0/dt;
+		 } //s
+	       } //n
+	     } //l
+	   } //k
+	 }//j
+       } //t
+
+       //   //project derivative on to t_n
+       for(int t = 1; t < basisSize + 1; t ++ ){
+	 for (int j = 0; j < basisSize; j++) {
+	   for (int k = 0; k < basisSize; k++) {
+	     for (int l = 0; l < basisSize; l++) {
+	       for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
+		 lQi[idx_lQi(i, j, k, l, n)] += std::pow(-1,i+1) * lFi[idx_lFi(t-1, j, k, l, 0, n)]*kernels::FLCoeff[order][t-1];
+		 //store i-th derivative in PSi
+		 //		 PSi[idx_PSi(t,j,k,l,n)] = lFi[idx_lFi(t-1, j, k, l, 0, n)];
+	       } //n
+	     } //l
+	   } //k
+         } //j
+       } // t
+       std::fill_n(lFi,basisSize4*(2*DIMENSIONS+1)*numberOfVariables, 0.0); // zero out sources; We should distinguish between Linear and NonLinear solvers
+     } // i
+   } //usePointSource
+
    std::fill_n(lFi,basisSize4*(2*DIMENSIONS+1)*numberOfVariables, 0.0); // zero out sources; We should distinguish between Linear and NonLinear solvers
-   idx6 idx_lFi(basisSize, basisSize, basisSize, basisSize, 2*DIMENSIONS+1, numberOfVariables);
+
 
    // spatial gradient of q
    double* gradQ = tempSpaceTimeFluxUnknowns[1]; // size: basisSize4 * DIMENSIONS * numberOfData

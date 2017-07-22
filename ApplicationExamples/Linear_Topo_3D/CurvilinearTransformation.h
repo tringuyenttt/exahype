@@ -27,16 +27,30 @@ void getBoundaryCurves3D(int num_points,
 			 double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
 			 double* back_bnd_x, double* back_bnd_y, double* back_bnd_z);
 
+void getBoundaryCurves3D_fixedTopFace(int num_points,
+				      double offset_x, double offset_y, double offset_z,
+				      double width_x, double width_y , double width_z ,
+				      double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
+				      double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
+				      double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
+				      double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
+				      double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
+				      double* back_bnd_x, double* back_bnd_y, double* back_bnd_z);
+
+
 
 //void transFiniteInterpolation( int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y, double* curvilinear_x , double* curvilinear_y );
 
 void transFiniteInterpolation(int mx, int my, int j_m, int j_p, int i_m, int i_p, int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y, double* curvilinear_x , double* curvilinear_y );
+
+void transFiniteInterpolation_singleCoordinate(int mx, int my, double* left_bnd, double* right_bnd, double* bottom_bnd, double* top_bnd, double* curvilinear);
 
 void transFiniteInterpolation3D(int mx, int my, int mz,
 				int k_m, int k_p ,
 				int j_m, int j_p ,
 				int i_m, int i_p ,
 				int num_points,
+				double width_x, double width_y, double width_z,
 				double* left_bnd,
 				double* right_bnd,
 				double* bottom_bnd,
@@ -46,6 +60,11 @@ void transFiniteInterpolation3D(int mx, int my, int mz,
 				double* curvilinear
 				);
 
+
+void getInterpolatedFace_fromBottomAndTop( int nx, int ny, int nz, int face,
+					   double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
+					   double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
+					   double* face_x, double* face_y , double* face_z);
 
 void interpolate(double x, double y, double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes, double& result);
 
