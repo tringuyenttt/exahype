@@ -62,6 +62,11 @@ void spaceTimePredictorLinear(SolverType& solver,
    std::fill_n(lFi,basisSize4*(2*DIMENSIONS+1)*numberOfVariables, 0.0); // zero out sources; We should distinguish between Linear and NonLinear solvers
    idx6 idx_lFi(basisSize, basisSize, basisSize, basisSize, 2*DIMENSIONS+1, numberOfVariables);
 
+   double* gradQ = tempSpaceTimeFluxUnknowns[1]; // size: basisSize4 * DIMENSIONS * numberOfData
+   std::memset(gradQ, 0,
+       basisSize4 * DIMENSIONS * numberOfVariables * sizeof(double));
+   idx6 idx_gradQ(basisSize, basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables);
+
 
    // The zeroth time derivative (time dof number 1) is the initial condition
    // lqh(l,k,j,i,1) += luh(l,k,j,i)
@@ -94,6 +99,23 @@ void spaceTimePredictorLinear(SolverType& solver,
        }
      }
 
+     // copy the source vector at the quadrature nodes  into the temporary array gradQ
+     for (int n = 1; n <  basisSize+1; n++) {
+       for (int j = 0; j < basisSize; j++) {
+	 for (int k = 0; k < basisSize; k++) {
+	   for (int l = 0; l < basisSize; l++) {
+	     for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
+	       
+	       gradQ[idx_gradQ(n-1, j, k, l, 0, m)] = PSi[idx_PSi(n, j, k, l, m)];
+	     }
+	     
+	   }
+	 }
+       }
+     }
+
+      
+
      // Add point source to the first time derivative
      for (int j = 0; j < basisSize; j++) {
        for (int k = 0; k < basisSize; k++) {
@@ -106,8 +128,9 @@ void spaceTimePredictorLinear(SolverType& solver,
      }
 
 
+    
      for (int i = 2; i < basisSize; i++) {
-       //int i = 2;
+
        //compute i-th derivative in time of point source
        for(int t = 1; t < basisSize + 1; t ++ ){
 	 for (int j = 0; j < basisSize; j++) {
@@ -115,7 +138,7 @@ void spaceTimePredictorLinear(SolverType& solver,
 	     for (int l = 0; l < basisSize; l++) {
 	       for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
 		 for (int s = 1; s < basisSize+1; s++) {
-		   lFi[idx_lFi(t-1, j, k, l, 0, n)] += PSi[idx_PSi(s, j, k , l ,n)]*
+		   lFi[idx_lFi(t-1, j, k, l, 0, n)] +=  gradQ[idx_gradQ(t-1, j, k, l, 0, n)]*
 		     kernels::dudx[order][t-1][s-1] * 1.0/dt;
 		 } //s
 	       } //n
@@ -125,31 +148,47 @@ void spaceTimePredictorLinear(SolverType& solver,
        } //t
 
        //   //project derivative on to t_n
+       for (int j = 0; j < basisSize; j++) {
+	 for (int k = 0; k < basisSize; k++) {
+	   for (int l = 0; l < basisSize; l++) {
+	     for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
+	       double sum = 0.0;
+	       for(int t = 1; t < basisSize + 1; t ++ ){
+		 
+		 sum = sum + lFi[idx_lFi(t-1, j, k, l, 0, n)]*kernels::FLCoeff[order][t-1];
+		 
+	       } //t
+	       lQi[idx_lQi(i, j, k, l, n)] = sum;
+	     } //n
+	   } //l
+         } //k
+       } // j
+
+       //   //store i-th derivative in gradQ
        for(int t = 1; t < basisSize + 1; t ++ ){
 	 for (int j = 0; j < basisSize; j++) {
 	   for (int k = 0; k < basisSize; k++) {
 	     for (int l = 0; l < basisSize; l++) {
 	       for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
-		 lQi[idx_lQi(i, j, k, l, n)] += std::pow(-1,i+1) * lFi[idx_lFi(t-1, j, k, l, 0, n)]*kernels::FLCoeff[order][t-1];
-		 //store i-th derivative in PSi
-		 //		 PSi[idx_PSi(t,j,k,l,n)] = lFi[idx_lFi(t-1, j, k, l, 0, n)];
+		 //
+		  gradQ[idx_gradQ(t-1, j, k, l, 0, n)] = lFi[idx_lFi(t-1, j, k, l, 0, n)];
 	       } //n
 	     } //l
 	   } //k
          } //j
        } // t
        std::fill_n(lFi,basisSize4*(2*DIMENSIONS+1)*numberOfVariables, 0.0); // zero out sources; We should distinguish between Linear and NonLinear solvers
-     } // i
+       } // i
    } //usePointSource
 
    std::fill_n(lFi,basisSize4*(2*DIMENSIONS+1)*numberOfVariables, 0.0); // zero out sources; We should distinguish between Linear and NonLinear solvers
 
 
    // spatial gradient of q
-   double* gradQ = tempSpaceTimeFluxUnknowns[1]; // size: basisSize4 * DIMENSIONS * numberOfData
+   //double* gradQ = tempSpaceTimeFluxUnknowns[1]; // size: basisSize4 * DIMENSIONS * numberOfData
    std::memset(gradQ, 0,
        basisSize4 * DIMENSIONS * numberOfVariables * sizeof(double));
-   idx6 idx_gradQ(basisSize, basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables);
+   //idx6 idx_gradQ(basisSize, basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables);
 
    // For linear PDE, the fastest space-time predictor is the good old
    // Cauchy-Kovalewski procedure
