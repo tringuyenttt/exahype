@@ -77,18 +77,8 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   double width_y=dx[1];
   double width_z=dx[2];
   
-  getBoundaryCurves3D( num_nodes,
-  		       offset_x,  offset_y,  offset_z,
-  		       width_x,  width_y ,  width_z ,
-  		       left_bnd_x,  left_bnd_y,  left_bnd_z,
-  		       right_bnd_x,  right_bnd_y,  right_bnd_z,
-  		       bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
-  		       top_bnd_x,  top_bnd_y,  top_bnd_z,
-  		       front_bnd_x,  front_bnd_y,  front_bnd_z,
-  		       back_bnd_x,  back_bnd_y,  back_bnd_z);
-
-  // getBoundaryCurves3D_fixedTopFace( num_nodes,
-  // 				    offset_x,  offset_y,  offset_z,
+  // getBoundaryCurves3D( num_nodes,
+  // 		       offset_x,  offset_y,  offset_z,
   // 		       width_x,  width_y ,  width_z ,
   // 		       left_bnd_x,  left_bnd_y,  left_bnd_z,
   // 		       right_bnd_x,  right_bnd_y,  right_bnd_z,
@@ -96,6 +86,16 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   // 		       top_bnd_x,  top_bnd_y,  top_bnd_z,
   // 		       front_bnd_x,  front_bnd_y,  front_bnd_z,
   // 		       back_bnd_x,  back_bnd_y,  back_bnd_z);
+
+  getBoundaryCurves3D_fixedTopFace( num_nodes,
+  				    offset_x,  offset_y,  offset_z,
+  		       width_x,  width_y ,  width_z ,
+  		       left_bnd_x,  left_bnd_y,  left_bnd_z,
+  		       right_bnd_x,  right_bnd_y,  right_bnd_z,
+  		       bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
+  		       top_bnd_x,  top_bnd_y,  top_bnd_z,
+  		       front_bnd_x,  front_bnd_y,  front_bnd_z,
+  		       back_bnd_x,  back_bnd_y,  back_bnd_z);
 
 
   kernels::idx2 id_xy(ny,nx); // back front
@@ -248,12 +248,12 @@ void Linear::MyLinearSolver::adjustPatchSolution(
 	double z= gl_vals_z[id_3(k,j,i)];
 
 
-	// std::cout << std::endl;	
-	// std::cout <<"x" << x - (offset_x+width_x*kernels::gaussLegendreNodes[num_nodes-1][i]) << std::endl;
-	// std::cout <<"y" << y - (offset_y+width_y*kernels::gaussLegendreNodes[num_nodes-1][j]) << std::endl;
-	// std::cout <<"z" << z - (offset_z+width_z*kernels::gaussLegendreNodes[num_nodes-1][k]) << std::endl;
+	std::cout << std::endl;	
+	std::cout <<"x" << x - (offset_x+width_x*kernels::gaussLegendreNodes[num_nodes-1][i]) << std::endl;
+	std::cout <<"y" << y - (offset_y+width_y*kernels::gaussLegendreNodes[num_nodes-1][j]) << std::endl;
+	std::cout <<"z" << z - (offset_z+width_z*kernels::gaussLegendreNodes[num_nodes-1][k]) << std::endl;
 
-	// std::cout << std::endl;	
+	std::cout << std::endl;	
 
 	//Pressure
 	luh[id_4(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
@@ -704,7 +704,7 @@ void Linear::MyLinearSolver::riemannSolver(double* FL,double* FR,const double* c
       
 	if (faceIndex == 2) {
 	
-	  double r = 0.;
+	  double r = 1.;
 	
 	  riemannSolver_BC0(v_p, sigma_p, z_p, r, v_hat_p, sigma_hat_p);
 	  riemannSolver_BC0(v_m, sigma_m, z_m, r, v_hat_m, sigma_hat_m);
