@@ -9,7 +9,6 @@
 // }
 
 
-
 void getBoundaryCurves3D(int num_points,
 			 double offset_x, double offset_y, double offset_z,
 			 double width_x, double width_y , double width_z ,
@@ -24,24 +23,26 @@ void getBoundaryCurves3D(int num_points,
   
   double pi = 3.14159265359;
 
-  int num_elt_x=1/width_x;
-  int num_elt_y=1/width_y;
-  int num_elt_z=1/width_z;
+  int num_elt_x= std::ceil(1/width_x);
+  int num_elt_y= std::ceil(1/width_y);
+  int num_elt_z= std::ceil(1/width_z);
 
-  int nx = 1/width_x*num_points;
-  int ny = 1/width_y*num_points;
-  int nz = 1/width_z*num_points;  
+  int nx = num_elt_x*(num_points-1) + 1;
+  int ny = num_elt_y*(num_points-1) + 1;
+  int nz = num_elt_z*(num_points-1) + 1;  
   
   double dx= width_x/(num_points-1);
   double dy= width_y/(num_points-1);
   double dz= width_z/(num_points-1);
 
-  std::cout << nx  <<" " << ny  <<" "  << nz << std::endl;
-  std::cout << dx  <<" " << dy  <<" "  << dz << std::endl;
+  // std::cout << nx  <<" " << ny  <<" "  << nz << std::endl;
+  // std::cout << dx  <<" " << dy  <<" "  << dz << std::endl;
+
+  // std::exit(-1);
 
 
   kernels::idx2 id_xy(ny,nx);// back front
-  kernels::idx2 id_xz(nz,nx);// botton top
+  kernels::idx2 id_xz(nz,nx);// bottom top
   kernels::idx2 id_yz(nz,ny);//left right
 
 
@@ -68,76 +69,184 @@ void getBoundaryCurves3D(int num_points,
   // }
 
   //top bottom
-  int index ;
-  for(int elt_z = 0 ; elt_z< num_elt_z; elt_z++){
-    for(int elt_x = 0 ; elt_x< num_elt_x; elt_x++){
-      for(int k = 0 ; k < num_points ; k ++){
-	for(int i = 0 ; i < num_points ; i ++){
-	  index = id_xz((elt_z*num_points)+k,(elt_x*num_points)+i);
+  for(int k = 0 ; k < nz ; k ++){
+    for(int i = 0 ; i < nx ; i ++){
+      //index = id_xz((elt_z*num_points)+k,(elt_x*num_points)+i);
+      
+      bottom_bnd_x[id_xz(k,i)] = dx*i;
+      bottom_bnd_z[id_xz(k,i)] = dz*k;
+      bottom_bnd_y[id_xz(k,i)] = 1;	    
 
-	  bottom_bnd_x[index] = width_x*elt_x+dx*i;
-	  bottom_bnd_z[index] = width_z*elt_z+dz*k;
-	  bottom_bnd_y[index] = 1;	    
+      top_bnd_x[id_xz(k,i)] = dx*i;
+      top_bnd_z[id_xz(k,i)] = dz*k;
+      top_bnd_y[id_xz(k,i)] = 0+0.25*std::sin(2*pi*top_bnd_x[id_xz(k,i)])*std::sin(2*pi*top_bnd_z[id_xz(k,i)]);
 
-	  top_bnd_x[index] = width_x*elt_x+dx*i;
-	  top_bnd_z[index] = width_z*elt_z+dz*k;
-	  top_bnd_y[index] = 0+0.0*std::sin(2*pi*top_bnd_x[index])*std::sin(2*pi*top_bnd_z[index]);
 	}
       }
-    }
-  }
+    
   
   //left right
-  for(int elt_z = 0 ; elt_z< num_elt_z; elt_z++){
-    for(int elt_y = 0 ; elt_y< num_elt_y; elt_y++){
-      for(int k = 0 ; k < num_points ; k ++){
-	for(int j = 0 ; j < num_points ; j ++){
-	  index = id_yz((elt_z*num_points)+k,(elt_y*num_points)+j);
-
-	  left_bnd_x[index]  = 0;	    
-	  left_bnd_y[index]  = width_y*elt_y+dy*j;
-	  left_bnd_z[index]  = width_z*elt_z+dz*k;
-	  
-	  right_bnd_x[index] = 1;
-	  right_bnd_y[index] = width_y*elt_y+dy*j;
-	  right_bnd_z[index] = width_z*elt_z+dz*k;
-	}
-      }
+  for(int k = 0 ; k < nz ; k ++){
+    for(int j = 0 ; j < ny ; j ++){
+      //index = id_yz((elt_z*num_points)+k,(elt_y*num_points)+j);
+      
+      left_bnd_x[id_xz(k,j)]  = 0;	    
+      left_bnd_y[id_xz(k,j)]  = dy*j;
+      left_bnd_z[id_xz(k,j)]  = dz*k;
+      
+      right_bnd_x[id_xz(k,j)] = 1.0;
+      right_bnd_y[id_xz(k,j)] = dy*j;
+      right_bnd_z[id_xz(k,j)] = dz*k;
+      
     }
   }
-
+  
   //front back
-  for(int elt_y = 0 ; elt_y< num_elt_y; elt_y++){
-    for(int elt_x = 0 ; elt_x< num_elt_x; elt_x++){
-      for(int j = 0 ; j < num_points ; j ++){
-	for(int i = 0 ; i < num_points ; i ++){
-	  index = id_xy((elt_y*num_points)+j,(elt_x*num_points)+i);
-
-	  front_bnd_x[index]  = width_x*elt_x+dx*i;
-	  front_bnd_y[index]  = width_y*elt_y+dy*j;
-	  front_bnd_z[index]  = 0;
-	  
-	  back_bnd_x[index] = width_x*elt_x+dx*i;
-	  back_bnd_y[index] = width_y*elt_y+dy*j;
-	  back_bnd_z[index] = 1;
-	}
-      }
+  for(int j = 0 ; j < ny ; j ++){
+    for(int i = 0 ; i < nx ; i ++){
+      
+      front_bnd_x[id_xy(j,i)]  = dx*i;
+      front_bnd_y[id_xy(j,i)]  = dy*j;
+      front_bnd_z[id_xy(j,i)]  = 0;
+      
+      back_bnd_x[id_xy(j,i)] = dx*i;
+      back_bnd_y[id_xy(j,i)] = dy*j;
+      back_bnd_z[id_xy(j,i)] = 1;
     }
   }
-
-
-  
-  // double h0y = (top_bnd_y[0] - bottom_bnd_y[0])/(ny-1);
-  // double hny = (top_bnd_y[nx-1] - bottom_bnd_y[nx-1])/(ny-1);
-
-  // for(int i = 0 ; i< ny; i++){
-
-  //   left_bnd_y[i]  = bottom_bnd_y[0] + h0y*i;
-  //   right_bnd_y[i] = bottom_bnd_y[nx-1] + hny*i;
     
-  // }
-  
 }
+
+// void getBoundaryCurves3D(int num_points,
+// 			 double offset_x, double offset_y, double offset_z,
+// 			 double width_x, double width_y , double width_z ,
+// 			 double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
+// 			 double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
+// 			 double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
+// 			 double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
+// 			 double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
+// 			 double* back_bnd_x, double* back_bnd_y, double* back_bnd_z){
+
+ 
+  
+//   double pi = 3.14159265359;
+
+//   int num_elt_x=1/width_x;
+//   int num_elt_y=1/width_y;
+//   int num_elt_z=1/width_z;
+
+//   int nx = 1/width_x*num_points;
+//   int ny = 1/width_y*num_points;
+//   int nz = 1/width_z*num_points;  
+  
+//   double dx= width_x/(num_points-1);
+//   double dy= width_y/(num_points-1);
+//   double dz= width_z/(num_points-1);
+
+//   std::cout << nx  <<" " << ny  <<" "  << nz << std::endl;
+//   std::cout << dx  <<" " << dy  <<" "  << dz << std::endl;
+
+
+//   kernels::idx2 id_xy(ny,nx);// back front
+//   kernels::idx2 id_xz(nz,nx);// botton top
+//   kernels::idx2 id_yz(nz,ny);//left right
+
+
+  
+//   // int i_0 =  (offset_x-0.0)/width_x;
+//   // int j_0 =  (offset_y-0.0)/width_y;
+  
+
+//   //std::cout<<i_0<<std::endl;
+//   //std::cout<<j_0<<std::endl;
+//   //std::cout<<std::endl;
+
+  
+//   // for(int i = 0 ; i< num_points; i++){
+//   //   left_bnd_x[i] =  offset_x;
+//   //   right_bnd_x[i] = width_x+offset_x;
+//   //   bottom_bnd_x[i] = width_x*dx*i + offset_x;
+//   //   top_bnd_x[i] = width_x*dx*i + offset_x;
+
+//   //   left_bnd_y[i] = width_y*dy*i + offset_y;
+//   //   right_bnd_y[i] = width_y*dy*i + offset_y;
+//   //   bottom_bnd_y[i] =offset_y;
+//   //   top_bnd_y[i] = width_y+offset_y + 0.0*std::sin(2*pi*top_bnd_x[i]);
+//   // }
+
+//   //top bottom
+//   int index ;
+//   for(int elt_z = 0 ; elt_z< num_elt_z; elt_z++){
+//     for(int elt_x = 0 ; elt_x< num_elt_x; elt_x++){
+//       for(int k = 0 ; k < num_points ; k ++){
+// 	for(int i = 0 ; i < num_points ; i ++){
+// 	  index = id_xz((elt_z*num_points)+k,(elt_x*num_points)+i);
+
+// 	  bottom_bnd_x[index] = width_x*elt_x+dx*i;
+// 	  bottom_bnd_z[index] = width_z*elt_z+dz*k;
+// 	  bottom_bnd_y[index] = 1;	    
+
+// 	  top_bnd_x[index] = width_x*elt_x+dx*i;
+// 	  top_bnd_z[index] = width_z*elt_z+dz*k;
+// 	  top_bnd_y[index] = 0+0.0*std::sin(2*pi*top_bnd_x[index])*std::sin(2*pi*top_bnd_z[index]);
+
+// 	  std::cout
+// 	}
+//       }
+//     }
+//   }
+  
+//   //left right
+//   for(int elt_z = 0 ; elt_z< num_elt_z; elt_z++){
+//     for(int elt_y = 0 ; elt_y< num_elt_y; elt_y++){
+//       for(int k = 0 ; k < num_points ; k ++){
+// 	for(int j = 0 ; j < num_points ; j ++){
+// 	  index = id_yz((elt_z*num_points)+k,(elt_y*num_points)+j);
+
+// 	  left_bnd_x[index]  = 0;	    
+// 	  left_bnd_y[index]  = width_y*elt_y+dy*j;
+// 	  left_bnd_z[index]  = width_z*elt_z+dz*k;
+	  
+// 	  right_bnd_x[index] = 1;
+// 	  right_bnd_y[index] = width_y*elt_y+dy*j;
+// 	  right_bnd_z[index] = width_z*elt_z+dz*k;
+// 	}
+//       }
+//     }
+//   }
+
+//   //front back
+//   for(int elt_y = 0 ; elt_y< num_elt_y; elt_y++){
+//     for(int elt_x = 0 ; elt_x< num_elt_x; elt_x++){
+//       for(int j = 0 ; j < num_points ; j ++){
+// 	for(int i = 0 ; i < num_points ; i ++){
+// 	  index = id_xy((elt_y*num_points)+j,(elt_x*num_points)+i);
+
+// 	  front_bnd_x[index]  = width_x*elt_x+dx*i;
+// 	  front_bnd_y[index]  = width_y*elt_y+dy*j;
+// 	  front_bnd_z[index]  = 0;
+	  
+// 	  back_bnd_x[index] = width_x*elt_x+dx*i;
+// 	  back_bnd_y[index] = width_y*elt_y+dy*j;
+// 	  back_bnd_z[index] = 1;
+// 	}
+//       }
+//     }
+//   }
+
+
+  
+//   // double h0y = (top_bnd_y[0] - bottom_bnd_y[0])/(ny-1);
+//   // double hny = (top_bnd_y[nx-1] - bottom_bnd_y[nx-1])/(ny-1);
+
+//   // for(int i = 0 ; i< ny; i++){
+
+//   //   left_bnd_y[i]  = bottom_bnd_y[0] + h0y*i;
+//   //   right_bnd_y[i] = bottom_bnd_y[nx-1] + hny*i;
+    
+//   // }
+  
+// }
 
 
 void getBoundaryCurves3D_fixedTopFace(int num_points,
@@ -382,9 +491,21 @@ void transFiniteInterpolation3D(int mx, int my, int mz,
   kernels::idx2 id_xz(mz,mx);// bottom top
   kernels::idx2 id_yz(mz,my);//left right
 
-  double mesh_size_x = width_x/(num_points-1);
-  double mesh_size_y = width_y/(num_points-1);
-  double mesh_size_z = width_z/(num_points-1);
+   // double mesh_size_x = width_x/(num_points-1);
+   // double mesh_size_y = width_y/(num_points-1);
+   // double mesh_size_z = width_z/(num_points-1);
+
+
+  //double mesh_size_x = 1.0/(num_points-1);
+  //double mesh_size_y = 1.0/(num_points-1);
+  //double mesh_size_z = 1.0/(num_points-1);
+
+   double mesh_size_x = 1.0/(mx-1);
+   double mesh_size_y = 1.0/(my-1);
+   double mesh_size_z = 1.0/(mz-1);
+
+  // std::cout << mesh_size_x << " "<< mesh_size_y << " "<< mesh_size_z <<std::endl;
+  // std::cout << mx << " "<< my << " "<< mz <<std::endl;
 
   int i_0;
   int j_0;
@@ -397,13 +518,18 @@ void transFiniteInterpolation3D(int mx, int my, int mz,
 
   for(int i=i_m ; i< i_p ; i++){
     i_0=i-i_m;
-    q=mesh_size_x * (i-std::floor((i+1)/num_points));	
+    q=mesh_size_x * i; //(i-std::floor((i+1)/num_points));
+    //q=mesh_size_x *i_0;
     for(int j=j_m ; j< j_p ; j++){
       j_0=j-j_m;
-      r=mesh_size_y * (j-std::floor((j+1)/num_points));
+      //r=mesh_size_y * (j-std::floor((j+1)/num_points));
+      r=mesh_size_y *j;
       for(int k=k_m ; k< k_p ; k++){
 	k_0=k-k_m;
-	s=mesh_size_z * (k-std::floor((k+1)/num_points));
+	//s=mesh_size_z * (k-std::floor((k+1)/num_points));
+	s=mesh_size_z * k;
+
+	//std ::cout << i_0 << " "<< j_0 << " "<< k_0 <<std::endl;
 	
 	u=(1-q)*left_bnd[id_yz(k,j)]+q*right_bnd[id_yz(k,j)];
 
@@ -437,6 +563,34 @@ void transFiniteInterpolation3D(int mx, int my, int mz,
 		       + s*bottom_bnd[id_xz(mz-1,mx-1)]));
 
 	curvilinear[id_xyz(k_0,j_0,i_0)] = u + v + w - uv - uw - vw + uvw1 + uvw2;
+
+
+	// 	uw=(1-q)* ((1 -r)*left_bnd[id_yz(k,j_m)] 
+	// 	   +r *left_bnd[id_yz(k,j_p-1)])
+	//   +q*((1-r)*right_bnd[id_yz(k,j_m)] 
+	//       +r *right_bnd[id_yz(k,j_p-1)]);
+
+	// uv=(1-r)*((1-s)*top_bnd[id_xz(k_m,i)]
+	// 	  + s*top_bnd[id_xz(k_p-1,i)])
+	//   + r*((1-s)*bottom_bnd[id_xz(k_m,i)]
+	//        + s*bottom_bnd[id_xz(k_p-1,i)]);
+
+	// vw = (1-s)*((1-q)*front_bnd[id_xy(j,i_m)] 
+	// 	    + q*front_bnd[id_xy(j,i_p-1)])
+	//        + s*((1-q)*back_bnd[id_xy(j,i_m)] 
+	//               + q*back_bnd[id_xy(j,i_p-1)]);
+	
+	// uvw1=(1-q)*((1-r)*((1-s)*top_bnd[id_xz(k_m,i_m)] 
+	// 	              +s*top_bnd[id_xz(k_p-1,i_m)])
+	// 	       +r*((1-s)*bottom_bnd[id_xz(k_m,i_m)]
+	// 		   +s*bottom_bnd[id_xz(k_p-1,i_m)]));
+
+	// uvw2=q*((1-r)*((1-s)*top_bnd[id_xz(k_m,i_p-1)] 
+	// 		 + s*top_bnd[id_xz(k_p-1,i_p-1)])
+	// 	+ r*((1-s)*bottom_bnd[id_xz(k_m,i_p-1)]
+	// 	       + s*bottom_bnd[id_xz(k_p-1,i_p-1)]));
+
+	// curvilinear[id_xyz(k_0,j_0,i_0)] = u + v + w - uv - uw - vw + uvw1 + uvw2;
 
       }
     }
