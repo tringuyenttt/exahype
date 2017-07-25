@@ -277,14 +277,17 @@ void getBoundaryCurves3D_fixedTopFace(int num_points,
   kernels::idx2 id_xy(ny,nx); // back front
   kernels::idx2 id_xz(nz,nx); // botton top
   kernels::idx2 id_yz(nz,ny); //left right
-
+  
+  //(0.1*XT+1*sin(4*pi*XT/(xPMax-xPMin)+3.34).*cos(2*pi*(XT/(xPMax-xPMin)-0.5)+33.34))
 
   //given top surface
   for(int k = 0 ; k< nz; k++){  
     for(int i = 0 ; i< nx; i++){
       top_bnd_x[id_xz(k,i)] = 0+dx*i;      
       top_bnd_z[id_xz(k,i)] = 0+dz*k;
-      top_bnd_y[id_xz(k,i)] = 0+0.25*std::sin(2*pi*top_bnd_x[id_xz(k,i)])*std::sin(2*pi*top_bnd_z[id_xz(k,i)]);
+      top_bnd_y[id_xz(k,i)] = 0- (0.1*(top_bnd_x[id_xz(k,i)] + top_bnd_z[id_xz(k,i)])
+			       + 0.25*(std::sin(4*pi*top_bnd_x[id_xz(k,i)]+3.34)*std::cos(4*pi*top_bnd_x[id_xz(k,i)])
+				       * std::sin(4*pi*top_bnd_z[id_xz(k,i)]+3.34)*std::cos(4*pi*top_bnd_z[id_xz(k,i)])));
 
     }
   }

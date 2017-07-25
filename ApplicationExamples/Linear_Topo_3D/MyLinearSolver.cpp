@@ -206,25 +206,6 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   double* s_y = new double[num_nodes*num_nodes*num_nodes];
   double* s_z = new double[num_nodes*num_nodes*num_nodes];  
 
-  // std::cout <<(offset_x/width_x)*(num_nodes-1)<< std::endl;
-  
-  // std::cout << offset_x <<"," << offset_y <<"," << offset_z <<"," <<std::endl;
-  // std::cout <<std::endl;
-  // std::cout << i_m <<"," << j_m <<"," << k_m <<"," <<std::endl;
-  // std::cout << i_p <<"," << j_p <<"," << k_p <<"," <<std::endl;
-  // std::cout <<std::endl;
-  //  for (int k=0; k< num_nodes;k++){
-  //   for (int j=0; j< num_nodes; j++){
-  //     for (int i=0; i< num_nodes; i++){
-  // 	std::cout << i <<"," << j<<"," << k << " :" << curvilinear_x[id_3(k,j,i)] <<", " << curvilinear_y[id_3(k,j,i)] <<", " << curvilinear_z[id_3(k,j,i)] << std::endl;    	
-  //     }
-  //   }
-  // }
-
-
-  //  std::cout <<std::endl;
-  //  std::cout <<std::endl;
-
   
   metricDerivativesAndJacobian3D(num_nodes,
   				 curvilinear_x,  curvilinear_y,  curvilinear_z,
@@ -337,10 +318,22 @@ void Linear::MyLinearSolver::eigenvalues(const double* const Q,const int d,doubl
   // @todo Please implement/augment if required
 
   double c = Q[5];
+
+  double q_x=Q[7];
+  double q_y=Q[8];
+  double q_z=Q[9];
+
+  double r_x=Q[10];
+  double r_y=Q[11];
+  double r_z=Q[12];
+
+  double s_x=Q[13];
+  double s_y=Q[14];
+  double s_z=Q[15];
   
-  lambda[ 0] = c;
-  lambda[ 1] = -c;
-  lambda[ 2] = 0;
+  lambda[ 0] = std::sqrt(q_x*q_x + q_y*q_y + q_z*q_z)*c;
+  lambda[ 1] = std::sqrt(r_x*r_x + r_y*r_y + r_z*r_z)*c;
+  lambda[ 2] = std::sqrt(s_x*s_x + s_y*s_y + s_z*s_z)*c;
   lambda[ 3] = 0;
 }
 
