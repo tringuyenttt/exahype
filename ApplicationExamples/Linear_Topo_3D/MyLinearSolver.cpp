@@ -237,8 +237,8 @@ void Linear::MyLinearSolver::adjustPatchSolution(
 	std::cout << std::endl;	
 
 	//Pressure
-	luh[id_4(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
-	//luh[id_4(k,j,i,0)] = 0.1;
+	//luh[id_4(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+	luh[id_4(k,j,i,0)] = 0.0;
 	
 	// //Velocity
 	luh[id_4(k,j,i,1)]  = 0;
@@ -499,7 +499,7 @@ void Linear::MyLinearSolver::algebraicSource(const double* const Q,double* S) {
 }
 
 
-void Linear::MyLinearSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0){
+void Linear::MyLinearSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n){
 
   double pi = 3.14159265359;
   double sigma = 0.1149;
@@ -507,17 +507,30 @@ void Linear::MyLinearSolver::pointSource(const double* const x,const double t,co
   double f = 0.0;
   double M0 = 1000.0;
   
-  
-  f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
-
-  x0[0] = 0.5;
-  x0[1] = 0.5;
-  x0[2] = 0.5;
-  
-  forceVector[0] = 1.*f;
-  forceVector[1] = 0.0;
-  forceVector[2] = 0.0;
-  forceVector[3] = 0.0;
+  if(n == 0){
+    f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+    
+    x0[0] = 0.25;
+    x0[1] = 0.25;
+    x0[2] = 0.25;
+    
+    forceVector[0] = 1.*f;
+    forceVector[1] = 0.0;
+    forceVector[2] = 0.0;
+    forceVector[3] = 0.0;
+  }else if(n == 1){
+    f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+    
+    x0[0] = 0.75;
+    x0[1] = 0.75;
+    x0[2] = 0.75;
+    
+    forceVector[0] = -1.*f;
+    forceVector[1] = 0.0;
+    forceVector[2] = 0.0;
+    forceVector[3] = 0.0;
+  }
+    
 
 }
 void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs){

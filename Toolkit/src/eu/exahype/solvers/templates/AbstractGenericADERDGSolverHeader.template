@@ -60,6 +60,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
      * return false.
      */
     void flux(const double* const Q,double** F) override;
+
     /**
      * Default implementation. Has to be be overwritten by user's solver if you 
      * make the corresponding use operation activate the feature.
@@ -82,7 +83,14 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
      *
      * See superclass for function's semantics.
      */
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) override;
+        
+    /**
+     * Default implementation. Has to be be overwritten by user's solver if you 
+     * make the corresponding use operation activate the feature.
+     *
+     * See superclass for function's semantics.
+     */
+    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) override;
        
     /**
      * Default implementation. Has to be be overwritten by user's solver if you 

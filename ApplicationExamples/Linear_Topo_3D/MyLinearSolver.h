@@ -92,7 +92,7 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
     void coefficientMatrix(const double* const Q,const int d,double* Bn) override;
     void algebraicSource(const double* const Q,double* S) override;
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) override;
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) override;
+    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0,int n) override;
 
 
     
@@ -100,7 +100,8 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
     bool useConservativeFlux()       const override {return true;}
     bool useAlgebraicSource()        const override {return false;}
     bool useMaterialParameterMatrix()const override {return true;}
-    bool usePointSource()            const override {return false;}
+    int usePointSource()             const override {return 2;}
+
 
     
     /**
