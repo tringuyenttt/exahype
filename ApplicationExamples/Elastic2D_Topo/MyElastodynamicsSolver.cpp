@@ -41,8 +41,8 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
   kernels::idx2 id_xy(basisSize,basisSize);
 
 
-  int nx = 1/dx[0]*num_nodes;
-  int ny = 1/dx[1]*num_nodes;
+  int nx = std::round(1/dx[0])*(num_nodes-1) + 1;
+  int ny = std::round(1/dx[1])*(num_nodes-1) + 1;
 
 
   double* left_bnd_x = new double[ny];
@@ -73,8 +73,8 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
   double* curvilinear_x = new double[num_nodes*num_nodes];
   double* curvilinear_y = new double[num_nodes*num_nodes];
 
-  int i_m =  (offset_x-0.0)/width_x *num_nodes;
-  int j_m =  (offset_y-0.0)/width_y *num_nodes;
+  int i_m =  std::round(offset_x/width_x) *(num_nodes-1);
+  int j_m =  std::round(offset_y/width_y) *(num_nodes-1);
 
   // std::cout<< i_m << std::endl;
   // std::cout<< offset_x << std::endl;
@@ -104,15 +104,14 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
   
   metricDerivativesAndJacobian(num_nodes,curvilinear_x,curvilinear_y,gl_vals_x,gl_vals_y,q_x,q_y,r_x,r_y,jacobian, width_x, width_y); 
 
-  for (int i=0; i< num_nodes; i++){
-      for (int j=0; j< num_nodes; j++){
-	double x= gl_vals_x[id_xy(i,j)];
-	double y= gl_vals_y[id_xy(i,j)];
+  for (int j=0; j< num_nodes; j++){
+      for (int i=0; i< num_nodes; i++){
+	double x= gl_vals_x[id_xy(j,i)];
+	double y= gl_vals_y[id_xy(j,i)];
 
-	
 	//particle velocities
-	luh[id_xyz(i,j,0)] = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))/0.01);
-	luh[id_xyz(i,j,1)] = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))/0.01);
+	luh[id_xyz(j,i,0)] = std::exp(-5*((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))/0.01);
+	luh[id_xyz(j,i,1)] = std::exp(-5*((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))/0.01);
 	
 	// luh[id_xyz(i,j,0)] = x;
 	// luh[id_xyz(i,j,1)] = y;
@@ -120,37 +119,33 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
 	//luh[id_xyz(j,i,0)] = x*0.1;
 	
 	//Stresses
-	luh[id_xyz(i,j,2)] = 0;
-	luh[id_xyz(i,j,3)] = 0;
-	luh[id_xyz(i,j,4)] = 0;
+	luh[id_xyz(j,i,2)] = 0;
+	luh[id_xyz(j,i,3)] = 0;
+	luh[id_xyz(j,i,4)] = 0;
 
-	luh[id_xyz(i,j,5)] = 2.6;     // gm/cm^3
-	luh[id_xyz(i,j,6)] = 2.0;      // km/s
-	luh[id_xyz(i,j,7)] = 4.0;      // km/s
+	// material parameters
+	luh[id_xyz(j,i,5)] = 1.;   //2.6  // gm/cm^3
+	luh[id_xyz(j,i,6)] = 1./std::sqrt(3.0);   // 2.0   // km/s
+	luh[id_xyz(j,i,7)] = 1.0; //std::sqrt(3.0);   //4.0   // km/s
 	
 	if (x > 1.0) {
-	  luh[id_xyz(i,j,5)] = 2.7;     // gm/cm^3
-	  luh[id_xyz(i,j,6)] = 3.464;    // km/s
-	  luh[id_xyz(i,j,7)] = 6.0;      // km/s
+	  luh[id_xyz(j,i,5)] = 1.;     // gm/cm^3
+	  luh[id_xyz(j,i,6)] = 1./std::sqrt(3.0);    // km/s
+	  luh[id_xyz(j,i,7)] = 1.0; //std::sqrt(3.0);      // km/s
 	}
-	
-	luh[id_xyz(i,j,8)] = jacobian[id_xy(i,j)];
-	//std::cout << jacobian[id_xy(j,i)] << std::endl;
 
-	luh[id_xyz(i,j,9)] = q_x[id_xy(i,j)];
-	luh[id_xyz(i,j,10)] = q_y[id_xy(i,j)];
-	luh[id_xyz(i,j,11)] = r_x[id_xy(i,j)];
-	luh[id_xyz(i,j,12)] = r_y[id_xy(i,j)];
+	// jacobian
+	luh[id_xyz(j,i,8)] = jacobian[id_xy(j,i)];
+	
+	// metric coefficients
+	luh[id_xyz(j,i,9)] =  q_x[id_xy(j,i)];
+	luh[id_xyz(j,i,10)] = q_y[id_xy(j,i)];
+	luh[id_xyz(j,i,11)] = r_x[id_xy(j,i)];
+	luh[id_xyz(j,i,12)] = r_y[id_xy(j,i)];
 
-	// std::cout << q_x[id_xy(j,i)] << std::endl;
-	// std::cout << q_y[id_xy(j,i)] << std::endl;
-	// std::cout << r_x[id_xy(j,i)] << std::endl;	
-	// std::cout << r_y[id_xy(j,i)] << std::endl;
-	// std::cout <<  std::endl;
-	
-	
-	luh[id_xyz(i,j,13)] = gl_vals_x[id_xy(i,j)];
-	luh[id_xyz(i,j,14)] = gl_vals_y[id_xy(i,j)];	
+	// the curvilinear mesh
+	luh[id_xyz(j,i,13)] = gl_vals_x[id_xy(j,i)];
+	luh[id_xyz(j,i,14)] = gl_vals_y[id_xy(j,i)];	
 
       }
   }
@@ -190,17 +185,26 @@ void Elastodynamics::MyElastodynamicsSolver::eigenvalues(const double* const Q,c
   double cs   = Q[6];   // km/s
   double cp   = Q[7];   // km/s
 
+  double q_x=Q[9];
+  double q_y=Q[10];
+  double r_x=Q[11];    
+  double r_y=Q[12]; 
+
   //std::cout << rho << cs << cp <<'\n';
 
   //std::exit(-1);
 
   //
-  lambda[0] = cp;
-  lambda[1] = cs;
-  lambda[2] = -cp;
-  lambda[3] = -cs;
+  lambda[0] = std::sqrt(q_x*q_x + q_y*q_y)*std::sqrt(cp*cp + 0*cs*cs);
+  lambda[1] = std::sqrt(r_x*r_x + r_y*r_y)*std::sqrt(0*cs*cs + cp*cp);
+  lambda[2] = std::sqrt(q_x*q_x + q_y*q_y)*std::sqrt(0*cp*cp + cs*cs);
+  lambda[3] = std::sqrt(r_x*r_x + r_y*r_y)*std::sqrt(cs*cs + 0*cp*cp);
   lambda[4] = 0.0;
- 
+
+
+  //std::cout << lambda[0]<< "  " << lambda[1] << "  " << lambda[2] <<'\n';
+
+  //std::exit(-1);
 }
 
 
@@ -255,45 +259,235 @@ void Elastodynamics::MyElastodynamicsSolver::boundaryValues(const double* const 
   double n[2] = {0,0};
   n[normalNonZero] = 1.;
 
-  // extract local s-wave and p-wave impedances
-  double zp=rho*cp;
-  double zs=rho*cs;
+  // // extract local s-wave and p-wave impedances
+  // double zp=rho*cp;
+  // double zs=rho*cs;
+
+  for(int i = 0 ; i< 15; i++){
+    stateOut[ i] = stateIn[i];
+  }
   
-  stateOut[0] = stateIn[0];
-  stateOut[1] = stateIn[1];
-  stateOut[2] = stateIn[2];
-  stateOut[3] = stateIn[3];
-  stateOut[4] = stateIn[4];
+  for(int i = 0 ; i< 5; i++){
+    fluxOut[i] = fluxIn[i];;
+  }
 
-  stateOut[5] = stateIn[5];
-  stateOut[6] = stateIn[6];
-  stateOut[7] = stateIn[7];
-  stateOut[8] = stateIn[8];
-  stateOut[9] = stateIn[9];
 
-  stateOut[10] = stateIn[10];
-  stateOut[11] = stateIn[11];
-  stateOut[12] = stateIn[12];
-  stateOut[13] = stateIn[13];
-  stateOut[14] = stateIn[14];
+  // // extract local s-wave and p-wave impedances
+  // double zp=rho*cp;
+  // double zs=rho*cs;
+  
+  // stateOut[0] = stateIn[0];
+  // stateOut[1] = stateIn[1];
+  // stateOut[2] = stateIn[2];
+  // stateOut[3] = stateIn[3];
+  // stateOut[4] = stateIn[4];
 
-  fluxOut[0] = fluxIn[0];
-  fluxOut[1] = fluxIn[1];
-  fluxOut[2] = fluxIn[2];
-  fluxOut[3] = fluxIn[3];
-  fluxOut[4] = fluxIn[4];
+  // fluxOut[0] = fluxIn[0];
+  // fluxOut[1] = fluxIn[1];
+  // fluxOut[2] = fluxIn[2];
+  // fluxOut[3] = fluxIn[3];
+  // fluxOut[4] = fluxIn[4];
 
-  fluxOut[5] = fluxIn[5];
-  fluxOut[6] = fluxIn[6];
-  fluxOut[7] = fluxIn[7];
-  fluxOut[8] = fluxIn[8];
-  fluxOut[9] = fluxIn[9];
+  // stateOut[5] = stateIn[5];
+  // stateOut[6] = stateIn[6];
+  // stateOut[7] = stateIn[7];
 
-  fluxOut[10] = fluxIn[10];
-  fluxOut[11] = fluxIn[11];
-  fluxOut[12] = fluxIn[12];
-  fluxOut[13] = fluxIn[13];
-  fluxOut[14] = fluxIn[14];
+  // if (faceIndex == 0) {
+    
+  //   stateOut[0] = stateIn[0];
+  //   stateOut[1] = stateIn[1];
+  //   stateOut[2] = stateIn[2];
+  //   stateOut[3] = stateIn[3];
+  //   stateOut[4] = stateIn[4];
+
+  //   stateOut[5] = stateIn[5];
+  //   stateOut[6] = stateIn[6];
+  //   stateOut[7] = stateIn[7];
+    
+    
+  //   fluxOut[0] = fluxIn[0];
+  //   fluxOut[1] = fluxIn[1];
+  //   fluxOut[2] = fluxIn[2];
+  //   fluxOut[3] = fluxIn[3];
+  //   fluxOut[4] = fluxIn[4];
+   
+    
+  //   double v_x =  stateIn[0];
+  //   double v_y =  stateIn[1];
+    
+  //   double sigma_xx =  stateIn[2];
+  //   double sigma_yy =  stateIn[3];
+    
+  //   double sigma_xy =  stateIn[4];
+    
+  //   // extract traction: Tx, Ty, Tz
+  //   // double Tx =  0.;
+  //   // double Ty =  0.;
+  //   // double Tz =  0.;
+    
+  //   double vx_hat =  0.;
+  //   double vy_hat =  0.;
+    
+  //   double sigma_xx_hat =  0.;
+  //   double sigma_xy_hat =  0.;
+    
+  //   double r = 0.;
+    
+  //   riemannSolver_BC0(v_x, sigma_xx, zp, r, vx_hat, sigma_xx_hat);
+  //   riemannSolver_BC0(v_y, sigma_xy, zs, r, vy_hat, sigma_xy_hat);
+    
+  //   stateOut[0] = vx_hat;
+  //   stateOut[1] = vy_hat;
+    
+  //   stateOut[2] = sigma_xx_hat;
+  //   stateOut[4] = sigma_xy_hat;
+    
+  // }
+  
+  
+  // if (faceIndex == 1) {
+
+  //   stateOut[0] = stateIn[0];
+  //   stateOut[1] = stateIn[1];
+  //   stateOut[2] = stateIn[2];
+  //   stateOut[3] = stateIn[3];
+  //   stateOut[4] = stateIn[4];
+    
+    
+  //   fluxOut[0] = fluxIn[0];
+  //   fluxOut[1] = fluxIn[1];
+  //   fluxOut[2] = fluxIn[2];
+  //   fluxOut[3] = fluxIn[3];
+  //   fluxOut[4] = fluxIn[4];
+    
+    
+  //   double v_x =  stateIn[0];
+  //   double v_y =  stateIn[1];
+    
+  //   double sigma_xx =  stateIn[2];
+  //   double sigma_yy =  stateIn[3];
+    
+  //   double sigma_xy =  stateIn[4];
+    
+  //   // extract traction: Tx, Ty, Tz
+  //   // double Tx =  0.;
+  //   // double Ty =  0.;
+  //   // double Tz =  0.;
+    
+  //   double vx_hat =  0.;
+  //   double vy_hat =  0.;
+    
+  //   double sigma_xx_hat =  0.;
+  //   double sigma_xy_hat =  0.;
+    
+  //   double r = 0.;
+    
+  //   riemannSolver_BCn(v_x, sigma_xx, zp, r, vx_hat, sigma_xx_hat);
+  //   riemannSolver_BCn(v_y, sigma_xy, zs, r, vy_hat, sigma_xy_hat);
+    
+  //   stateOut[0] = vx_hat;
+  //   stateOut[1] = vy_hat;
+    
+  //   stateOut[2] = sigma_xx_hat;
+  //   stateOut[4] = sigma_xy_hat;
+    
+      
+  // }
+
+
+  // if (faceIndex == 2) {
+
+  //   stateOut[0] = stateIn[0];
+  //   stateOut[1] = stateIn[1];
+  //   stateOut[2] = stateIn[2];
+  //   stateOut[3] = stateIn[3];
+  //   stateOut[4] = stateIn[4];
+    
+    
+  //   fluxOut[0] = fluxIn[0];
+  //   fluxOut[1] = fluxIn[1];
+  //   fluxOut[2] = fluxIn[2];
+  //   fluxOut[3] = fluxIn[3];
+  //   fluxOut[4] = fluxIn[4];
+    
+    
+  //   double v_x =  stateIn[0];
+  //   double v_y =  stateIn[1];
+    
+  //   double sigma_xx =  stateIn[2];
+  //   double sigma_yy =  stateIn[3];
+    
+  //   double sigma_xy =  stateIn[4];
+    
+  //   // extract traction: Tx, Ty, Tz
+  //   // double Tx =  0.;
+  //   // double Ty =  0.;
+  //   // double Tz =  0.;
+    
+  //   double vx_hat =  0.;
+  //   double vy_hat =  0.;
+    
+  //   double sigma_yy_hat =  0.;
+  //   double sigma_xy_hat =  0.;
+    
+  //   double r = 0.;
+    
+  //   riemannSolver_BC0(v_x, sigma_xy, zs, r, vx_hat, sigma_xy_hat);
+  //   riemannSolver_BC0(v_y, sigma_yy, zp, r, vy_hat, sigma_yy_hat);
+    
+  //   stateOut[0] = vx_hat;
+  //   stateOut[1] = vy_hat;
+    
+  //   stateOut[3] = sigma_yy_hat;
+  //   stateOut[4] = sigma_xy_hat;
+    
+  // }
+
+  // if (faceIndex == 3) {
+    
+  //   stateOut[0] = stateIn[0];
+  //   stateOut[1] = stateIn[1];
+  //   stateOut[2] = stateIn[2];
+  //   stateOut[3] = stateIn[3];
+  //   stateOut[4] = stateIn[4];
+    
+  //   fluxOut[0] = fluxIn[0];
+  //   fluxOut[1] = fluxIn[1];
+  //   fluxOut[2] = fluxIn[2];
+  //   fluxOut[3] = fluxIn[3];
+  //   fluxOut[4] = fluxIn[4];
+    
+  //   double v_x =  stateIn[0];
+  //   double v_y =  stateIn[1];
+    
+  //   double sigma_xx =  stateIn[2];
+  //   double sigma_yy =  stateIn[3];
+    
+  //   double sigma_xy =  stateIn[4];
+    
+  //   // extract traction: Tx, Ty, Tz
+  //   // double Tx =  0.;
+  //   // double Ty =  0.;
+  //   // double Tz =  0.;
+    
+  //   double vx_hat =  0.;
+  //   double vy_hat =  0.;
+    
+  //   double sigma_yy_hat =  0.;
+  //   double sigma_xy_hat =  0.;
+    
+  //   double r = 1.;
+    
+  //   riemannSolver_BCn(v_x, sigma_xy, zs, r, vx_hat, sigma_xy_hat);
+  //   riemannSolver_BCn(v_y, sigma_yy, zp, r, vy_hat, sigma_yy_hat);
+    
+  //   stateOut[0] = vx_hat;
+  //   stateOut[1] = vy_hat;
+    
+  //   stateOut[3] = sigma_yy_hat;
+  //   stateOut[4] = sigma_xy_hat;
+    
+  // }
   
 }
 
@@ -343,21 +537,6 @@ void Elastodynamics::MyElastodynamicsSolver::nonConservativeProduct(const double
   BgradQ[7] = -r_x*u_r;
   BgradQ[8] = -r_y*v_r;
   BgradQ[9] = -(r_y*u_r+r_x*v_r);
-
-
-    
-  //  BgradQ[0] = -1/rho*Qx[2];
-  //  BgradQ[1] = -1/rho*Qx[4];
-  // BgradQ[2] = -(lam + 2.0*mu)*Qx[0];
-  // BgradQ[3] = -0.0;
-  // BgradQ[4] = -mu*Qx[1];
-  // BgradQ[5] = -1/rho*Qy[4];
-  // BgradQ[6] = -1/rho*Qy[3];
-  // BgradQ[7] = -0.0;
-  // BgradQ[8] = -(lam + 2*mu)*Qy[1];
-  // BgradQ[9] = -mu*Qy[0];
-
-
 
 }
 
@@ -456,11 +635,11 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
       n_p[0] = qp_x/norm_p_qr;
       n_p[1] = qp_y/norm_p_qr;
       
-      m_m[0] = n_m[1];
-      m_m[1] =-n_m[0];
+      // m_m[0] = n_m[1];
+      // m_m[1] =-n_m[0];
       
-      m_p[0] = n_p[1];
-      m_p[1] =-n_p[0];
+      // m_p[0] = n_p[1];
+      // m_p[1] =-n_p[0];
       }
       
     if (normalNonZeroIndex == 1){
@@ -473,17 +652,14 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
       n_p[0] = rp_x/norm_p_qr;
       n_p[1] = rp_y/norm_p_qr;
 
-      m_m[0] = n_m[1];
-      m_m[1] =-n_m[0];
+      // m_m[0] = n_m[1];
+      // m_m[1] =-n_m[0];
 
-      m_p[0] = n_p[1];
-      m_p[1] =-n_p[0];
+      // m_p[0] = n_p[1];
+      // m_p[1] =-n_p[0];
 	
-      // norm_qr = std::sqrt(r_x*r_x + r_y*r_y);
-      // n[0] = r_x/norm_qr;
-      // n[1] = r_y/norm_qr;
     }
-
+    
     double rho_m  = QL[idx_QLR(i,5)];   // km/s
     double cs_m   = QL[idx_QLR(i,6)];   // km/s
     double cp_m   = QL[idx_QLR(i,7)];   // km/s
@@ -492,9 +668,7 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
     double cs_p   = QR[idx_QLR(i,6)];   // km/s
     double cp_p   = QR[idx_QLR(i,7)];   // km/s
     
-    //std::cout << rho_p << cs_p << cp_p <<numberOfData<<'\n';
-
-    //std::exit(-1);
+    
     
     double mu_m = rho_m*cs_m*cs_m;
     double lam_m = rho_m*cp_m*cp_m - 2*mu_m;
@@ -524,8 +698,8 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
     double vx_p = QR[idx_QLR(i,0)];
     double vy_p = QR[idx_QLR(i,1)];
 
-    localBasis(n_m, m_m, l_m, 2);
-    localBasis(n_p, m_p, l_p, 2);    
+     localBasis(n_m, m_m, l_m, 2);
+     localBasis(n_p, m_p, l_p, 2);    
 
     // rotate tractions and particle velocities into orthogonal coordinates: n, m
     double Tn_m= Tx_m*n_m[0] + Ty_m*n_m[1];
@@ -632,6 +806,12 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
       riemannSolver_Nodal(vn_p,vn_m, Tn_p, Tn_m, zp_p , zp_m, vn_hat_p , vn_hat_m, Tn_hat_p, Tn_hat_m);
       riemannSolver_Nodal(vm_p,vm_m, Tm_p, Tm_m, zs_p , zs_m, vm_hat_p , vm_hat_m, Tm_hat_p, Tm_hat_m);
     }
+
+    //std::cout<< n[0]- n_p[0] << "  " <<  n[1]- n_p[1] << std::endl;
+     // std::cout<< n[0]- n_m[0] << "  " <<  n[1]- n_m[1] << std::endl;
+
+    // std::cout << std::endl;
+    
     // generate fluctuations in the local basis coordinates: n, m
     double FLn = 0.5*(zp_m*(vn_m-vn_hat_m) + (Tn_m-Tn_hat_m));
     double FLm = 0.5*(zs_m*(vm_m-vm_hat_m) + (Tm_m-Tm_hat_m));
@@ -805,8 +985,8 @@ void Elastodynamics::MyElastodynamicsSolver::multiplyMaterialParameterMatrix(con
   double lam = rho*cp*cp-2.0*mu;
 
 
-  rhs[0] = 1/(rho*jacobian)*rhs[0];
-  rhs[1] = 1/(rho*jacobian)*rhs[1];
+  rhs[0] = 1./(rho*jacobian)*rhs[0];
+  rhs[1] = 1./(rho*jacobian)*rhs[1];
   
   double rhs_2= (2*mu+lam)*rhs[2]+lam*rhs[3];
   double rhs_3= (2*mu+lam)*rhs[3]+lam*rhs[2];
@@ -816,8 +996,8 @@ void Elastodynamics::MyElastodynamicsSolver::multiplyMaterialParameterMatrix(con
   rhs[4]=mu*rhs[4];
 
 
-  rhs[5] = 1/(rho*jacobian)*rhs[5];
-  rhs[6] = 1/(rho*jacobian)*rhs[6];
+  rhs[5] = 1./(rho*jacobian)*rhs[5];
+  rhs[6] = 1./(rho*jacobian)*rhs[6];
   
   double rhs_7= (2*mu+lam)*rhs[7]+lam*rhs[8];
   double rhs_8= (2*mu+lam)*rhs[8]+lam*rhs[7];

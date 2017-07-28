@@ -9,18 +9,38 @@
 // }
 
 
-void getBoundaryCurves(int num_points,double offset_x, double offset_y,double width_x, double width_y ,double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y){
+
+void getBoundaryCurves3D(int num_points,
+			 double offset_x, double offset_y, double offset_z,
+			 double width_x, double width_y , double width_z ,
+			 double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
+			 double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
+			 double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
+			 double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
+			 double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
+			 double* back_bnd_x, double* back_bnd_y, double* back_bnd_z){
 
  
+  
   double pi = 3.14159265359;
 
-  int nx = 1/width_x*num_points;
-  int ny = 1/width_y*num_points;
 
+
+  int nx = std::round(1/width_x)*(num_points-1) + 1;
+  int ny = std::round(1/width_y)*(num_points-1) + 1;
+  int nz = std::round(1/width_z)*(num_points-1) + 1;  
 
   double dx= 1.0/(nx-1);
   double dy= 1.0/(ny-1);
+  double dz= 1.0/(nz-1);
 
+
+  kernels::idx2 id_xy(ny,nx);// back front
+  kernels::idx2 id_xz(nz,nx);// botton top
+  kernels::idx2 id_yz(nz,ny);//left right
+
+
+  
   // int i_0 =  (offset_x-0.0)/width_x;
   // int j_0 =  (offset_y-0.0)/width_y;
   
@@ -43,14 +63,86 @@ void getBoundaryCurves(int num_points,double offset_x, double offset_y,double wi
   // }
 
 
+  //top bottom
+  for(int i = 0 ; i< nx; i++){
+    for(int k = 0 ; k< nz; k++){      
+      bottom_bnd_x[id_xz(k,i)] = 0+dx*i;      
+      bottom_bnd_y[id_xz(k,i)] = 0;
+      bottom_bnd_z[id_xz(k,i)] = 0+dz*k;      
+
+      top_bnd_x[id_xz(k,i)] = 0+dx*i;      
+      top_bnd_y[id_xz(k,i)] = 1;
+      top_bnd_z[id_xz(k,i)] = 0+dz*k;      
+    }
+  }
+
+
+  //left right
+  for(int j = 0 ; j< ny; j++){
+    for(int k = 0 ; k< nz; k++){
+      left_bnd_x[id_yz(k,j)]  = 0;
+      left_bnd_y[id_yz(k,j)]  = dy*j;
+      left_bnd_z[id_yz(k,j)]  = dz*k;
+
+      right_bnd_x[id_yz(k,j)] = 1;
+      right_bnd_y[id_yz(k,j)] = dy*j;
+      right_bnd_z[id_yz(k,j)] = dz*k;
+    }
+  }
+
+
+  //front back
+  for(int i = 0 ; i< nx; i++){
+    for(int j = 0 ; j< ny; j++){
+
+      front_bnd_x[id_xy(j,i)]  = dx*i;
+      front_bnd_y[id_xy(j,i)]  = dy*j;
+      front_bnd_z[id_xy(j,i)]  = 0;      
+
+
+      back_bnd_x[id_xy(j,i)] = dx*i;
+      back_bnd_y[id_xy(j,i)] = dy*j;
+      back_bnd_z[id_xy(j,i)] = 1;      
+    }
+  }
+
+  
+  // double h0y = (top_bnd_y[0] - bottom_bnd_y[0])/(ny-1);
+  // double hny = (top_bnd_y[nx-1] - bottom_bnd_y[nx-1])/(ny-1);
+
+  // for(int i = 0 ; i< ny; i++){
+
+  //   left_bnd_y[i]  = bottom_bnd_y[0] + h0y*i;
+  //   right_bnd_y[i] = bottom_bnd_y[nx-1] + hny*i;
+    
+  // }
+  
+}
+
+
+
+
+void getBoundaryCurves(int num_points,double offset_x, double offset_y,double width_x, double width_y ,double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y){
+
+ 
+  
+  double pi = 3.14159265359;
+
+  int nx = std::round(1/width_x)*(num_points-1) + 1;;
+  int ny = std::round(1/width_y)*(num_points-1) + 1;;
+
+  double dx= 1.0/(nx-1);
+  double dy= 1.0/(ny-1);
+
+
+
   for(int i = 0 ; i< nx; i++){
     
     bottom_bnd_x[i] = 0 + dx*i;
     top_bnd_x[i]    = 0 + dx*i;
-
     
     bottom_bnd_y[i] = 0.0;
-    top_bnd_y[i]    = 1 + 0.1*std::sin(2*pi*top_bnd_x[i]);
+    top_bnd_y[i]    = 1 + 0.25*std::sin(4*pi*top_bnd_x[i]);
 
     //std::cout<<top_bnd_x[i]<<std::endl;
     //std::cout<<i<<std::endl;
@@ -60,9 +152,6 @@ void getBoundaryCurves(int num_points,double offset_x, double offset_y,double wi
   //std::exit(-1);
   
   for(int i = 0 ; i< ny; i++){
-    
-    // left_bnd_x[i]  = 0;
-    // right_bnd_x[i] = 1;
     
     left_bnd_x[i]  = 0;
     right_bnd_x[i] = 1;
@@ -76,11 +165,98 @@ void getBoundaryCurves(int num_points,double offset_x, double offset_y,double wi
   double hny = (top_bnd_y[nx-1] - bottom_bnd_y[nx-1])/(ny-1);
 
   for(int i = 0 ; i< ny; i++){
+
     left_bnd_y[i]  = bottom_bnd_y[0] + h0y*i;
     right_bnd_y[i] = bottom_bnd_y[nx-1] + hny*i;
+    
   }
   
 }
+
+
+void transFiniteInterpolation3D(int mx, int my, int mz,
+				int k_m, int k_p ,
+				int j_m, int j_p ,
+				int i_m, int i_p ,
+				int num_points,
+				double* left_bnd,
+				double* right_bnd,
+				double* bottom_bnd,
+				double* top_bnd,
+				double* front_bnd,
+				double* back_bnd,
+				double* curvilinear, int dim
+				){
+  kernels::idx3 id_xyz(num_points,num_points,num_points);
+  kernels::idx2 id_xy(my,mx);// back front
+  kernels::idx2 id_xz(mz,mx);// bottom top
+  kernels::idx2 id_yz(mz,my);//left right
+
+  double mesh_size_x = 1.0/(mx-1);
+  double mesh_size_y = 1.0/(my-1);
+  double mesh_size_z = 1.0/(mz-1);
+
+  int i_0;
+  int j_0;
+  int k_0;    
+
+  double u,v,w;
+  double uv,vw,uw,uvw1,uvw2;
+
+  double q,r,s;
+
+
+  for(int i=i_m ; i< i_p ; i++){
+    i_0=i-i_m;
+    q=mesh_size_x * i;	
+    for(int j=j_m ; j< j_p ; j++){
+      j_0=j-j_m;
+      r=mesh_size_y * j;
+      for(int k=k_m ; k< k_p ; k++){
+	k_0=k-k_m;
+	s=mesh_size_z * k;
+	
+	u=(1-q)*left_bnd[id_yz(k,j)]+q*right_bnd[id_yz(k,j)];
+
+	v=(1-r)*top_bnd[id_xz(k,i)]+r*bottom_bnd[id_xz(k,i)];
+
+	w=(1-s)*front_bnd[id_xy(j,i)]+s*back_bnd[id_xy(j,i)];
+
+	uw=(1-q)* ((1 -r)*left_bnd[id_yz(k,1)] 
+		   +r *left_bnd[id_yz(k,my)])
+	  +q*((1-r)*right_bnd[id_yz(k,1)] 
+	      +r *right_bnd[id_yz(k,my)]);
+
+	uv=(1-r)*((1-s)*top_bnd[id_xz(1,i)]
+		  + s*top_bnd[id_xz(mz,i)])
+	  + r*((1-s)*bottom_bnd[id_xz(1,i)]
+	       + s*bottom_bnd[id_xz(mz,i)]);
+
+	vw = (1-s)*((1-q)*front_bnd[id_xy(j,1)] 
+		    + q*front_bnd[id_xy(j,mx)])
+	       + s*((1-q)*back_bnd[id_xy(j,1)] 
+	              + q*back_bnd[id_xy(j,mx)]);
+	
+	uvw1=(1-q)*((1-r)*((1-s)*top_bnd[id_xz(1,1)] 
+		              +s*top_bnd[id_xz(mz,1)])
+		       +r*((1-s)*bottom_bnd[id_xz(1,1)]
+			   +s*bottom_bnd[id_xz(mz,1)]));
+
+	uvw2=q*((1-r)*((1-s)*top_bnd[id_xz(1,mx)] 
+			 + s*top_bnd[id_xz(mz,mx)])
+		  + r*((1-s)*bottom_bnd[id_xz(1,mx)]
+		       + s*bottom_bnd[id_xz(mz,mx)]));
+
+	curvilinear[id_xyz(k_0,j_0,i_0)] = u + v + w - uv - uw - vw + uvw1 + uvw2;
+
+      }
+    }
+  }
+}
+
+
+
+
 
 void transFiniteInterpolation(int mx, int my, int j_m, int j_p, int i_m, int i_p, int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y, double* curvilinear_x , double* curvilinear_y ){
 
@@ -92,17 +268,17 @@ void transFiniteInterpolation(int mx, int my, int j_m, int j_p, int i_m, int i_p
    double q;
    kernels::idx2 id_xy(num_points,num_points);
    
-   int j_0 = 0;
+   int j_0;
+   int i_0;
   
    for(int j =j_m ; j < j_p ; j++) {
 
+      j_0=j-j_m;
      
-     
-     int i_0 = 0;
-     
-     for(int i =i_m ; i < i_p ; i++) {
-       
-       //std::cout<<i<<std::endl;
+      for(int i =i_m ; i < i_p ; i++) {
+	
+        i_0=i-i_m;
+	
        
        q = (i)*mesh_size_x;
        r = (j)*mesh_size_y;
@@ -176,48 +352,29 @@ void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* des
 }
 
 void computeDerivatives_x(int i, int j , double* values , int num_nodes, double& der_x, double dx){
-  //  double* vals_x;
-  //  double* vals_y
-
-    //  vals_x = malloc(sizeof(double)*num_nodes*num_nodes);
-    //  vals_y = malloc(sizeof(double)*num_nodes*num_nodes);
-
-
-  //  free(vals_x);
-  //  free(vals_y);
   
-   kernels::idx2 id_xy(num_nodes,num_nodes);
-
-   der_x = 0.0;
-
-  // for (int j = 0 ; j< num_nodes ; j ++){
-  //   for (int i = 0 ; i< num_nodes ; i ++){
-   for (int n = 0 ; n< num_nodes ; n ++){
-     der_x += kernels::dudx[num_nodes-1][i][n] * values[id_xy(j,n)]/dx;
-   }
-  //   }
-  // }
-
+  
+  kernels::idx2 id_xy(num_nodes,num_nodes);
+  
+  der_x = 0.0;
+  
+  for (int n = 0 ; n< num_nodes ; n ++){
+    der_x += kernels::dudx[num_nodes-1][i][n] * values[id_xy(j,n)]/dx;
+  }
+  
 }
 
 void computeDerivatives_y (int i, int j , double* values , int num_nodes, double& der_y, double dy){
-  //  double* vals_x;
-  //  double* vals_y
-    //  vals_x = malloc(sizeof(double)*num_nodes*num_nodes);
-    //  vals_y = malloc(sizeof(double)*num_nodes*num_nodes);
-  //  free(vals_x);
-  //  free(vals_y);
+  
   
   kernels::idx2 id_xy(num_nodes,num_nodes); 
-
+  
   der_y = 0.0;
-  // for (int j = 0 ; j< num_nodes ; j ++){
-  //   for (int i = 0 ; i< num_nodes ; i ++){
-      for (int n = 0 ; n< num_nodes ; n ++){
-         der_y += kernels::dudx[num_nodes-1][j][n] * values[id_xy(n,i)]/dy;
-      }
-  //   }
-  // }
+  
+  for (int n = 0 ; n< num_nodes ; n ++){
+    der_y += kernels::dudx[num_nodes-1][j][n] * values[id_xy(n,i)]/dy;
+  }
+  
 }
 
 

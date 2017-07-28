@@ -30,7 +30,7 @@ exahype-project Elastodynamics
     dimension const          = 2
     width                    = 1.0, 1.0
     offset                   = 0.0, 0.0
-    end-time                 = 1.2
+    end-time                 = 10.0
   end computational-domain
 
 //   shared-memory
@@ -60,9 +60,9 @@ exahype-project Elastodynamics
   solver ADER-DG MyElastodynamicsSolver
     variables const   = v:2,sigma:3
     parameters const  =  rho:1,cs:1,cp:1,jacobian:1,metric_derivative:4,curve_grid:2
-    order const       = 3
+    order const       = 4
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size = 0.15
+    maximum-mesh-size = 0.05
     time-stepping     = globalfixed
     kernel const      = generic::fluxes::linear
     language const    = C
@@ -70,7 +70,7 @@ exahype-project Elastodynamics
     plot vtu::Legendre::cells::ascii ConservedQuantitiesWriter
       variables const = 15
       time            = 0.0
-      repeat          = 0.000001
+      repeat          = 0.1
       output          = ./conserved
       //select          = x:0.0,y:0.0
     end plot

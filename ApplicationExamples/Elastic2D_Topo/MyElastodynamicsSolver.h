@@ -136,7 +136,7 @@ n     * \param[in]    centre    The centre of the cell.
     virtual bool useConservativeFlux() const {return true;}    
     virtual bool usePointSource()       const {return false;}
     virtual bool useSource()       const {return false;}
-    virtual bool useMaterialParameterMatrix()       const {return false;};
+    virtual bool useMaterialParameterMatrix()       const {return true;};
     
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) override; 
 
