@@ -14,7 +14,11 @@
 // public:
 //  CurvilinearTransformation();
 
+double fault(double y,double depth);
+
 void getBoundaryCurves(int num_points,double offset_x, double offset_y,double width_x, double width_y , double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y);
+
+void getBoundaryCurvesForBlock(int num_points,int nx, int ny, int n , double blockWidth_x, double blockWidth_y ,double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y);
 
 
 void getBoundaryCurves3D(int num_points,

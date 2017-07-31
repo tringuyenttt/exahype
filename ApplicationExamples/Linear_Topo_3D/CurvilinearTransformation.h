@@ -14,6 +14,9 @@
 // public:
 //  CurvilinearTransformation();
 
+double fault(double y, double z,double depth_y,double a_z, double b_z);
+
+
 void getBoundaryCurves(int num_points,double offset_x, double offset_y,double width_x, double width_y , double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y);
 
 
@@ -36,6 +39,17 @@ void getBoundaryCurves3D_fixedTopFace(int num_points,
 				      double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
 				      double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
 				      double* back_bnd_x, double* back_bnd_y, double* back_bnd_z);
+
+
+void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
+					       int nx, int ny, int nz, int n,
+					       double width_x, double width_y , double width_z,	      
+					       double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
+					       double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
+					       double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
+					       double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
+					       double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
+					       double* back_bnd_x, double* back_bnd_y, double* back_bnd_z);
 
 
 

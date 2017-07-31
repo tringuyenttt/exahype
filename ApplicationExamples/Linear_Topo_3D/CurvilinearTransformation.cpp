@@ -8,6 +8,11 @@
 //   return;
 // }
 
+double fault(double y, double z,double depth_y,double a_z, double b_z){
+  double pi = 3.14159265359;
+  return 0.1*std::sin(2*pi*y)*std::sin(2*pi*(z-(b_z+a_z)*0.5));
+}
+
 
 void getBoundaryCurves3D(int num_points,
 			 double offset_x, double offset_y, double offset_z,
@@ -285,7 +290,7 @@ void getBoundaryCurves3D_fixedTopFace(int num_points,
     for(int i = 0 ; i< nx; i++){
       top_bnd_x[id_xz(k,i)] = 0+dx*i;      
       top_bnd_z[id_xz(k,i)] = 0+dz*k;
-      top_bnd_y[id_xz(k,i)] = 0- (0.1*(top_bnd_x[id_xz(k,i)] + top_bnd_z[id_xz(k,i)])
+      top_bnd_y[id_xz(k,i)] = 0- 0*(0.1*(top_bnd_x[id_xz(k,i)] + top_bnd_z[id_xz(k,i)])
 			       + 0.25*(std::sin(4*pi*top_bnd_x[id_xz(k,i)]+3.34)*std::cos(4*pi*top_bnd_x[id_xz(k,i)])
 				       * std::sin(4*pi*top_bnd_z[id_xz(k,i)]+3.34)*std::cos(4*pi*top_bnd_z[id_xz(k,i)])));
 
@@ -322,6 +327,104 @@ void getBoundaryCurves3D_fixedTopFace(int num_points,
 				       bottom_bnd_x,bottom_bnd_y,bottom_bnd_z,
 				       back_bnd_x,back_bnd_y,back_bnd_z);
 }
+
+
+
+void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
+				      //				      double offset_x, double offset_y, double offset_z,
+				      //				      double width_x, double width_y , double width_z ,
+					       int nx, int ny, int nz, int n,
+					       double width_x, double width_y , double width_z,	      
+					       double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
+					       double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
+					       double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
+					       double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
+					       double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
+					       double* back_bnd_x, double* back_bnd_y, double* back_bnd_z){
+
+ 
+  
+  double pi = 3.14159265359;
+
+
+  double dx= width_x/(nx-1);
+  double dz= width_y/(nz-1);
+  double dy= width_z/(ny-1);
+
+  double depth=1.0;
+
+  kernels::idx2 id_xy(ny,nx); // back front
+  kernels::idx2 id_xz(nz,nx); // botton top
+  kernels::idx2 id_yz(nz,ny); //left right
+  
+  //(0.1*XT+1*sin(4*pi*XT/(xPMax-xPMin)+3.34).*cos(2*pi*(XT/(xPMax-xPMin)-0.5)+33.34))
+
+
+  //given top surface
+  for(int k = 0 ; k< nz; k++){  
+    for(int i = 0 ; i< nx; i++){
+
+      top_bnd_y[id_xz(k,i)] = 0;      
+      top_bnd_z[id_xz(k,i)] = 0+dz*k;
+      
+      if(n == 0){
+      top_bnd_x[id_xz(k,i)] = 0+dx*i;      
+	// top_bnd_y[id_xz(k,i)] = 0+0 * (0.1*(top_bnd_x[id_xz(k,i)] + top_bnd_z[id_xz(k,i)])
+	// 			   + 0.25*(std::sin(4*pi*top_bnd_x[id_xz(k,i)]+3.34)*std::cos(4*pi*top_bnd_x[id_xz(k,i)])
+	// 			   * std::sin(4*pi*top_bnd_z[id_xz(k,i)]+3.34)*std::cos(4*pi*top_bnd_z[id_xz(k,i)])));
+      }else{
+	top_bnd_x[id_xz(k,i)] = 0.5+dx*i;      
+      }
+    }
+  }
+  
+  
+  for(int i = 0 ; i< nx; i++){
+    for(int k = 0 ; k< nz; k++){
+      bottom_bnd_y[id_xz(k,i)] = depth;      
+      bottom_bnd_z[id_xz(k,i)] = top_bnd_z[id_xz(k,i)];
+      bottom_bnd_x[id_xz(k,i)] = top_bnd_x[id_xz(k,i)];
+      
+    }
+  }
+
+
+  getInterpolatedFace_fromBottomAndTop(nx,ny,nz,0,
+				       top_bnd_x,top_bnd_y,top_bnd_z,
+				       bottom_bnd_x,bottom_bnd_y,bottom_bnd_z,
+				       left_bnd_x,left_bnd_y,left_bnd_z);
+    
+  getInterpolatedFace_fromBottomAndTop(nx,ny,nz,1,
+				       top_bnd_x,top_bnd_y,top_bnd_z,
+				       bottom_bnd_x,bottom_bnd_y,bottom_bnd_z,
+				       right_bnd_x,right_bnd_y,right_bnd_z);
+  
+  getInterpolatedFace_fromBottomAndTop(nz,ny,nx,2,
+				       top_bnd_x,top_bnd_y,top_bnd_z,
+				       bottom_bnd_x,bottom_bnd_y,bottom_bnd_z,
+				       front_bnd_x,front_bnd_y,front_bnd_z);
+
+  getInterpolatedFace_fromBottomAndTop(nz,ny,nx,3,
+				       top_bnd_x,top_bnd_y,top_bnd_z,
+				       bottom_bnd_x,bottom_bnd_y,bottom_bnd_z,
+				       back_bnd_x,back_bnd_y,back_bnd_z);
+  if(n==0){
+  for(int i = 0 ; i< ny; i++){
+    for(int k = 0 ; k< nz; k++){
+      right_bnd_x[id_yz(k,i)] -= fault(right_bnd_y[id_yz(k,i)],right_bnd_z[id_yz(k,i)],depth,0,1);
+    }
+  }
+  }else{
+    for(int i = 0 ; i< ny; i++){
+      for(int k = 0 ; k< nz; k++){
+	left_bnd_x[id_yz(k,i)] += fault(left_bnd_y[id_yz(k,i)],left_bnd_z[id_yz(k,i)],depth,0,1);
+      }
+    }
+  }
+  
+}
+
+
 
 
 
@@ -363,9 +466,10 @@ void getInterpolatedFace_fromBottomAndTop( int nx, int ny, int nz, int face,
   int index=0;
 
   //generate top and bottom edge
+  std::cout << "top bottom edge" << std::endl;
   for(int i=0; i < nz ; i++){
     // left right front back
-    index = left_right ? (first ? id_xz(i,0) : id_xz(i,nx-1)) : (first ? id_xz(0,i) :  id_xz(nz-1,i));
+    index = left_right ? (first ? id_xz(i,0) : id_xz(nz-1-i,nx-1)) : (first ? id_xz(0,i) :  id_xz(nz-1,nx-1-i));
 
     top_edge_x[i]=top_bnd_x[index];
     top_edge_y[i]=top_bnd_y[index];
@@ -374,6 +478,15 @@ void getInterpolatedFace_fromBottomAndTop( int nx, int ny, int nz, int face,
     bottom_edge_x[i]=bottom_bnd_x[index];
     bottom_edge_y[i]=bottom_bnd_y[index];
     bottom_edge_z[i]=bottom_bnd_z[index];
+
+
+    std::cout << top_edge_x[i] <<std::endl;
+    std::cout << top_edge_y[i] <<std::endl;
+    std::cout << top_edge_z[i] <<std::endl;
+                    
+    std::cout << bottom_edge_x[i] <<std::endl;
+    std::cout << bottom_edge_y[i] <<std::endl;
+    std::cout << bottom_edge_z[i] <<std::endl;
   }
 
 
@@ -381,26 +494,65 @@ void getInterpolatedFace_fromBottomAndTop( int nx, int ny, int nz, int face,
   double h_x=(bottom_edge_x[0]-top_edge_x[0])/(ny-1);
   double h_y=(bottom_edge_y[0]-top_edge_y[0])/(ny-1);
   double h_z=(bottom_edge_z[0]-top_edge_z[0])/(ny-1);  
-  
+
+
+  std::cout << "front edge" << std::endl;
   for(int i=0; i < ny ; i++){
     front_edge_x[i]=top_edge_x[0]+i*h_x;
     front_edge_y[i]=top_edge_y[0]+i*h_y;
     front_edge_z[i]=top_edge_z[0]+i*h_z;
+
+    std::cout << front_edge_x[i] <<std::endl;
+    std::cout << front_edge_y[i] <<std::endl;
+    std::cout << front_edge_z[i] <<std::endl;
   }
 
   h_x=(bottom_edge_x[nz-1]-top_edge_x[nz-1])/(ny-1);
   h_y=(bottom_edge_y[nz-1]-top_edge_y[nz-1])/(ny-1);
   h_z=(bottom_edge_z[nz-1]-top_edge_z[nz-1])/(ny-1);  
 
+  std::cout << "back edge" << std::endl;  
   for(int i=0; i < ny ; i++){
     back_edge_x[i]=top_edge_x[nz-1]+i*h_x;
     back_edge_y[i]=top_edge_y[nz-1]+i*h_y;
     back_edge_z[i]=top_edge_z[nz-1]+i*h_z;
+
+    std::cout << back_edge_x[i] <<std::endl;
+    std::cout << back_edge_y[i] <<std::endl;
+    std::cout << back_edge_z[i] <<std::endl;
+
   }
 
-  transFiniteInterpolation_singleCoordinate( ny,  nz,  front_edge_x,  back_edge_x,  top_edge_x,  bottom_edge_x,  face_x );
-  transFiniteInterpolation_singleCoordinate( ny,  nz,  front_edge_y,  back_edge_y,  top_edge_y,  bottom_edge_y,  face_y );
-  transFiniteInterpolation_singleCoordinate( ny,  nz,  front_edge_z,  back_edge_z,  top_edge_z,  bottom_edge_z,  face_z );  
+  transFiniteInterpolation_singleCoordinate( nz,  ny,  front_edge_x,  back_edge_x,  top_edge_x,  bottom_edge_x,  face_x );
+  transFiniteInterpolation_singleCoordinate( nz,  ny,  front_edge_y,  back_edge_y,  top_edge_y,  bottom_edge_y,  face_y );
+  transFiniteInterpolation_singleCoordinate( nz,  ny,  front_edge_z,  back_edge_z,  top_edge_z,  bottom_edge_z,  face_z );
+
+  kernels::idx2 id_zy(ny,nz);
+
+  std::cout << "face" <<std::endl;
+  std::cout << face <<std::endl;  
+
+
+  std::cout << "x" <<std::endl;    
+  for(int i=0; i < nz ; i++){
+    for(int j=0; j < ny ; j++){
+      std::cout << face_x[id_zy(j,i)] <<std::endl;
+    }
+  }
+   
+  std::cout << "y" <<std::endl;    
+    for(int i=0; i < nz ; i++){
+    for(int j=0; j < ny ; j++){
+      std::cout << face_y[id_zy(j,i)] <<std::endl;
+    }
+  }
+    
+  std::cout << "z" <<std::endl;    
+      for(int i=0; i < nz ; i++){
+    for(int j=0; j < ny ; j++){
+      std::cout << face_z[id_zy(j,i)] <<std::endl;
+    }
+  }
 
 }  
 
@@ -613,6 +765,16 @@ void transFiniteInterpolation_singleCoordinate(int mx, int my, double* left_bnd,
 
    double r;
    double q;
+
+   
+   std::cout << mesh_size_x << std::endl;
+   std::cout << mesh_size_y << std::endl;
+
+   std::cout << my << std::endl;
+   std::cout << mx << std::endl;
+
+   
+   //   std::exit(-1);
 
    kernels::idx2 id_xy(my,mx);
    

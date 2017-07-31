@@ -64,7 +64,7 @@ void kernels::aderdg::generic::c::pointSource(
 
  
   double* PSi                = pointForceSources; 
-  double* forceVectorSourceN = pointForceSources+idx_pointForceSources(basisSize + 1, basisSize, basisSize, basisSize, numberOfVariables) + 1;
+  double* forceVectorSourceN = pointForceSources+idx_pointForceSources(basisSize, basisSize-1, basisSize-1, basisSize-1, numberOfVariables-1) + 1;
 
   std::fill_n(PSi               ,(basisSize + 1) * basisSize * basisSize * basisSize * numberOfVariables,0);
   
@@ -144,6 +144,7 @@ void kernels::aderdg::generic::c::pointSource(
       }// x loop
     }// time loop
   }
+
   //apply the result for this quadrature point
 
   //idx5 idx_pointForceSources(basisSize + 1, basisSize, basisSize, basisSize, numberOfVariables);

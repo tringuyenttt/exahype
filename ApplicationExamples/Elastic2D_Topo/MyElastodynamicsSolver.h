@@ -129,12 +129,12 @@ n     * \param[in]    centre    The centre of the cell.
     virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ);
 
     virtual void coefficientMatrix(const double* const Q,const int d,double* Bn);
-    virtual void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0);
+    virtual void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n);
 
     virtual bool useCoefficientMatrix() const {return false;}
     virtual bool useNonConservativeProduct() const {return true;}    
     virtual bool useConservativeFlux() const {return true;}    
-    virtual bool usePointSource()       const {return false;}
+    virtual int usePointSource()       const {return 2;}
     virtual bool useSource()       const {return false;}
     virtual bool useMaterialParameterMatrix()       const {return true;};
     

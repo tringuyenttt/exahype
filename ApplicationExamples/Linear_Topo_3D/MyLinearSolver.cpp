@@ -32,10 +32,13 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   int num_nodes = basisSize;
   int numberOfData=MyLinearSolver::NumberOfParameters+MyLinearSolver::NumberOfVariables;
 
-  int nx = std::ceil((1/dx[0]))*(num_nodes-1)+1;
-  int ny = std::ceil((1/dx[1]))*(num_nodes-1)+1;
-  int nz = std::ceil((1/dx[2]))*(num_nodes-1)+1;
+  //  int nx = std::ceil((1/dx[0]))*(num_nodes-1)+1;
+  //  int ny = std::ceil((1/dx[1]))*(num_nodes-1)+1;
+  //  int nz = std::ceil((1/dx[2]))*(num_nodes-1)+1;
 
+  int nx;
+  int ny;
+  int nz;
   
  // std::cout << nx << " "<< ny << " "<< nz <<std::endl;
 
@@ -43,6 +46,56 @@ void Linear::MyLinearSolver::adjustPatchSolution(
 
   kernels::idx4 id_4(basisSize,basisSize,basisSize,numberOfData);
   kernels::idx3 id_3(basisSize,basisSize,basisSize);
+
+
+  int n = cellCentre[0] > 0.5 ? 1 : 0 ;
+  
+  int ne_x = std::round(1/dx[0]);
+  int ne_y = std::round(1/dx[1]);
+  int ne_z = std::round(1/dx[2]);			    
+
+  nx = ne_x *(num_nodes-1) + 1;
+  ny = ne_y *(num_nodes-1) + 1;
+  nz = ne_z *(num_nodes-1) + 1;
+
+  
+  double block_width_x=0.5;
+  double block_width_y=1.0;
+  double block_width_z=1.0;
+
+  double offset_x=cellCentre[0]-0.5*dx[0];
+  double offset_y=cellCentre[1]-0.5*dx[1];
+  double offset_z=cellCentre[2]-0.5*dx[2];  
+
+  double width_x=dx[0];
+  double width_y=dx[1];
+  double width_z=dx[2];
+
+
+  int i_m;
+  int j_m;
+  int k_m;  
+  
+  if(n == 0){
+    ne_x = (ne_x+1)/2;
+    nx =  ne_x *(num_nodes-1)+1;
+    block_width_x=0.5;
+
+    i_m =  std::round((offset_x)/width_x) *(num_nodes-1);
+    j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
+    k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
+  }else{
+    ne_x = ne_x-(ne_x+1)/2;
+    nx =  ne_x *(num_nodes-1)+1;
+    block_width_x=0.5;
+
+    i_m =  std::floor((offset_x-0.5)/width_x) *(num_nodes-1);
+    j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
+    k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
+  }
+
+  std::cout <<"n: " <<n <<" nx: " << nx << " i_m : "<< i_m << " j_m : "<< j_m << " k_m : "<< k_m << std::endl;
+
 
   double* left_bnd_x = new double[ny*nz];
   double* left_bnd_y = new double[ny*nz];
@@ -68,14 +121,6 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   double* back_bnd_y = new double[nx*ny];
   double* back_bnd_z = new double[nx*ny];  
   
-
-  double offset_x=cellCentre[0]-0.5*dx[0];
-  double offset_y=cellCentre[1]-0.5*dx[1];
-  double offset_z=cellCentre[2]-0.5*dx[2];  
-
-  double width_x=dx[0];
-  double width_y=dx[1];
-  double width_z=dx[2];
   
   // getBoundaryCurves3D( num_nodes,
   // 		       offset_x,  offset_y,  offset_z,
@@ -87,33 +132,126 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   // 		       front_bnd_x,  front_bnd_y,  front_bnd_z,
   // 		       back_bnd_x,  back_bnd_y,  back_bnd_z);
 
-  getBoundaryCurves3D_fixedTopFace( num_nodes,
-  				    offset_x,  offset_y,  offset_z,
-  		       width_x,  width_y ,  width_z ,
-  		       left_bnd_x,  left_bnd_y,  left_bnd_z,
-  		       right_bnd_x,  right_bnd_y,  right_bnd_z,
-  		       bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
-  		       top_bnd_x,  top_bnd_y,  top_bnd_z,
-  		       front_bnd_x,  front_bnd_y,  front_bnd_z,
-  		       back_bnd_x,  back_bnd_y,  back_bnd_z);
+  
+
+  
+  getBoundaryCurves3D_fixedTopFace_forBlock( num_nodes,
+					     nx,ny,nz,n	,	     
+					     block_width_x,  block_width_y ,  block_width_z ,
+					     left_bnd_x,  left_bnd_y,  left_bnd_z,
+					     right_bnd_x,  right_bnd_y,  right_bnd_z,
+					     bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
+					     top_bnd_x,  top_bnd_y,  top_bnd_z,
+					     front_bnd_x,  front_bnd_y,  front_bnd_z,
+					     back_bnd_x,  back_bnd_y,  back_bnd_z);
+
+
+
+   std::cout << "left" << std::endl;
+  
+   for (int i=0; i< ny*nz; i++){
+       std::cout << left_bnd_x[i] << std::endl;     
+   }
+
+   for (int i=0; i<  ny*nz; i++){
+       std::cout << left_bnd_y[i] << std::endl;
+   }
+
+   for (int i=0; i<  ny*nz; i++){
+       std::cout << left_bnd_z[i] << std::endl;
+   }
+
+   std::cout << "right" << std::endl;
+   
+   for (int i=0; i< ny*nz; i++){
+       std::cout << right_bnd_x[i] << std::endl;     
+   }
+
+   for (int i=0; i<  ny*nz; i++){
+       std::cout << right_bnd_y[i] << std::endl;
+   }
+
+   for (int i=0; i<  ny*nz; i++){
+       std::cout << right_bnd_z[i] << std::endl;
+   }
+
+
+   std::cout << "back" <<std::endl;
+   
+   for (int i=0; i< ny*nx; i++){
+       std::cout << back_bnd_x[i] << std::endl;     
+   }
+
+   for (int i=0; i<  ny*nx; i++){
+       std::cout << back_bnd_y[i] << std::endl;
+   }
+
+   for (int i=0; i<  ny*nx; i++){
+       std::cout << back_bnd_z[i] << std::endl;
+   }
+   
+   std::cout <<"front" << std::endl;
+   
+   for (int i=0; i< ny*nx; i++){
+       std::cout << front_bnd_x[i] << std::endl;     
+   }
+
+   for (int i=0; i<  ny*nx; i++){
+       std::cout << front_bnd_y[i] << std::endl;
+   }
+
+   for (int i=0; i<  ny*nx; i++){
+       std::cout << front_bnd_z[i] << std::endl;
+   }
+
+   std::cout <<"top" << std::endl;
+   
+   for (int i=0; i< nz*nx; i++){
+       std::cout << top_bnd_x[i] << std::endl;     
+   }
+
+   for (int i=0; i<  nz*nx; i++){
+       std::cout << top_bnd_y[i] << std::endl;
+   }
+
+   for (int i=0; i<  nz*nx; i++){
+       std::cout << top_bnd_z[i] << std::endl;
+   }
+
+   std::cout << "bottom" << std::endl;
+   
+   for (int i=0; i< nz*nx; i++){
+       std::cout << bottom_bnd_x[i] << std::endl;     
+   }
+
+   for (int i=0; i<  nz*nx; i++){
+       std::cout << bottom_bnd_y[i] << std::endl;
+   }
+
+   for (int i=0; i<  nz*nx; i++){
+       std::cout << bottom_bnd_z[i] << std::endl;
+   }
 
 
   kernels::idx2 id_xy(ny,nx); // back front
   kernels::idx2 id_xz(nz,nx); // botton top
   kernels::idx2 id_yz(nz,ny); //left right
 
+
+  
+
   double* curvilinear_x = new double[num_nodes*num_nodes*num_nodes];
   double* curvilinear_y = new double[num_nodes*num_nodes*num_nodes];
   double* curvilinear_z = new double[num_nodes*num_nodes*num_nodes];  
 
-  int i_m;
-  int j_m;
-  int k_m;
+  //  int i_m;
+  //  int j_m;
+  //  int k_m;
 
 
-  i_m =  std::round((offset_x/width_x) *(num_nodes-1));
-  j_m =  std::round((offset_y/width_y) *(num_nodes-1));
-  k_m =  std::round((offset_z/width_z) *(num_nodes-1));
+  //  i_m =  std::round((offset_x/width_x) *(num_nodes-1));
+  //j_m =  std::round((offset_y/width_y) *(num_nodes-1));
+  //  k_m =  std::round((offset_z/width_z) *(num_nodes-1));
 
   // std::cout<< width_x<< "  " <<  width_y<< "  " <<  width_z<< "  " << std::endl;
   // std::cout<< offset_x<< "  " << offset_y<< "  " << offset_z<< "  " << std::endl;
@@ -511,8 +649,8 @@ void Linear::MyLinearSolver::pointSource(const double* const x,const double t,co
     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
     
     x0[0] = 0.25;
-    x0[1] = 0.25;
-    x0[2] = 0.25;
+    x0[1] = 0.5;
+    x0[2] = 0.5;
     
     forceVector[0] = 1.*f;
     forceVector[1] = 0.0;
@@ -522,10 +660,32 @@ void Linear::MyLinearSolver::pointSource(const double* const x,const double t,co
     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
     
     x0[0] = 0.75;
-    x0[1] = 0.75;
-    x0[2] = 0.75;
+    x0[1] = 0.5;
+    x0[2] = 0.5;
     
-    forceVector[0] = -1.*f;
+    forceVector[0] = 1.*f;
+    forceVector[1] = 0.0;
+    forceVector[2] = 0.0;
+    forceVector[3] = 0.0;
+  }else if(n == 2){
+    f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+    
+    x0[0] = 0.5;
+    x0[1] = 0.25;
+    x0[2] = 0.5;
+    
+    forceVector[0] = 1.*f;
+    forceVector[1] = 0.0;
+    forceVector[2] = 0.0;
+    forceVector[3] = 0.0;
+  }else if(n == 3){
+    f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+    
+    x0[0] = 0.5;
+    x0[1] = 0.75;
+    x0[2] = 0.5;
+    
+    forceVector[0] = 1.*f;
     forceVector[1] = 0.0;
     forceVector[2] = 0.0;
     forceVector[3] = 0.0;

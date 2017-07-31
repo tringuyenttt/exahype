@@ -100,7 +100,7 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
     bool useConservativeFlux()       const override {return true;}
     bool useAlgebraicSource()        const override {return false;}
     bool useMaterialParameterMatrix()const override {return true;}
-    int usePointSource()             const override {return 2;}
+    int usePointSource()             const override {return 4;}
 
 
     
