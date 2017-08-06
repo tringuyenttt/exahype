@@ -94,7 +94,7 @@ void Linear::MyLinearSolver::adjustPatchSolution(
     k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
   }
 
-  std::cout <<"n: " <<n <<" nx: " << nx << " i_m : "<< i_m << " j_m : "<< j_m << " k_m : "<< k_m << std::endl;
+  //  std::cout <<"n: " <<n <<" nx: " << nx << " i_m : "<< i_m << " j_m : "<< j_m << " k_m : "<< k_m << std::endl;
 
 
   double* left_bnd_x = new double[ny*nz];
@@ -147,98 +147,96 @@ void Linear::MyLinearSolver::adjustPatchSolution(
 
 
 
-   std::cout << "left" << std::endl;
+   // std::cout << "left" << std::endl;
   
-   for (int i=0; i< ny*nz; i++){
-       std::cout << left_bnd_x[i] << std::endl;     
-   }
+   // for (int i=0; i< ny*nz; i++){
+   //     std::cout << left_bnd_x[i] << std::endl;     
+   // }
 
-   for (int i=0; i<  ny*nz; i++){
-       std::cout << left_bnd_y[i] << std::endl;
-   }
+   // for (int i=0; i<  ny*nz; i++){
+   //     std::cout << left_bnd_y[i] << std::endl;
+   // }
 
-   for (int i=0; i<  ny*nz; i++){
-       std::cout << left_bnd_z[i] << std::endl;
-   }
+   // for (int i=0; i<  ny*nz; i++){
+   //     std::cout << left_bnd_z[i] << std::endl;
+   // }
 
-   std::cout << "right" << std::endl;
+   // std::cout << "right" << std::endl;
    
-   for (int i=0; i< ny*nz; i++){
-       std::cout << right_bnd_x[i] << std::endl;     
-   }
+   // for (int i=0; i< ny*nz; i++){
+   //     std::cout << right_bnd_x[i] << std::endl;     
+   // }
 
-   for (int i=0; i<  ny*nz; i++){
-       std::cout << right_bnd_y[i] << std::endl;
-   }
+   // for (int i=0; i<  ny*nz; i++){
+   //     std::cout << right_bnd_y[i] << std::endl;
+   // }
 
-   for (int i=0; i<  ny*nz; i++){
-       std::cout << right_bnd_z[i] << std::endl;
-   }
+   // for (int i=0; i<  ny*nz; i++){
+   //     std::cout << right_bnd_z[i] << std::endl;
+   // }
 
 
-   std::cout << "back" <<std::endl;
+   // std::cout << "back" <<std::endl;
    
-   for (int i=0; i< ny*nx; i++){
-       std::cout << back_bnd_x[i] << std::endl;     
-   }
+   // for (int i=0; i< ny*nx; i++){
+   //     std::cout << back_bnd_x[i] << std::endl;     
+   // }
 
-   for (int i=0; i<  ny*nx; i++){
-       std::cout << back_bnd_y[i] << std::endl;
-   }
+   // for (int i=0; i<  ny*nx; i++){
+   //     std::cout << back_bnd_y[i] << std::endl;
+   // }
 
-   for (int i=0; i<  ny*nx; i++){
-       std::cout << back_bnd_z[i] << std::endl;
-   }
+   // for (int i=0; i<  ny*nx; i++){
+   //     std::cout << back_bnd_z[i] << std::endl;
+   // }
    
-   std::cout <<"front" << std::endl;
+   // std::cout <<"front" << std::endl;
    
-   for (int i=0; i< ny*nx; i++){
-       std::cout << front_bnd_x[i] << std::endl;     
-   }
+   // for (int i=0; i< ny*nx; i++){
+   //     std::cout << front_bnd_x[i] << std::endl;     
+   // }
 
-   for (int i=0; i<  ny*nx; i++){
-       std::cout << front_bnd_y[i] << std::endl;
-   }
+   // for (int i=0; i<  ny*nx; i++){
+   //     std::cout << front_bnd_y[i] << std::endl;
+   // }
 
-   for (int i=0; i<  ny*nx; i++){
-       std::cout << front_bnd_z[i] << std::endl;
-   }
+   // for (int i=0; i<  ny*nx; i++){
+   //     std::cout << front_bnd_z[i] << std::endl;
+   // }
 
-   std::cout <<"top" << std::endl;
+   // std::cout <<"top" << std::endl;
    
-   for (int i=0; i< nz*nx; i++){
-       std::cout << top_bnd_x[i] << std::endl;     
-   }
+   // for (int i=0; i< nz*nx; i++){
+   //     std::cout << top_bnd_x[i] << std::endl;     
+   // }
 
-   for (int i=0; i<  nz*nx; i++){
-       std::cout << top_bnd_y[i] << std::endl;
-   }
+   // for (int i=0; i<  nz*nx; i++){
+   //     std::cout << top_bnd_y[i] << std::endl;
+   // }
 
-   for (int i=0; i<  nz*nx; i++){
-       std::cout << top_bnd_z[i] << std::endl;
-   }
+   // for (int i=0; i<  nz*nx; i++){
+   //     std::cout << top_bnd_z[i] << std::endl;
+   // }
 
-   std::cout << "bottom" << std::endl;
+   // std::cout << "bottom" << std::endl;
    
-   for (int i=0; i< nz*nx; i++){
-       std::cout << bottom_bnd_x[i] << std::endl;     
-   }
+   // for (int i=0; i< nz*nx; i++){
+   //     std::cout << bottom_bnd_x[i] << std::endl;     
+   // }
 
-   for (int i=0; i<  nz*nx; i++){
-       std::cout << bottom_bnd_y[i] << std::endl;
-   }
+   // for (int i=0; i<  nz*nx; i++){
+   //     std::cout << bottom_bnd_y[i] << std::endl;
+   // }
 
-   for (int i=0; i<  nz*nx; i++){
-       std::cout << bottom_bnd_z[i] << std::endl;
-   }
+   // for (int i=0; i<  nz*nx; i++){
+   //     std::cout << bottom_bnd_z[i] << std::endl;
+   // }
 
 
   kernels::idx2 id_xy(ny,nx); // back front
   kernels::idx2 id_xz(nz,nx); // botton top
   kernels::idx2 id_yz(nz,ny); //left right
 
-
-  
 
   double* curvilinear_x = new double[num_nodes*num_nodes*num_nodes];
   double* curvilinear_y = new double[num_nodes*num_nodes*num_nodes];
@@ -367,12 +365,12 @@ void Linear::MyLinearSolver::adjustPatchSolution(
 	double z= gl_vals_z[id_3(k,j,i)];
 
 
-	std::cout << std::endl;	
-	std::cout <<"x" << x - (offset_x+width_x*kernels::gaussLegendreNodes[num_nodes-1][i]) << std::endl;
-	std::cout <<"y" << y - (offset_y+width_y*kernels::gaussLegendreNodes[num_nodes-1][j]) << std::endl;
-	std::cout <<"z" << z - (offset_z+width_z*kernels::gaussLegendreNodes[num_nodes-1][k]) << std::endl;
+	// std::cout << std::endl;	
+	// std::cout <<"x" << x - (offset_x+width_x*kernels::gaussLegendreNodes[num_nodes-1][i]) << std::endl;
+	// std::cout <<"y" << y - (offset_y+width_y*kernels::gaussLegendreNodes[num_nodes-1][j]) << std::endl;
+	// std::cout <<"z" << z - (offset_z+width_z*kernels::gaussLegendreNodes[num_nodes-1][k]) << std::endl;
 
-	std::cout << std::endl;	
+	// std::cout << std::endl;	
 
 	//Pressure
 	//luh[id_4(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
