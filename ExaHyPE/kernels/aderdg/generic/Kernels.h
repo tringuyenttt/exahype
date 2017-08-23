@@ -19,7 +19,11 @@
 #include "peano/utils/Globals.h"
 #include "tarch/la/Vector.h"
 
+
+#include "kernels/GaussLobattoQuadrature.h"
+
 #include "kernels/GaussLegendreQuadrature.h"
+
 
 #include "kernels/DGMatrices.h"
 

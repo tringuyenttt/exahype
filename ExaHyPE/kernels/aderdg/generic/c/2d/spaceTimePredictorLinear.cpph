@@ -91,7 +91,14 @@ void spaceTimePredictorLinear(SolverType& solver,
 	  for (int m = 0; m < numberOfVariables/* skip parameters */; m++) {
 	    double sum = 0.0;
 	    for (int n = 1; n <  basisSize+1; n++) {
-	      sum = sum +   gaussLegendreWeights[order][n-1]*PSi[idx_PSi(n, j, k, m)];
+
+#if defined(_GLL)
+	      const double weight = gaussLobattoWeights[order][n-1];
+#else      
+	      const double weight = gaussLegendreWeights[order][n-1];
+#endif      
+	      
+	      sum = sum +   weight * PSi[idx_PSi(n, j, k, m)];
 	    }
 	    lQi[idx_lQi(0, j, k, m)] += dt*sum;
 	  }
@@ -145,7 +152,6 @@ for (int i = 2; i < basisSize; i++) {
 	       for(int t = 1; t < basisSize + 1; t ++ ){
 		 
 		 sum = sum + lFi[idx_lFi(t-1, j, k, 0, n)]*kernels::FLCoeff[order][t-1];
-		 
 	       } //t
 	       lQi[idx_lQi(i, j, k, n)] = sum;
 	     } //n
@@ -195,6 +201,7 @@ for (int i = 2; i < basisSize; i++) {
                 kernels::dudx[order][l][n];
           }
         }
+
       }
     }
 
@@ -212,6 +219,7 @@ for (int i = 2; i < basisSize; i++) {
                 kernels::dudx[order][l][n];
           }
         }
+	//	std::cout << gradQ[idx_gradQ(i, l, k, 1, 0)] << std::endl;
       }
     }
 
@@ -406,7 +414,14 @@ for (int i = 2; i < basisSize; i++) {
 	  for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
 	    double sum = 0.0;
 	    for (int n0 = 1; n0 <  basisSize+1; n0++) {
-	      sum = sum +   gaussLegendreWeights[order][n0-1]*PSi[idx_PSi(n0, k, m, n)];
+
+#if defined(_GLL)
+	      const double weight = gaussLobattoWeights[order][n0-1];
+#else      
+	      const double weight = gaussLegendreWeights[order][n0-1];
+#endif      
+	      
+	      sum = sum +   weight*PSi[idx_PSi(n0, k, m, n)];
 	    }
 	    lFh[idx_lFh(j, k, m, n)] += sum/DIMENSIONS;
 	  }

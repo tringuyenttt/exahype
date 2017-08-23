@@ -39,8 +39,13 @@ void volumeIntegralLinear(double* lduh, const double* const lFhi,
 
   for (int j = 0; j < basisSize; j++) {
     for (int k = 0; k < basisSize; k++) {
+#if defined(_GLL)
+      double weight = kernels::gaussLobattoWeights[order][j] *
+	              kernels::gaussLobattoWeights[order][k];
+#else      
       double weight = kernels::gaussLegendreWeights[order][j] *
                       kernels::gaussLegendreWeights[order][k];
+#endif      
 
       // Fortran: lduh(:,k,j) = -SUM(lFhi(:,k,j,1:nDim), dim = 4) * weight
       for (int l = 0; l < numberOfVariables; l++) {

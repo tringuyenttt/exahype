@@ -84,12 +84,21 @@ void kernels::initGaussLobattoNodesAndWeights(const std::set<int>& orders) {
   gaussLobattoWeights[5][3] = 0.2774291885177432;
   gaussLobattoWeights[5][4] = 0.1892374781489235;
   gaussLobattoWeights[5][5] = 0.03333333333333333;
-  gaussLobattoNodes  [5][0] = 1;
-  gaussLobattoNodes  [5][1] = 0.8825276619647324;
-  gaussLobattoNodes  [5][2] = 0.6426157582403226;
-  gaussLobattoNodes  [5][3] = 0.3573842417596774;
-  gaussLobattoNodes  [5][4] = 0.1174723380352676;
-  gaussLobattoNodes  [5][5] = 0;
+
+
+  gaussLobattoNodes  [5][0] = 0;
+  gaussLobattoNodes  [5][1] = 0.1174723380352676;
+  gaussLobattoNodes  [5][2] = 0.3573842417596774;
+  gaussLobattoNodes  [5][3] = 0.6426157582403226;
+  gaussLobattoNodes  [5][4] = 0.8825276619647324;
+  gaussLobattoNodes  [5][5] = 1;
+  
+  //gaussLobattoNodes  [5][0] = 1;
+  //gaussLobattoNodes  [5][1] = 0.8825276619647324;
+  //gaussLobattoNodes  [5][2] = 0.6426157582403226;
+  //gaussLobattoNodes  [5][3] = 0.3573842417596774;
+  //gaussLobattoNodes  [5][4] = 0.1174723380352676;
+  //gaussLobattoNodes  [5][5] = 0;
 
   gaussLobattoWeights[6][0] = 0.02380952380952381;
   gaussLobattoWeights[6][1] = 0.138413023680783;

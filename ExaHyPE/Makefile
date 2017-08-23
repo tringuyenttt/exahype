@@ -76,6 +76,9 @@ endif
 #compiler. 
 #
 #
+
+	COMPILER_CFLAGS += -D_GLL
+
 ifeq ($(call tolower,$(MODE)),release)
 	# Settings for the Release mode
 	# ----------------------------------------------
