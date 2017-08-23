@@ -59,15 +59,16 @@ exahype-project  Linear
 
   solver ADER-DG MyLinearSolver
     variables const   = p:1,v:2
-    order const       = 3
+    parameters const  = x:2
+    order const       = 5
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size = 0.25
+    maximum-mesh-size = 0.15
     time-stepping     = globalfixed
     kernel const      = generic::fluxes::linear
     language const    = C
 
-    plot vtu::Legendre::cells::ascii ConservedQuantitiesWriter
-      variables const = 3
+    plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
+      variables const = 5
       time            = 0.0
       repeat          = 0.0001
       output          = ./conserved
