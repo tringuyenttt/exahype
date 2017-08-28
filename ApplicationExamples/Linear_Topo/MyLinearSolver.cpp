@@ -82,7 +82,7 @@ void Linear::MyLinearSolver::adjustPatchSolution(
 
 	
 	//Pressure
-	luh[id_xyz(i,j,0)] = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))/0.01);
+	luh[id_xyz(i,j,0)] = 10*std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))/0.01);
 	//luh[id_xyz(j,i,0)] = x*0.1;
 	
 	//Velocity
