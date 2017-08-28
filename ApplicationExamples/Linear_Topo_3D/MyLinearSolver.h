@@ -33,7 +33,7 @@ class Linear::MyLinearSolver: public Linear::AbstractMyLinearSolver {
      */
     static tarch::logging::Log _log;
   public:
-    MyLinearSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    MyLinearSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
 
     /**
      * Initialise the solver.
