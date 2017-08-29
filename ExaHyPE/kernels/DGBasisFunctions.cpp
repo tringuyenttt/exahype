@@ -263,11 +263,13 @@ void kernels::initBasisFunctions(const std::set<int>& orders) {
   basisFunctionSecondDerivatives[9][9] = (UnivariateFunction) basisFunctionSecondDerivative_9_9;
 }
 
+
 // Basis functions in interval (0,1).
 double basisFunction_0_0(const double s) {
   return 1;
 }
 
+#if !defined(_GLL)
 double basisFunction_1_0(const double s) {
   return -1.73205080756888*s + 1.36602540378444;
 }
@@ -325,32 +327,6 @@ double basisFunction_4_4(const double s) {
 }
 
 
-#if defined(_GLL)
-double basisFunction_5_0(const double s) {
-    return 42.00000000000002*s*(s-0.1174723380352676)*(s-0.3573842417596774)*(s-0.6426157582403226)*(s-0.8825276619647324);
-}
-
-double basisFunction_5_1(const double s) {
-  return 100.0722106463179*s*(s-0.3573842417596774)*(s-0.6426157582403226)*(s-0.8825276619647324)*(s-1.);
-}
-
-double basisFunction_5_2(const double s) {
-  return -100.072210646318*s*(s-0.1174723380352676)*(s-0.3573842417596774)*(s-0.6426157582403226)*(s-1.);
-}
-
-double basisFunction_5_3(const double s) {
-  return 121.1674570846436*s*(s-0.1174723380352676)*(s-0.3573842417596774)*(s-0.8825276619647324)*(s-1.);
-}
-
-double basisFunction_5_4(const double s) {
-  return -121.1674570846437*s*(s-0.1174723380352676)*(s-0.6426157582403226)*(s-0.8825276619647324)*(s-1.);
-}
-
-double basisFunction_5_5(const double s) {
-  return -4.933838197481242*(8.512642352447089*s-1.)*(s-0.3573842417596774)*(s-0.6426157582403226)*(s-0.8825276619647324)*(s-1.);
-}
-
-#else
 double basisFunction_5_0(const double s) {
   return -48.8475703740572*pow_5(s) + 144.89336104348*pow_4(s) - 161.633448563357*pow_3(s) + 83.3561716652067*pow_2(s) - 19.3888996957563*s + 1.56567320015126;
 }
@@ -374,8 +350,6 @@ double basisFunction_5_4(const double s) {
 double basisFunction_5_5(const double s) {
   return (1.07242111915536*s - 0.0362105595776804)*(1.25495794614581*s - 0.212583986266887)*(1.70781256749465*s - 0.65014786132821)*(2.88246602897655*s - 1.7851388633617)*(7.37299660177086*s - 6.12404558062281);
 }
-
-#endif
 
 double basisFunction_6_0(const double s) {
   return (1.05362097080365*s - 1.02681048540182)*(1.18298458993076*s - 1.03010227772396)*(1.47606589006766*s - 1.03756003733259)*(2.10724194160729*s - 1.05362097080365)*(3.68145977177979*s - 1.09367858670601)*(9.63499151074237*s - 1.24517241627074);
@@ -958,3 +932,659 @@ double basisFunctionSecondDerivative_9_8(const double s) {
 double basisFunctionSecondDerivative_9_9(const double s) {
   return 275603.597742043*pow_7(s) - 860230.091993451*pow_6(s) + 1076701.4050875*pow_5(s) - 691506.703857538*pow_4(s) + 241840.69613389*pow_3(s) - 44932.9730214039*pow_2(s) + 3957.77387258443*s - 120.057239941923;
 }
+#else
+
+double basisFunction_1_0(const double s){
+return -s+1.000000000;
+}
+double basisFunction_1_1(const double s){
+return 1.*s
+;
+}
+double basisFunction_2_0(const double s){
+return (2.*s-1.)*(s-1.)
+;
+}
+double basisFunction_2_1(const double s){
+return (-4.*s+4.)*s
+;
+}
+double basisFunction_2_2(const double s){
+return (2.*s-1.0)*s
+;
+}
+double basisFunction_3_0(const double s){
+return -1.381966011*(3.618033988*s-1.)*(s-.7236067977)*(s-1.)
+;
+}
+double basisFunction_3_1(const double s){
+return 11.18033989*s*(s-.7236067977)*(s-1.)
+;
+}
+double basisFunction_3_2(const double s){
+return -11.18033989*s*(s-.2763932022500211)*(s-1.000000000000000)
+;
+}
+double basisFunction_3_3(const double s){
+return 4.999999998*s*(s-.2763932022500211)*(s-.7236067977499789)
+;
+}
+double basisFunction_4_0(const double s){
+return 2.417424305*(5.791287849*s-1.)*(s-.5)*(s-.8273268354)*(s-1.)
+;
+}
+double basisFunction_4_1(const double s){
+return -32.66666666*s*(s-.5)*(s-.8273268354)*(s-1.)
+;
+}
+double basisFunction_4_2(const double s){
+return 37.33333332*s*(s-.1726731646)*(s-.8273268354)*(s-1.)
+;
+}
+double basisFunction_4_3(const double s){
+return -32.66666666*s*(s-.1726731646)*(s-.5)*(s-1.)
+;
+}
+double basisFunction_4_4(const double s){
+return 14.*s*(s-.1726731646)*(s-.5)*(s-.8273268354)
+;
+}
+double basisFunction_5_0(const double s){
+return -4.933838196*(8.512642355*s-1.)*(s-.3573842418)*(s-.6426157582)*(s-.882527662)*(s-1.)
+;
+}
+double basisFunction_5_1(const double s){
+return 100.0722106*s*(s-.3573842418)*(s-.6426157582)*(s-.882527662)*(s-1.)
+;
+}
+double basisFunction_5_2(const double s){
+return -121.167457*s*(s-.117472338)*(s-.6426157582)*(s-.882527662)*(s-1.)
+;
+}
+double basisFunction_5_3(const double s){
+return 121.167457*s*(s-.117472338)*(s-.3573842418)*(s-.882527662)*(s-1.)
+;
+}
+double basisFunction_5_4(const double s){
+return -100.0722106*s*(s-.117472338)*(s-.3573842418)*(s-.6426157582)*(s-1.)
+;
+}
+double basisFunction_5_5(const double s){
+return 42.00000003*s*(s-.117472338)*(s-.3573842418)*(s-.6426157582)*(s-.882527662)
+;
+}
+double basisFunction_6_0(const double s){
+return 11.20522285*(11.78022087*s-1.)*(s-.2655756033)*(s-.5)*(s-.7344243967)*(s-.9151119481)*(s-1.)
+;
+}
+double basisFunction_6_1(const double s){
+return -318.2636613*s*(s-.2655756033)*(s-.5)*(s-.7344243967)*(s-.9151119481)*(s-1.)
+;
+}
+double basisFunction_6_2(const double s){
+return 397.4636614*s*(s-0.8488805186e-1)*(s-.5)*(s-.7344243967)*(s-.9151119481)*(s-1.)
+;
+}
+double basisFunction_6_3(const double s){
+return -422.4000002*s*(s-0.8488805186e-1)*(s-.2655756033)*(s-.7344243967)*(s-.9151119481)*(s-1.)
+;
+}
+double basisFunction_6_4(const double s){
+return 397.4636612*s*(s-0.8488805186e-1)*(s-.2655756033)*(s-.5)*(s-.9151119481)*(s-1.)
+;
+}
+double basisFunction_6_5(const double s){
+return -318.2636612*s*(s-0.8488805186e-1)*(s-.2655756033)*(s-.5)*(s-.7344243967)*(s-1.)
+;
+}
+double basisFunction_6_6(const double s){
+return 132.*s*(s-0.8488805186e-1)*(s-.2655756033)*(s-.5)*(s-.7344243967)*(s-.9151119481)
+;
+}
+double basisFunction_7_0(const double s){
+return -27.51173814*(15.59334411*s-1.)*(s-.2041499093)*(s-.395350391)*(s-.604649609)*(s-.7958500907)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_1(const double s){
+return 1042.012507*s*(s-.2041499093)*(s-.395350391)*(s-.604649609)*(s-.7958500907)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_2(const double s){
+return -1325.841514*s*(s-0.6412992575e-1)*(s-.395350391)*(s-.604649609)*(s-.7958500907)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_3(const double s){
+return 1457.89616*s*(s-0.6412992575e-1)*(s-.2041499093)*(s-.604649609)*(s-.7958500907)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_4(const double s){
+return -1457.896161*s*(s-0.6412992575e-1)*(s-.2041499093)*(s-.395350391)*(s-.7958500907)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_5(const double s){
+return 1325.841514*s*(s-0.6412992575e-1)*(s-.2041499093)*(s-.395350391)*(s-.604649609)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_6(const double s){
+return -1042.012508*s*(s-0.6412992575e-1)*(s-.2041499093)*(s-.395350391)*(s-.604649609)*(s-.7958500907)*(s-1.)
+;
+}
+double basisFunction_7_7(const double s){
+return 429.0000002*s*(s-0.6412992575e-1)*(s-.2041499093)*(s-.395350391)*(s-.604649609)*(s-.7958500907)*(s-.9358700743)
+;
+}
+double basisFunction_8_0(const double s){
+return 71.67303331*(19.95171593*s-.9999999998)*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_1(const double s){
+return -3490.440193*s*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_2(const double s){
+return 4495.614715*s*(s-0.5012100229e-1)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_3(const double s){
+return -5050.031668*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_4(const double s){
+return 5229.714284*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.3184412681)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_5(const double s){
+return -5050.031667*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_6(const double s){
+return 4495.614714*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_7(const double s){
+return -3490.440194*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-1.)
+;
+}
+double basisFunction_8_8(const double s){
+return 1430.000001*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)
+;
+}
+double basisFunction_9_0(const double s){
+return -195.6130694*(24.85518998*s-.9999999998)*(s-.1306130674472474)*(s-.2610375250947777)*(s-.4173605211668065)*(s-.5826394788331934)*(s-.7389624749052223)*(s-.8693869325527526)*(s-.9597669540832294)*(s-1.000000000000000)
+;
+}
+double basisFunction_9_1(const double s){
+return 11908.19794*s*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_2(const double s){
+return -15466.98443*s*(s-0.4023304592e-1)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_3(const double s){
+return 17625.61894*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_4(const double s){
+return -18666.08441*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_5(const double s){
+return 18666.0844*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_6(const double s){
+return -17625.61894*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_7(const double s){
+return 15466.98442*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_8(const double s){
+return -11908.19795*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-1.)
+;
+}
+double basisFunction_9_9(const double s){
+return 4862.000006*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)
+;
+}
+
+
+double basisFunctionFirstDerivative_1_0(const double s){
+return -1
+;
+}
+double basisFunctionFirstDerivative_1_1(const double s){
+return 1.
+;
+}
+double basisFunctionFirstDerivative_2_0(const double s){
+return 4.*s-3.
+;
+}
+double basisFunctionFirstDerivative_2_1(const double s){
+return -8.*s+4.
+;
+}
+double basisFunctionFirstDerivative_2_2(const double s){
+return 4.*s-1.0
+;
+}
+double basisFunctionFirstDerivative_3_0(const double s){
+return -14.99999999*s^2+19.99999999*s-5.999999998
+;
+}
+double basisFunctionFirstDerivative_3_1(const double s){
+return 33.54101967*s^2-38.54101967*s+8.090169945
+;
+}
+double basisFunctionFirstDerivative_3_2(const double s){
+return -33.54101967*s^2+28.54101967*s-3.090169945
+;
+}
+double basisFunctionFirstDerivative_3_3(const double s){
+return 14.99999999*s^2-9.999999996*s+.9999999996
+;
+}
+double basisFunctionFirstDerivative_4_0(const double s){
+return 56.00000000*s^3-105.0000000*s^2+60.00000000*s-10.00000000
+;
+}
+double basisFunctionFirstDerivative_4_1(const double s){
+return -130.6666666*s^3+228.0780298*s^2-113.7446965*s+13.51300498
+;
+}
+double basisFunctionFirstDerivative_4_2(const double s){
+return 149.3333333*s^3-223.9999999*s^2+85.33333331*s-5.333333329
+;
+}
+double basisFunctionFirstDerivative_4_3(const double s){
+return -130.6666666*s^3+163.9219701*s^2-49.58863678*s+2.820328355
+;
+}
+double basisFunctionFirstDerivative_4_4(const double s){
+return 56.*s^3-62.99999999*s^2+18.00000000*s-.9999999997
+;
+}
+double basisFunctionFirstDerivative_5_0(const double s){
+return -210.0000000*s^4+504.0000000*s^3-420.0000000*s^2+140.0000000*s-15.00000001
+;
+}
+double basisFunctionFirstDerivative_5_1(const double s){
+return 500.3610530*s^4-1153.843661*s^3+899.0635716*s^2-263.1639690*s+20.28283187
+;
+}
+double basisFunctionFirstDerivative_5_2(const double s){
+return -605.837285*s^4+1280.796125*s^3-868.3723060*s^2+196.9964711*s-8.072374533
+;
+}
+double basisFunctionFirstDerivative_5_3(const double s){
+return 605.837285*s^4-1142.553015*s^3+661.0076411*s^2-120.7089057*s+4.489369293
+;
+}
+double basisFunctionFirstDerivative_5_4(const double s){
+return -500.3610530*s^4+847.6005509*s^3-439.6989065*s^2+74.87640333*s-2.699826626
+;
+}
+double basisFunctionFirstDerivative_5_5(const double s){
+return 210.0000001*s^4-336.0000003*s^3+168.0000002*s^2-28.00000002*s+1.000000000
+;
+}
+double basisFunctionFirstDerivative_6_0(const double s){
+return -1260.000001*s^2+792.0000006*s^5-2310.000001*s^4+2520.000001*s^3-21.00000000+280.0000001*s
+;
+}
+double basisFunctionFirstDerivative_6_1(const double s){
+return 2674.636787*s^2+28.40315321-1909.581967*s^5+5434.530162*s^4-5706.881280*s^3-523.7415985*s
+;
+}
+double basisFunctionFirstDerivative_6_2(const double s){
+return -2554.606475*s^2+2384.781967*s^5-6427.830816*s^4+6222.282591*s^3+390.8106327*s-11.33797046
+;
+}
+double basisFunctionFirstDerivative_6_3(const double s){
+return 1958.400000*s^2-2534.400001*s^5+6336.000003*s^4-5529.600002*s^3+6.400000007-243.2000002*s
+;
+}
+double basisFunctionFirstDerivative_6_4(const double s){
+return -1393.076080*s^2+2384.781967*s^5-5496.079022*s^4+4358.779004*s^3-4.099929630+161.0320296*s
+;
+}
+double basisFunctionFirstDerivative_6_5(const double s){
+return 934.6457669*s^2-1909.581967*s^5+4113.379677*s^4-3064.580312*s^3+2.634746873-104.9010636*s
+;
+}
+double basisFunctionFirstDerivative_6_6(const double s){
+return -360.0000000*s^2+792.*s^5-1650.000001*s^4+1200.000000*s^3-1.000000001+39.99999999*s
+;
+}
+double basisFunctionFirstDerivative_7_0(const double s){
+return -3003.000000*s^6-3150.000000*s^2+10296.00000*s^5-13860.00000*s^4+9239.999998*s^3-27.99999999+503.9999998*s
+;
+}
+double basisFunctionFirstDerivative_7_1(const double s){
+return 7294.087549*s^6+6651.499582*s^2-24607.35506*s^5+32349.96292*s^4-20783.66574*s^3+37.87519718-939.8090762*s
+;
+}
+double basisFunctionFirstDerivative_7_2(const double s){
+return -9280.890598*s^6-6305.513395*s^2+30196.17380*s^5-37697.75790*s^4+22399.79138*s^3-15.13857964+699.4519965*s
+;
+}
+double basisFunctionFirstDerivative_7_3(const double s){
+return 10205.27312*s^6+4837.071012*s^2-31531.22893*s^5+36713.02415*s^4-19789.23361*s^3+8.595816335-437.8811675*s
+;
+}
+double basisFunctionFirstDerivative_7_4(const double s){
+return -10205.27313*s^6-3514.322474*s^2+29700.40980*s^5-32135.97628*s^4+15856.03599*s^3-5.620377986+296.1506383*s
+;
+}
+double basisFunctionFirstDerivative_7_5(const double s){
+return 9280.890598*s^6+2544.307783*s^2-25489.16979*s^5+25930.24791*s^4-12047.31432*s^3+3.883318853-207.7069353*s
+;
+}
+double basisFunctionFirstDerivative_7_6(const double s){
+return -7294.087556*s^6-1738.042510*s^2+19157.17025*s^5-18724.50087*s^4+8424.386313*s^3-2.595374778+139.7945450*s
+;
+}
+double basisFunctionFirstDerivative_7_7(const double s){
+return 3003.000001*s^6+675.0000004*s^2-7722.000004*s^5+7425.000004*s^4-3300.000002*s^3+1.000000001-54.00000004*s
+;
+}
+double basisFunctionFirstDerivative_8_0(const double s){
+return -45045.00002*s^6-6930.000002*s^2+72072.00004*s^5-60060.00003*s^4+27720.00002*s^3-35.99999999+11440.00000*s^7+839.9999998*s
+;
+}
+double basisFunctionFirstDerivative_8_1(const double s){
+return 108724.2556*s^6+14581.97080*s^2-171247.2984*s^5+139445.9162*s^4-62069.50539*s^3+48.69949034-27923.52153*s^7-1563.086510*s
+;
+}
+double basisFunctionFirstDerivative_8_2(const double s){
+return -136532.5022*s^6-13751.76728*s^2+207689.8823*s^5-160880.3414*s^4+66372.00952*s^3-19.47740332+35964.91774*s^7+1161.027617*s
+;
+}
+double basisFunctionFirstDerivative_8_3(const double s){
+return 147819.0282*s^6+10540.22631*s^2-214174.4428*s^5+155266.3458*s^4-58338.35193*s^3+11.08992782-40400.25336*s^7-728.8234795*s
+;
+}
+double basisFunctionFirstDerivative_8_4(const double s){
+return -146432.0000*s^6-7723.885712*s^2+200821.0286*s^5-135972.5715*s^4+46986.97141*s^3+41837.71425*s^7-7.314285709+497.3714282*s
+;
+}
+double basisFunctionFirstDerivative_8_5(const double s){
+return 134982.7453*s^6+5741.081792*s^2-175665.5943*s^5+112329.3136*s^4-36645.70191*s^3-40400.25335*s^7+5.181491354-357.8625503*s
+;
+}
+double basisFunctionFirstDerivative_8_6(const double s){
+return -115221.9218*s^6-4256.775942*s^2+143758.1416*s^5-88353.65850*s^4+27871.54464*s^3+35964.91769*s^7-3.748881746+260.9786022*s
+;
+}
+double basisFunctionFirstDerivative_8_7(const double s){
+return 86740.39529*s^6+2954.150055*s^2-105295.7174*s^5+63249.99601*s^4-19596.96641*s^3-27923.52153*s^7+2.569661267-179.6051089*s
+;
+}
+double basisFunctionFirstDerivative_8_8(const double s){
+return -35035.00003*s^6-1155.000001*s^2+42042.00004*s^5-25025.00000*s^4+7700.000004*s^3+11440.00001*s^7-1.000000001+70.00000004*s
+;
+}
+double basisFunctionFirstDerivative_9_0(const double s){
+return -360360.0001*s^6-13860.00001*s^2+360360.0002*s^5-210210.0001*s^4+72072.00004*s^3-43758.00001*s^8-45.00000001+194480.0001*s^7+1320.000001*s
+;
+}
+double basisFunctionFirstDerivative_9_1(const double s){
+return 865973.9347*s^6+29092.21651*s^2-852744.0956*s^5+486264.0301*s^4-160870.4160*s^3+107173.7815*s^8+60.87629002-472495.0930*s^7-2452.682594*s
+;
+}
+double basisFunctionFirstDerivative_9_2(const double s){
+return -1077516.876*s^6-27333.76761*s^2+1025744.107*s^5-557073.3006*s^4+171066.4565*s^3-139202.8598*s^8-24.35589342+602517.8550*s^7+1819.083138*s
+;
+}
+double basisFunctionFirstDerivative_9_3(const double s){
+return 1153743.366*s^6+20926.62864*s^2-1048223.421*s^5+534027.4458*s^4-149752.9186*s^3+158630.5703*s^8+13.88757696-668217.1740*s^7-1143.479010*s
+;
+}
+double basisFunctionFirstDerivative_9_4(const double s){
+return -1133579.313*s^6-15396.44343*s^2+977962.3255*s^5-466897.9280*s^4+120805.4413*s^3-167994.7597*s^8-9.198709517+684319.4827*s^7+783.8034559*s
+;
+}
+double basisFunctionFirstDerivative_9_5(const double s){
+return 1047196.204*s^6+11578.25305*s^2-860510.9547*s^5+389227.2705*s^4-95273.91186*s^3+6.589286061+167994.7596*s^8-659638.5944*s^7-570.4170033*s
+;
+}
+double basisFunctionFirstDerivative_9_6(const double s){
+return -917879.1207*s^6-8844.145045*s^2+724988.0663*s^5-315599.6722*s^4+74700.82880*s^3-4.905768347-158630.5703*s^8+600827.3898*s^7+428.2417019*s
+;
+}
+double basisFunctionFirstDerivative_9_7(const double s){
+return 757571.9672*s^6+6691.400610*s^2-581842.3476*s^5+247181.1755*s^4-57358.43120*s^3+3.659127859+139202.8597*s^8-511105.0236*s^7-320.9037874*s
+;
+}
+double basisFunctionFirstDerivative_9_8(const double s){
+return -559374.1652*s^6-4702.142748*s^2+422434.3224*s^5-176989.0217*s^4+40626.95118*s^3-2.551909673-107173.7816*s^8+384895.1591*s^7+224.3541010*s
+;
+}
+double basisFunctionFirstDerivative_9_9(const double s){
+return 224224.0003*s^6+1848.000001*s^2-168168.0001*s^5+70070.00008*s^4-16016.00000*s^3+43758.00008*s^8-155584.0003*s^7+1.000000001-88.00000006*s
+;
+}
+
+double basisFunctionSecondDerivative_1_0(const double s){
+return 0
+;
+}
+double basisFunctionSecondDerivative_1_1(const double s){
+return 0
+;
+}
+double basisFunctionSecondDerivative_2_0(const double s){
+return 4.
+;
+}
+double basisFunctionSecondDerivative_2_1(const double s){
+return -8.
+;
+}
+double basisFunctionSecondDerivative_2_2(const double s){
+return 4.
+;
+}
+double basisFunctionSecondDerivative_3_0(const double s){
+return -29.99999998*s+19.99999999
+;
+}
+double basisFunctionSecondDerivative_3_1(const double s){
+return 67.08203934*s-38.54101967
+;
+}
+double basisFunctionSecondDerivative_3_2(const double s){
+return -67.08203934*s+28.54101967
+;
+}
+double basisFunctionSecondDerivative_3_3(const double s){
+return 29.99999998*s-9.999999996
+;
+}
+double basisFunctionSecondDerivative_4_0(const double s){
+return 168.0000000*s^2-210.0000000*s+60.00000000
+;
+}
+double basisFunctionSecondDerivative_4_1(const double s){
+return -391.9999998*s^2+456.1560596*s-113.7446965
+;
+}
+double basisFunctionSecondDerivative_4_2(const double s){
+return 447.9999999*s^2-447.9999998*s+85.33333331
+;
+}
+double basisFunctionSecondDerivative_4_3(const double s){
+return -391.9999998*s^2+327.8439402*s-49.58863678
+;
+}
+double basisFunctionSecondDerivative_4_4(const double s){
+return 168.*s^2-126.0000000*s+18.00000000
+;
+}
+double basisFunctionSecondDerivative_5_0(const double s){
+return -840.0000000*s^3+1512.000000*s^2-840.0000000*s+140.0000000
+;
+}
+double basisFunctionSecondDerivative_5_1(const double s){
+return 2001.444212*s^3-3461.530983*s^2+1798.127143*s-263.1639690
+;
+}
+double basisFunctionSecondDerivative_5_2(const double s){
+return -2423.349140*s^3+3842.388375*s^2-1736.744612*s+196.9964711
+;
+}
+double basisFunctionSecondDerivative_5_3(const double s){
+return 2423.349140*s^3-3427.659045*s^2+1322.015282*s-120.7089057
+;
+}
+double basisFunctionSecondDerivative_5_4(const double s){
+return -2001.444212*s^3+2542.801653*s^2-879.3978130*s+74.87640333
+;
+}
+double basisFunctionSecondDerivative_5_5(const double s){
+return 840.0000004*s^3-1008.000001*s^2+336.0000004*s-28.00000002
+;
+}
+double basisFunctionSecondDerivative_6_0(const double s){
+return -2520.000002*s+3960.000003*s^4-9240.000004*s^3+7560.000003*s^2+280.0000001
+;
+}
+double basisFunctionSecondDerivative_6_1(const double s){
+return 5349.273574*s-9547.909835*s^4+21738.12065*s^3-17120.64384*s^2-523.7415985
+;
+}
+double basisFunctionSecondDerivative_6_2(const double s){
+return -5109.212950*s+11923.90984*s^4-25711.32326*s^3+18666.84777*s^2+390.8106327
+;
+}
+double basisFunctionSecondDerivative_6_3(const double s){
+return 3916.800000*s-12672.00000*s^4+25344.00001*s^3-16588.80001*s^2-243.2000002
+;
+}
+double basisFunctionSecondDerivative_6_4(const double s){
+return -2786.152160*s+11923.90984*s^4-21984.31609*s^3+13076.33701*s^2+161.0320296
+;
+}
+double basisFunctionSecondDerivative_6_5(const double s){
+return 1869.291534*s-9547.909835*s^4+16453.51871*s^3-9193.740936*s^2-104.9010636
+;
+}
+double basisFunctionSecondDerivative_6_6(const double s){
+return -720.0000000*s+3960.*s^4-6600.000004*s^3+3600.000000*s^2+39.99999999
+;
+}
+double basisFunctionSecondDerivative_7_0(const double s){
+return -18018.00000*s^5-6300.000000*s+51480.00000*s^4-55440.00000*s^3+27719.99999*s^2+503.9999998
+;
+}
+double basisFunctionSecondDerivative_7_1(const double s){
+return 43764.52529*s^5+13302.99916*s-123036.7753*s^4+129399.8517*s^3-62350.99722*s^2-939.8090762
+;
+}
+double basisFunctionSecondDerivative_7_2(const double s){
+return -55685.34359*s^5-12611.02679*s+150980.8690*s^4-150791.0316*s^3+67199.37414*s^2+699.4519965
+;
+}
+double basisFunctionSecondDerivative_7_3(const double s){
+return 61231.63872*s^5+9674.142024*s-157656.1446*s^4+146852.0966*s^3-59367.70083*s^2-437.8811675
+;
+}
+double basisFunctionSecondDerivative_7_4(const double s){
+return -61231.63878*s^5-7028.644948*s+148502.0490*s^4-128543.9051*s^3+47568.10797*s^2+296.1506383
+;
+}
+double basisFunctionSecondDerivative_7_5(const double s){
+return 55685.34359*s^5+5088.615566*s-127445.8490*s^4+103720.9916*s^3-36141.94296*s^2-207.7069353
+;
+}
+double basisFunctionSecondDerivative_7_6(const double s){
+return -43764.52534*s^5-3476.085020*s+95785.85125*s^4-74898.00348*s^3+25273.15894*s^2+139.7945450
+;
+}
+double basisFunctionSecondDerivative_7_7(const double s){
+return 18018.00001*s^5+1350.000001*s-38610.00002*s^4+29700.00002*s^3-9900.000006*s^2-54.00000004
+;
+}
+double basisFunctionSecondDerivative_8_0(const double s){
+return -270270.0001*s^5-13860.00000*s+360360.0002*s^4-240240.0001*s^3+83160.00006*s^2+80080.00000*s^6+839.9999998
+;
+}
+double basisFunctionSecondDerivative_8_1(const double s){
+return 652345.5336*s^5+29163.94160*s-856236.4920*s^4+557783.6648*s^3-186208.5162*s^2-195464.6507*s^6-1563.086510
+;
+}
+double basisFunctionSecondDerivative_8_2(const double s){
+return -819195.0132*s^5-27503.53456*s+1038449.412*s^4-643521.3656*s^3+199116.0286*s^2+251754.4242*s^6+1161.027617
+;
+}
+double basisFunctionSecondDerivative_8_3(const double s){
+return 886914.1692*s^5+21080.45262*s-1070872.214*s^4+621065.3832*s^3-175015.0558*s^2-282801.7735*s^6-728.8234795
+;
+}
+double basisFunctionSecondDerivative_8_4(const double s){
+return -878592.0000*s^5-15447.77142*s+1004105.143*s^4-543890.2860*s^3+140960.9142*s^2+292863.9998*s^6+497.3714282
+;
+}
+double basisFunctionSecondDerivative_8_5(const double s){
+return 809896.4718*s^5+11482.16358*s-878327.9715*s^4+449317.2544*s^3-109937.1057*s^2-282801.7734*s^6-357.8625503
+;
+}
+double basisFunctionSecondDerivative_8_6(const double s){
+return -691331.5308*s^5-8513.551884*s+718790.7080*s^4-353414.6340*s^3+83614.63392*s^2+251754.4238*s^6+260.9786022
+;
+}
+double basisFunctionSecondDerivative_8_7(const double s){
+return 520442.3717*s^5+5908.300110*s-526478.5870*s^4+252999.9840*s^3-58790.89923*s^2-195464.6507*s^6-179.6051089
+;
+}
+double basisFunctionSecondDerivative_8_8(const double s){
+return -210210.0002*s^5-2310.000002*s+210210.0002*s^4-100100.0000*s^3+23100.00001*s^2+80080.00007*s^6+70.00000004
+;
+}
+double basisFunctionSecondDerivative_9_0(const double s){
+return -2162160.001*s^5-27720.00002*s+1801800.001*s^4-840840.0004*s^3+216216.0001*s^2-350064.0001*s^7+1361360.001*s^6+1320.000001
+;
+}
+double basisFunctionSecondDerivative_9_1(const double s){
+return 5195843.608*s^5+58184.43302*s-4263720.478*s^4+1945056.120*s^3-482611.2480*s^2+857390.2520*s^7-3307465.651*s^6-2452.682594
+;
+}
+double basisFunctionSecondDerivative_9_2(const double s){
+return -6465101.256*s^5-54667.53522*s+5128720.535*s^4-2228293.202*s^3+513199.3695*s^2-1113622.878*s^7+4217624.985*s^6+1819.083138
+;
+}
+double basisFunctionSecondDerivative_9_3(const double s){
+return 6922460.196*s^5+41853.25728*s-5241117.105*s^4+2136109.783*s^3-449258.7558*s^2+1269044.562*s^7-4677520.218*s^6-1143.479010
+;
+}
+double basisFunctionSecondDerivative_9_4(const double s){
+return -6801475.878*s^5-30792.88686*s+4889811.628*s^4-1867591.712*s^3+362416.3239*s^2-1343958.078*s^7+4790236.379*s^6+783.8034559
+;
+}
+double basisFunctionSecondDerivative_9_5(const double s){
+return 6283177.224*s^5+23156.50610*s-4302554.774*s^4+1556909.082*s^3-285821.7356*s^2+1343958.077*s^7-4617470.161*s^6-570.4170033
+;
+}
+double basisFunctionSecondDerivative_9_6(const double s){
+return -5507274.724*s^5-17688.29009*s+3624940.332*s^4-1262398.689*s^3+224102.4864*s^2-1269044.562*s^7+4205791.729*s^6+428.2417019
+;
+}
+double basisFunctionSecondDerivative_9_7(const double s){
+return 4545431.803*s^5+13382.80122*s-2909211.738*s^4+988724.7020*s^3-172075.2936*s^2+1113622.878*s^7-3577735.165*s^6-320.9037874
+;
+}
+double basisFunctionSecondDerivative_9_8(const double s){
+return -3356244.991*s^5-9404.285496*s+2112171.612*s^4-707956.0868*s^3+121880.8535*s^2-857390.2528*s^7+2694266.114*s^6+224.3541010
+;
+}
+double basisFunctionSecondDerivative_9_9(const double s){
+return 1345344.002*s^5+3696.000002*s-840840.0005*s^4+280280.0003*s^3-48048.00000*s^2+350064.0006*s^7-1089088.002*s^6-88.00000006
+;
+}
+
+
+#endif  
+
