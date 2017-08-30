@@ -3074,7 +3074,7 @@ void kernels::initDGMatrices(const std::set<int>& orders) {
 
 
 #if defined(_GLL)
-  FLCoeff[1][0]=1.000000000000000e+00;
+FLCoeff[1][0]=1.000000000000000e+00;
 FLCoeff[1][1]=0.000000000000000e+00;
 FRCoeff[1][0]=-0.000000000000000e+00;
 FRCoeff[1][1]=1.000000000000000e+00;
