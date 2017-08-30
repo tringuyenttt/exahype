@@ -67,10 +67,10 @@ exahype-project Elastodynamics
     kernel const      = generic::fluxes::linear
     language const    = C
 
-    plot vtu::Legendre::cells::ascii ConservedQuantitiesWriter
+    plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 15
       time            = 0.0
-      repeat          = 0.1
+      repeat          = 0.01
       output          = ./conserved
       //select          = x:0.0,y:0.0
     end plot

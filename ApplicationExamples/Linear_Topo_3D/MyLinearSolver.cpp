@@ -373,8 +373,8 @@ void Linear::MyLinearSolver::adjustPatchSolution(
 	// std::cout << std::endl;	
 
 	//Pressure
-	//luh[id_4(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
-	luh[id_4(k,j,i,0)] = 0.0;
+	luh[id_4(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+	//luh[id_4(k,j,i,0)] = 0.0;
 	
 	// //Velocity
 	luh[id_4(k,j,i,1)]  = 0;
@@ -641,7 +641,7 @@ void Linear::MyLinearSolver::pointSource(const double* const x,const double t,co
   double sigma = 0.1149;
   double t0 = 0.7;
   double f = 0.0;
-  double M0 = 1000.0;
+  double M0 = 10.0;
   
   if(n == 0){
     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));

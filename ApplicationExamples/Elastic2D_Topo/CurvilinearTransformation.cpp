@@ -2,12 +2,25 @@
 
 #include "kernels/KernelUtils.h"
 #include "kernels/DGMatrices.h"
+#if defined(_GLL)
+#include "kernels/GaussLobattoQuadrature.h"
+#else
+#include "kernels/GaussLegendreQuadrature.h"
+#endif
+
 
 
 // void Linear::CurvilinearTransformation::test(){
 //   return;
 // }
 
+
+double fault(double y,double depth){
+  //  return 0.1*(y-0.5*depth);
+  double pi = 3.14159265359;
+    return std::sin(2*pi*(y-0.5*depth))*0.1;
+  //return 0;
+}
 
 
 void getBoundaryCurves3D(int num_points,
@@ -142,7 +155,8 @@ void getBoundaryCurves(int num_points,double offset_x, double offset_y,double wi
     top_bnd_x[i]    = 0 + dx*i;
     
     bottom_bnd_y[i] = 0.0;
-    top_bnd_y[i]    = 1 + 0.25*std::sin(4*pi*top_bnd_x[i]);
+    top_bnd_y[i]    = 1 + 0.2*std::sin(4*pi*top_bnd_x[i]);
+	//    top_bnd_y[i]    = 1;
 
     //std::cout<<top_bnd_x[i]<<std::endl;
     //std::cout<<i<<std::endl;
@@ -170,6 +184,103 @@ void getBoundaryCurves(int num_points,double offset_x, double offset_y,double wi
     right_bnd_y[i] = bottom_bnd_y[nx-1] + hny*i;
     
   }
+  
+}
+
+
+
+void getBoundaryCurvesForBlock(int num_points,int nx, int ny, int n, double blockWidth_x,double blockWidth_y , double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y){
+
+ 
+  
+  double pi = 3.14159265359;
+  //change according to block
+  //  int nx = std::round(1/width_x)*(num_points-1) + 1;;
+  //  int ny = std::round(1/width_y)*(num_points-1) + 1;;
+
+  double dx= blockWidth_x/(nx-1);
+  double dy= blockWidth_y/(ny-1);
+
+
+
+  //change according to block
+  for(int i = 0 ; i< nx; i++){
+
+    if(n==0){    
+      bottom_bnd_x[i] = 0 + dx*i;
+      top_bnd_x[i]    = 0 + dx*i;
+    }else{
+      bottom_bnd_x[i] = 0.5 + dx*i;
+      top_bnd_x[i]    = 0.5 + dx*i;
+    }
+    
+
+    bottom_bnd_y[i] = 0.0;
+    //    top_bnd_y[i]    = 1 + 0*std::sin(4*pi*top_bnd_x[i]);
+    //top_bnd_y[i]    = 1;
+    
+    if(n==0){    
+      top_bnd_y[i]    = 1 + 0*std::sin(4*pi*top_bnd_x[i]);
+    }else{
+      top_bnd_y[i]    = 1 + 0.1*std::sin(4*pi*top_bnd_x[i]);
+    }
+    
+    //top_bnd_y[i]    = 1 + 0*std::sin(4*pi*top_bnd_x[i]);
+
+    //std::cout<<top_bnd_x[i]<<std::endl;
+    //std::cout<<i<<std::endl;
+    //std::cout<<std::endl;
+  }
+
+  //std::exit(-1);
+  
+  //change according to block  
+  for(int i = 0 ; i< ny; i++){
+
+    left_bnd_y[i]  = dy*i;
+    right_bnd_y[i] = dy*i;
+
+    if(n==0){
+      left_bnd_x[i]  = 0;
+      right_bnd_x[i] = fault(right_bnd_y[i],1.0) + 0.5;
+    }else{
+      left_bnd_x[i]  = fault(left_bnd_y[i],1.0) + 0.5;
+      right_bnd_x[i] = 1;
+    }
+    
+  }
+
+  double h0y = (top_bnd_y[0] - bottom_bnd_y[0])/(ny-1);
+  double hny = (top_bnd_y[nx-1] - bottom_bnd_y[nx-1])/(ny-1);
+
+  for(int i = 0 ; i< ny; i++){
+
+    left_bnd_y[i]  = bottom_bnd_y[0] + h0y*i;
+    right_bnd_y[i] = bottom_bnd_y[nx-1] + hny*i;
+  }
+
+
+  double h0x = (right_bnd_x[0] - left_bnd_x[0])/(nx-1);
+  double hnx = (right_bnd_x[ny-1] - left_bnd_x[ny-1])/(nx-1);
+
+  for(int i = 0 ; i< nx; i++){
+
+    bottom_bnd_x[i]  = left_bnd_x[0] + h0x*i;
+    top_bnd_x[i] = left_bnd_x[ny-1] + hnx*i;
+  }
+
+
+  // if(n==0){    
+  //   bottom_bnd_x[i] = 0 + dx*i;
+  //   top_bnd_x[i]    = 0 + dx*i;
+  // }else{
+  //   bottom_bnd_x[i] = 0.5 + dx*i;
+  //   top_bnd_x[i]    = 0.5 + dx*i;
+  // }
+
+
+
+  
   
 }
 
@@ -346,9 +457,15 @@ void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* des
 
   for (int j = 0 ; j< num_nodes ; j ++){
     for (int i = 0 ; i< num_nodes ; i ++){
+
+#if defined(_GLL)
+      interpolate(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-i],kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
+#else      
       interpolate(kernels::gaussLegendreNodes[num_nodes-1][i],kernels::gaussLegendreNodes[num_nodes-1][j],orig_mesh_x,orig_mesh_y,dest_mesh,num_nodes,results[id_xy(j,i)]);
+#endif      
     }
   }
+  
 }
 
 void computeDerivatives_x(int i, int j , double* values , int num_nodes, double& der_x, double dx){

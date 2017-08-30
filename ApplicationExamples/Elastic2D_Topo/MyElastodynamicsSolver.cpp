@@ -41,12 +41,54 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
   kernels::idx2 id_xy(basisSize,basisSize);
 
 
-  int nx = std::round(1/dx[0])*(num_nodes-1) + 1;
-  int ny = std::round(1/dx[1])*(num_nodes-1) + 1;
+  int n = cellCentre[0] > 0.5 ? 1 : 0 ;
+  //int n = cellCentre[0] > fault(cellCenter[1]) ? 1 : 0 ;
+
+  int ne_x = std::round(1/dx[0]);
+  int ne_y = std::round(1/dx[1]);			  
+  
+  int nx = ne_x *(num_nodes-1) + 1;
+  int ny = ne_y *(num_nodes-1) + 1;
+  
+  //  int ne = std::floor(std::round(1/dx[0]) /2)*(num_nodes-1)+1;
+  
+  //  std::cout <<"glob: " << nx << std::endl;
+  
+  double blockWidth_x;
+  double blockWidth_y=1.0;
+  
+  double offset_x=cellCentre[0]-0.5*dx[0];
+  double offset_y=cellCentre[1]-0.5*dx[1];
+
+  double width_x=dx[0];
+  double width_y=dx[1];   
 
 
+  int i_m;
+  int j_m;
+  
+  if(n == 0){
+    ne_x = (ne_x+1)/2;
+    nx =  ne_x *(num_nodes-1)+1;
+    blockWidth_x=0.5;
+
+    i_m =  std::round((offset_x)/width_x) *(num_nodes-1);
+    j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
+
+  }else{
+    ne_x = ne_x-(ne_x+1)/2;
+    nx =  ne_x *(num_nodes-1)+1;
+    blockWidth_x=0.5;
+
+    i_m =  std::floor((offset_x-0.5)/width_x) *(num_nodes-1);
+    j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
+
+  }
+
+  //  std::cout <<"n: " <<n  << "nx: "<< nx << std::endl;
+
+  
   double* left_bnd_x = new double[ny];
-
   double* left_bnd_y = new double[ny];
 
   double* right_bnd_x = new double[ny];
@@ -58,23 +100,14 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
   double* top_bnd_x = new double[nx];
   double* top_bnd_y = new double[nx];
 
-  double offset_x=cellCentre[0]-0.5*dx[0];
-  double offset_y=cellCentre[1]-0.5*dx[1];
 
-  double width_x=dx[0];
-  double width_y=dx[1];   
+  //getBoundaryCurves(num_nodes, offset_x,  offset_y, width_x,  width_y ,left_bnd_x,left_bnd_y,right_bnd_x,right_bnd_y,bottom_bnd_x,bottom_bnd_y,top_bnd_x,top_bnd_y);
 
   
-  //std::exit(-1);
-
-  getBoundaryCurves(num_nodes, offset_x,  offset_y, width_x,  width_y ,left_bnd_x,left_bnd_y,right_bnd_x,right_bnd_y,bottom_bnd_x,bottom_bnd_y,top_bnd_x,top_bnd_y);
-
+  getBoundaryCurvesForBlock(num_nodes, nx, ny, n,blockWidth_x,blockWidth_y ,left_bnd_x,left_bnd_y,right_bnd_x,right_bnd_y,bottom_bnd_x,bottom_bnd_y,top_bnd_x,top_bnd_y);
 
   double* curvilinear_x = new double[num_nodes*num_nodes];
   double* curvilinear_y = new double[num_nodes*num_nodes];
-
-  int i_m =  std::round(offset_x/width_x) *(num_nodes-1);
-  int j_m =  std::round(offset_y/width_y) *(num_nodes-1);
 
   // std::cout<< i_m << std::endl;
   // std::cout<< offset_x << std::endl;
@@ -110,9 +143,13 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
 	double y= gl_vals_y[id_xy(j,i)];
 
 	//particle velocities
-	luh[id_xyz(j,i,0)] = std::exp(-5*((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))/0.01);
-	luh[id_xyz(j,i,1)] = std::exp(-5*((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5))/0.01);
-	
+	if (n == 0) {
+	luh[id_xyz(j,i,0)] = std::exp(-5*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5))/0.01);
+	luh[id_xyz(j,i,1)] = std::exp(-5*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5))/0.01);
+	}else{
+	  luh[id_xyz(j,i,0)]=0;
+	  luh[id_xyz(j,i,1)]=0;
+	}
 	// luh[id_xyz(i,j,0)] = x;
 	// luh[id_xyz(i,j,1)] = y;
 	
@@ -125,10 +162,11 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
 
 	// material parameters
 	luh[id_xyz(j,i,5)] = 1.;   //2.6  // gm/cm^3
-	luh[id_xyz(j,i,6)] = 1./std::sqrt(3.0);   // 2.0   // km/s
+	//	luh[id_xyz(j,i,6)] = 1./std::sqrt(3.0);   // 2.0   // km/s
+	luh[id_xyz(j,i,6)] = 0.0;
 	luh[id_xyz(j,i,7)] = 1.0; //std::sqrt(3.0);   //4.0   // km/s
 	
-	if (x > 1.0) {
+	if (n == 0) {
 	  luh[id_xyz(j,i,5)] = 1.;     // gm/cm^3
 	  luh[id_xyz(j,i,6)] = 1./std::sqrt(3.0);    // km/s
 	  luh[id_xyz(j,i,7)] = 1.0; //std::sqrt(3.0);      // km/s
@@ -723,14 +761,15 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
     double zp_m=rho_m*cp_m;
 
     // impedance must be greater than zero !
-    if (zs_p <= 0.0 || zs_m <= 0.0 || zp_p <= 0.0 || zp_m <= 0.0){
-      std::cout<<zs_p<<' '<<zs_m<<' '<<zp_p<<' '<<zp_m<<'\n';
-      std::cout<<' Impedance must be greater than zero ! '<<'\n';
+    //    if (zs_p <= 0.0 || zs_m <= 0.0 || zp_p <= 0.0 || zp_m <= 0.0){
+    if (zp_m <= 0.0 || zp_p <= 0.0 ){      
+      std::cout<<zp_m<<' '<<zp_p<<'\n';
+      std::cout<<' p-wave impedance must be greater than zero ! '<<'\n';
       std::exit(-1);
     }
 
     
-    // generate interface data preserving the amplitude of the outgoing charactertritics
+    // GENERATE interface data preserving the amplitude of the outgoing charactertritics
     // and satisfying interface conditions exactly.
     double vn_hat_p=0;
     double vm_hat_p=0;
@@ -820,11 +859,19 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
     double FRm = 0.5*(zs_p*(vm_p-vm_hat_p) - (Tm_p-Tm_hat_p));
 
     double FL_n = 0.5/zp_m*(zp_m*(vn_m-vn_hat_m) + (Tn_m-Tn_hat_m));
-    double FL_m = 0.5/zs_m*(zs_m*(vm_m-vm_hat_m) + (Tm_m-Tm_hat_m));
+    double FL_m=0;
+    
+    if(zs_m > 0){
+      FL_m = 0.5/zs_m*(zs_m*(vm_m-vm_hat_m) + (Tm_m-Tm_hat_m));
+    }
 
     double FR_n = 0.5/zp_p*(zp_p*(vn_p-vn_hat_p) - (Tn_p-Tn_hat_p));
-    double FR_m = 0.5/zs_p*(zs_p*(vm_p-vm_hat_p) - (Tm_p-Tm_hat_p));
-
+    double FR_m=0;
+    
+    if(zs_p > 0){
+    FR_m = 0.5/zs_p*(zs_p*(vm_p-vm_hat_p) - (Tm_p-Tm_hat_p));
+    }
+    
     // rotate back to the physical coordinates x, y
     double FLx = n_m[0]*FLn + m_m[0]*FLm;
     double FLy = n_m[1]*FLn + m_m[1]*FLm;
@@ -863,7 +910,7 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
 }
 
 
-void Elastodynamics::MyElastodynamicsSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0){
+void Elastodynamics::MyElastodynamicsSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n){
   double pi = 3.14159265359;
   double sigma = 0.1149;
   double t0 = 0.1;
@@ -876,7 +923,8 @@ void Elastodynamics::MyElastodynamicsSolver::pointSource(const double* const x,c
   //f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
   
   f = M0*t/(t0*t0)*std::exp(-t/t0);
-  
+
+  if(n == 0){
   x0[0] = 2.0;
   x0[1] = 15.0;
   
@@ -885,7 +933,10 @@ void Elastodynamics::MyElastodynamicsSolver::pointSource(const double* const x,c
   forceVector[2] = 0;
   forceVector[3] = 0;
   forceVector[4] = f;
-
+  }else{
+    std::cout << "Source not implemented" << std::endl;
+    std::exit(-1);
+  }
 }
 
 
@@ -899,16 +950,36 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver_Nodal(double v_p,doub
    p=z_m*v_p + sigma_p;
    q=z_p*v_m - sigma_m;
 
-   eta=(z_p*z_m)/(z_p+z_m);
+   if(z_m > 0.0 && z_p > 0){
+     eta=(z_p*z_m)/(z_p+z_m);
+     phi= eta*(p/z_p - q/z_m);
 
-   phi= eta*(p/z_p - q/z_m);
+     sigma_hat_p=phi;
+     sigma_hat_m=phi;
 
-   sigma_hat_p=phi;
-   sigma_hat_m=phi;
+     v_hat_m=(p-phi)/z_p;
+     v_hat_p=(q+phi)/z_m;
 
-   v_hat_m=(p-phi)/z_p;
-   v_hat_p=(q+phi)/z_m;
+   }else if(z_m > 0.0){
+     sigma_hat_p=sigma_p;
+     sigma_hat_m=0;
 
+     v_hat_m=v_m;
+     v_hat_p=v_p;
+
+   }else if(z_p > 0.0){
+     sigma_hat_p=0;
+     sigma_hat_m=sigma_m;
+
+     v_hat_m=v_m;
+     v_hat_p=v_p;
+   }else {
+     sigma_hat_p=sigma_p;
+     sigma_hat_m=sigma_m;
+
+     v_hat_m=v_m;
+     v_hat_p=v_p;
+   }
  }
 
 
@@ -1011,10 +1082,13 @@ void Elastodynamics::MyElastodynamicsSolver::multiplyMaterialParameterMatrix(con
 void Elastodynamics::MyElastodynamicsSolver::riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat){
   
    double p = 0.5*(z*v + sigma);
-
-   v_hat = (1+r)/z*p;
-   sigma_hat = (1-r)*p;
-
+   if(z > 0){
+     v_hat = (1+r)/z*p;
+     sigma_hat = (1-r)*p;
+   }else{
+     v_hat = v;
+     sigma_hat = sigma;
+   }
  }
 
 
@@ -1022,7 +1096,13 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver_BCn(double v,double s
   
    double q = 0.5*(z*v - sigma);
 
-   v_hat = (1+r)/z*q;
-   sigma_hat = -(1-r)*q;
+   if(z > 0){
+     v_hat = (1+r)/z*q;
+     sigma_hat = -(1-r)*q;
+      }else{
+     v_hat = v;
+     sigma_hat = sigma;
+   }
+
 
  }

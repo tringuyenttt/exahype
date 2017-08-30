@@ -47,7 +47,7 @@ exahype-project  Linear
   solver ADER-DG MyLinearSolver
     variables const   = p:1,v:3
     parameters const  = rho:1,c:1,jacobian:1,metric_derivative:9,curve_grid:3
-    order const       = 5
+    order const       = 3
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size = 0.15
     time-stepping     = globalfixed
