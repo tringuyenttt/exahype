@@ -144,8 +144,8 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
 
 	//particle velocities
 	if (n == 0) {
-	luh[id_xyz(j,i,0)] = std::exp(-5*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5))/0.01);
-	luh[id_xyz(j,i,1)] = std::exp(-5*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5))/0.01);
+	luh[id_xyz(j,i,0)] = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5))/0.01);
+	luh[id_xyz(j,i,1)] = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5))/0.01);
 	}else{
 	  luh[id_xyz(j,i,0)]=0;
 	  luh[id_xyz(j,i,1)]=0;
@@ -164,12 +164,12 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
 	luh[id_xyz(j,i,5)] = 1.;   //2.6  // gm/cm^3
 	//	luh[id_xyz(j,i,6)] = 1./std::sqrt(3.0);   // 2.0   // km/s
 	luh[id_xyz(j,i,6)] = 0.0;
-	luh[id_xyz(j,i,7)] = 1.0; //std::sqrt(3.0);   //4.0   // km/s
+	luh[id_xyz(j,i,7)] = 1.484; //std::sqrt(3.0);   //4.0   // km/s
 	
 	if (n == 0) {
-	  luh[id_xyz(j,i,5)] = 1.;     // gm/cm^3
-	  luh[id_xyz(j,i,6)] = 1./std::sqrt(3.0);    // km/s
-	  luh[id_xyz(j,i,7)] = 1.0; //std::sqrt(3.0);      // km/s
+	  luh[id_xyz(j,i,5)] = 2.7;     // gm/cm^3
+	  luh[id_xyz(j,i,6)] = 3.343;    // km/s
+	  luh[id_xyz(j,i,7)] = 6.0; //std::sqrt(3.0);      // km/s
 	}
 
 	// jacobian
@@ -804,7 +804,7 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
       if (faceIndex == 1) {
 	
 	
-	double r = 0.;
+	double r = 1.;
 	
 	riemannSolver_BCn(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
 	riemannSolver_BCn(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
@@ -830,7 +830,7 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
       
       if (faceIndex == 3) {
 	
-	double r = 1.;
+	double r = 0.;
 	
 	riemannSolver_BCn(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
 	riemannSolver_BCn(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
@@ -985,12 +985,17 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver_Nodal(double v_p,doub
 
 void Elastodynamics::MyElastodynamicsSolver::Gram_Schmidt(double* y, double* z){
   //Gram Schmidt orthonormalization
- 
+  
   double  a_yz = y[0]*z[0] + y[1]*z[1] + y[2]*z[2];
 
   for (int i = 0; i< 3; i++){
     z[i] = z[i] - a_yz*y[i];
-    z[i] = 1.0/std::sqrt(z[0]*z[0] + z[1]*z[1] + z[2]*z[2])*z[i];
+  }
+
+  double norm_z = std::sqrt(z[0]*z[0] + z[1]*z[1] + z[2]*z[2]);
+  
+  for (int i = 0; i< 3; i++){
+    z[i] =  z[i]/norm_z;
   }
 
 }
