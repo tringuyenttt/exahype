@@ -31,13 +31,16 @@ double fault(double y, double z,double a_y, double b_y, double a_z, double b_z){
   //return z*(1-z);
   //*std::sin(2*pi*(z-(b_z+a_z)*0.5));
    //std::cout <<(1.0/std::tan(angle)) * (y-depth_y/2.0) <<std::endl;
-  if (y <= 0.7){
-    fault_surface = (1.0/std::tan(angle)) * (y-depth_y/2.0);
-  }else{
-     fault_surface = (1.0/std::tan(angle)) *(0.7 - depth_y/2);
-    //                           0.5_wp*atan(4.0_wp*(Yright(j,k)-15.0_wp))*exp(-5.0_wp*(Yright(j,k)-15.0_wp)))
+  // if (y <= 0.7){
+  //   fault_surface = (1.0/std::tan(angle)) * (y-depth_y/2.0);
+  // }else{
+  //    fault_surface = (1.0/std::tan(angle)) *(0.7 - depth_y/2);
+  //   //                           0.5_wp*atan(4.0_wp*(Yright(j,k)-15.0_wp))*exp(-5.0_wp*(Yright(j,k)-15.0_wp)))
 
-  }
+  // }
+
+  fault_surface=0.25*(std::sin(2*pi*y/Ly)*std::cos(2*pi*y/Ly))*std::sin(2*pi*z/Lz)*std::cos(2*pi*z/Lz);
+  
   //fault_surface=0;
   return  fault_surface;
    //return y*(1-y);
@@ -58,7 +61,7 @@ double topography(double x, double z,double a_x, double b_x,double a_z, double b
 
   topo = 1.0*(0.1*(x + z) + 0.1*(std::sin(4*pi*x/Lx+3.34)*std::cos(4*pi*x/Lx)
 				 * std::sin(4*pi*z/Lz+3.34)*std::cos(4*pi*z/Lz)));
-  //topo=0;
+  topo=0;
   return topo;
 }  
 
@@ -492,7 +495,7 @@ void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
 void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
 				      //				      double offset_x, double offset_y, double offset_z,
 				      //				      double width_x, double width_y , double width_z ,
-						    int nx, int ny, int nz, int n,
+						    int nx, int ny, int nz, int n,double fault_position,
 						    double width_x, double width_y , double width_z,	      
 						    double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
 						    double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
@@ -539,7 +542,7 @@ void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
       
       }else{
 	
-	top_bnd_x[id_xz(k,i)] = 0.5 + dx*i;
+	top_bnd_x[id_xz(k,i)] = fault_position + dx*i;
 	
       }
 
@@ -579,13 +582,13 @@ void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
 	y = left_bnd_y[id_yz(k,j)];
 	z = left_bnd_z[id_yz(k,j)];
 	
-  	left_bnd_x[id_yz(k,j)] = 0.5;
+  	left_bnd_x[id_yz(k,j)] = fault_position;
 
 	// synthetic fault not compatible with computational geometry
 	Y1[id_yz(k,j)] = -0.3 + 1.3*dy*j;
 	Z1[id_yz(k,j)] = 0.0 + dz*k;
 
-	X1[id_yz(k,j)] = 0.5 - fault(Y1[id_yz(k,j)], Z1[id_yz(k,j)], 0.0, 1., 0, 1);
+	X1[id_yz(k,j)] = fault_position - fault(Y1[id_yz(k,j)], Z1[id_yz(k,j)], 0.0, 1., 0, 1);
 	
       }
       
@@ -603,13 +606,13 @@ void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
 	y = right_bnd_y[id_yz(k,j)];
 	z = right_bnd_z[id_yz(k,j)];
 	
-	right_bnd_x[id_yz(k,j)] = 0.5;
+	right_bnd_x[id_yz(k,j)] = fault_position;
 
 	// synthetic fault not compatible with computational geometry
 	Y1[id_yz(k,j)] = -0.3 + 1.3*dy*j;
 	Z1[id_yz(k,j)] = 0.0 + dz*k;
 	
-	X1[id_yz(k,j)] = 0.5 - fault(Y1[id_yz(k,j)], Z1[id_yz(k,j)], 0, 1., 0., 1.);
+	X1[id_yz(k,j)] = fault_position - fault(Y1[id_yz(k,j)], Z1[id_yz(k,j)], 0, 1., 0., 1.);
       }else{
 	right_bnd_x[id_yz(k,j)] = 1.0;
       }

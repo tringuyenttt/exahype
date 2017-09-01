@@ -53,8 +53,8 @@ void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
 
 
 void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
-						    int nx, int ny, int nz, int n,
-						    double width_x, double width_y , double width_z,	      
+						    int nx, int ny, int nz, int n,double fault_position,
+						    double width_x, double width_y , double width_z,
 						    double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
 						    double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
 						    double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,

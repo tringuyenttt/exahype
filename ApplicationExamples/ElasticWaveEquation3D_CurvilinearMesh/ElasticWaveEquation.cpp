@@ -48,53 +48,59 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
   kernels::idx3 id_3(basisSize,basisSize,basisSize);
 
 
-  int n = cellCentre[0] > 0.5 ? 1 : 0 ;
-  
-  int ne_x = std::round(1/dx[0]);
-  int ne_y = std::round(1/dx[1]);
-  int ne_z = std::round(1/dx[2]);			    
+ 
+  int ne_x = std::round(1/dx[0]); //number of elements in x direction
+  int ne_y = std::round(1/dx[1]); //number of elements in y direction
+  int ne_z = std::round(1/dx[2]); //number of elements in z direction		    
 
-  nx = ne_x *(num_nodes-1) + 1;
-  ny = ne_y *(num_nodes-1) + 1;
-  nz = ne_z *(num_nodes-1) + 1;
+  nx = ne_x *(num_nodes-1) + 1; //global number of nodes in x direction considering collocation
+  ny = ne_y *(num_nodes-1) + 1; //global number of nodes in y direction
+  nz = ne_z *(num_nodes-1) + 1; //global number of nodes in z direction
 
   
-  double block_width_x=0.5;
+  double block_width_x;
   double block_width_y=1.0;
   double block_width_z=1.0;
 
   double offset_x=cellCentre[0]-0.5*dx[0];
   double offset_y=cellCentre[1]-0.5*dx[1];
-  double offset_z=cellCentre[2]-0.5*dx[2];  
+  double offset_z=cellCentre[2]-0.5*dx[2];
+
+  double fault_position = 0.7;
+  int n = offset_x >  fault_position ? 1 : 0 ; //1: Water Column 0: Solid  
+
 
   double width_x=dx[0];
   double width_y=dx[1];
   double width_z=dx[2];
 
 
-  int i_m;
-  int j_m;
+  //indeces of the first node within the element 
+  int i_m; 
+  int j_m; 
   int k_m;  
   
   if(n == 0){
-    ne_x = (ne_x+1)/2;
+    block_width_x=fault_position;
+    ne_x = std::round((ne_x+1)*fault_position);
     nx =  ne_x *(num_nodes-1)+1;
-    block_width_x=0.5;
+
 
     i_m =  std::round((offset_x)/width_x) *(num_nodes-1);
     j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
     k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
   }else{
-    ne_x = ne_x-(ne_x+1)/2;
+    block_width_x=1.0-fault_position;
+    ne_x = ne_x-std::round((ne_x+1)*fault_position);
     nx =  ne_x *(num_nodes-1)+1;
-    block_width_x=0.5;
 
-    i_m =  std::floor((offset_x-0.5)/width_x) *(num_nodes-1);
+
+    i_m =  std::floor((offset_x-fault_position)/width_x) *(num_nodes-1);
     j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
     k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
   }
 
-  //  std::cout <<"n: " <<n <<" nx: " << nx << " i_m : "<< i_m << " j_m : "<< j_m << " k_m : "<< k_m << std::endl;
+  // std::cout <<"n: " <<n <<" nx: " << nx << " i_m : "<< i_m << " j_m : "<< j_m << " k_m : "<< k_m << std::endl;
 
 
   double* left_bnd_x = new double[ny*nz];
@@ -146,14 +152,14 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
   // 					     back_bnd_x,  back_bnd_y,  back_bnd_z);
 
   getBoundaryCurves3D_cutOffTopography_withFault( num_nodes,
-					     nx,ny,nz,n	,	     
-					     block_width_x,  block_width_y ,  block_width_z ,
-					     left_bnd_x,  left_bnd_y,  left_bnd_z,
-					     right_bnd_x,  right_bnd_y,  right_bnd_z,
-					     bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
-					     top_bnd_x,  top_bnd_y,  top_bnd_z,
-					     front_bnd_x,  front_bnd_y,  front_bnd_z,
-					     back_bnd_x,  back_bnd_y,  back_bnd_z);
+						  nx,ny,nz,n,fault_position,	     
+						  block_width_x,  block_width_y ,  block_width_z ,
+						  left_bnd_x,  left_bnd_y,  left_bnd_z,
+						  right_bnd_x,  right_bnd_y,  right_bnd_z,
+						  bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
+						  top_bnd_x,  top_bnd_y,  top_bnd_z,
+						  front_bnd_x,  front_bnd_y,  front_bnd_z,
+						  back_bnd_x,  back_bnd_y,  back_bnd_z);
 
 
 
@@ -375,9 +381,9 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
 	double z= gl_vals_z[id_3(k,j,i)];
 
 	if(n == 0){	
-	  luh[id_4(k,j,i,0)]  = std::exp(-((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
-	  luh[id_4(k,j,i,1)]  = std::exp(-((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
-	  luh[id_4(k,j,i,2)]  = std::exp(-((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+	  luh[id_4(k,j,i,0)]  = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+	  luh[id_4(k,j,i,1)]  = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+	  luh[id_4(k,j,i,2)]  = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
 	}else{
 	  luh[id_4(k,j,i,0)]  = 0;
 	  luh[id_4(k,j,i,1)]  = 0;
@@ -413,9 +419,14 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
 	  luh[id_4(k,j,i,11)]  = 6.0; //c(2)
 	}else{
 	  // water column
-	  luh[id_4(k,j,i,9)]   = 1.0;   //rho
-	  luh[id_4(k,j,i,10)]  = 0.0; //c(1)
-	  luh[id_4(k,j,i,11)]  = 1.484; //c(2)
+	  // luh[id_4(k,j,i,9)]   = 1.0;   //rho
+	  // luh[id_4(k,j,i,10)]  = 0.0; //c(1)
+	  // luh[id_4(k,j,i,11)]  = 1.484; //c(2)
+
+	  luh[id_4(k,j,i,9)]   = 2.7;   //rho
+	  luh[id_4(k,j,i,10)]  = 0; //c(1)
+	  luh[id_4(k,j,i,11)]  = 6.0; //c(2)
+
 	}
 
 	
@@ -976,7 +987,7 @@ void ElasticWaveEquation3D::ElasticWaveEquation::riemannSolver(double* FL,double
 
 
     if (isBoundaryFace) {
-      double r= faceIndex==2 ? 1 : 0;
+      double r= faceIndex==1 ? 1 : 0;
       riemannSolver_boundary(faceIndex,r,vn_m,vm_m,vl_m,Tn_m,Tm_m,Tl_m,zp_m,zs_m,vn_hat_m,vm_hat_m,vl_hat_m,Tn_hat_m,Tm_hat_m,Tl_hat_m);
       riemannSolver_boundary(faceIndex,r,vn_p,vm_p,vl_p,Tn_p,Tm_p,Tl_p,zp_p,zs_p,vn_hat_p,vm_hat_p,vl_hat_p,Tn_hat_p,Tm_hat_p,Tl_hat_p);      
 
