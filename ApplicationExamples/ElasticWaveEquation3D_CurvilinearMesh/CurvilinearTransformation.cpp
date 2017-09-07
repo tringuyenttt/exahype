@@ -41,7 +41,7 @@ double fault(double y, double z,double a_y, double b_y, double a_z, double b_z){
 
   fault_surface=0.25*(std::sin(2*pi*y/Ly)*std::cos(2*pi*y/Ly))*std::sin(2*pi*z/Lz)*std::cos(2*pi*z/Lz);
   
-  //fault_surface=0;
+  fault_surface=0;
   return  fault_surface;
    //return y*(1-y);
 }

@@ -432,9 +432,11 @@ for (int i = 2; i < basisSize; i++) {
 
 
   // Compute the boundary-extrapolated values for Q and F*n
-  std::fill_n(lQbnd, 2 * DIMENSIONS * basisSize * numberOfData, 0.0); // ~(numberOfVariables+numberOfParamters)
+  std::fill_n(lQbnd, (basisSize+1) * 2 * DIMENSIONS * basisSize * numberOfData, 0.0); // ~(numberOfVariables+numberOfParamters)
   std::fill_n(lFbnd, 2 * DIMENSIONS * basisSize *  numberOfVariables, 0.0); // ~numberOfVariables
-  idx3 idx_lQbnd(2 * DIMENSIONS, basisSize, numberOfData);
+
+  idx4 idx_lQbnd(basisSize+1, 2 * DIMENSIONS, basisSize, numberOfData);
+  
   idx3 idx_lFbnd(2 * DIMENSIONS, basisSize, numberOfVariables);
 
   // x-direction: face 1 (left) and face 2 (right)
@@ -446,11 +448,11 @@ for (int i = 2; i < basisSize; i++) {
     for (int k = 0; k <numberOfData; k++) {
       for (int l = 0; l < basisSize; l++) {
         // left
-        lQbnd[idx_lQbnd(0, j, k)] +=
+        lQbnd[idx_lQbnd(0, 0, j, k)] +=
             lQh[idx_lQh(j, l, k)] * kernels::FLCoeff[order][l];
 
         // right
-        lQbnd[idx_lQbnd(1, j, k)] +=
+        lQbnd[idx_lQbnd(0, 1, j, k)] +=
             lQh[idx_lQh(j, l, k)] * kernels::FRCoeff[order][l];
       }
     }
@@ -484,11 +486,11 @@ for (int i = 2; i < basisSize; i++) {
     for (int k = 0; k <numberOfData; k++) {
       for (int l = 0; l < basisSize; l++) {
         // left
-        lQbnd[idx_lQbnd(2, j, k)] +=
+        lQbnd[idx_lQbnd(0, 2, j, k)] +=
             lQh[idx_lQh(l, j, k)] * kernels::FLCoeff[order][l];
 
         // right
-        lQbnd[idx_lQbnd(3, j, k)] +=
+        lQbnd[idx_lQbnd(0, 3, j, k)] +=
             lQh[idx_lQh(l, j, k)] * kernels::FRCoeff[order][l];
       }
     }
@@ -510,6 +512,38 @@ for (int i = 2; i < basisSize; i++) {
       }
     }
   }
+
+
+  //friction law: projection of time derivatives
+  /*for (int t = 0; t < basisSize; t++) {
+    for (int j = 0; j < basisSize; j++) {
+    // Fortran:
+    // lQbnd(:,j,1) = lQh(:,:,j) * FLCoeff(:)
+    // lQbnd(:,j,2) = lQh(:,:,j) * FRCoeff(:)
+    // Copy parameters
+    for (int k = 0; k <numberOfData; k++) {
+      for (int l = 0; l < basisSize; l++) {
+        // left
+        lQbnd[idx_lQbnd(t+1, 0, j, k)] +=
+	  lQi[idx_lQi(t,j, l, k)] * kernels::FLCoeff[order][l];
+
+        // right
+        lQbnd[idx_lQbnd(t+1, 1, j, k)] +=
+	  lQi[idx_lQi(t,j, l, k)] * kernels::FRCoeff[order][l];
+	
+	// top
+        lQbnd[idx_lQbnd(t+1, 2, j, k)] +=
+	  lQi[idx_lQi(t,l, j, k)] * kernels::FLCoeff[order][l];
+	
+        // bottom
+        lQbnd[idx_lQbnd(t+1, 3, j, k)] +=
+	  lQi[idx_lQi(t,l, j, k)] * kernels::FRCoeff[order][l];
+
+      }
+    }
+  }
+  }*/
+  
 }
 
 }  // namespace c
