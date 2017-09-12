@@ -531,8 +531,14 @@ void Elastodynamics::MyElastodynamicsSolver::boundaryValues(const double* const 
 
 
 exahype::solvers::Solver::RefinementControl Elastodynamics::MyElastodynamicsSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
-  // @todo Please implement/augment if required
-  return exahype::solvers::Solver::RefinementControl::Keep;
+  if (
+    center(0)<=0.5
+  ) {
+    return exahype::solvers::Solver::RefinementControl::Refine;
+  }
+  else {
+    return exahype::solvers::Solver::RefinementControl::Keep;
+  }
 }
 
 
