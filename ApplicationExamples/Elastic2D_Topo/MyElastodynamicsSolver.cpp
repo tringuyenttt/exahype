@@ -32,11 +32,11 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
       const double t,
       const double dt,
       double* luh) {
+  if ( !tarch::la::equals(t,0.0) ) return;
 
   constexpr int basisSize = MyElastodynamicsSolver::Order+1;
   int num_nodes = basisSize;
   int numberOfData=MyElastodynamicsSolver::NumberOfParameters+MyElastodynamicsSolver::NumberOfVariables;
-
   kernels::idx3 id_xyz(basisSize,basisSize,numberOfData);
   kernels::idx2 id_xy(basisSize,basisSize);
 
@@ -44,8 +44,10 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
   int n = cellCentre[0] > 0.5 ? 1 : 0 ;
   //int n = cellCentre[0] > fault(cellCenter[1]) ? 1 : 0 ;
 
+//  int ne_x = std::round(1/dx[0]*pow((1.0/3.0),getMaximumuAdaptiveLevel()));
+ // int ne_y = std::round(1/dx[1]*pow((1.0/3.0),getMaximumuAdaptiveLevel()));
   int ne_x = std::round(1/dx[0]);
-  int ne_y = std::round(1/dx[1]);			  
+  int ne_y = std::round(1/dx[1]);
   
   int nx = ne_x *(num_nodes-1) + 1;
   int ny = ne_y *(num_nodes-1) + 1;
@@ -531,15 +533,22 @@ void Elastodynamics::MyElastodynamicsSolver::boundaryValues(const double* const 
 
 
 exahype::solvers::Solver::RefinementControl Elastodynamics::MyElastodynamicsSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+
   if (
-    center(0)<=0.5
+    center(0)<=0.5+2.0*dx(0)
+    and
+    center(0)>=0.5-2.0*dx(0)
   ) {
     return exahype::solvers::Solver::RefinementControl::Refine;
   }
   else {
     return exahype::solvers::Solver::RefinementControl::Keep;
   }
-}
+
+
+
+
+ }
 
 
 void Elastodynamics::MyElastodynamicsSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ){

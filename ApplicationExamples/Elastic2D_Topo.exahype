@@ -63,7 +63,7 @@ exahype-project Elastodynamics
     order const       = 4
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size = 0.05
-    maximum-mesh-depth = 2
+    maximum-mesh-depth = 1
     time-stepping     = globalfixed
     kernel const      = generic::fluxes::linear
     language const    = C
@@ -71,7 +71,7 @@ exahype-project Elastodynamics
     plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 15
       time            = 0.0
-      repeat          = 0.01
+      repeat          = 0.0001
       output          = ./conserved
       //select          = x:0.0,y:0.0
     end plot
