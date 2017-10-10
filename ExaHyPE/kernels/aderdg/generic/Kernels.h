@@ -95,7 +95,7 @@ void spaceTimePredictorLinear(SolverType& solver,
     const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     const double dt,
-    double* tempPointForceSources)
+    double* tempPointForceSources);
 
 template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
 void spaceTimePredictorNonlinear(
