@@ -51,7 +51,7 @@ namespace {
                              "volumeUnknownsProlongation",
                              "volumeUnknownsRestriction",
                              "boundaryConditions",
-                             "pointSource"
+                             "deltaDistribution"
                              };
   constexpr const char* deepProfilingTags[]{
                              "spaceTimePredictor_PDEflux",
@@ -1932,7 +1932,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
 
 
-    pointSource(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources); //TODO KD
+    deltaDistribution(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources);
     // luh, t, dt, cell cell center, cell size, data allocation for forceVect
 
     //TODO JMG move everything to inverseDx and use Peano to get it when Dominic implemente it

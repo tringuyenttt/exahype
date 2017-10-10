@@ -34,7 +34,7 @@
 #if DIMENSIONS == 2
 
 template <typename SolverType>
-void kernels::aderdg::generic::c::pointSource(
+void kernels::aderdg::generic::c::deltaDistribution(
     SolverType& solver,
     const double t,
     const double dt,

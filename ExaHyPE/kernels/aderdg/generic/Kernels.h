@@ -204,7 +204,7 @@ void volumeUnknownsRestriction(
     
 //TODO KD    
 template <typename SolverType>
-void pointSource(
+void deltaDistribution(
     SolverType& solver,
     const double t,
     const double dt,
@@ -229,7 +229,7 @@ void pointSource(
 #include "kernels/aderdg/generic/c/2d/spaceTimePredictorLinear.cpph"
 #include "kernels/aderdg/generic/c/2d/spaceTimePredictorNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/stableTimeStepSize.cpph"
-#include "kernels/aderdg/generic/c/2d/pointSource.cpph"
+#include "kernels/aderdg/generic/c/2d/deltaDistribution.cpph"
 #include "kernels/aderdg/generic/c/2d/surfaceIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/2d/surfaceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/volumeIntegralLinear.cpph"
@@ -244,7 +244,7 @@ void pointSource(
 #include "kernels/aderdg/generic/c/3d/spaceTimePredictorLinear.cpph"
 #include "kernels/aderdg/generic/c/3d/spaceTimePredictorNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/stableTimeStepSize.cpph"
-#include "kernels/aderdg/generic/c/3d/pointSource.cpph"
+#include "kernels/aderdg/generic/c/3d/deltaDistribution.cpph"
 #include "kernels/aderdg/generic/c/3d/surfaceIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/3d/surfaceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/volumeIntegralLinear.cpph"

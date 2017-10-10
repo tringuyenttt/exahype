@@ -1106,9 +1106,9 @@ public:
       const double dt) = 0;
 
   /**
-   * PointSource kernel
+   * DeltaDistribution kernel (pointSource)
    **/
-  virtual void pointSource(
+  virtual void deltaDistribution(
     const double t,
     const double dt, 
     const tarch::la::Vector<DIMENSIONS,double>& center,

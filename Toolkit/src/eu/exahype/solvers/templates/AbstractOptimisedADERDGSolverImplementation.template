@@ -224,15 +224,15 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 }
 
 
-void {{project}}::{{abstractSolver}}::pointSource(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double* tempPointForceSources) {
+void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double* tempPointForceSources) {
 {%- if usePointSource %}
 {%- if enableProfiler %}
-  _profiler->start("pointSource");
+  _profiler->start("deltaDistribution");
 {%- endif %}
   //TODO JMG
-  //kernels::aderdg::generic::c::pointSource<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, getNumberOfVariables(),getNumberOfParameters(),getNodesPerCoordinateAxis(), tempPointForceSources);
+  //kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, getNumberOfVariables(),getNumberOfParameters(),getNodesPerCoordinateAxis(), tempPointForceSources);
 {%- if enableProfiler %}
-  _profiler->stop("pointSource");
+  _profiler->stop("deltaDistribution");
 {%- endif %}
 {%- else %}
   //Point sources aren't defined, this method should be empty
