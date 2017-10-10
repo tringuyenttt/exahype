@@ -52,8 +52,8 @@ exahype-project  ElasticWaveEquation3D
     maximum-mesh-size = 0.15
     time-stepping     = globalfixed
     type const = linear
-    terms const = flux,ncp,pointsources,materialparameters,source
-    optimisation const = generic
+    terms const = flux,ncp,pointsources:4,materialparameters,source
+    optimisation const = generic,patchwiseadjust
     language const    = C
 
     plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter

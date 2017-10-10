@@ -221,8 +221,6 @@ void deltaDistribution(
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
-    const int numberOfVariables, 
-    const int numberOfParameters, 
     const int basisSize,
     double* tempPointForceSources //memory space for forceVector
     );

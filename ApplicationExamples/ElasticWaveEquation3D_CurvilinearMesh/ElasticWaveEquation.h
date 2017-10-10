@@ -37,21 +37,17 @@ class ElasticWaveEquation3D::ElasticWaveEquation : public ElasticWaveEquation3D:
      * \param[in] cmdlineargs the command line arguments.
      */
     void init(std::vector<std::string>& cmdlineargs);
-    
+
     /**
-     * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
-     *
-     * \note Please overwrite function adjustSolution(...) if you want to
-     * adjust the solution degrees of freedom in a cellwise manner.
-     *
-     * \param[in]    x         the physical coordinate on the face.
-     * \param[in]    t         the start of the time interval.
-     * \param[in]    dt        the width of the time interval.
-     * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
-     *                         as C array (already allocated).
+     * @TODO LR : Document
      */
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) override;
-    
+    void adjustPatchSolution(
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double t,
+      const double dt,
+      double* luh);
+
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
      *
@@ -157,6 +153,34 @@ class ElasticWaveEquation3D::ElasticWaveEquation : public ElasticWaveEquation3D:
      * @TODO: Document me, please.
     **/
     void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) final override;
+
+    /**
+     * @TODO LR : document
+     */
+    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
+    
+    void coefficientMatrix(const double* const Q,const int d,double* Bn);
+    
+    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
+    
+    void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
+    void riemannSolver_Nodal_rupture(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& v_hat ,double& sigma_hat_p, double& sigma_hat_m, double alpha);
+
+    void riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
+    void riemannSolver_BCn(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
+
+    void localBasis(double* n, double * m, double* l, int d);
+    void Gram_Schmidt(double* y, double* z);
+
+    void riemannSolver_boundary(int faceIndex,double r, double vn , double vm , double vl, double Tn , double Tm ,double Tl , double zp, double zs,  double& vn_hat , double& vm_hat ,double& vl_hat , double& Tn_hat , double& Tm_hat ,double& Tl_hat);
+
+    void generate_fluctuations_right(double z,  double T,double T_hat,double v, double v_hat, double& F);
+    void generate_fluctuations_left(double z,  double T,double T_hat,double v, double v_hat, double& F);
+    void rotate_into_physical_basis(double* n,double* m,double* l, double Fn,double Fm,double Fl, double& Fx, double& Fy, double& Fz);
+    void rotate_into_orthogonal_basis(double* n,double* m,double* l, double Tx,double Ty,double Tz, double& Tn, double& Tm, double& Tl);
+    void extract_tractions_and_particle_velocity(double* n, const double* Q, double& Tx,double& Ty,double& Tz,double& vx,double& vy,double& vz );
+    void get_normals(int normalNonZeroIndex,double& norm, double* n,const double* Q);
+
 };
 
 #endif // __ElasticWaveEquation_CLASS_HEADER__

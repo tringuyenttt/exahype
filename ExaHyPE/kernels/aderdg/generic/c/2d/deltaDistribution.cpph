@@ -40,14 +40,17 @@ void kernels::aderdg::generic::c::deltaDistribution(
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
-    const int numberOfVariables, 
-    const int numberOfParameters, 
     const int basisSize,
     double* pointForceSources //memory space for forceVector
 ) {
   //TODO KD
   double x0[DIMENSIONS];
   double x[DIMENSIONS];
+
+
+  constexpr int numberOfVariables = solver.NumberOfVariables;
+  constexpr int numberOfParameters = solver.NumberOfParameters;
+  constexpr int numberOfPointSources = solver.NumberOfPointSources;  //1 at the moment
 
   //maybe reset tempStateSizedVector to 0 with std::memset
 
@@ -74,7 +77,7 @@ void kernels::aderdg::generic::c::deltaDistribution(
   std::fill_n(PSi,(basisSize + 1) * basisSize * basisSize * numberOfVariables,0);
 
 
-  for (int m =0 ; m < solver.usePointSource() ; m++){
+  for (int m =0 ; m < numberOfPointSources ; m++){
     std::fill_n(forceVectorSourceN,(basisSize + 1) * basisSize * basisSize * numberOfVariables,0);      
   
   //loop over all quadrature point

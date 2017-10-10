@@ -14,10 +14,10 @@ void ElasticWaveEquation3D::ElasticWaveEquation::init(std::vector<std::string>& 
   // @todo Please implement/augment if required
 }
 
-exahype::solvers::ADERDGSolver::AdjustSolutionValue ElasticWaveEquation3D::ElasticWaveEquation::useAdjustSolution(const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) const {
-  // @todo Please implement/augment if required
-  return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PatchWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
-}
+// exahype::solvers::ADERDGSolver::AdjustSolutionValue ElasticWaveEquation3D::ElasticWaveEquation::useAdjustSolution(const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) const {
+//   // @todo Please implement/augment if required
+//   return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PatchWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
+// }
 
 
 
@@ -452,40 +452,6 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
       }
     }
   }
-  
-}
-
-void ElasticWaveEquation3D::ElasticWaveEquation::adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) {
-  // Dimensions             = 3
-  // Number of variables    = 11 + #parameters
-  
-  // @todo Please implement/augment if required
-  // State variables:
-  double x_0[3]={0.5 , 0.5 ,0.5};
-  double exponent=0;
-
-  for(int i=0 ; i < 3 ; i++){
-    exponent = exponent + (x[i]-x_0[i])*(x[i]-x_0[i]);
-  }
-    
-  Q[ 0] = 0.0; //std::exp(-exponent/0.01);
-  Q[ 1] = 0.0;
-  Q[ 2] = 0.0;
-  Q[ 3] = 0.0;   // Material parameters:
-  Q[ 6] = 0.0;
-  Q[ 7] = 0.0;
-  Q[ 8] = 0.0;
-  Q[ 9] = 0.0;
-  Q[10] = 0.0;
-  Q[11] = 0.0;
-  Q[12] = 0.0;
-  Q[13] = 0.0;
-  Q[14] = 0.0;
-  Q[15] = 0.0;
-  Q[16] = 0.0;
-  Q[17] = 0.0;
-  Q[18] = 0.0;
-  
 }
 
 void ElasticWaveEquation3D::ElasticWaveEquation::eigenvalues(const double* const Q,const int d,double* lambda) {
@@ -733,9 +699,6 @@ void ElasticWaveEquation3D::ElasticWaveEquation::pointSource(const double* const
   double f = 0.0;
   double M0 = 1000.0;
 
-  std::cout<< " point source not implemented" << std::endl;
-  std::exit(-1);
-
   if(n == 0){
     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
     
@@ -867,7 +830,7 @@ void ElasticWaveEquation3D::ElasticWaveEquation::multiplyMaterialParameterMatrix
 }
 
 
-void ElasticWaveEquation3D::ElasticWaveEquation::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
+void ElasticWaveEquation3D::ElasticWaveEquation::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
 
   constexpr int numberOfVariables  = ElasticWaveEquation::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
@@ -971,8 +934,8 @@ void ElasticWaveEquation3D::ElasticWaveEquation::riemannSolver(double* FL,double
       
     // impedance must be greater than zero !
     if (zp_p <= 0.0 || zp_m <= 0.0){
-      std::cout<<zs_p<<' '<<zs_m<<' '<<zp_p<<' '<<zp_m<<'\n';
-      std::cout<<' Impedance must be greater than zero ! '<< std::endl;
+      std::cout<<zs_p<<" "<<zs_m<<" "<<zp_p<<" "<<zp_m<<"\n";
+      std::cout<<" Impedance must be greater than zero ! "<< std::endl;
       std::exit(-1);
     }
 
