@@ -357,6 +357,9 @@ namespace GRMHD {
 		Gradients(dbl Qx, dbl Qy) : dir{Qx,Qy} {}
 		Gradients(dbl Qx, dbl Qy, dbl Qz) : Gradients(Qx,Qy) {} // for convenience
 		#endif
+		
+		// we need proper shadowing for this
+		//Gradients(const double* const gradQ[DIMENSIONS]) {}
 	};
 
 	/**
@@ -445,10 +448,8 @@ namespace GRMHD {
 		void algebraicSource(Source& Source_data);
 		/// Adds the algebraic source (assumes Source=0 or similiar)
 		void addAlgebraicSource(Source& Source_data);
-		/// Computes the fusedSource = algebraicSource - NCP
+		/// Computes the fusedSource = algebraicSource - NCP. This is the classical RightHandSide.
 		void fusedSource(const Gradients& grad, Source& source);
-		/// Computes the fused Source, just an alias
-		void RightHandSide(const Gradients& grad, Source& source) { fusedSource(grad, source); }
 		
 		/// Eigenvalues: Currently trivially 1. We provide static access in order
 		/// to avoid unneccessary boilerplate work.
@@ -462,14 +463,14 @@ namespace GRMHD {
 			{ Gradients g(Qx,Qy,Qz); NCP n(ncp); return nonConservativeProduct(g,n); }
 		void algebraicSource(double* Source_data)
 			{ Source s(Source_data); algebraicSource(s); }
-		void RightHandSide(const double* const gradQ, double* source)
+		void fusedSource(const double* const gradQ, double* source)
 			{ Gradients g(gradQ); Source s(source); fusedSource(g, s); }
-		void RightHandSide(const double* const Qx, const double* const Qy, const double* const Qz, double* source)
+		void fusedSource(const double* const Qx, const double* const Qy, const double* const Qz, double* source)
 			{ Gradients g(Qx,Qy,Qz); Source s(source); fusedSource(g, s); }
 			
-		void RightHandSide(const double* const gradQ, Source& source)
+		void fusedSource(const double* const gradQ, Source& source)
 			{ Gradients g(gradQ); fusedSource(g, source); }
-		void RightHandSide(const double* const Qx, const double* const Qy, const double* const Qz, Source& source)
+		void fusedSource(const double* const Qx, const double* const Qy, const double* const Qz, Source& source)
 			{ Gradients g(Qx,Qy,Qz); fusedSource(g, source); }
 		
 

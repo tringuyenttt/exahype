@@ -11,7 +11,10 @@ FOR="../../GRMHD/" # fortran includes
 Fortran="../../GRMHD/Fortran"
 FortranInitialData="../../GRMHD/InitialData"
 
-verbose g++ -c -g3 --std=c++11 -DDim3 -D$TEST -I$FOR -Wall -I../ -I../../Peano/ \
+# WAS Dim3
+DIMSTRING="Dim2"
+
+verbose g++ -c -g3 --std=c++11 -D$DIMSTRING -D$TEST -I$FOR -Wall -I../ -I../../Peano/ \
 	indi-test.cc ../InitialData.cpp \
 	../PDE/Cons2Prim.cpp ../PDE/Prim2Cons.cpp ../PDE/PDE.cpp 
 	

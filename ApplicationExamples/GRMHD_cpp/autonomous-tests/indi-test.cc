@@ -20,6 +20,9 @@ using namespace std;
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <limits>
+
+constexpr double SNAN = std::numeric_limits<double>::signaling_NaN();
 
 #include "Fortran/PDE.h"
 
@@ -81,6 +84,8 @@ void interp_deriv(const double* const xc, const double t, double **gradQ) {
 	constexpr double epsilon = 1e-7, eps4 = 1e-4;
 	constexpr int stencil=4; // stencil size	
 	double Q[stencil][nSize];
+	// for debugging purposes, find errors in algorithm:
+	for(int j=0;j<stencil;j++) for(int i=0;i<nSize;i++) Q[j][i] = NAN;
 	vec::stored<3> x[stencil];
 	constexpr int p=0, m=1, pp=2, mm=3;
 	// Stencil indices: {p,m,pp,mm}]
@@ -134,7 +139,7 @@ void cmain_() {
 	for(int i=0; i<N; i++) {
 		x[1] += dx;
 		constexpr bool doC=true;
-		constexpr bool doF=false;
+		constexpr bool doF=true;
 		
 		printf("Generating ID at x=[%f %f %f].\n", x[0], x[1], x[2]);
 		
@@ -237,13 +242,25 @@ void cmain_() {
 		CHECK(QkC[dir],QkF[dir]);
 		}
 
-		PDE(QC).RightHandSide(QkC[0],QkC[1],QkC[2], SC); // TODO: Zero Source terms for material parameters!
+		PDE(QC).fusedSource(QkC[0],QkC[1],QkC[2], SC); // TODO: Zero Source terms for material parameters!
 		GRMHDSystem::Shadow(SC).zero_adm();
 		
 		readArray(SF, std::string("-0.0000000000000000       -53.205687704723701       -0.0000000000000000       -0.0000000000000000       -6.0536738979362745       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000"));
 		
-		printf("Source terms:\n");
+		printf("FusedSource terms:\n");
 		CHECK(SC,SF);
+		
+		double QncpC[nSize];
+		std::fill_n(QncpC, nSize, NAN);
+		PDE::NCP ncp(QncpC);
+		ncp.zero_adm();
+		double *QkCpointer = QkC[0];
+		// const Gradients g(QkCpointer); // this does not work as nSize >> nVar
+		const Gradients g(QkC[0], QkC[1], QkC[2]);
+		PDE(QC).nonConservativeProduct(g, ncp);
+		printf("NCP terms:\n");
+		CHECK(QncpC,SC);
+		
 	}
 }
 } // ext C

@@ -79,7 +79,11 @@ void GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const 
 
 void GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
 	// Provide NVARS eigenvalues
-	PDE::eigenvalues(Q, d, lambda);
+	//PDE::eigenvalues(Q, d, lambda);
+	
+	// Just set all eigenvalues to zero.
+	vec::shadow<nVar> Lambda(lambda);
+	Lambda = 1.0;
 }
 
 
@@ -138,13 +142,20 @@ void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S_
 	zero2Din3D(S_);
 }
 
-void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
+void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ, double* BgradQ) {
 	PDE::NCP ncp(BgradQ);
-	const Gradients g(gradQ);
-	PDE(Q).nonConservativeProduct(g, ncp);
+	
+	// deconstruct the gradient matrix because we use more than the 19 variables of GRMHD.
+	const Gradients g(gradQ+0, gradQ+nVar, gradQ+2*nVar);
+	PDE pde(Q);
+	pde.nonConservativeProduct(g, ncp);
 	ncp.zero_adm();
 	zeroHelpers(BgradQ);
 	zero2Din3D(BgradQ);
+	
+	// the NCP must be zero in flat space
+	constexpr double eps = 1e-10;
+	NVARS(i) { if(BgradQ[i]>eps) { printf("BgradQ[%d] = %e\n", i, BgradQ[i]); std::abort(); } }
 }
 
 // The optimized fusedSource
