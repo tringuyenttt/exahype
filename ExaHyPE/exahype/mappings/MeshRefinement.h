@@ -77,24 +77,6 @@ private:
       bool                                          isCalledByCreationalEvent
   ) const;
 
-  #ifdef Parallel
-  /**
-   * Returns false if the \p cellDescriptionsIndex is invalid,
-   * or if no cell descriptions is registered for this cellDescriptionsIndex,
-   * i.e., the vector is empty.
-   * Further returns false if the geometry information on the cell descriptions
-   * the \p cellDescriptionsIndex is pointing at does not match
-   * with \p cellCentre and \p cellSize.
-   *
-   * Returns true otherwise.
-   */
-  static bool geometryInfoDoesMatch(
-      const int cellDescriptionsIndex,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-      const int level);
-  #endif
-
 public:
 
   static bool IsInitialMeshRefinement;

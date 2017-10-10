@@ -558,7 +558,10 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
     exahype::Cell& localCell, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
-  if (localCell.isInside() && localCell.isInitialised()) {
+  if (!localCell.isInside())
+    return;
+
+  if (localCell.isInitialised()) {
     exahype::solvers::ADERDGSolver::sendCellDescriptions(toRank,localCell.getCellDescriptionsIndex(),
         peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
     exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(toRank,localCell.getCellDescriptionsIndex(),
@@ -582,7 +585,7 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
       localCell.shutdownMetaData();
     }
 
-  } else if (localCell.isInside() && !localCell.isInitialised()){
+  } else if (!localCell.isInitialised()){
     exahype::solvers::ADERDGSolver::sendEmptyCellDescriptions(toRank,
         peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
     exahype::solvers::FiniteVolumesSolver::sendEmptyCellDescriptions(toRank,
@@ -596,75 +599,41 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
   }
 }
 
-// TODO(Dominic): How to deal with cell descriptions index that
-// is copied from the remote rank but is a valid index on the local
-// remote rank? Currently use geometryInfoDoesMatch!
 void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
         exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
         int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
-  if (localCell.isInside()) {
-    if (!localCell.isInitialised()) {
-      localCell.setupMetaData();
-    }
+  if (!localCell.isInside())
+    return;
 
-    exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
-        fromRank,localCell,
-        peano::heap::MessageType::ForkOrJoinCommunication,
-        cellCentre,level);
-    exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
-        fromRank,localCell,
-        peano::heap::MessageType::ForkOrJoinCommunication,
-        cellCentre,level);
-
-    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-      const int element = solver->tryGetElement(localCell.getCellDescriptionsIndex(),solverNumber);
-      if (element!=exahype::solvers::Solver::NotFound) {
-        solver->mergeWithWorkerOrMasterDataDueToForkOrJoin(
-            fromRank,localCell.getCellDescriptionsIndex(),element,cellCentre,level);
-      } else {
-        solver->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,cellCentre,level);
-      }
-    }
+  if (_localState.isNewWorkerDueToForkOfExistingDomain()) {
+    localCell.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+    assertion1(!localCell.isInitialised(),localCell.toString());
   }
-}
+  if (!localCell.isInitialised()) {
+    localCell.setupMetaData();
+  }
 
-bool exahype::mappings::MeshRefinement::geometryInfoDoesMatch(
-    const int cellDescriptionsIndex,
-    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const int level) {
+  exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
+      fromRank,localCell,
+      peano::heap::MessageType::ForkOrJoinCommunication,
+      cellCentre,level);
+  exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
+      fromRank,localCell,
+      peano::heap::MessageType::ForkOrJoinCommunication,
+      cellCentre,level);
+
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
-    if (element!=exahype::solvers::Solver::NotFound) {
-      switch (solver->getType()) {
-        case exahype::solvers::Solver::Type::ADERDG:
-        case exahype::solvers::Solver::Type::LimitingADERDG: {
-          auto& cellDescription = exahype::solvers::ADERDGSolver::getCellDescription(
-              cellDescriptionsIndex,element);
-          if (!tarch::la::equals(
-              cellCentre,cellDescription.getOffset()+0.5*cellDescription.getSize()) ||
-              cellDescription.getLevel()!=level) {
-            return false;
-          }
-        } break;
-        case exahype::solvers::Solver::Type::FiniteVolumes: {
-          auto& cellDescription = exahype::solvers::FiniteVolumesSolver::getCellDescription(
-              cellDescriptionsIndex,element);
 
-          if (!tarch::la::equals(
-              cellCentre,cellDescription.getOffset()+0.5*cellDescription.getSize()) ||
-              cellDescription.getLevel()!=level) {
-            return false;
-          }
-        } break;
-      }
+    const int element = solver->tryGetElement(localCell.getCellDescriptionsIndex(),solverNumber);
+    if (element!=exahype::solvers::Solver::NotFound) {
+      solver->mergeWithWorkerOrMasterDataDueToForkOrJoin(
+          fromRank,localCell.getCellDescriptionsIndex(),element,cellCentre,level);
+    } else {
+      solver->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,cellCentre,level);
     }
   }
-  return true;
 }
 
 void exahype::mappings::MeshRefinement::prepareSendToMaster(
