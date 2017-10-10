@@ -171,6 +171,13 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     **/
     void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) final override;
 {%- endif %}
+
+{%- if useMaterialParam %}
+    /**
+     * @TODO LR : document
+     */
+    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
+{%- endif %}
 };
 
 #endif // __{{solver}}_CLASS_HEADER__

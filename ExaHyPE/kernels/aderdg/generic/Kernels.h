@@ -82,10 +82,21 @@ namespace aderdg {
 namespace generic {
 namespace c {
 
-
 /**
  * @param SolverType Has to be of type ADERDG Solver.
  */
+template <bool usePointSource, bool useSource, bool useFlux, bool useNCP, bool useMM ,typename SolverType>
+void spaceTimePredictorLinear(SolverType& solver,
+    double* lQbnd, double* lFbnd,
+    double** tempSpaceTimeUnknowns,
+    double** tempSpaceTimeFluxUnknowns,
+    double*  tempUnknowns,
+    double*  tempFluxUnknowns,
+    const double* const luh,
+    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const double dt,
+    double* tempPointForceSources)
+
 template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
 void spaceTimePredictorNonlinear(
     SolverType& solver,
