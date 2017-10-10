@@ -89,7 +89,7 @@ bool exahype::Vertex::hasToMergeNeighbours(
     const int cellDescriptionsIndex1 = _vertexData.getCellDescriptionsIndex(pos1Scalar);
     const int cellDescriptionsIndex2 = _vertexData.getCellDescriptionsIndex(pos2Scalar);
 
-    if (//cellDescriptionsIndex1!=cellDescriptionsIndex2 && // This scenario occured during one run due to inconsistent adjacency indices
+    if (cellDescriptionsIndex1!=cellDescriptionsIndex2 && // This can occur during the mesh refinement iterations due to inconsistent adjacency indices
         exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1) &&
         exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2)) {
       assertion1(pos1Scalar!=pos2Scalar,pos1Scalar);
@@ -140,77 +140,6 @@ bool exahype::Vertex::hasToMergeNeighbours(
   return false;
 }
 
-bool exahype::Vertex::hasToMergeWithEmptyCell(
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const int pos2Scalar) const {
-  if (tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1)) {
-    const int cellDescriptionsIndex1 =
-        _vertexData.getCellDescriptionsIndex(pos1Scalar);
-    const int cellDescriptionsIndex2 =
-        _vertexData.getCellDescriptionsIndex(pos2Scalar);
-
-    const bool validIndexNextToInvalidIndex =
-        (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1)
-            &&
-            cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex)
-            ||
-            (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2)
-                &&
-                cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
-
-    if (validIndexNextToInvalidIndex) {
-      const int direction    = tarch::la::equalsReturnIndex(pos1, pos2);
-      const int orientation1 = (1 + pos2(direction) - pos1(direction))/2;
-      const int orientation2 = 1-orientation1;
-
-      const int faceIndex1 = 2*direction+orientation1;
-      const int faceIndex2 = 2*direction+orientation2;
-
-      // ADER-DG
-      if (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1)) {
-        for (auto& p1 : exahype::solvers::
-            ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1)) {
-          if (p1.getIsInside(faceIndex1)
-              && !p1.getNeighbourMergePerformed(faceIndex1)) {
-            return true;
-          }
-        }
-      } else if (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2)) {
-        for (auto& p2 : exahype::solvers::
-            ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2)) {
-          if (p2.getIsInside(faceIndex2)
-              && !p2.getNeighbourMergePerformed(faceIndex2)) {
-            return true;
-          }
-        }
-      }
-
-      // Finite Volumes
-      if (exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1)) {
-        for (auto& p1 : exahype::solvers::
-            FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1)) {
-          if (p1.getIsInside(faceIndex1)
-              && !p1.getNeighbourMergePerformed(faceIndex1)) {
-            return true;
-          }
-        }
-      } else if (exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2)) {
-        for (auto& p2 : exahype::solvers::
-            FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2)) {
-          if (p2.getIsInside(faceIndex2)
-              && !p2.getNeighbourMergePerformed(faceIndex2)) {
-            return true;
-          }
-        }
-      }
-    }
-  }
-
-  return false;
-}
-
 bool exahype::Vertex::hasToMergeWithBoundaryData(
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const int pos1Scalar,
@@ -225,11 +154,16 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
     const bool validIndexNextToBoundaryIndex =
         (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1)
             &&
-            cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex)
+            (cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex
+            ||
+            // domain boundary might align with boundary to global master rank 0.
+            cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex))
             ||
             (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2)
                 &&
-                cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
+                (cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex
+                ||
+                cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex));
 
     if (validIndexNextToBoundaryIndex) {
       const int direction    = tarch::la::equalsReturnIndex(pos1, pos2);
@@ -286,7 +220,7 @@ void exahype::Vertex::setMergePerformed(
         const tarch::la::Vector<DIMENSIONS,int>& pos2,
         bool state) const {
   if (tarch::la::countEqualEntries(pos1,pos2)!=(DIMENSIONS-1)) {
-    return; // We only consider faces; no corners. TODO(Dominic): Be aware of this
+    return; // We only consider faces; no corners.
   }
 
   const int pos1Scalar = peano::utils::dLinearisedWithoutLookup(pos1,2);
