@@ -35,20 +35,21 @@
 #define IT_REALLY_WHIPS_THE_LLAMAS_ASS
 
 
-/* This header file needs the definition of a C preprocessor variable DIMENSIONS.
+/* This header file needs the definition of a C preprocessor variable TDIM which stands for
+ * "TENSISH DIMENSIONS". It can be independent of (for instance) the ExaHyPE DIMENSIONS.
  * You should provide this in the including file, i.e.
  * 
- *    #define DIMENSIONS 3
+ *    #define TDIM 3
  *    #include "tensish.cpph"
  *
  * The number of dimensions is only needed for the DFOR macro.
  */
 
-#ifndef DIMENSIONS
-#error The Tensish library needs the DIMENSIONS preprocessor variable defined to a numeric value
+#ifndef TDIM
+#error The Tensish library needs the TDIM preprocessor variable defined to a numeric value
 #endif
 
-#define DFOR(i) for(int i=0; i<DIMENSIONS; i++)
+#define DFOR(i) for(int i=0; i<TDIM; i++)
 
 // We use "CONTRACT" as a synonym to indicate that contractions are happening.
 #define CONTRACT DFOR
@@ -110,9 +111,9 @@ namespace tensish {
 		};
 		
 		// abbreviations for typical uses in 3 dimensions.
-		typedef stored<DIMENSIONS> stored_D;
-		typedef shadow<DIMENSIONS> shadow_D;
-		typedef const_shadow<DIMENSIONS> const_shadow_D;
+		typedef stored<TDIM> stored_D;
+		typedef shadow<TDIM> shadow_D;
+		typedef const_shadow<TDIM> const_shadow_D;
 	} // ns vec
 
 	/**
@@ -160,11 +161,11 @@ namespace tensish {
 		/// Compute determinant of a symmetric matrix
 		/// TODO: Do with templates
 		template<class T> constexpr double det(const T &lo) {
-			#if DIMENSIONS == 3
+			#if TDIM == 3
 			return -lo(0,2)*lo(0,2)*lo(1,1) + 2*lo(0,1)*lo(0,2)*lo(1,2)
 			-lo(0,0)*lo(1,2)*lo(1,2) - lo(0,1)*lo(0,1)*lo(2,2)
 			+lo(0,0)*lo(1,1)*lo(2,2);
-			#elif DIMENSIONS == 2
+			#elif TDIM == 2
 			return lo(0,0)*lo(1,1) - lo(0,1)*lo(1,0);
 			#endif
 		}
@@ -198,9 +199,9 @@ namespace tensish {
 		};
 		
 		// abbreviations for typical uses in 3 dimensions.
-		typedef stored<DIMENSIONS> stored_D;
-		typedef shadow<DIMENSIONS> shadow_D;
-		typedef const_shadow<DIMENSIONS> const_shadow_D;
+		typedef stored<TDIM> stored_D;
+		typedef shadow<TDIM> shadow_D;
+		typedef const_shadow<TDIM> const_shadow_D;
 	} // ns sym
 
 	/*****************************************************************************/
@@ -306,21 +307,21 @@ namespace tensish {
 
 			// quick fix, should use templates and static_assert(N >= 0 && N <= 10, "N out of bounds!");
 			// instead.
-			#if DIMENSIONS == 3 
+			#if TDIM == 3 
 			up(0,0) = (-lo(1,2)*lo(1,2) + lo(1,1)*lo(2,2) )/det;
 			up(0,1) = ( lo(0,2)*lo(1,2) - lo(0,1)*lo(2,2) )/det;
 			up(1,1) = (-lo(0,2)*lo(0,2) + lo(0,0)*lo(2,2) )/det;
 			up(0,2) = (-lo(0,2)*lo(1,1) + lo(0,1)*lo(1,2) )/det;
 			up(1,2) = ( lo(0,1)*lo(0,2) - lo(0,0)*lo(1,2) )/det;
 			up(2,2) = (-lo(0,1)*lo(0,1) + lo(0,0)*lo(1,1) )/det;
-			#elif DIMENSIONS == 2
+			#elif TDIM == 2
 			up(0,0) =  lo(1,1)/det;
 			up(0,1) = -lo(1,0)/det;
 			up(1,1) =  lo(0,0)/det;
 			#else
 			std::abort();
-			//#error Only 2D and 3D are implemented so far. Check the value of DIMENSIONS
-			static_assert(DIMENSIONS == 3 || DIMENSIONS == 2, "Only 2D and 3D implemented so far");
+			//#error Only 2D and 3D are implemented so far. Check the value of TDIM
+			static_assert(TDIM == 3 || TDIM == 2, "Only 2D and 3D implemented so far");
 			#endif
 
 			//vc = sqrt(fabs(d));

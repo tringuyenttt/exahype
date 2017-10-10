@@ -1,7 +1,6 @@
 #include "GRMHDSolver_ADERDG.h"
 #include <algorithm> // fill_n
 #include <cstring> // memset
-#include <fenv.h> // enable nan tracker
 
 #include "kernels/KernelUtils.h" // matrix indexing
 #include "kernels/GaussLegendreQuadrature.h"
@@ -12,6 +11,7 @@
 #include "InitialData.h"
 
 #include "GRMHDSolver_ADERDG_Variables.h"
+#include "DebuggingHelpers.h"
 
 
 constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
@@ -21,59 +21,15 @@ constexpr int nDim = DIMENSIONS;
 
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG" );
 
-constexpr double magicCheck = 123456789;
-
 void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) { // ,  exahype::Parser::ParserView constants) {
 
 	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
 }
 
-void zeroHelpers(double* Q) {
-	// debugging variables
-	GRMHD::AbstractGRMHDSolver_ADERDG::Variables var(Q);
-	DFOR(i) var.pos(i) = 0;
-	var.check() = 0;
-}
-
-void zero2Din3D(double* Q) {
-	// 3D components which should not be in 2D
-	GRMHD::AbstractGRMHDSolver_ADERDG::VariableShortcuts pos;
-	
-	// 3rd component of vectors
-	Q[pos.vel+2] = 0;
-	Q[pos.B  +2] = 0;
-	Q[pos.shift+2] = 0;
-	// 3d-components of tensor
-	for(int i=0; i<3; i++) Q[pos.gij+tensish::sym::index(2,i)] = 0;
-	 // 3rd component of debugging coordinate vector
-	Q[pos.pos+2] = 0;
-}
-
-void /*GRMHD::GRMHDSolver_ADERDG:: */ initialData(const double* const x,const double t,const double dt,double* Q) {
-  // Number of variables    = 23 + #parameters
-  NVARS(i) Q[i] = NAN; // to find problems
-
-  // currently, the C++ AlfenWave spills out primitive data
-  /*
-    double V[nVar];
-    AlfenWave id(x,t,V);
-    GRMHD::Prim2Cons(Q, V).copyFullStateVector();
-   */
-  AlfenWaveCons(x,t,Q);
-
-  // also store the positions for debugging
-  GRMHD::AbstractGRMHDSolver_ADERDG::Variables var(Q);
-  DFOR(i) var.pos(i) = x[i];
-  var.check() = magicCheck;
-  zero2Din3D(Q);
-
-  NVARS(i) { if(!std::isfinite(Q[i])) { printf("Qid[%d] = %e\n", i, Q[i]); std::abort(); } }
-}
-
 void GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   if (tarch::la::equals(t,0.0)) {
-    initialData(x,t,dt,Q);
+    InitialData(x,t,Q);
   }
 }
 
@@ -88,8 +44,16 @@ void GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,do
 
 
 void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** F) {
-	GRMHD::Fluxes(F, Q).zeroMaterialFluxes();
-	DFOR(d) { zero2Din3D(F[d]); zeroHelpers(F[d]); }
+	
+	// as TDIM is 3 and DIMENSIONS is 2, come up with this dirty wrapper:
+	double *FT[3], Fz[nVar];
+	FT[0] = F[0];
+	FT[1] = F[1];
+	FT[2] = Fz;
+	
+	GRMHD::Fluxes(FT, Q).zeroMaterialFluxes();
+	//DFOR(d) { zero2Din3D(F[d]); zeroHelpers(F[d]); }
+	zeroHelpers(F[0]); zeroHelpers(F[1]);
 }
 
 
@@ -118,7 +82,7 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 		const double xi = kernels::gaussLegendreNodes[order][i];
 		double ti = t + xi * dt;
 
-		initialData(x, ti, dt, Qgp);
+		InitialData(x, ti, Qgp);
 		flux(Qgp, F);
 
 		for(int m=0; m < nVar; m++) {
@@ -126,6 +90,10 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 			fluxOut[m] += weight * Fs[d][m];
 		}
 	}
+	
+	//NVARS(i) printf("stateOut[%d]=%e\n", i, stateOut[i]);
+	//NVARS(i) printf("fluxOut[%d]=%e\n", i, fluxOut[i]);
+	//std::abort();
 }
 
 
@@ -139,23 +107,26 @@ void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S_
 	PDE(Q).algebraicSource(S);
 	S.zero_adm();
 	zeroHelpers(S_);
-	zero2Din3D(S_);
+	//zero2Din3D(S_);
 }
 
 void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ, double* BgradQ) {
 	PDE::NCP ncp(BgradQ);
 	
+	// as we only have DIMENSIONS == 2 but TDIM == 3, construct a zero gradient
+	double gradZ[nVar] = {0.};
+	
 	// deconstruct the gradient matrix because we use more than the 19 variables of GRMHD.
-	const Gradients g(gradQ+0, gradQ+nVar, gradQ+2*nVar);
+	const Gradients g(gradQ+0, gradQ+nVar, gradZ);
 	PDE pde(Q);
 	pde.nonConservativeProduct(g, ncp);
 	ncp.zero_adm();
 	zeroHelpers(BgradQ);
-	zero2Din3D(BgradQ);
+	//zero2Din3D(BgradQ);
 	
 	// the NCP must be zero in flat space
-	constexpr double eps = 1e-10;
-	NVARS(i) { if(BgradQ[i]>eps) { printf("BgradQ[%d] = %e\n", i, BgradQ[i]); std::abort(); } }
+	//constexpr double eps = 1e-10;
+	//NVARS(i) { if(BgradQ[i]>eps) { printf("BgradQ[%d] = %e\n", i, BgradQ[i]); std::abort(); } }
 }
 
 // The optimized fusedSource

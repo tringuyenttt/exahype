@@ -12,28 +12,35 @@
 #ifndef GRMHD_PDE_CPP
 #define GRMHD_PDE_CPP
 
+/**
+ * TDIM defines the dimensionality of the PDE (as well as the underlying tensish
+ * library). It can be independent of the ExaHyPE DIMENSIONS. For the GRMHD,
+ * with certain initial data, only 3 dimensions are senseful.
+ **/
+#define TDIM 3
+
 #ifdef TEST_NEW_PDE_AUTONOMOUSLY
 	// in order to autonomously test/copmile this C++ file:
-	#define DIMENSIONS 3
+	#define TDIM 3
 	namespace GRMHD { constexpr int nVar = 19; }
 	//int main() { return 0; }
 #else
 	// If you include to ExaHyPE instead:
-	#include "peano/utils/Dimensions.h" // Defines DIMENSIONS
+	#include "peano/utils/Dimensions.h" // Defines TDIM
 	#include "AbstractGRMHDSolver_FV.h" // Defines: nVar
 	namespace GRMHD { constexpr int nVar = GRMHD::AbstractGRMHDSolver_FV::NumberOfVariables; } // ensure this is 19 or so
 	//namespace GRMHD { constexpr int nVar = 19; }
 #endif
 
 /* This header file needs the definition of a constexpr int GRMHD::nVar
- * as well as a preprocessor variable DIMENSIONS.
+ * as well as a preprocessor variable TDIM.
  * You should provide this in the including file, for instance:
  *
  *   namespace GRMHD { constexpr int nVar = 10; }
- *   #define DIMENSIONS 3
+ *   #define TDIM 3
  *   #include "PDE.h"
  *
- * DIMENSIONS has to be a C preprocessor variable for C macro ifdefs.
+ * TDIM has to be a C preprocessor variable for C macro ifdefs.
  * As ExaHyPE, there are some places where this code only works for 2 and 3
  * dimensions.
  */
@@ -341,7 +348,7 @@ namespace GRMHD {
 
 	// Gradients in each direction: partial_i * something
 	struct Gradients {
-		const GRMHDSystem::Gradient dir[DIMENSIONS];
+		const GRMHDSystem::Gradient dir[TDIM];
 		// Access an element in some direction
 		const GRMHDSystem::Gradient& operator[](int i) const { return dir[i]; }
 		// Access an element, indicating that it's partial_i, not partial^i
@@ -349,17 +356,17 @@ namespace GRMHD {
 		
 		#define dbl const double* const // shorthand
 		
-		#if DIMENSIONS == 3
+		#if TDIM == 3
 		Gradients(dbl gradQ) : dir{gradQ+0,gradQ+nVar,gradQ+2*nVar} {}
 		Gradients(dbl Qx, dbl Qy, dbl Qz) : dir{Qx,Qy,Qz} {}
-		#elif DIMENSIONS == 2
+		#elif TDIM == 2
 		Gradients(dbl gradQ) : dir{gradQ+0,gradQ+nVar} {}
 		Gradients(dbl Qx, dbl Qy) : dir{Qx,Qy} {}
 		Gradients(dbl Qx, dbl Qy, dbl Qz) : Gradients(Qx,Qy) {} // for convenience
 		#endif
 		
 		// we need proper shadowing for this
-		//Gradients(const double* const gradQ[DIMENSIONS]) {}
+		//Gradients(const double* const gradQ[TDIM]) {}
 	};
 
 	/**
@@ -488,11 +495,11 @@ namespace GRMHD {
 	
 	// Compute all fluxes at once
 	struct Fluxes : public FluxBase {
-		Flux F[DIMENSIONS];
-		#if DIMENSIONS == 3
+		Flux F[TDIM];
+		#if TDIM == 3
 		Fluxes(double** F, const double* const Q) : FluxBase(Q), F{F[0],F[1],F[2]} {computeAll();}
 		Fluxes(double* Fx, double* Fy, double* Fz, const double* const Q) : FluxBase(Q), F{Fx,Fy,Fz} {computeAll();}
-		#elif DIMENSIONS == 2
+		#elif TDIM == 2
 		Fluxes(double** F, const double* const Q) : FluxBase(Q), F{F[0],F[1]} {computeAll();}
 		Fluxes(double* Fx, double* Fy, const double* const Q) : FluxBase(Q), F{Fx,Fy} {computeAll();}
 		Fluxes(double* Fx, double* Fy, double* Fz, const double* const Q) : Fluxes(Fx,Fy,Q) {} // for convenience
@@ -505,7 +512,7 @@ namespace GRMHD {
 	/// This is the algebraic conserved flux
 	struct Fluxes : public PDE {
 		typedef GRMHDSystem::Shadow Flux;
-		Flux F[DIMENSIONS];
+		Flux F[TDIM];
 		Mixed<sym::stored_D> Sij; ///< Sij is the 3-Energy-Momentum tensor: We only need S^i_j in the flux.
 		Up<vec::stored_D> zeta;   ///< Zeta is the transport velocity (curly V in BHAC paper)
 		
