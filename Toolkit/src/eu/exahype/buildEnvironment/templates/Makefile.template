@@ -5,14 +5,15 @@
 # Available configuration Parameters for ExaHyPE
 #
 # export variable  |  default-value  |  further values         |  description
-#--------------------------------------------------------------------------------------------------
-# COMPILER            Intel             GNU                       Used compiler (and linker)
-# MODE                Release           Debug, Profile, Asserts   Verbosity and Debug level
-# SHAREDMEM           None              OMP, TBB                  Shared-memory parallelisation
-# DISTRIBUTEDMEM      None              MPI                       Distributed-memory parallelisation
-# BOUNDARYCONDITIONS  None              Periodic                  Type of boundary conditions
-# USE_IPO             Off               On                        IPO during compilation (intel only)
-# *********************************************************************************************
+#-------------------------------------------------------------------------------------------------------
+# COMPILER            Intel             GNU                          Used compiler (and linker)
+# MODE                Release           Debug,                       Verbosity and Debug level
+#                                       Asserts,PeanoProfile,Profile          
+# SHAREDMEM           None              OMP, TBB                     Shared-memory parallelisation
+# DISTRIBUTEDMEM      None              MPI                          Distributed-memory parallelisation
+# BOUNDARYCONDITIONS  None              Periodic                     Type of boundary conditions
+# USE_IPO             Off               On                           IPO during compilation (intel only)
+# ******************************************************************************************************
 
 PEANO_KERNEL_PEANO_PATH={{peanoToolboxPath}}/peano
 PEANO_KERNEL_TARCH_PATH={{peanoToolboxPath}}/tarch

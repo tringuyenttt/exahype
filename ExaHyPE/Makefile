@@ -9,15 +9,15 @@
 # Available configuration Parameters for ExaHyPE
 #
 # export variable  |  default-value  |  further values         |  description
-#--------------------------------------------------------------------------------------------------
-# ARCHITECTURE        CPU               Phi, KNL, HSW             Hardware-plattfrom
-# COMPILER            Intel             GNU, Manual               Used compiler (and linker)
-# MODE                Release           Debug,                    Verbosity and Debug level
-#                                       Asserts,Profile          
-# SHAREDMEM           None              OMP, TBB                  Shared-memory parallelisation
-# DISTRIBUTEDMEM      None              MPI                       Distributed-memory parallelisation
-# BOUNDARYCONDITIONS  None              Periodic                  Type of boundary conditions
-# USE_IPO             Off               On                        IPO during compilation (intel only)
+#----------------------------------------------------------------------------------------------
+# ARCHITECTURE        CPU               Phi, KNL, HSW              Hardware-plattfrom
+# COMPILER            Intel             GNU, Manual                Used compiler (and linker)
+# MODE                Release           Debug,                     Verbosity and Debug level
+#                                       Asserts,PeanoProfile,Profile          
+# SHAREDMEM           None              OMP, TBB                   Shared-memory parallelisation
+# DISTRIBUTEDMEM      None              MPI                        Distributed-memory parallelisation
+# BOUNDARYCONDITIONS  None              Periodic                   Type of boundary conditions
+# USE_IPO             Off               On                         IPO during compilation (intel only)
 # *********************************************************************************************
 
 SHELL = bash
@@ -93,9 +93,15 @@ else ifeq ($(call tolower,$(MODE)),asserts)
 	# --------------------------------------------
 	COMPILER_CFLAGS += -DAsserts -DTrackGridStatistics
 	#COMPILER_LFLAGS +=
-
+	
 else ifeq ($(call tolower,$(MODE)),profile)
 	# Settings for the Profile mode
+	# --------------------------------------------
+	#COMPILER_CFLAGS += 
+	#COMPILER_LFLAGS +=
+
+else ifeq ($(call tolower,$(MODE)),peanoprofile)
+	# Settings for the PeanoProfile mode
 	# --------------------------------------------
 	COMPILER_CFLAGS += -DPerformanceAnalysis -DTrackGridStatistics
 	#COMPILER_LFLAGS +=
