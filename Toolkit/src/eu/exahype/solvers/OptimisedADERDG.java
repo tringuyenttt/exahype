@@ -37,7 +37,8 @@ public class OptimisedADERDG implements Solver {
     final boolean useNCP             = kernel.useNCP();
     final boolean usePointSource     = kernel.usePointSource();
     final boolean useMaterialParam   = kernel.useMaterialParameterMatrix();
-    final boolean noTimeAveraging    = kernel.noTimeAveraging(); 
+    final boolean noTimeAveraging    = kernel.noTimeAveraging();
+    final boolean patchwiseAdjust    = kernel.patchwiseAdjust();
     
     //generate the optimised kernel, can throw IOException
     final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, isLinear, dimensions,
@@ -71,6 +72,7 @@ public class OptimisedADERDG implements Solver {
     context.put("usePointSource"    , usePointSource);
     context.put("useMaterialParam"  , useMaterialParam);
     context.put("noTimeAveraging"   , noTimeAveraging);
+    context.put("patchwiseAdjust"   , patchwiseAdjust);
     
     //boolean as String
     context.put("useFlux_s"         , boolToTemplate(useFlux));

@@ -161,7 +161,11 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
 {%- if enableProfiler %}
   _profiler->start("solutionAdjustment");
 {%- endif %}
+{%- if patchwiseAdjust %}
+  {{project}}::{{solver}}::adjustPatchSolution(center, dx, t, dt, luh);
+{%- else %}
   {{optNamespace}}::adjustPointSolution(*static_cast<{{solver}}*>(this), luh, center, dx, t, dt );
+{%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("solutionAdjustment");
 {%- endif %}
@@ -251,7 +255,7 @@ void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const
   abortWithMsg("If this operation is entered (nonConservativeProduct), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) {
+void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
   abortWithMsg("If this operation is entered (pointSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 

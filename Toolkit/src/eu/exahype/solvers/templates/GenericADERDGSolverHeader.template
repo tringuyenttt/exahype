@@ -44,6 +44,17 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      */
     void init(std::vector<std::string>& cmdlineargs{% if hasConstants %}, exahype::Parser::ParserView& constants{% endif %});
     
+{%- if patchwiseAdjust %}
+    /**
+     * @TODO LR : Document
+     */
+    void adjustPatchSolution(
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& dx,
+      const double t,
+      const double dt,
+      double* luh);
+{%- else %}
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
      *
@@ -57,7 +68,8 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                         as C array (already allocated).
      */
     void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) override;
-    
+{%- endif %}
+
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
      *

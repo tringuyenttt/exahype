@@ -22,22 +22,23 @@ public class ADERDGKernel {
   /**
    * Configuration parameter: id of the options
    */
-  public static final String GENERIC_OPTION_ID      = "generic";
-  public static final String OPTIMISED_OPTION_ID    = "optimised";
+  public static final String GENERIC_OPTION_ID           = "generic";
+  public static final String OPTIMISED_OPTION_ID         = "optimised";
 
-  public static final String LINEAR_OPTION_ID       = "linear";
-  public static final String NONLINEAR_OPTION_ID    = "nonlinear";
-  public static final String USER_DEFINED_OPTION_ID = "user";
-  public static final String LEGENDRE_OPTION_ID     = "gausslegendre";
-  public static final String LOBATTO_OPTION_ID      = "gausslobatto";
+  public static final String LINEAR_OPTION_ID            = "linear";
+  public static final String NONLINEAR_OPTION_ID         = "nonlinear";
+  public static final String USER_DEFINED_OPTION_ID      = "user";
+  public static final String LEGENDRE_OPTION_ID          = "gausslegendre";
+  public static final String LOBATTO_OPTION_ID           = "gausslobatto";
     
-  public static final String FLUX_OPTION_ID        = "flux";
-  public static final String SOURCE_OPTION_ID      = "source";
-  public static final String NCP_OPTION_ID         = "ncp";
-  public static final String POINTSOURCE_OPTION_ID = "pointsources";
+  public static final String FLUX_OPTION_ID              = "flux";
+  public static final String SOURCE_OPTION_ID            = "source";
+  public static final String NCP_OPTION_ID               = "ncp";
+  public static final String POINTSOURCE_OPTION_ID       = "pointsources";
   public static final String MATERIALPARAMETER_OPTION_ID = "materialparameters";
 
-  public static final String NO_TIME_AVG_OPTION_ID = "notimeavg";
+  public static final String NO_TIME_AVG_OPTION_ID       = "notimeavg";
+  public static final String PATCHWISE_ADJUST_OPTION_ID  = "patchwiseadjust";
   
   private Set<String> type;
   private Set<String> terms;
@@ -129,6 +130,10 @@ public class ADERDGKernel {
   
   public boolean noTimeAveraging() {
     return optimisation.contains(NO_TIME_AVG_OPTION_ID);
+  }
+  
+    public boolean patchwiseAdjust() {
+    return optimisation.contains(PATCHWISE_ADJUST_OPTION_ID);
   }
   
   //(type: [...], terms: [...], opt: [...])
