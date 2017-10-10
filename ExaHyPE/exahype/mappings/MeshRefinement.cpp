@@ -443,25 +443,15 @@ void exahype::mappings::MeshRefinement::leaveCell(
   //      fineGridVertices[ fineGridVerticesEnumerator(v) ].erase();
   //    }
   //    enddforx
-  if (
-      fineGridCell.isRefined()
-      &&
-      peano::grid::aspects::VertexStateAnalysis::doesOneVertexCarryRefinementFlag(
-          fineGridVertices, fineGridVerticesEnumerator, Vertex::Records::Unrefined
-      )
-  ) {
-    bool isOneVertexABoundaryVertex = false;
+
+  // Ensure we have no hanging nodes on the boundary
+  if (fineGridCell.isRefined()) {
     dfor2(k)
-      isOneVertexABoundaryVertex |= fineGridVertices[ fineGridVerticesEnumerator(k) ].isBoundary();
-    enddforx
-    if (isOneVertexABoundaryVertex) {
-      dfor2(k)
-      if (fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()
-          ==Vertex::Records::Unrefined) {
+      if (fineGridVertices[ fineGridVerticesEnumerator(k) ].isBoundary() &&
+          fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==Vertex::Records::Unrefined) {
         fineGridVertices[ fineGridVerticesEnumerator(k) ].refine();
       }
-      enddforx
-    }
+    enddforx
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
