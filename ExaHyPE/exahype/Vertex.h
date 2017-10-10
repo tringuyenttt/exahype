@@ -129,17 +129,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const int pos2Scalar) const;
 
   /**
-   * Checks if the cell description at one of the indices corresponding
-   * to \p pos1 and \p pos2 need to merge their metadata at
-   * a empty cell, i.e. there is a hanging node within the domain.
-   */
-  bool hasToMergeWithEmptyCell(
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const int pos2Scalar) const;
-
-  /**
    * Sets a flag on the cell descriptions at the indices corresponding
    * to \p pos1 and \p pos2 that the merge with the neighbours has been
    * performed.

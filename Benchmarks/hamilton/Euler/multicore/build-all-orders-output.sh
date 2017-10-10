@@ -1,5 +1,7 @@
+directory=multicore
+
 exe=ExaHyPE-Euler
-spec=multicore/Euler-output.exahype
+spec=$directory/Euler-output.exahype
 
 cp $spec ${spec}_tmp
 
@@ -21,7 +23,7 @@ do
     rm *.o
     sed -i -r 's,order(\s+)const(\s+)=(\s+)([0-9]+),order\1const\2=\3'$p',' $spec
     cat $spec
-    multicore/configure-output.sh
+    $directory/configure-output.sh
     make -j24 && \
     mv $exe $exe-p$p-$SHAREDMEM-$COMPILER
   done

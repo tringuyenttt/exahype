@@ -26,7 +26,11 @@ do
     cat $spec
     module unload gcc/4.9
     module load python/3.3_anaconda_nompi
+    module unload gcc/4.9
+    module load python/3.3_anaconda_nompi
     $directory/configure-no-output.sh
+    module unload python/3.3_anacobda_nompi
+    module load gcc/4.9
     module unload python/3.3_anacobda_nompi
     module load gcc/4.9
     make -j28 && \
