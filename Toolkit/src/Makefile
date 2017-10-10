@@ -6,9 +6,7 @@
 
 # Minimum java compiler major version requirement for the ExaHyPE toolkit.
 # This is Java 8 since September 2017.
-EXAHYPE_MINIMUM_MAJOR_REQ := 8
-# This is actually needed for f*** Makefile math
-EXAHYPE_MINIMUM_MAJOR_REQ_MINUS_ONE := 7
+EXAHYPE_MINIMUM_JAVA_VERSION := 8
 
 OBJECTS=$(SOURCES:.java=.class)
 
@@ -25,32 +23,15 @@ default:
 	@echo   all
 
 # Checks for availability of executables at runtime, without any make target. Source:  https://stackoverflow.com/a/25668869
-JAVA_TOOLS = javac java jar
+JAVA_TOOLS = javac javap java jar
 JAVA_CHECK_AVAIL := $(foreach exec,$(JAVA_TOOLS),\
   $(if $(shell which $(exec)),[$(exec): yes],$(error "Missing $(exec) in PATH. I need the full JRE and JDK in order to compile and execute the java toolkit. The Path variable is ${PATH}.")))
-# Get the full java compiler version string
-JAVA_VERSION  := $(shell java -version 2>&1 | head -n1)
-JAVAC_VERSION := $(shell javac -version 2>&1)
-# Extract the major Java compiler version (e.g. "8" out of "javac 1.8.0_131")
-JAVAC_MAJOR_VERSION := $(shell echo ${JAVAC_VERSION} | sed 's/javac\s*//' | cut -f2 -d.)
-# Will return the string "1" if the version is sufficient, "0" otherwise
-IS_JAVAC_SUFFICIENT := $(shell [ ${JAVAC_MAJOR_VERSION} -gt ${EXAHYPE_MINIMUM_MAJOR_REQ_MINUS_ONE} ] && echo "yes" || echo "no" )
-# again, do the check immediately
-JAVA_CHECK_VERS := $(if $(shell [ ${JAVAC_MAJOR_VERSION} -gt ${EXAHYPE_MINIMUM_MAJOR_REQ_MINUS_ONE} ] && echo "yes"),"Java sufficient",$(error "Java compiler version is too old! I determined major version ${JAVAC_MAJOR_VERSION} while ${EXAHYPE_MINIMUM_MAJOR_REQ} is required. I asked javac and it told me the version is '${JAVAC_VERSION}'. Please load a more recent java compiler and runtime. The Path variable is ${PATH}"))
 
-# you can run this Makefile target by calling "make check_java" only for a verbose result. In any case,
-# the check is made whenever any make file target is called.
-check_java:
-	@echo ExaHyPE toolkit java check
-	@echo
-	@echo "Present Java  version: ${JAVA_VERSION}"
-	@echo "Present Javac version: ${JAVAC_VERSION}"
-	@echo
-	@echo "Required minimum java version: ${EXAHYPE_MINIMUM_MAJOR_REQ}"
-	@echo "Determined java version:       ${JAVAC_MAJOR_VERSION} [sufficient: ${IS_JAVAC_SUFFICIENT}]"
-	@echo
-	@echo "All Java tools available: ${JAVA_CHECK_AVAIL}"
-	@echo "Java version sufficient:  ${JAVA_CHECK_VERS}"
+# This makefile target is called whenever a build fails.
+java_version_proof:
+	@echo "The build failed and the reason is probably that your Java version is too old. Note that the ExaHyPE Toolkit requires at least Java ${EXAHYPE_MINIMUM_JAVA_VERSION}:"
+	@./javac-version-check.sh
+	@echo "This was determined on your Path variable ${PATH}"
 
 clean:
 	rm -f $(OBJECTS)
@@ -91,9 +72,9 @@ dist:
 all:
 #	try serial making by invoking individual make instead of dependency list:
 	make clean
-	make createParser
+	make createParser || make java_version_proof
 	make unpack_deps
-	make compile
+	make compile || make java_version_proof
 	make dist
 
 
