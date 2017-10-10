@@ -63,7 +63,7 @@ exahype-project Elastodynamics
     order const       = 4
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size = 0.05
-    maximum-mesh-depth = 1
+    maximum-mesh-depth = 0
     time-stepping     = globalfixed
     kernel const      = generic::fluxes::linear
     language const    = C
