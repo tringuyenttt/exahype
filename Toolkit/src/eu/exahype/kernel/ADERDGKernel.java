@@ -79,14 +79,8 @@ public class ADERDGKernel {
   }
 
   public enum KernelType {
-    GenericNonlinearADERDGWithLegendrePoints,
-    GenericNonlinearADERDGWithLobattoPoints,
-    GenericLinearADERDGWithLegendrePoints,
-    GenericLinearADERDGWithLobattoPoints,
-    OptimisedNonlinearADERDGWithLegendrePoints,
-    OptimisedNonlinearADERDGWithLobattoPoints,
-    OptimisedLinearADERDGWithLegendrePoints,
-    OptimisedLinearADERDGWithLobattoPoints,
+    GenericADERDG,
+    OptimisedADERDG,
     UserDefined,
     Unknown
   }
@@ -96,33 +90,14 @@ public class ADERDGKernel {
   }
 
   public KernelType getKernelType() {
-    if ( 
-      type.contains(NONLINEAR_OPTION_ID) && 
-      optimisation.contains(OPTIMISED_OPTION_ID) && 
-      type.contains(LEGENDRE_OPTION_ID)
-      ||
-      type.contains(NONLINEAR_OPTION_ID) && 
-      optimisation.contains(OPTIMISED_OPTION_ID)
-   ) {
-     return KernelType.OptimisedNonlinearADERDGWithLegendrePoints;
+    if (optimisation.contains(OPTIMISED_OPTION_ID)) {
+     return KernelType.OptimisedADERDG;
    }
       
    // default kernel - must be last   
-   if ( 
-  	  type.contains(NONLINEAR_OPTION_ID) && 
-  	  optimisation.contains(GENERIC_OPTION_ID) && 
-  	  type.contains(LEGENDRE_OPTION_ID)
-  	  ||
-  	  type.contains(NONLINEAR_OPTION_ID) && 
-  	  optimisation.contains(GENERIC_OPTION_ID)
-  	  ||
-  	  type.contains(NONLINEAR_OPTION_ID) &&
-  	  type.contains(LEGENDRE_OPTION_ID)
-      ||  	  
-  	  type.contains(NONLINEAR_OPTION_ID)
-  	) {
-      return KernelType.GenericNonlinearADERDGWithLegendrePoints;
-	}
+   if(optimisation.contains(GENERIC_OPTION_ID)) {
+      return KernelType.GenericADERDG;
+  }
   
     return  KernelType.Unknown;
   }

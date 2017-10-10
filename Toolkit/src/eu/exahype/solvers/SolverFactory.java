@@ -53,10 +53,10 @@ public class SolverFactory {
   public Solver createADERDGSolver(String solvername, ADERDGKernel kernel,boolean isFortran,int numberOfVariables,int numberOfParameters,Set<String> namingSchemeNames,int order,boolean hasConstants) {
     try { //some solver initialisation can throw IllegalArgumentException if the options are wrong or IOException
       switch (kernel.getKernelType()) {
-        case GenericNonlinearADERDGWithLegendrePoints: 
+        case GenericADERDG: 
           return new eu.exahype.solvers.GenericADERDG(_projectName, solvername, _dimensions,
             numberOfVariables, numberOfParameters, namingSchemeNames, order, _enableProfiler, hasConstants, isFortran, kernel );
-        case OptimisedNonlinearADERDGWithLegendrePoints:
+        case OptimisedADERDG:
           return new eu.exahype.solvers.OptimisedADERDG(_projectName, solvername, _dimensions,
             numberOfVariables, numberOfParameters, namingSchemeNames, order, _microarchitecture,
             _enableProfiler, _enableDeepProfiler, hasConstants, kernel);
