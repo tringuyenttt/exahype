@@ -2856,7 +2856,6 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
     riemannSolver(
         FL,FR,QL,QR,
-        tempFaceUnknowns[0],tempStateSizedVectors,tempStateSizedSquareMatrices,
         std::min(pLeft.getCorrectorTimeStepSize(),
             pRight.getCorrectorTimeStepSize()),
         normalDirection, false, -1);

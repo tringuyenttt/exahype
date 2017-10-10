@@ -41,17 +41,8 @@ void kernels::aderdg::generic::c::solutionAdjustment(
       
       x[0] = center[0] + dx[0] * (qj - 0.5);
       x[1] = center[1] + dx[1] * (qi - 0.5);
-
-      const double weight =  // Gauss weight
-#if defined(_GLL)
-	kernels::gaussLobattoWeights[order][basisSize-1-i] *
-	kernels::gaussLobattoWeights[order][basisSize-1-j];
-#else	
-      kernels::gaussLegendreWeights[order][i] *
-	kernels::gaussLegendreWeights[order][j];
-#endif      
-
-      solver.adjustPointSolution(x, weight, t, dt, luh + idx_luh(i,j,0));
+      
+      solver.adjustPointSolution(x, t, dt, luh + idx_luh(i,j,0));
     }
   }
 }

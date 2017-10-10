@@ -1014,7 +1014,7 @@ public:
                              const double dt,
                              const int normalNonZero,
                              bool isBoundaryFace,
-			     int faceIndex) = 0;
+                             int faceIndex) = 0;
 
   /**
    * Return the normal fluxes (or fluctuations) and state variables at the boundary.

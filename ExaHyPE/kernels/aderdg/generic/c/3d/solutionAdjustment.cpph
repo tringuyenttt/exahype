@@ -30,7 +30,7 @@ void kernels::aderdg::generic::c::solutionAdjustment(
   
   double x[3];
   for (int i = 0; i < basisSize; i++) {  // loop over dof
-      #if defined(_GLL)
+    #if defined(_GLL)
     const double qi = kernels::gaussLobattoNodes[order][i];
     #else
     const double qi = kernels::gaussLegendreNodes[order][i];
@@ -42,29 +42,17 @@ void kernels::aderdg::generic::c::solutionAdjustment(
     const double qj = kernels::gaussLegendreNodes[order][j];
     #endif
       for (int k = 0; k < basisSize; k++) {
-       #if defined(_GLL)
+        #if defined(_GLL)
         const double qk = kernels::gaussLobattoNodes[order][k];
-	#else
-	const double qk = kernels::gaussLegendreNodes[order][k];
-	#endif
-	
-
+        #else
+        const double qk = kernels::gaussLegendreNodes[order][k];
+        #endif
+        
         x[2] = center[2] + dx[2] * (qi - 0.5);
         x[1] = center[1] + dx[1] * (qj - 0.5);
         x[0] = center[0] + dx[0] * (qk - 0.5);
-
-        const double weight =  // Gauss weight
-	#if defined(_GLL)
-            kernels::gaussLobattoWeights[order][i] *
-            kernels::gaussLobattoWeights[order][j] *
-            kernels::gaussLobattoWeights[order][k];
-	#else
-	 kernels::gaussLegendreWeights[order][i] *
-            kernels::gaussLegendreWeights[order][j] *
-            kernels::gaussLegendreWeights[order][k];
-	#endif
-
-        solver.adjustPointSolution(x, weight, t, dt, luh + idx_luh(i,j,k,0));
+        
+        solver.adjustPointSolution(x, t, dt, luh + idx_luh(i,j,k,0));
 
       }
     }

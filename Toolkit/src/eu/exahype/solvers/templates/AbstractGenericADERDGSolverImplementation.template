@@ -71,8 +71,6 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const double* c
 {%- endif %}
 }
 
-
-
 void {{project}}::{{abstractSolver}}::volumeIntegral(double* lduh,const double* const lFi,const double* const lFhi,const tarch::la::Vector<DIMENSIONS,double>& dx) {
 {%- if enableProfiler %}
   _profiler->start("volumeIntegral");
@@ -91,8 +89,6 @@ void {{project}}::{{abstractSolver}}::volumeIntegral(double* lduh,const double* 
 {%- endif %}
 }
 
-
-
 void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& dx) {
 {%- if enableProfiler %}
   _profiler->start("surfaceIntegral");
@@ -103,10 +99,7 @@ void {{project}}::{{abstractSolver}}::surfaceIntegral(double* lduh,const double*
 {%- endif %}
 }
 
-
-
-
-void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace) {
+void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) {
   assertion2(normalNonZeroIndex>=0,dt,normalNonZeroIndex);
   assertion2(normalNonZeroIndex<DIMENSIONS,dt,normalNonZeroIndex);
 {%- if enableProfiler %}
@@ -122,8 +115,6 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 {%- endif %}
 }
 
-
-
 void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxOut,double* stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int normalNonZero) {
 {%- if enableProfiler %}
   _profiler->start("boundaryConditions");
@@ -133,8 +124,6 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* fluxOut,double*
   _profiler->stop("boundaryConditions");
 {%- endif %}
 }
-
-
 
 double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx) {
 {%- if enableProfiler %}
@@ -147,8 +136,6 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
   return d;
 }
 
-
-
 void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
 {%- if enableProfiler %}
   _profiler->start("solutionAdjustment");
@@ -158,8 +145,6 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
   _profiler->stop("solutionAdjustment");
 {%- endif %}
 }
-
-
 
 void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
 {%- if enableProfiler %}
@@ -171,8 +156,6 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
 {%- endif %}
 }
 
-
-
 void {{project}}::{{abstractSolver}}::faceUnknownsRestriction(double* lQhbndCoarse,double* lFhbndCoarse,const double* lQhbndFine,const double* lFhbndFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
 {%- if enableProfiler %}
   _profiler->start("faceUnknownsRestriction");
@@ -182,8 +165,6 @@ void {{project}}::{{abstractSolver}}::faceUnknownsRestriction(double* lQhbndCoar
   _profiler->stop("faceUnknownsRestriction");
 {%- endif %}
 }
-
-
 
 void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* luhFine,const double* luhCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
 {%- if enableProfiler %}
@@ -195,8 +176,6 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* luhFine
 {%- endif %}
 }
 
-
-
 void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoarse,const double* luhFine,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
 {%- if enableProfiler %}
   _profiler->start("volumeUnknownsRestriction");
@@ -206,9 +185,6 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoars
   _profiler->stop("volumeUnknownsRestriction");
 {%- endif %}
 }
-
-
-
 
 void {{project}}::{{abstractSolver}}::pointSource(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double* tempPointForceSources) {
 {%- if usePointSource %}
@@ -230,10 +206,6 @@ void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
 
 void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {
       abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
-}
-
-void {{Project}}::Abstract{{Solver}}::multiplyMaterialParameterMatrix(const double* const Q, double* rhs){
-  abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
         
 void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {

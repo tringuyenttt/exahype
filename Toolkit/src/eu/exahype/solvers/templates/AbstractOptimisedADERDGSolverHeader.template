@@ -155,6 +155,11 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     
     bool usePaddedData_nVar() const {return true;}
     bool usePaddedData_nDoF() const {return true;}
+    
+    //not used PDE
+    {%- if !useMaterialParam %}
+    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final {}
+    {%- endif %}
 };
 
 #endif // __{{abstractSolver}}_CLASS_HEADER__

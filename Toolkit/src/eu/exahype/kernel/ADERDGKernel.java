@@ -35,6 +35,7 @@ public class ADERDGKernel {
   public static final String SOURCE_OPTION_ID      = "source";
   public static final String NCP_OPTION_ID         = "ncp";
   public static final String POINTSOURCE_OPTION_ID = "pointsources";
+  public static final String MATERIALPARAMETER_OPTION_ID = "materialparameters";
 
   public static final String NO_TIME_AVG_OPTION_ID = "notimeavg";
   
@@ -145,6 +146,10 @@ public class ADERDGKernel {
   
   public boolean usePointSource() {
     return terms.contains(POINTSOURCE_OPTION_ID);
+  }
+  
+  public boolean useMaterialParameterMatrix() {
+    return terms.contains(MATERIALPARAMETER_OPTION_ID);
   }
   
   public boolean noTimeAveraging() {

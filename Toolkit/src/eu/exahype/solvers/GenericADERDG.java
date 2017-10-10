@@ -31,6 +31,7 @@ public class GenericADERDG implements Solver {
     final boolean useSource          = kernel.useSource();
     final boolean useNCP             = kernel.useNCP();
     final boolean usePointSource     = kernel.usePointSource();
+    final boolean useMaterialParam   = kernel.useMaterialParameterMatrix();
     final boolean noTimeAveraging    = kernel.noTimeAveraging(); 
     
     templateEngine = new TemplateEngine();
@@ -58,6 +59,7 @@ public class GenericADERDG implements Solver {
     context.put("useSource"         , useSource);
     context.put("useNCP"            , useNCP);
     context.put("usePointSource"    , usePointSource);
+    context.put("useMaterialParam"  , useMaterialParam);
     context.put("noTimeAveraging"   , noTimeAveraging);
     
     //boolean as String

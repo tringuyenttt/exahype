@@ -36,6 +36,7 @@ public class OptimisedADERDG implements Solver {
     final boolean useSource          = kernel.useSource();
     final boolean useNCP             = kernel.useNCP();
     final boolean usePointSource     = kernel.usePointSource();
+    final boolean useMaterialParam   = kernel.useMaterialParameterMatrix();
     final boolean noTimeAveraging    = kernel.noTimeAveraging(); 
     
     //generate the optimised kernel, can throw IOException
@@ -68,6 +69,7 @@ public class OptimisedADERDG implements Solver {
     context.put("useSource"         , useSource);
     context.put("useNCP"            , useNCP);
     context.put("usePointSource"    , usePointSource);
+    context.put("useMaterialParam"  , useMaterialParam);
     context.put("noTimeAveraging"   , noTimeAveraging);
     
     //boolean as String
