@@ -86,6 +86,9 @@ public class ADERDGKernel {
     if(!type.contains(LINEAR_OPTION_ID) ^ type.contains(NONLINEAR_OPTION_ID)) {//should be only one
       throw new IllegalArgumentException("nonlinear or linear not specified or both specified in the kernel type");
     }
+    if(usePointSource() && getNumberOfPointSources() < 0) {
+      throw new IllegalArgumentException("point sources used but number not specified! In the specification file, use "+POINTSOURCE_OPTION_ID+":X, with X the number of point sources.");
+    }
   }
 
   public enum KernelType {
