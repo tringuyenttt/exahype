@@ -141,7 +141,7 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
   _profiler->start("solutionAdjustment");
 {%- endif %}
 {%- if patchwiseAdjust %}
-  {{project}}::{{solver}}::adjustPatchSolution(center, dx, t, dt, luh);
+  (static_cast<{{solver}}*>(this))->adjustPatchSolution(center, dx, t, dt, luh);
 {%- else %}
   kernels::aderdg::generic::{{language}}::solutionAdjustment<{{solver}}>(*static_cast<{{solver}}*>(this),luh,center,dx,t,dt);
 {%- endif %}
