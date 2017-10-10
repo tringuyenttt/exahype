@@ -1,5 +1,7 @@
+directory=convergence
+
 exe=ExaHyPE-Euler
-spec=convergence/Euler.exahype
+spec=$directory/Euler.exahype
 
 # save original file
 cp $spec ${spec}_tmp
@@ -22,7 +24,7 @@ do
     rm *.o
     sed -i -r 's,order(\s+)const(\s+)=(\s+)([0-9]+),order\1const\2=\3'$p',' $spec
     cat $spec
-    convergence/configure.sh
+    $directory/configure.sh
     make -j24 && \
     mv $exe $exe-p$p-$SHAREDMEM-$COMPILER
   done
