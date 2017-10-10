@@ -543,6 +543,9 @@ Productions
     {single_identifier} [value]:identifier
       { -> [New id.identifier(value)] }
     |
+    {single} [value]:identifier token_colon [mult]:int_number
+      { -> [New id.identifier_with_mult(value,mult)] }
+    |
     {list_identifier} [value]:identifier token_comma id_list
       { -> [New id.identifier(value),id_list.id] }    
     ;
@@ -624,6 +627,7 @@ Abstract Syntax Tree
 
   id = 
       {identifier} [value]:identifier
+    | {identifier_with_mult} [value]:identifier [multiplicity]:int_number
     ;
     
   constant = 

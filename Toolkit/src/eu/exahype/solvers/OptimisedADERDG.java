@@ -39,6 +39,7 @@ public class OptimisedADERDG implements Solver {
     final boolean useMaterialParam   = kernel.useMaterialParameterMatrix();
     final boolean noTimeAveraging    = kernel.noTimeAveraging();
     final boolean patchwiseAdjust    = kernel.patchwiseAdjust();
+    final int numberOfPointSources   = kernel.getNumberOfPointSources();
     
     //generate the optimised kernel, can throw IOException
     final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, isLinear, dimensions,
@@ -60,6 +61,7 @@ public class OptimisedADERDG implements Solver {
     context.put("order"             , order);
     context.put("numberOfVariables" , numberOfVariables);
     context.put("numberOfParameters", numberOfParameters);
+    context.put("numberOfPointSources", numberOfPointSources);
     
     //boolean
     context.put("enableProfiler"    , enableProfiler);

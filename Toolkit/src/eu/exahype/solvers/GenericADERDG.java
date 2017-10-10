@@ -34,6 +34,7 @@ public class GenericADERDG implements Solver {
     final boolean useMaterialParam   = kernel.useMaterialParameterMatrix();
     final boolean noTimeAveraging    = kernel.noTimeAveraging();
     final boolean patchwiseAdjust    = kernel.patchwiseAdjust();
+    final int numberOfPointSources   = kernel.getNumberOfPointSources();
     
     templateEngine = new TemplateEngine();
     context = new Context();
@@ -50,6 +51,7 @@ public class GenericADERDG implements Solver {
     context.put("order"             , order);
     context.put("numberOfVariables" , numberOfVariables);
     context.put("numberOfParameters", numberOfParameters);
+    context.put("numberOfPointSources", numberOfPointSources);
     
     //boolean
     context.put("enableProfiler"    , enableProfiler);

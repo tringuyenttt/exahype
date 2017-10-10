@@ -33,6 +33,9 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr int NumberOfParameters = {{numberOfParameters}};
     static constexpr int Order              = {{order}};
     static constexpr double CFL             = 0.9;
+    {%- if usePointSource %}
+    static constexpr int NumberOfPointSources = {{numberOfPointSources}};
+    {%- endif %}
     
     // virtual getters for the constexpr's
     int constexpr_getNumberOfVariables()  const override { return NumberOfVariables; };
