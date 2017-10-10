@@ -713,7 +713,6 @@ void ElasticWaveEquation3D::ElasticWaveEquation::coefficientMatrix(const double*
 
 
 void ElasticWaveEquation3D::ElasticWaveEquation::algebraicSource(const double* const Q,double* S) {
-
   S[0] = 10*Q[0];
   S[1] = 10*Q[1];
   S[2] = 10*Q[2];

@@ -33,7 +33,7 @@ exahype-project  ElasticWaveEquation3D
     end-time                 = 5.0
   end computational-domain
 
-  optimisation
+  global-optimisation
     fuse-algorithmic-steps          = off
     fuse-algorithmic-steps-factor   = 0.99
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
@@ -42,7 +42,7 @@ exahype-project  ElasticWaveEquation3D
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
     double-compression = 0.0
     spawn-double-compression-as-background-thread = off
-  end optimisation
+  end global-optimisation
 
   solver ADER-DG ElasticWaveEquation
     variables const   = v:3,sigma:6
@@ -51,7 +51,9 @@ exahype-project  ElasticWaveEquation3D
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size = 0.15
     time-stepping     = globalfixed
-    kernel const      = generic::fluxes::linear
+    type const = linear
+    terms const = flux,ncp,pointsources,materialparameters,source
+    optimisation const = generic
     language const    = C
 
     plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
