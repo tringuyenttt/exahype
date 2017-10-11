@@ -35,16 +35,15 @@ inline void zero2Din3D(double* Q) {
 }
 
 // The shared ID, moved here temporarily
+/*
 inline void InitialData(const double* const x,const double t,double* Q) {
   // Number of variables    = 23 + #parameters
   NVARS(i) Q[i] = NAN; // to find problems
 
   // currently, the C++ AlfenWave spills out primitive data
-  /*
-    double V[nVar];
-    AlfenWave id(x,t,V);
-    GRMHD::Prim2Cons(Q, V).copyFullStateVector();
-   */
+  //  double V[nVar];
+  //  AlfenWave id(x,t,V);
+  //  GRMHD::Prim2Cons(Q, V).copyFullStateVector();
   AlfenWaveCons(x,t,Q);
 
   // also store the positions for debugging
@@ -57,7 +56,8 @@ inline void InitialData(const double* const x,const double t,double* Q) {
 
   NVARS(i) { if(!std::isfinite(Q[i])) { printf("Qid[%d] = %e\n", i, Q[i]); std::abort(); } }
 }
-
+*/
+  
 // Detection of unphysical states. In these cases, the user PDE functions shall never be called.
 // We workaround by returning some kind of "neutral" values which go well with the scheme.
 

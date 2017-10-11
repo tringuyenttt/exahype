@@ -8,7 +8,7 @@
 #include "peano/utils/Dimensions.h" // Defines DIMENSIONS
 //namespace GRMHD { constexpr int nVar = GRMHDSolver_FV::NumberOfVariables; } // ensure this is 19 or so
 #include "PDE/PDE.h"
-#include "InitialData.h"
+#include "InitialData/InitialData.h"
 
 #include "GRMHDSolver_ADERDG_Variables.h"
 #include "DebuggingHelpers.h"
@@ -22,8 +22,10 @@ constexpr int nDim = DIMENSIONS;
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG" );
 
 void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) { // ,  exahype::Parser::ParserView constants) {
-
 	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
+	
+	// Initialize initial data
+	InitialDataCode::getInstance();
 	
 }
 

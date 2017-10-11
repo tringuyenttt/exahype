@@ -5,7 +5,7 @@
 //namespace GRMHD { constexpr int nVar = GRMHDSolver_FV::NumberOfVariables; } // ensure this is 19 or so
 #include "PDE/PDE.h"
 
-#include "InitialData.h"
+#include "InitialData/InitialData.h"
 #include "GRMHDSolver_FV_Variables.h"
 #include "DebuggingHelpers.h"
 

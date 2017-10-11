@@ -6,7 +6,7 @@
 
 #include "PDE/PDE.h"
 #include "Writers/IntegralsWriter.h"
-#include "InitialData.h"
+#include "InitialData/InitialData.h"
 #include "kernels/GaussLegendreQuadrature.h"
 #include <cmath>
 

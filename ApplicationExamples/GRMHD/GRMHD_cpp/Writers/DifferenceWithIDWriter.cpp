@@ -7,7 +7,7 @@
 // ========================
 #include "DifferenceWithIDWriter.h"
 #include "PDE/PDE.h"
-#include "InitialData.h"
+#include "InitialData/InitialData.h"
 
 
 GRMHD::DifferenceWithIDWriter::DifferenceWithIDWriter(GRMHDSolver_ADERDG&  solver) {

@@ -1,11 +1,17 @@
+#ifndef ANALYTICAL_ID_GRMHD_OCT17
+#define ANALYTICAL_ID_GRMHD_OCT17
 
-#include "PDE/PDE.h"
-#include <cmath> 
+// Adapter to functions or classes which create ID on the fly ("analytical"
+template<typename IDCreator>
+struct AnalyticalID : public InitialDataCode {
+	void Interpolate(const double* x, double t, double* Q) {
+		IDCreator(x, t, Q);
+	}
+};
 
-using namespace GRMHD;
-
-struct InitialState : public GRMHDSystem::Shadow, public Hydro::Primitives::Stored {
-	InitialState(double* Q) : GRMHDSystem::Shadow(Q), Hydro::Primitives::Stored() {
+// Initial State: Masking the State Vector
+struct InitialState : public GRMHD::GRMHDSystem::Shadow, public GRMHD::Hydro::Primitives::Stored {
+	InitialState(double* Q) : GRMHD::GRMHDSystem::Shadow(Q), GRMHD::Hydro::Primitives::Stored() {
 		// by default, set NaNs for uninitialized values to catch mistakes when setting ID
 		Dens = tau = phi = rho = press = alpha = NAN;
 		DFOR(i) { Bmag.up(i) = Si.lo(i) = vel.up(i) = beta.up(i) = NAN; }
@@ -13,7 +19,7 @@ struct InitialState : public GRMHDSystem::Shadow, public Hydro::Primitives::Stor
 	}
 };
 
-/// Defaults to vacuum
+/// (Analytical) vacuum initial data
 struct VacuumInitialData : public InitialState {
 	static constexpr double rho0 = 1.;
 	static constexpr double p0   = 1.;
@@ -22,7 +28,7 @@ struct VacuumInitialData : public InitialState {
 		// ADM base: Flat space
 		alpha = 1.0;
 		DFOR(i) beta.up(i) = 0;
-		SYMFOR(i,j) gam.lo(i,j) = sym::delta(i,j);
+		SYMFOR(i,j) gam.lo(i,j) = GRMHD::sym::delta(i,j);
 	}
 	
 	VacuumInitialData(double* Q) : InitialState(Q) {
@@ -49,13 +55,17 @@ struct VacuumInitialData : public InitialState {
 	}
 };
 
+/// AlfenWave analytical initial data
 struct AlfenWave : public VacuumInitialData {
 	AlfenWave(const double* const x, const double t, double* Q);
 };
 
+/// Conserved AlfenWave Initial Data
 struct AlfenWaveCons : public AlfenWave {
 	double V[100];
 	AlfenWaveCons(const double* const x, const double t, double* Q) : AlfenWave(x,t,V) {
 			GRMHD::Prim2Cons(Q, V).copyFullStateVector();
 		}
 };
+
+#endif /* ANALYTICAL_ID_GRMHD_OCT17 */
