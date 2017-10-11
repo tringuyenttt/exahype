@@ -22,7 +22,7 @@ exahype-project  AcousticWave
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/acousticwaveF90
+  output-directory const           = ./ApplicationExamples/AcousticWave/acousticwaveF90
   architecture const               = noarch
 
   computational-domain
