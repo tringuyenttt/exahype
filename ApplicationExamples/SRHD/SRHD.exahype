@@ -1,53 +1,59 @@
 /**
 
  Special Relativistic Hydrodynamics
- solved with the Finite Volume Solver (MUSCL).
+ with a generic kernels written in C++ and FORTRAN user interface,
+ provided in Fortran by Olindo and rewritten in C++ by Sven.
+ 
+ This exahype specification file is for the (currently still) artificial
+ kernel with the name "SRHD" which demonstrates the new connector from the
+ C++ toolkit to the FORTRAN kernel.
+ 
+ In order to run this particular application, *do not* (re)run the toolkit
+ but just go on and compile the application.
 
- This is a copy of the SRHD specification file.
+ Started 06. May, 2016.
 
  */
 exahype-project  SRHD
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/SRHD_FV
+  output-directory const           = ./ApplicationExamples/SRHD/SRHD
   architecture const               = noarch
 
   computational-domain
     dimension const                = 2
     width                    = 1.0, 1.0
     offset                   = 0.0, 0.0
-    end-time                 = 1.0
+    end-time                 = 0.5
   end computational-domain
-
-
+  
   shared-memory
     identifier               = dummy
     cores                    = 2
     properties-file          = sharedmemory.properties
   end shared-memory
- 
- 
+  
   global-optimisation
-    fuse-algorithmic-steps        = off
+    fuse-algorithmic-steps        = on
     fuse-algorithmic-steps-factor = 0.99
     timestep-batch-factor           = 0.0
-    skip-reduction-in-batched-time-steps = off
+    skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
     double-compression = 0.0
-    spawn-double-compression-as-background-thread=off
   end global-optimisation
 
-  solver Finite-Volumes SRHDSolverFV
+  solver ADER-DG SRHDSolver
     variables const          = 5
-    patch-size         = 5
+    order const              = 2
     maximum-mesh-size  = 0.05
     time-stepping      = global
-    kernel const             = generic::godunov
+    type const = nonlinear
+	terms const = flux
+	optimisation const = generic
     language const           = C
 
-    /* Apparently, MUSCL doesnt support vtk::Cartesian::vertices */
-    plot vtk::Cartesian::cells::ascii ConservedQuantitiesWriter
+    plot vtk::Cartesian::vertices::ascii
       variables const= 5
       time     = 0.0
       repeat   = 0.05
@@ -55,7 +61,7 @@ exahype-project  SRHD
       select    = x:0.0,y:0.0
     end plot
 
-    plot vtk::Cartesian::cells::ascii PrimitivesWriter
+    plot vtk::Cartesian::vertices::ascii
       variables const= 5
       time     = 0.0
       repeat   = 0.05

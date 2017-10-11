@@ -20,7 +20,7 @@ exahype-project SRHD
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/SRHD_LimitingADERDG
+  output-directory const           = ./ApplicationExamples/SRHD/SRHD_LimitingADERDG
   architecture const               = noarch
 
   computational-domain
