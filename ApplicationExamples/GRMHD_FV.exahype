@@ -64,7 +64,9 @@ exahype-project GRMHD
     maximum-mesh-size              = 5.00009
     maximum-mesh-depth             = 0
     time-stepping                  = global
-    kernel const                   = generic::musclhancock
+    type const         = musclhancock
+    terms const        = flux,ncp
+    optimisation const = generic
     language const                 = C
     constants  = foo:bar,blo:dez
 

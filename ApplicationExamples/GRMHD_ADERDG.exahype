@@ -34,7 +34,7 @@ exahype-project GRMHD
   
   shared-memory
     identifier               = dummy
-    cores                    = 4
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  
   

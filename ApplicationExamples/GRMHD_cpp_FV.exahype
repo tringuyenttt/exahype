@@ -28,12 +28,12 @@ exahype-project GRMHD
     dimension const                = 2
     width                          = 1.0, 1.0
     offset                         = 0.0, 0.0
-    end-time                       = 1.0
+    end-time                       = 10.0
   end computational-domain
   
   shared-memory
     identifier               = dummy
-    cores                    = 4
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  
   
@@ -65,7 +65,7 @@ exahype-project GRMHD
     maximum-mesh-size              = 0.11111133333339
     maximum-mesh-depth             = 0
     time-stepping                  = global
-    type const         = musclhancock
+    type const         = godunov
     terms const        = flux,ncp,source
     optimisation const = generic
     language const                 = C

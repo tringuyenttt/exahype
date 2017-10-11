@@ -28,12 +28,12 @@ exahype-project GRMHD
     dimension const                = 2
     width                          = 1.0, 1.0
     offset                         = 0.0, 0.0
-    end-time                       = 1.0
+    end-time                       = 2.0
   end computational-domain
   
   shared-memory
     identifier               = dummy
-    cores                    = 4
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  
   
@@ -67,12 +67,20 @@ exahype-project GRMHD
     // constants                      = dummy:dummy
     /* not yet working: constants aka left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact */
 
-    plot vtu::Legendre::vertices::ascii ConservedWriter
+    plot vtk::Legendre::vertices::ascii ConservedWriter
       variables const = 19
       time      = 0.0
       repeat    = 0.000666667
       output    = ./vtk-output/conserved
     end plot
+
+    plot vtu::Legendre::vertices::ascii DifferenceWithIDWriter
+      variables const = 19
+      time      = 0.0
+      repeat    = 0.000666667
+      output    = ./vtk-output/diff-with-id
+    end plot
+
 /*
     plot vtu::Legendre::vertices::ascii PrimitiveWriter
       variables const = 19
