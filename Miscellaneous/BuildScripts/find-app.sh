@@ -1,6 +1,8 @@
 #!/bin/bash
 #
-# Outsourced part of the exa.sh: Locating and Determining paths of applications
+# Outsourced part of the exa.sh: Locating and Determining paths of applications.
+#   This used to work based on registered paths where applications are supposed
+#   to be stored in directly. We nowadays also support subdirectories.
 #
 
 SCRIPT="$(readlink -f $0)" # absolute path to update-installation.sh
@@ -26,7 +28,17 @@ PAR="$2" # some parameter (for passing to bash functions)
 
 # note that we have "set -e" here in contrast to exa.sh. Therefore
 # make sure that every expression return well-understood.
-getappname() { APPNAME="$PAR"; [[ -z "$APPNAME" ]] && abort "Usage: $0 $CMD <AppName>" || true; } # set $APPNAME or die
+
+# getappname: set $APPNAME or die
+getappname() {
+	# Try to read the application name from the argument.
+	APPNAME="$PAR";
+	[[ -z "$APPNAME" ]] && abort "Usage: $0 $CMD <AppName>" || true;
+	# Sanatize it: Remove the .exahype extension, if exists
+	APPNAME="${APPNAME%.exahype}"
+}
+
+# test for files/directories and print + exit or return.
 testfile() { ls -f "$@" 2>/dev/null && exit 0 || true; }
 testdir()  { ls -d "$@" 2>/dev/null && exit 0 || true; }
 
@@ -46,6 +58,9 @@ case $CMD in
 				
 			done
 		fi
+
+		info "Showing also all specfiles below ExaHyPE's root:"
+		find . -type f -iname '*.exahype'
 		;;
 	"list") # Lists all ExaHyPE applications machine readable. Use "find" for full path.
 		for path in $REGISTERED_PATHS; do
@@ -68,8 +83,14 @@ case $CMD in
 		;;
 	"app"|"appdir") # Gives the full path from ExaHyPE root to an application
 		getappname
-		for path in $REGISTERED_PATHS; do testdir $path/$APPNAME; done
-		fail "Application '$APPNAME' not found"
+		specfile=$(subreq specfile $APPNAME)
+
+		# This is a naive parser. If it fails too often, one should instead rely on the proper
+		# C++ or Java specfile parser. It is probably even useful to write an own standalone
+		# C++ parser which converts the specfile into JSON which can be queried with jq.
+		
+		cat $specfile | awk 'BEGIN{r=1} /output-directory/{ r=0; print $4; } END{ exit r}' \
+			|| fail "Could not extract application directory from specfile '$specfile' which I identified for application '$APPNAME'"
 		;;
 	"spec"|"specfile") # Gives the full path from ExaHyPE root to an application specfile
 		getappname
@@ -77,8 +98,23 @@ case $CMD in
 			# allow several variants:
 			testfile $path/$APPNAME.exahype
 			testfile $path/$APPNAME/$APPNAME.exahype
+			testfile $path/*/$APPNAME.exahype
+			testfile $path/*/*/$APPNAME.exahype
 		done
 		fail "Application '$APPNAME' not found";
+		;;
+	"fuzzy-specfile") # List all specfiles which match the asked one. Don't rely on this in scripts.
+		getappname
+		# First, ask for a specific specfile. If one matches, this is good.
+		
+		# Second, look for candidates. Echo them all. Do not exit after individual ones:
+		for path in $REGISTERED_PATHS; do
+			# collect all candidates
+			echo TODO
+		done
+		;;
+	"fuzzy-app") # The same as fuzzy-specfile, just printing app directories
+		echo TODO
 		;;
 	"parent") # Gives directory where app lives inside.
 		# This command used to be "find-appdir" before!! It was renamed to "parent" because
