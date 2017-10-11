@@ -1,0 +1,54 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+
+\title{Gravitating Hydrodynamics in ExaHyPE}
+\author{Sven Köppel}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+This document describes a small benchmark/demonstrator
+application which implements the classical hydro equations
+in an external potential. They are hyperbolically given
+as
+%
+\begin{alignat}{2}
+\partial_t \rho + \nabla ( \rho \vec v ) &= 0
+\\
+\partial_t (\rho \vec v) + \nabla ( \rho \vec v^2 + P)
+&= - \rho \nabla \Phi
+\\
+\partial_t (\rho E) + \nabla ((\rho E + P)\vec v)
+&= - \rho \vec v \cdot \nabla \Phi
+\end{alignat}
+%
+with the fluid density $\rho$, fluid velocity $\vec v$,
+isotropic fluid pressure $P$,
+total energy $E=\vec v^2 / 2 + \epsilon$ per unit mass,
+internal energy $\epsilon$ per unit mass, the spatial divergence or gradient vector $\nabla$ and time $t$. Employing
+the one-parameteric ideal equation of state reads
+$P=(\gamma-1)\rho \epsilon$ with some fixed
+specific heat ratio $\gamma$.
+
+In order to describe a self-gravitating fluid, we would need
+to employ a possion solver to evolve
+\begin{equation}
+\Phi(\vec r) = G \int \mathrm{d}^3 x
+\frac{\rho(\vec x)}{\left| \vec r - \vec x \right|}.
+\end{equation}
+by means of
+\begin{equation}
+\nabla^2 \Phi = 4\pi G \rho
+\end{equation}
+However, since ExaHyPE restricts to hyperbolic PDEs, for this
+demonstrator we keep instead the gravitational potential fixed.
+$\nabla \Phi$ acts then as a static source to the hyperbolic
+evolution system.
+
+
+
+\end{document}

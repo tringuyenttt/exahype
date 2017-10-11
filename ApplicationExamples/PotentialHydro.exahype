@@ -1,0 +1,57 @@
+/* 
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ */
+exahype-project PotentialHydro
+  peano-kernel-path const          = ./Peano
+  exahype-path const               = ./ExaHyPE
+  output-directory const           = ./ApplicationExamples/PotentialHydro
+
+  computational-domain
+    dimension const         = 2
+    width                   = 1.0, 1.0
+    offset                  = -0.5, -0.5
+    end-time                = 3.0
+  end computational-domain
+  
+  shared-memory
+    identifier               = dummy
+    cores                    = 4
+    properties-file          = sharedmemory.properties
+  end shared-memory  
+  
+  optimisation
+    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps-factor   = 0.99
+    timestep-batch-factor           = 0.8
+    skip-reduction-in-batched-time-steps = on
+    disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = off
+  end optimisation
+ 
+  solver Finite-Volumes PotentialEulerSolver
+    variables const    = rho:1,j:3,E:1,Pot:1
+    patch-size const  = 10
+    maximum-mesh-size = 0.339
+    time-stepping     = global
+    kernel const      = generic::godunov
+    language const    = C
+
+    plot vtu::Cartesian::cells::ascii PotentialEulerWriter
+      variables const = 6
+      time            = 0.0
+      repeat          = 0.0001
+      output          = ./output/full3d
+    end plot
+  end solver
+
+end exahype-project

@@ -1,0 +1,15 @@
+In[1]:= r = Sqrt[x^2 + y^2]
+
+Out[1]= Sqrt[x^2 + y^2]
+
+In[2]:= Phi = -GM/r
+
+Out[2]= -(GM/Sqrt[x^2 + y^2])
+
+In[3]:= D[Phi, x]
+
+Out[3]= (GM x)/(x^2 + y^2)^(3/2)
+
+In[4]:= D[Phi, y]
+
+Out[4]= (GM y)/(x^2 + y^2)^(3/2)
