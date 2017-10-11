@@ -23,7 +23,7 @@ exahype-project  Euler
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   libxsmm-path     const  = ./Libxsmm
-  output-directory const  = ./ApplicationExamples/EulerFlow
+  output-directory const  = ./ApplicationExamples/EulerFlow/EulerFlow
   architecture const      = hsw
   log-file                = mylogfile.log
 

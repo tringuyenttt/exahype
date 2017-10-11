@@ -22,7 +22,7 @@ exahype-project  Euler
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/EulerFlow_LimitingADERDG
+  output-directory const           = ./ApplicationExamples/EulerFlow/EulerFlow_LimitingADERDG
   architecture const               = noarch
   log-file  = bla.log
 

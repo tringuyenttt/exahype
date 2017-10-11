@@ -22,7 +22,7 @@
 exahype-project Euler
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/Euler_FV_png
+  output-directory const           = ./ApplicationExamples/EulerFlow/Euler_FV_png
   architecture const               = noarch
   log-file  = we-dont-care.log
 

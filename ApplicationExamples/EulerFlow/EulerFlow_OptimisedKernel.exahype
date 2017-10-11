@@ -21,7 +21,7 @@ exahype-project  Euler
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
   libxsmm-path               = ./Libxsmm
-  output-directory const           = ./ApplicationExamples/OptimisedKernel_Euler
+  output-directory const           = ./ApplicationExamples/EulerFlow/OptimisedKernel_Euler
   architecture const               = noarch
 
   computational-domain
