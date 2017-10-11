@@ -1,6 +1,5 @@
 
 // Independently:
-/*
 #if defined(Dim2)
 #define DIMENSIONS 2
 #elif defined(Dim3)
@@ -8,7 +7,6 @@
 #else
 #error You must define Dim2 or Dim3
 #endif
-*/
 
 #include <stdio.h>
 #include "PDE/PDE.h"
