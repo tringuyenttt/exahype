@@ -21,7 +21,8 @@ project=Euler_ADERDG
 
 skipReductionInBatchedTimeSteps=on
 batchFactor=0.8
-hMax=( 0.03704 0.01235 0.00412 0.00138 0.00046 ) # 1/3^l ceiled with significance 1e-5
+#hMax=( 0.03704 0.01235 0.00412 0.00138 0.00046 ) # 1/3^l ceiled with significance 1e-5
+hMax=(0.0404 0.012784810126582278 0.004190871369294606 0.0013892709766162312 0.0004622425629290618) # 1/(3^l-2) times 1.01
 io=no-output # or output
 
 kernels=gen # this is just an identifier; actual kernels must be chosen before building the executables
