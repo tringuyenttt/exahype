@@ -13,33 +13,36 @@
  
 /**
 
- 2D SWE with ADER-DG.
+ 2D-SWE with Godunov FV solver. 
 
  */
 exahype-project  SWE
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/SWE_ADERDG
+  output-directory const  = ./ApplicationExamples/SWE/SWE_FV
   architecture const      = noarch
   log-file                = mylogfile.log
 
   computational-domain
     dimension const          = 2
-    width                    = 10.0, 10.0
+    /* for run-up scenarios in channels */
+    /* width                 = 120.0, 1.0 */
+    /* for shelf scenarios */
+    /*width                    = 1200.0, 1200.0 */ 
+    /* for dam breaks */ 
+    width                = 10.0,10.0
     offset                   = 0.0, 0.0
-    end-time                 = 4.0
+    end-time                 = 40.0
   end computational-domain
 
-   solver ADER-DG MySWESolver
-    variables const   = h:1,hu:1,hv:1,b:1
-   // parameters const  = b:1
-    order const       = 3
-    maximum-mesh-size = 0.15
+  solver Finite-Volumes MySWESolver
+    variables const   = h:1,hu:1,hv:1
+    parameters const  = b:1
+    patch-size const   = 3
+    maximum-mesh-size = 0.05
     time-stepping     = global
-    type const = nonlinear
-	terms const = flux,ncp
-	optimisation const = generic
+    kernel const      = generic::godunov
     language const    = C
     plot vtu::Cartesian::cells::ascii ConservedWriter
       variables const = 5
@@ -49,5 +52,4 @@ exahype-project  SWE
       select          = x:0.0,y:0.0
     end plot
   end solver
-
 end exahype-project
