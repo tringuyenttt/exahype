@@ -22,7 +22,7 @@ exahype-project  ElasticWave
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/ElasticWavesK3D_Probe
+  output-directory const  = ./ApplicationExamples/Elastic/ElasticWavesK3D_Probe
   architecture const      = noarch
   log-file                = mylogfile.log
 

@@ -22,7 +22,7 @@ exahype-project  ElasticWave
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/elasticwaveF90
+  output-directory const           = ./ApplicationExamples/Elastic/elasticwaveF90
   architecture const               = noarch
 
   computational-domain

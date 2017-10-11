@@ -22,7 +22,7 @@ exahype-project  Elastic
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/ElasticWaves2D_nonlinearkernel
+  output-directory const           = ./ApplicationExamples/Elastic/ElasticWaves2D_nonlinearkernel
   architecture const               = noarch
 
   computational-domain
