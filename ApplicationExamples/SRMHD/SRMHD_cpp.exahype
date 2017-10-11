@@ -9,7 +9,7 @@ exahype-project  MHDSolver
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/MHD_cpp/
+  output-directory const           = ./ApplicationExamples/SRMHD/MHD_cpp/
   architecture const               = noarch
 
   computational-domain

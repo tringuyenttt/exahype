@@ -13,7 +13,7 @@ exahype-project  SRMHD
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/SRMHD/
+  output-directory const           = ./ApplicationExamples/SRMHD/SRMHD/
   architecture const               = noarch
   log-file                         = whatever.log
 

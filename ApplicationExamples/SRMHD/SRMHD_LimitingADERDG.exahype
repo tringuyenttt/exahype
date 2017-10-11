@@ -20,7 +20,7 @@ exahype-project MHD
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/SRMHD_LimitingADERDG
+  output-directory const           = ./ApplicationExamples/SRMHD/SRMHD_LimitingADERDG
   architecture const               = noarch
   log-file                         = whatever.log
 

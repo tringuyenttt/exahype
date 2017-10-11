@@ -14,7 +14,7 @@ exahype-project  SRMHD
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
   libxsmm-path      const          = ./Libxsmm
-  output-directory const           = ./ApplicationExamples/SRMHD/
+  output-directory const           = ./ApplicationExamples/SRMHD/SRMHD/
   architecture const               = hsw
   log-file                         = whatever.log
 
