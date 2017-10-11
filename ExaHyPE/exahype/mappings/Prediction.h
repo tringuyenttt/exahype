@@ -115,9 +115,18 @@ private:
   exahype::solvers::PredictionTemporaryVariables _temporaryVariables;
 
  public:
+  /**
+   * Level for which we ask what to do. This value is negative
+   * if we are on the fine grid level. In this case, the
+   * actual level is the absolute value.
+   */
+  peano::MappingSpecification enterCellSpecification(int level) const;
+
+  /*
+   * Nop.
+   */
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
-  peano::MappingSpecification enterCellSpecification(int level) const;
   peano::MappingSpecification leaveCellSpecification(int level) const;
   peano::MappingSpecification ascendSpecification(int level) const;
   peano::MappingSpecification descendSpecification(int level) const;

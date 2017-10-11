@@ -131,9 +131,7 @@ class exahype::runners::Runner {
    * Runs through the solver registry only,
    * i.e. no grid traversal is required.
    */
-  void initSolvers(
-      const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
-      const tarch::la::Vector<DIMENSIONS,double>& domainSize) const;
+  void initSolvers() const;
 
   /**
    * Plot some information about the current mesh setup iteration.
@@ -315,6 +313,13 @@ class exahype::runners::Runner {
    * that will be populated by a solver.
    */
   int getCoarsestGridLevelOfAllSolvers(
+      tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const;
+
+  /**
+   * The same as ::getCoarsestGridLevelOfAllSolvers but
+   * returns at least a value of 3 (Peano) levels.
+   */
+  int getCoarsestGridLevelForLoadBalancing(
       tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const;
 
   int getFinestGridLevelOfAllSolvers(

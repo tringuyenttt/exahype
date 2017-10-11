@@ -256,14 +256,14 @@ void exahype::solvers::Solver::glueTogether(
 
 
 int exahype::solvers::Solver::computeMeshLevel(double meshSize, double domainSize) {
-  int    result      = 1;
+  int    peanoLevel      = 1; // The domain root cell is actually at Peano level 1
   double currenthMax = std::numeric_limits<double>::max();
   while (currenthMax>meshSize) {
-    currenthMax = domainSize / threePowI(result);
-    result++;
+    currenthMax = domainSize / threePowI(peanoLevel-1);
+    peanoLevel++;
   }
-
-  return std::max(3,result);
+  peanoLevel--; // currenthMax was computed with peanoLevel-1 and we start to count at 1
+  return peanoLevel;
 }
 
 exahype::solvers::Solver::Type exahype::solvers::Solver::getType() const {

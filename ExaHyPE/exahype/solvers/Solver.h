@@ -555,6 +555,10 @@ class exahype::solvers::Solver {
   /**
    * Returns the coarsest level which holds patches of
    * a solver.
+   *
+   * \note It is very important that initSolvers
+   * has been called on all solvers before this
+   * method is used.
    */
   static int getCoarsestMeshLevelOfAllSolvers();
 
@@ -564,6 +568,10 @@ class exahype::solvers::Solver {
    *
    * This number directly correlates with the number
    * of grid iterations to run for performing an erasing operation.
+   *
+   * \note It is very important that initSolvers
+   * has been called on all solvers before this
+   * method is used.
    */
   static int getMaxAdaptiveRefinementDepthOfAllSolvers();
 
@@ -770,8 +778,15 @@ class exahype::solvers::Solver {
   static std::string toString(const exahype::solvers::Solver::TimeStepping& param);
 
   /**
-   * Return the grid level corresponding to the given mesh size with
+   * Return the mesh level corresponding to the given mesh size with
    * respect to the given domainSize.
+   *
+   * \note That the domain root cell is actually at Peano mesh level 1
+   * since the domain itself is embedded in a 3^d mesh in Peano.
+   *
+   * \note Load balancing makes only sense for a Peano mesh with
+   * at least 3 (Peano) levels.
+   * This is not ensured or checked in this routine.
    */
   static int computeMeshLevel(double meshSize, double domainSize);
 
@@ -966,7 +981,8 @@ class exahype::solvers::Solver {
   virtual void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
-      const tarch::la::Vector<DIMENSIONS,double>& domainSize) = 0;
+      const tarch::la::Vector<DIMENSIONS,double>& domainSize,
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) = 0;
 
   /**
    * \return true if the solver is sending time step or neighbour data
