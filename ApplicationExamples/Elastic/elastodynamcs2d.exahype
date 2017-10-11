@@ -22,7 +22,7 @@ exahype-project  Elastodynamics
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/Elastodynamics2D
+  output-directory const  = ./ApplicationExamples/Elastic/Elastodynamics2D
   architecture const      = noarch
   log-file                = mylogfile.log
 
