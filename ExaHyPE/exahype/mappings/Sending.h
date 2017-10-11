@@ -35,6 +35,8 @@ namespace exahype {
 }
 
 /**
+ * TODO(Dominic): Update docu.
+ *
  * Determine a global time step size
  *
  * The global time step computation runs through all the cells. Per cell, it

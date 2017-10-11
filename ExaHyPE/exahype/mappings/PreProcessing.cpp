@@ -18,8 +18,8 @@
 peano::CommunicationSpecification
 exahype::mappings::PreProcessing::communicationSpecification() const {
   return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeDescendIntoLocalSubtree,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterProcessingOfLocalSubtree,
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
       true);
 }
 

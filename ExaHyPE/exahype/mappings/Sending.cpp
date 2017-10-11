@@ -45,9 +45,9 @@ bool exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = false;
 peano::CommunicationSpecification
 exahype::mappings::Sending::communicationSpecification() const {
   return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAfterProcessingOfLocalSubtreeSendStateAfterLastTouchVertexLastTime,
-      true);
+      true); // TODO(Dominic): This might be relaxed
 }
 
 peano::MappingSpecification
