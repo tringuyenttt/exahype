@@ -70,6 +70,9 @@ RECURSIVE SUBROUTINE AlfenWave(x, t, Q)
     V(1:9) = (/ rho0, VV(1:3), p0, BV(1:3), 0.0 /) ! psi
     !            lapse, shift(3),    gamma11, ...  gamma22, -, gamma33
     V(10:19) = (/ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0 /)
+    
+    ! create primitive ID
+    !Q = V
     CALL PDEPrim2Cons(Q,V)
 END SUBROUTINE AlfenWave
 
