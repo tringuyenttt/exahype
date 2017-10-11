@@ -24,7 +24,7 @@ exahype-project GRMHD
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/GRMHD
+  output-directory const           = ./ApplicationExamples/GRMHD/GRMHD
   architecture const               = noarch
   log-file                         = whatever.log
 
