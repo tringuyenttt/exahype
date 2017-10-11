@@ -68,7 +68,7 @@ for cmd in "$@"; do
 		"toolkit-fastmake") # no clean, just recompile and make jar
 			info "Toolkit make and dist"
 			cd Toolkit/src
-			make compile && make jar
+			make compile && make dist
 			;;
 		"libxsmm") # Checkout or recompile libxsmm
 			info "Cloning or updating Libxsmm"
