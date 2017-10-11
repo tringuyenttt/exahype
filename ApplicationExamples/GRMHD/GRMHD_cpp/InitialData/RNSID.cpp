@@ -65,7 +65,7 @@ void rnsid::Interpolate(const double* x, double t, double* Q) {
 	}
 	
 	NVARS(i) Q[i] = 0.0;
-	GRMHD::Prim2Cons(Q, V);
+	GRMHD::Prim2Cons(Q, V).copyFullStateVector();
 }
 
 #endif /* RNSID_AVAILABLE */

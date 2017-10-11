@@ -8,11 +8,20 @@ InitialDataCode& InitialDataCode::getInstance() {
 	static InitialDataCode* id = nullptr;
 	if(id) return *id;
 
-	//logInfo("InitialDataCode", "Loading AlfenWaveCons Initial Data");
-	//id = new AnalyticalID<AlfenWaveCons>;
+	if(0) {
+		logInfo("InitialDataCode", "Loading AlfenWaveCons Initial Data");
+		id = new AnalyticalID<AlfenWaveCons>;
+	}
 
-	logInfo("getInstance()", "Loading PizzaTOV Initial Data");
-	id = new pizzatov();
+	if(0) {
+		logInfo("getInstance()", "Loading PizzaTOV Initial Data");
+		id = new pizzatov();
+	}
+	
+	if(1) {
+		logInfo("getInstance()", "Loading RNSID Initial Data");
+		id = new rnsid();
+	}
 	
 	return *id;
 	// then, some day do the job of GlobalID.cpp:
