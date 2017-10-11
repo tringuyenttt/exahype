@@ -785,11 +785,13 @@ void exahype::solvers::ADERDGSolver::updateMinNextTimeStepSize( double value ) {
 void exahype::solvers::ADERDGSolver::initSolver(
     const double timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
-    const tarch::la::Vector<DIMENSIONS,double>& domainSize) {
+    const tarch::la::Vector<DIMENSIONS,double>& domainSize,
+    const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize
+) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   _coarsestMeshLevel =
-      exahype::solvers::Solver::computeMeshLevel(_maximumMeshSize,domainSize[0]);
+      exahype::solvers::Solver::computeMeshLevel(_maximumMeshSize,boundingBoxSize[0]);
 
   setPreviousMinCorrectorTimeStepSize(0.0);
   setMinCorrectorTimeStepSize(0.0);

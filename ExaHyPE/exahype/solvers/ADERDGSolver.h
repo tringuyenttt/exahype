@@ -1406,7 +1406,8 @@ public:
   void initSolver(
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
-      const tarch::la::Vector<DIMENSIONS,double>& domainSize) override;
+      const tarch::la::Vector<DIMENSIONS,double>& domainSize,
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
 
   bool isSending(const exahype::records::State::AlgorithmSection& section) const override;
 

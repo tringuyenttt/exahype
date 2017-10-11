@@ -127,11 +127,14 @@ void exahype::solvers::FiniteVolumesSolver::updateMinNextTimeStepSize(
 void exahype::solvers::FiniteVolumesSolver::initSolver(
     const double timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
-    const tarch::la::Vector<DIMENSIONS,double>& domainSize) {
+    const tarch::la::Vector<DIMENSIONS,double>& domainSize,
+    const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize
+) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   _coarsestMeshLevel =
-      exahype::solvers::Solver::computeMeshLevel(_maximumMeshSize,domainSize[0]);
+      exahype::solvers::Solver::computeMeshLevel(_maximumMeshSize,boundingBoxSize[0]);
+
 
   _previousMinTimeStepSize = 0.0;
   _minTimeStepSize = 0.0;

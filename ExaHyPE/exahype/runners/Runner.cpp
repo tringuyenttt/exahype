@@ -168,15 +168,15 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logInfo("initDistributedMemoryConfiguration()", "use greedy load balancing without joins (mpibalancing/GreedyBalancing)");
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
           new mpibalancing::GreedyBalancing(
-            getCoarsestGridLevelOfAllSolvers(_boundingBoxSize),
-            getCoarsestGridLevelOfAllSolvers(_boundingBoxSize)+1
+            getCoarsestGridLevelForLoadBalancing(_boundingBoxSize),
+            getCoarsestGridLevelForLoadBalancing(_boundingBoxSize)+1 // TODO(Dominic): What does the +1 do here?
           )
         );
         break;
       case exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Hotspot:
         logInfo("initDistributedMemoryConfiguration()", "use global hotspot elimination without joins (mpibalancing/StaticBalancing)");
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
-            new mpibalancing::HotspotBalancing(false,getCoarsestGridLevelOfAllSolvers(_boundingBoxSize)+1)
+            new mpibalancing::HotspotBalancing(false,getCoarsestGridLevelForLoadBalancing(_boundingBoxSize)+1) // TODO(Dominic): What does the +1 do here?
         );
         break;
     }
@@ -345,33 +345,28 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
 
 int exahype::runners::Runner::getCoarsestGridLevelOfAllSolvers(
     tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
-  double hMax        = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
+  double hMax = exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers();
 
-  int    result      = 1;
-  double currenthMax = std::numeric_limits<double>::max();
-  while (currenthMax>hMax) {
-    currenthMax = boundingBoxSize[0] / threePowI(result);
-    result++;
-  }
+  const int peanoLevel = exahype::solvers::Solver::computeMeshLevel(hMax,boundingBoxSize[0]);
 
-  logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << result << " creates grid with h_max=" << currenthMax );
-  return std::max(3,result);
+  logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
+  return peanoLevel;
+}
+
+int exahype::runners::Runner::getCoarsestGridLevelForLoadBalancing(
+    tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
+  return std::max( 3, getCoarsestGridLevelOfAllSolvers(boundingBoxSize) );
 }
 
 
 int exahype::runners::Runner::getFinestGridLevelOfAllSolvers(
     tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
-  double hMax        = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
+  double hMax = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
 
-  int    result      = 1;
-  double currenthMax = std::numeric_limits<double>::max();
-  while (currenthMax>hMax) {
-    currenthMax = boundingBoxSize[0] / threePowI(result);
-    result++;
-  }
+  const int peanoLevel = exahype::solvers::Solver::computeMeshLevel(hMax,boundingBoxSize[0]);
 
-  logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << result << " creates grid with h_max=" << currenthMax );
-  return std::max(3,result);
+  logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
+  return peanoLevel;
 }
 
 double
@@ -428,7 +423,7 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
     double boundingBoxExtent          = 0;
     double boundingBoxMeshSpacing     = std::numeric_limits<double>::max();
 
-    int level = coarsestUserMeshLevel;
+    int level = coarsestUserMeshLevel; // level=1 means a single cell
     while (boundingBoxMeshSpacing > coarsestUserMeshSpacing) {
       const double boundingBoxMeshCells = std::pow(3,level-1);
       boundingBoxScaling                = boundingBoxMeshCells / ( boundingBoxMeshCells - 2 );
@@ -436,9 +431,11 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
       boundingBoxMeshSpacing            = boundingBoxExtent/boundingBoxMeshCells;
       level++;
     }
+    level--; // decrement result since boundingBox was computed using level-1
+
     assertion6(boundingBoxScaling>=1.0,boundingBoxScaling,boundingBoxExtent,boundingBoxMeshSpacing,boundingBoxMeshLevel,coarsestUserMeshSpacing,maxDomainExtent);
 
-    boundingBoxMeshLevel = level--;
+    boundingBoxMeshLevel = level;
     _boundingBoxSize    *= boundingBoxScaling;
     boundingBoxOffset   -= boundingBoxMeshSpacing;
   }
@@ -468,7 +465,7 @@ exahype::repositories::Repository* exahype::runners::Runner::createRepository() 
       " of width/size " << scaledDomainSize <<
       ". bounding box has offset " << boundingBoxOffset <<
       " and size " << _boundingBoxSize <<
-      ". grid regular up to level " << boundingBoxMeshLevel << " (level 1 is coarsest available cell in tree)");
+      ". grid regular up to level " << boundingBoxMeshLevel << " (1 means a single cell)");
 
   _domainSize = scaledDomainSize;
 
@@ -517,10 +514,9 @@ int exahype::runners::Runner::run() {
         _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;
     #endif
 
-    exahype::repositories::Repository* repository = createRepository();
-    initSolvers(_domainOffset,_domainSize);
-
-    // must be after repository creation
+    auto* repository = createRepository();
+    // must come after repository creation
+    initSolvers();
     initDistributedMemoryConfiguration();
     initSharedMemoryConfiguration();
     initDataCompression();
@@ -554,11 +550,9 @@ int exahype::runners::Runner::run() {
   return result;
 }
 
-void exahype::runners::Runner::initSolvers(
-    const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
-    const tarch::la::Vector<DIMENSIONS,double>& domainSize) const {
+void exahype::runners::Runner::initSolvers() const {
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    p->initSolver(0.0,domainOffset,domainSize);
+    p->initSolver(0.0,_domainOffset,_domainSize,_boundingBoxSize);
   }
 }
 
@@ -754,7 +748,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
     repository.getState().switchToNeighbourDataDroppingContext();
     repository.switchToGridErasing();
-    repository.iterate();
+    repository.iterate(1,false);
 
     printStatistics();
     repository.logIterationStatistics(false);
@@ -910,7 +904,7 @@ void exahype::runners::Runner::updateMeshAndSubdomains(
     logInfo("updateMeshAndSubdomains(...)","reinitialise cells and send data to neigbours (if applicable)");
     repository.getState().switchToReinitialisationContext();
     repository.switchToFinaliseMeshRefinementAndReinitialisation();
-    repository.iterate();
+    repository.iterate(1,false);
 
     // 4. Perform a local recomputation of the solution of the solvers that requested one.
     // Perform a time

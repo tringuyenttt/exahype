@@ -175,15 +175,17 @@ void exahype::solvers::LimitingADERDGSolver::updateMinNextTimeStepSize(double va
 void exahype::solvers::LimitingADERDGSolver::initSolver(
     const double timeStamp,
     const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
-    const tarch::la::Vector<DIMENSIONS,double>& domainSize) {
+    const tarch::la::Vector<DIMENSIONS,double>& domainSize,
+    const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize
+) {
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   _coarsestMeshLevel =
-      exahype::solvers::Solver::computeMeshLevel(_maximumMeshSize,domainSize[0]);
+      exahype::solvers::Solver::computeMeshLevel(_maximumMeshSize,boundingBoxSize[0]);
 
   _limiterDomainChange=LimiterDomainChange::Regular;
 
-  _solver->initSolver(timeStamp, domainOffset, domainSize);
+  _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::isSending(
