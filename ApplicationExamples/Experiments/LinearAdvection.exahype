@@ -28,7 +28,7 @@ exahype-project  Euler
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/LinearAdvection
+  output-directory const           = ./ApplicationExamples/Experiments/LinearAdvection
   architecture const               = noarch
 
   computational-domain

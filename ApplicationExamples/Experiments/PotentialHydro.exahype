@@ -13,7 +13,7 @@
 exahype-project PotentialHydro
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/PotentialHydro
+  output-directory const           = ./ApplicationExamples/Experiments/PotentialHydro
 
   computational-domain
     dimension const         = 2

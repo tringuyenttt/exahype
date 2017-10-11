@@ -21,7 +21,7 @@ exahype-project Trivial
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/Advection
+  output-directory const           = ./ApplicationExamples/Experiments/Advection
   architecture const               = noarch
   log-file                         = whatever.log
 

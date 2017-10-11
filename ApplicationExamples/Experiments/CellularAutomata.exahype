@@ -21,7 +21,7 @@ exahype-project  CA
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/CellularAutomata
+  output-directory const  = ./ApplicationExamples/Experiments/CellularAutomata
   architecture const      = noarch
   log-file                = mylogfile.log
 

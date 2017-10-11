@@ -20,7 +20,7 @@ exahype-project Synthetical
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/SyntheticalTrouble
+  output-directory const           = ./ApplicationExamples/Experiments/SyntheticalTrouble
   architecture const               = noarch
   log-file                         = whatever.log
 
