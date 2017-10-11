@@ -22,15 +22,15 @@
 
 buildscripts="$(dirname "$0")"
 
-verbose() { echo -e $@; $@; }
+fail() { >&2 echo $@: $@; exit -1; }
+verbose() { >&2 echo $@; $@; }
 has() { type $@ &>/dev/null; } # a way to check if command is available
 
-# path names for our script
-DEFAULT_APPNAME="${PWD##*/}"
-DEFAULT_SPECFILE="$DEFAULT_APPNAME.exahype" # eg. "eulerflow2d.exahype"
-DEFAULT_ABSAPPDIR="$(dirname "$PWD")" # absolute path to "Applications"
-DEFAULT_APPDIRNAME="${DEFAULT_ABSAPPDIR##*/}" # eg. "Applications" or "ApplicationExamples"
-DEFAULT_ABSCODEDIR="$(dirname "$DEFAULT_ABSAPPDIR")" # absolute path to "Code"
+# if SPECFILE is unset   AND  no cmd line args passed
+if [ -z ${SPECFILE+x} ]  &&   [ $# -eq 0 ]; then
+	# try to guess the specfile location by reverse guess
+	SPECFILE=$($buildscripts/exa reverse-spec "$(PWD)")
+fi
 
 # options for the Make systems
 DEFAULT_COMPILER="GNU"
@@ -49,36 +49,36 @@ source $buildscripts/load-clusterconfig.sh
 # all default variables can be overwritten by specifying them as
 # environment variables
 
-APPNAME=${APPNAME:=$DEFAULT_APPNAME}
-SPECFILE=${SPECFILE:=$DEFAULT_SPECFILE}
-ABSAPPDIR=${ABSAPPDIR:=$DEFAULT_ABSAPPDIR}
-APPDIRNAME=${APPDIRNAME:=$DEFAULT_APPDIRNAME}
-ABSCODEDIR=${ABSCODEDIR:=$DEFAULT_ABSCODEDIR}
+# if one of these two variables is unset:
+if [ -z ${SPECFILE+x} ] || [ -z ${ABSCODEDIR+x} ]; then
+	>&2 echo "Please specify SPECFILE and ABSCODEDIR or at LEAST ABSCODEDIR so I know where I shall run."
+	exit -1
+fi
+
 CLEAN=${CLEAN:=$DEFAULT_CLEAN}
 SKIP_TOOLKIT=${SKIP_TOOLKIT:=$DEFAULT_SKIP_TOOLKIT}
 MAKE_NPROC=${MAKE_NPROC:=$DEFAULT_MAKE_NPROC}
 
+# info: if you run into trouble here, move the echo statements from below up here.
+
 # go to ExaHyPE-Engine root directory (used to be Code/ in former days)
-verbose cd "$ABSCODEDIR" || { echo -e "Cannot compile $APPNAME as there is no ABSCODEDIR=$ABSCODEDIR"; exit -1; }
+verbose cd "$ABSCODEDIR" || fail "Cannot compile as there is no ABSCODEDIR=$ABSCODEDIR"
+[[ -e "$SPECFILE" ]] || fail "Cannot find specfile $SPECFILE in $PWD";
+PROJECTNAME=$(grep '^exahype-project' "$SPECFILE" | awk '{ print $2; }')
+APPDIR=$(cat "$SPECFILE" | awk 'BEGIN{r=1} /output-directory/{ r=0; print $4; } END{ exit r}' || fail "Failed to determine Application output directory in SPECFILE=$SPECFILE" )
 
 # Logging all further invocations of the toolkit, etc. to make.log
 unbuf="stdbuf -i0 -o0 -e0" # turn off buffering in pipe
-exec &> >($unbuf tee "$ABSAPPDIR/$APPNAME/make.log")
+exec &> >($unbuf tee "$APPDIR/make.log")
 
-echo -e "$0 running with"
-echo -e " APPNAME = $APPNAME"
-echo -e " SPECFILE = $SPECFILE"
-echo -e " ABSAPPDIR = $ABSAPPDIR"
-echo -e " ABSCODEDIR = $ABSCODEDIR"
-echo -e " APPDIRNAME = $APPDIRNAME"
-echo -e " CLEAN = $CLEAN"
-echo -e " CLUSTERNAME = ${CLUSTERNAME:=-not set-}"
-
-[[ -e "$APPDIRNAME/$SPECFILE" ]] || { echo -e "Cannot find specfile $APPDIRNAME/$SPECFILE in $PWD"; exit -1; }
-PROJECTNAME=$(grep '^exahype-project' "$APPDIRNAME/$SPECFILE" | awk '{ print $2; }')
-
-echo -e " PROJECTNAME = $PROJECTNAME"
-echo -e " SKIP_TOOLKIT = $SKIP_TOOLKIT"
+echo "$0 running with"
+echo " SPECFILE = $SPECFILE"
+echo " ABSCODEDIR = $ABSCODEDIR"
+echo " CLEAN = $CLEAN"
+echo " CLUSTERNAME = ${CLUSTERNAME:=-not set-}"
+echo " APPDIR = $APPDIR"
+echo " PROJECTNAME = $PROJECTNAME"
+echo " SKIP_TOOLKIT = $SKIP_TOOLKIT"
 
 export COMPILER=${COMPILER:=$DEFAULT_COMPILER}
 export SHAREDMEM=${SHAREDMEM:=$DEFAULT_SHAREDMEM}
@@ -108,10 +108,10 @@ else
 
 	# todo: 
 	#echo -e "Working around defect Makefiles etc"
-	#rm $APPDIRNAME/$APPNAME/Makefile
+	#rm $APPDIR/Makefile
 	#could also delete KernelCalls.cpp, $APPNAME_generated.cpp, etc.
 
-	verbose java -jar Toolkit/dist/ExaHyPE.jar  --not-interactive $APPDIRNAME/$SPECFILE || { >&2 echo "Failure when running the toolkit"; exit -1; }
+	verbose java -jar Toolkit/dist/ExaHyPE.jar  --not-interactive $SPECFILE || { >&2 echo "Failure when running the toolkit"; exit -1; }
 fi
 
 cd -
@@ -197,5 +197,5 @@ verbose make -j $MAKE_NPROC || {
 	exit -1;
 }
 
-echo -e "Making $APPNAME finished successfully"
+echo -e "Compile.sh finished successfully"
 

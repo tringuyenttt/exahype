@@ -48,7 +48,10 @@ abort () { err $@; exit -1; } # fail without name of script
 finish () { echo $@; exit 0; } # finish with message happily
 subreq() { $SCRIPT $@; } # subrequest: Query another command for output
 cdroot() { cd "$GITROOT"; } # the crucial change to the repository root directory
-getappname() {  # set $APPNAME or die
+# set $APPNAME or die
+getappname() {
+	# First, check for USER_CALLING_DIR and make some guess with the "find reverse" tool.
+
 	APPNAME="$PAR";
 	if [ -z "$APPNAME" ]; then
 		# Appname not given as argument. Try instead to obtain it from PWD.
@@ -57,7 +60,15 @@ getappname() {  # set $APPNAME or die
 		abort "Usage: $0 $CMD <AppName>";
 	fi
 }
-cdapp() { cdroot; getappname; cd $(subreq find appdir "$APPNAME") || abort "Could not go to app"; } # change to application directory
+# To be called at the beginning of a command. Change to application directory and
+# obtain the application name afterwards. *If* no application name was given, try
+# to guess the application name from the current directory (pwd).
+cdapp() {
+	export USER_CALLING_DIR="$PWD"
+	cdroot;
+	getappname;
+	cd $(subreq find appdir "$APPNAME") || abort "Could not go to app";
+}
 
 # some paths to the exa helper scripts
 BuildScripts=$GITROOT/Miscellaneous/BuildScripts # == $SCRIPTDIR
@@ -85,7 +96,10 @@ case $CMD in
 		exec java -jar Toolkit/dist/ExaHyPE.jar --not-interactive $SPECFILE
 		;;
 	"compile") # Invokes the toolkit and compilation of an application
-		cdapp; $SCRIPTDIR/compile.sh
+		cdapp;
+		export SPECFILE="$(subreq find specfile "$APPNAME")" || abort "Could not retrieve specfile of $APPNAME, I just got $SPECFILE"
+		export ABSCODEDIR="$GITROOT"
+		$SCRIPTDIR/compile.sh "$SPECFILE"
 		;;
 	"compile-run") # A shorthand for compiling and running an application
 		getappname
@@ -110,7 +124,7 @@ case $CMD in
 		cdapp
 		export SKIP_TOOLKIT="Yes"
 		export CLEAN="${CLEAN:=Lightweight}" # do no heavy cleaning
-		$SCRIPTDIR/compile.sh
+		subreq compile "$APPNAME"
 		;;
 	"build-init") # Initialize an out of tree build, ie. dont sync. Parameters: <AppName> <BuildName>
 		cdroot; getappname; buildName=$2
