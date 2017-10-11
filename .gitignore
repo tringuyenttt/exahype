@@ -77,6 +77,8 @@ Peano/.gitignore
 Peano/peano.doxygen-configuration
 Peano/src.doxys
 Peano/sharedmemoryoracles.tar.gz
+# the Dilbert patch for peano, https://github.com/svenk/dilbert
+Peano/dilbert
 
 # libXSMM
 libxsmm
