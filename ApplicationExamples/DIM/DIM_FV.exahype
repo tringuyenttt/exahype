@@ -24,7 +24,7 @@ exahype-project DIM
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/DIM_FV
+  output-directory const           = ./ApplicationExamples/DIM/DIM_FV
   architecture const               = noarch
   log-file                         = whatever.log
 

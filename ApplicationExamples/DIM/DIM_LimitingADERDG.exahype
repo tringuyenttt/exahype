@@ -20,7 +20,7 @@ exahype-project DIM
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/DIM
+  output-directory const           = ./ApplicationExamples/DIM/DIM_LimitingADERDG
   architecture const               = noarch
   log-file                         = whatever.log
 
@@ -33,7 +33,7 @@ exahype-project DIM
   
   shared-memory
     identifier               = dummy
-    cores                    = 1
+    cores                    = 4
     properties-file          = sharedmemory.properties
   end shared-memory  
   
@@ -45,7 +45,7 @@ exahype-project DIM
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = off
+    fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on
@@ -54,23 +54,29 @@ exahype-project DIM
     spawn-double-compression-as-background-thread = on
   end global-optimisation
 
-  solver ADER-DG DIMSolver
+  solver Limiting-ADER-DG DIMSolver
     /* gamma is actually parts of a matrix... */
     variables const                = sigma:6,vel:3,lambda:1,mu:1,rho:1,alpha:1,xi:1
     order const                    = 3
-    maximum-mesh-size              = 0.5
+    maximum-mesh-size              = 0.4
+    maximum-mesh-depth             = 3
     time-stepping                  = global
     type const = nonlinear
 	terms const = ncp
 	optimisation const = generic
     language const                 = C
+    limiter-kernel const           = generic::musclhancock 
+    limiter-language const         = C 
+    dmp-observables                = 0
+    dmp-relaxation-parameter       = 1e-2 
+    dmp-difference-scaling         = 1e-3 
+    steps-till-cured               = 0
 
-    plot vtk::Cartesian::vertices::ascii ConservedWriter
+    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 14
       time      = 0.0
-      repeat    = 0.01
-      output    = ./vtk-output/conserved
-      select    = x:0.0,y:0.0
+      repeat    = 1e-2
+      output    = ./vtk-output/primitives
     end plot
   end solver
 end exahype-project
