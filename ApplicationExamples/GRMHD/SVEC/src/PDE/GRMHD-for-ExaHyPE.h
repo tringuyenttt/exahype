@@ -110,9 +110,9 @@ namespace GRMHDAdapterForExaHyPE {
 	}
 	
 	GRMHD::Source algebraicSource(const double* const Q, double* S) {
-		GRMHD::PDE pde(Q);
+		GRMHD::Densitied state(Q); // GRMHD::Shadow not sufficient, need densitied + ADM for gam.det
 		GRMHD::Source s(S);
-		pde.algebraicSource(s);
+		GRMHD::PDE::algebraicSource<GRMHD::Densitied>(state, s);
 		return s;
 	}
 	

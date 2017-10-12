@@ -91,7 +91,6 @@ namespace tensish {
 		/// Storing an array and allowing () accss.
 		/// This is a lightweight version of std::array from the STL.
 		template<int N> struct stored {
-			int debug_size = N;
 			double data[N];
 			stored() { if(debug_tensish) std::fill_n(data,N,NAN); }
 			double& operator()(int j) { tensish_bound(j<N); return data[j]; }

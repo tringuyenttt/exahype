@@ -42,6 +42,8 @@ void PDE::Conserved::flux(Flux& flux, const int k) {
 	// Constraint damping contributions:
 	DFOR(j) flux.Bmag.up(j) -= Bmag.up(k)*beta.up(j);
 	flux.phi = alpha*Bmag.up(k) - phi*beta.up(k);
+	
+	mult_density(flux);
 }
 
 template<class Gradients>
@@ -94,16 +96,23 @@ void PDE::nonConservativeProduct(const Gradients& grad, Source& ncp) {
 	CONTRACT(k) ncp.phi -= Bmag.up(k) * grad.lo(k).alpha;
 	CONTRACT(k) ncp.phi += phi * grad.lo(k).beta.up(k);
 	CONTRACT3(k,l,m) ncp.phi += alpha/2 * gam.up(l,m) * beta.up(k) * grad.lo(k).gam.lo(l,m);
+	
+	mult_density(ncp);
 }
 
-void PDE::algebraicSource(Source& source) {
+template<class StateType>
+void PDE::algebraicSource(const StateType& Q, Source& source) {
 	source.Dens = source.tau = source.Si.lo = source.Bmag.up = source.phi = 0;
-	addAlgebraicSource(source);
+	addAlgebraicSource<StateType>(Q, source);
 }
 
-void PDE::addAlgebraicSource(Source &source) {
-	source.phi -= alpha * damping_term_kappa * phi; // algebraic source
+template<class StateType>
+void PDE::addAlgebraicSource(const StateType& Q, Source& source) {
+	source.phi -= Q.alpha * damping_term_kappa * Q.phi; // algebraic source
 	// CONTRACT2(l,m) Source.tau += lapse * Sij.up(l,m) * Kextr.lo(l,m);
+	
+	// tensor density:
+	source.phi *= sqrt(Q.gam.det);
 }
 
 template<class Gradients>
@@ -115,7 +124,7 @@ void PDE::fusedSource(const Gradients& grad, Source& source) {
 	// 2. Flip sign (move from lhs to rhs)
 	TDO(m,MHD::size) source.Q[m] = -source.Q[m];
 	// 3. Add the algebraic source
-	addAlgebraicSource(source);
+	addAlgebraicSource<PDE>(*this, source);
 }
 
 void PDE::eigenvalues(Eigenvalues& lambda, const int d) {

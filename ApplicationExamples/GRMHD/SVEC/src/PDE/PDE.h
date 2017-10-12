@@ -105,8 +105,9 @@ namespace SVEC {
 	StateVector<Shadow>(QShadow)
 	*/
 	
-	template<int N>
-	using WhateverThisWorksAtleast = vec::shadow<N>;
+	// geht:
+	//template<int N>
+	//using WhateverThisWorksAtleast = vec::shadow<N>;
 	
 	/**
 	 * Hydrodynamics (fluid) state vectors in their conservative and primitive
@@ -492,48 +493,41 @@ namespace SVEC {
 			static constexpr double damping_term_kappa = Parameters::DivCleaning_a;
 			
 			PDE(const double* const Q) : Cons2Prim::Stored(Q) {}
+			
+			// function to add the tensor density factors
+			void mult_density(Shadow& State) {
+				double sqrtdetgam = sqrt(gam.det);
+				// For the quick and dirty, assume all MHD parts to be next to each other
+				for(int i=0; i<MHD::size; i++) State.Q[i] *= sqrtdetgam;
+			}
 		
 			// The conserved fluxes moved to their own subclass in order to be
 			// able to compute them into only one direction
 			struct Conserved;
 		
-			// Currently trivially 1.
+			/// Not to be used today.
 			void eigenvalues(Eigenvalues& lambda, const int d);
 		
 			/// The BgradQ
 			template<class Gradients>
 			void nonConservativeProduct(const Gradients& grad, NCP& ncp);
-			
-			// TODO: For the algebraic source we should *not* need to perform a C2P.
-			//       That is, it should be in a class which only inherits from GRMHD::Shadow.
-			// However, this is not too important as for production we can set this to zero,
-			// anyway.
-			// --> This should be implemented as some "optimization" similar to
-			//     an "optimized" eigenvalues.
+		
+			/// Optimized version which does not need the C2P invocation:
 			/// Sets the algebraic source
-			void algebraicSource(Source& Source_data);
+			template<class StateVector>
+			static void algebraicSource(const StateVector& Q, Source& Source_data);
 			
+			/// Optimized version which does not need the C2P invocation:
 			/// Adds the algebraic source (assumes Source=0 or similiar)
-			void addAlgebraicSource(Source& Source_data);
+			template<class StateVector>
+			static void addAlgebraicSource(const StateVector& Q, Source& Source_data);
+			
+			//void algebraicSource(Source& Source_data);
+			//void addAlgebraicSource(Source& Source_data);
 			
 			/// Computes the fusedSource = algebraicSource - NCP. This is the classical RightHandSide.
 			template<class Gradients>
 			void fusedSource(const Gradients& grad, Source& source);
-			
-			// "Optimized" expressions
-			struct Optimized;
-		};
-		
-		/**
-		 * Terms in the PDE which do need the C2P. Has to be tested whether this is nice.
-		 *
-		 **/
-		struct PDE::Optimized {
-			/// Sets the algebraic source
-			void algebraicSource(ConstShadow& Q, Source& Source_data);
-			
-			/// Adds the algebraic source (assumes Source=0 or similiar)
-			void addAlgebraicSource(ConstShadow& Q, Source& Source_data);
 		};
 		
 		/// Eigenvalues: Currently trivially 1. We provide static access in order
