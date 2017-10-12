@@ -21,8 +21,9 @@
 
 #include "exahype/tests/kernels/c/OptimisedKernelTest.h"
 
-
+#ifndef ALIGNMENT
 registerTest(exahype::tests::c::OptimisedKernelTest)
+#endif
 
 #ifdef UseTestSpecificCompilerSettings
 #pragma optimize("", off)

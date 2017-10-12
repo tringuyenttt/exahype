@@ -243,7 +243,7 @@ int exahype::main(int argc, char** argv) {
   // =========================
   //
   tarch::logging::CommandLineLogger::getInstance().clearFilterList();
-  #ifdef Parallel
+  #if defined(Parallel) || defined(PerformanceAnalysis)
   tarch::logging::CommandLineLogger::getInstance().setLogFormat(
       " ",    // columnSeparator
       true,   // logTimeStamp

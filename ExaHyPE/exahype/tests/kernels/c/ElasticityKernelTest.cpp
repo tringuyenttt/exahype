@@ -24,7 +24,9 @@
 // TODO: Do not conclude macro definitions with a semicolon?!
 //       (https://goo.gl/22Ac4j)
 // clang-format off
+#ifndef ALIGNMENT
 registerTest(exahype::tests::c::ElasticityKernelTest)
+#endif
 
 #ifdef UseTestSpecificCompilerSettings
 #pragma optimize("", off)
