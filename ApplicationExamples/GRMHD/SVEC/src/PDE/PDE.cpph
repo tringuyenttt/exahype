@@ -80,6 +80,14 @@ void PDE::nonConservativeProduct(const Gradients& grad, Source& ncp) {
 	//CONTRACT3(k,i,j) { printf("%d,%d,%d: ",k,i,j); S(grad.lo(k).gam.lo(i,j)); }
 	//S(ncp.tau);
 	
+	/******************************
+	 * Plans: Introduce two types:
+	 *   (1) a tensish null type for Bmag.up which always returns 0 and sucks all assignments
+	 *   (2) add a "Kextr" to the ADMBase. Let it be a "std::abort" type by default in case
+	 *       of calls.
+	 *   (3) Write different cases nicely here.
+	 ******************************/
+	
 	// Starting from here:
 	// Divergence Cleaning/Constraint damping sources for B^j and Phi.
 	// In case no cleaning would be applied, ncp.Bmag == ncp.phi == 0.
