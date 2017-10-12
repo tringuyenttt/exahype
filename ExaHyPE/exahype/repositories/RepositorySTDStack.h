@@ -19,7 +19,6 @@
  #include "exahype/adapters/MeshRefinement.h" 
  #include "exahype/adapters/FinaliseMeshRefinementAndTimeStepSizeComputation.h" 
  #include "exahype/adapters/FinaliseMeshRefinementAndReinitialisation.h" 
- #include "exahype/adapters/GridErasing.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
  #include "exahype/adapters/PlotAndFusedTimeStep.h" 
  #include "exahype/adapters/LimiterStatusSpreading.h" 
@@ -57,7 +56,6 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::MeshRefinement> _gridWithMeshRefinement;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation> _gridWithFinaliseMeshRefinementAndTimeStepSizeComputation;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FinaliseMeshRefinementAndReinitialisation> _gridWithFinaliseMeshRefinementAndReinitialisation;
-    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::GridErasing> _gridWithGridErasing;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FusedTimeStep> _gridWithFusedTimeStep;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PlotAndFusedTimeStep> _gridWithPlotAndFusedTimeStep;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::LimiterStatusSpreading> _gridWithLimiterStatusSpreading;
@@ -74,7 +72,6 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureMeshRefinementCPUTime;
     tarch::timing::Measurement _measureFinaliseMeshRefinementAndTimeStepSizeComputationCPUTime;
     tarch::timing::Measurement _measureFinaliseMeshRefinementAndReinitialisationCPUTime;
-    tarch::timing::Measurement _measureGridErasingCPUTime;
     tarch::timing::Measurement _measureFusedTimeStepCPUTime;
     tarch::timing::Measurement _measurePlotAndFusedTimeStepCPUTime;
     tarch::timing::Measurement _measureLimiterStatusSpreadingCPUTime;
@@ -88,7 +85,6 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureMeshRefinementCalendarTime;
     tarch::timing::Measurement _measureFinaliseMeshRefinementAndTimeStepSizeComputationCalendarTime;
     tarch::timing::Measurement _measureFinaliseMeshRefinementAndReinitialisationCalendarTime;
-    tarch::timing::Measurement _measureGridErasingCalendarTime;
     tarch::timing::Measurement _measureFusedTimeStepCalendarTime;
     tarch::timing::Measurement _measurePlotAndFusedTimeStepCalendarTime;
     tarch::timing::Measurement _measureLimiterStatusSpreadingCalendarTime;
@@ -140,7 +136,6 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual void switchToMeshRefinement();    
     virtual void switchToFinaliseMeshRefinementAndTimeStepSizeComputation();    
     virtual void switchToFinaliseMeshRefinementAndReinitialisation();    
-    virtual void switchToGridErasing();    
     virtual void switchToFusedTimeStep();    
     virtual void switchToPlotAndFusedTimeStep();    
     virtual void switchToLimiterStatusSpreading();    
@@ -154,7 +149,6 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual bool isActiveAdapterMeshRefinement() const;
     virtual bool isActiveAdapterFinaliseMeshRefinementAndTimeStepSizeComputation() const;
     virtual bool isActiveAdapterFinaliseMeshRefinementAndReinitialisation() const;
-    virtual bool isActiveAdapterGridErasing() const;
     virtual bool isActiveAdapterFusedTimeStep() const;
     virtual bool isActiveAdapterPlotAndFusedTimeStep() const;
     virtual bool isActiveAdapterLimiterStatusSpreading() const;

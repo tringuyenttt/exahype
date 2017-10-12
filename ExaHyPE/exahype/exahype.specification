@@ -60,10 +60,7 @@ event-mapping:
 event-mapping:
   name: GlobalRollback
 
-// GridUpdate   
-event-mapping:
-  name: GridErasing
-  
+// GridUpdate     
 event-mapping:
   name: MeshRefinement
   
@@ -113,13 +110,7 @@ adapter:
   merge-with-user-defined-mapping: Reinitialisation
   merge-with-user-defined-mapping: PostProcessing
   merge-with-predefined-mapping:   MultiscaleLinkedCell(CellDescriptionsIndex) // (createInner/BoundaryVertex,enterCell,avoidfinegridraces)
-
-// Adapters for clean up (to be extended)
-adapter:
-  name: GridErasing
-  merge-with-user-defined-mapping: Merging  // DropFaceData
-  merge-with-user-defined-mapping: GridErasing
-
+  
 // Adapter for 1 phase time stepping
 adapter: 
   name: FusedTimeStep
