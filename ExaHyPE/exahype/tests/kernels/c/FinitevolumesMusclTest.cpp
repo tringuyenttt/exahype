@@ -16,7 +16,9 @@
 #include "tarch/tests/TestCaseFactory.h"
 
 // clang-format off
+#ifndef ALIGNMENT
 registerTest(exahype::tests::c::FinitevolumesMusclTest)
+#endif
 
 #ifdef UseTestSpecificCompilerSettings
 #pragma optimize("", off)

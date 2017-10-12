@@ -22,7 +22,9 @@
 
 #include "tarch/la/ScalarOperations.h"
 
+#ifndef ALIGNMENT
 registerTest(exahype::tests::kernels::finitevolumes::riemannsolvers::c::RusanovTest)
+#endif
 
 #ifdef UseTestSpecificCompilerSettings
 #pragma optimize("", off)

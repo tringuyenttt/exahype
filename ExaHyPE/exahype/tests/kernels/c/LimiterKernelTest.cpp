@@ -15,7 +15,10 @@
 
 // TODO(Dominic): JM, please fix the segfaults before you register
 // the test again.
+
+#ifndef ALIGNMENT
 registerTest(exahype::tests::c::LimiterKernelTest)
+#endif
 
 #ifdef UseTestSpecificCompilerSettings
 #pragma optimize("", off)
