@@ -129,3 +129,5 @@ ExternalLibraries
 *.ind
 *.ist
 
+# Coredumps
+core
