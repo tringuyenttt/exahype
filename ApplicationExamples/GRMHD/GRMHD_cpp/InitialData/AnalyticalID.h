@@ -1,6 +1,8 @@
 #ifndef ANALYTICAL_ID_GRMHD_OCT17
 #define ANALYTICAL_ID_GRMHD_OCT17
 
+#include "InitialData.h"
+
 // Adapter to functions or classes which create ID on the fly ("analytical"
 template<typename IDCreator>
 struct AnalyticalID : public InitialDataCode {
@@ -10,8 +12,8 @@ struct AnalyticalID : public InitialDataCode {
 };
 
 // Initial State: Masking the State Vector
-struct InitialState : public GRMHD::GRMHDSystem::Shadow, public GRMHD::Hydro::Primitives::Stored {
-	InitialState(double* Q) : GRMHD::GRMHDSystem::Shadow(Q), GRMHD::Hydro::Primitives::Stored() {
+struct InitialState : public SVEC::GRMHD::Shadow, public SVEC::Hydro::Primitives::Stored {
+	InitialState(double* Q) : SVEC::GRMHD::Shadow(Q), SVEC::Hydro::Primitives::Stored() {
 		// by default, set NaNs for uninitialized values to catch mistakes when setting ID
 		Dens = tau = phi = rho = press = alpha = NAN;
 		DFOR(i) { Bmag.up(i) = Si.lo(i) = vel.up(i) = beta.up(i) = NAN; }
@@ -28,7 +30,7 @@ struct VacuumInitialData : public InitialState {
 		// ADM base: Flat space
 		alpha = 1.0;
 		DFOR(i) beta.up(i) = 0;
-		SYMFOR(i,j) gam.lo(i,j) = GRMHD::sym::delta(i,j);
+		SYMFOR(i,j) gam.lo(i,j) = SVEC::sym::delta(i,j);
 	}
 	
 	VacuumInitialData(double* Q) : InitialState(Q) {
@@ -64,7 +66,7 @@ struct AlfenWave : public VacuumInitialData {
 struct AlfenWaveCons : public AlfenWave {
 	double V[100];
 	AlfenWaveCons(const double* const x, const double t, double* Q) : AlfenWave(x,t,V) {
-			GRMHD::Prim2Cons(Q, V).copyFullStateVector();
+			SVEC::GRMHD::Prim2Cons(Q, V).copyFullStateVector();
 		}
 };
 

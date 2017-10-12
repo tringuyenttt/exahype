@@ -2,18 +2,11 @@
 #include "PDE.h"
 #include <cmath>
 
-using namespace GRMHD;
+using namespace SVEC;
 
 constexpr bool debug_p2c = false;
 #define S(x) printf(#x " = %e\n", x);
 #define SI(x) {DFOR(i) S(x(i)); }
-
-void GRMHD::Prim2Cons::perform() {
-	// The hydro + magneto exact known prim2cons
-	Dens = rho * W;
-	DFOR(i) Si.lo(i) = Dens*enth*W*vel.lo(i) + BmagBmag*vel.lo(i) - BmagVel*Bmag.lo(i);
-	tau = Dens*enth*W - press + 0.5*(BmagBmag*(1+VelVel) - BmagVel*BmagVel);
-}
 
 void GRMHD::Prim2Cons::prepare() {
 	constexpr double gamma = GRMHD::Parameters::gamma;
@@ -39,9 +32,25 @@ void GRMHD::Prim2Cons::prepare() {
 	enth = 1 + epsilon + press / rho;
 }
 
+void GRMHD::Prim2Cons::perform() {
+	// The hydro + magneto exact known prim2cons
+	Dens = rho * W;
+	DFOR(i) Si.lo(i) = Dens*enth*W*vel.lo(i) + BmagBmag*vel.lo(i) - BmagVel*Bmag.lo(i);
+	tau = Dens*enth*W - press + 0.5*(BmagBmag*(1+VelVel) - BmagVel*BmagVel);
+}
+
 void GRMHD::Prim2Cons::copyFullStateVector() {
 	// 1) Assume that Conserved Hydro vars have been set
 	// 2) Copy Magneto variables
 	copy_magneto(Q);
 	copy_adm(Q);
 }
+
+/*
+void GRMHD::Prim2Cons::toTensorDensity() {
+	// Multiply sqrt(det(g)) on all hydro variables in order to get tensor densities.
+	multiply_conserved( sqrt(gam.det) );
+	// ALERT: The factor also has to go to magneto but there is no storage.
+	//        This is a fundamental flaw of this approach.
+	//multiply_magneto( sqrt(gam.det) );    // attention on this one! Will not compile
+}*/

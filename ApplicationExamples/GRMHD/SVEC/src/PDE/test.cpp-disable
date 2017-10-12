@@ -1,7 +1,7 @@
 
 // in order to autonomously test/copmile this C++ file:
 #define DIMENSIONS 3
-//namespace GRMHD { constexpr int nVar = 19; }
+//namespace SVEC { constexpr int nVar = 19; }
 
 #include "tensish.cpph"
 #include "PDE.h"

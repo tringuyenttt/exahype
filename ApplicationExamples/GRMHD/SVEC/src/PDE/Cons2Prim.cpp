@@ -5,7 +5,7 @@
 
 #include <stdio.h> // printf
 
-using namespace GRMHD;
+using namespace SVEC;
 using namespace std; // sqrt, max
 
 // The C2P-Routines ported from Fortran for the SRMHD by Dominic, fully correct also for GRMHD.
@@ -13,6 +13,19 @@ double RTSAFE_C2P_RMHD1(const double X1, const double X2, const double XACC, con
 void FUNC_C2P_RMHD1(const double x,double& f,double& df,const double gam,const double d,const double e,const double s2,const double b2, const double sb2,double& w);
 
 // Remember: The removal or adding of \sqrt{gamma} to the quantities.
+
+void GRMHD::Cons2Prim::fromTensorDensity() {
+	std::abort();
+	/*
+	// Convert from tensor density to regular tensor (density):
+	double sqrtgamdet = sqrt(gam.det);
+	Dens /= sqrtgamdet;
+	DFOR(i) Si.lo(i) /= sqrtgamdet;
+	tau /= sqrtgamdet;
+	BMAG ALSO NEEDS TREATMENT
+	// ==> This does not work as Conserved Hydro is read only.
+	*/
+}
 
 // At this stage, we can prepare conservative variables but do not yet have access to primitive ones.
 void GRMHD::Cons2Prim::prepare() {
@@ -68,7 +81,7 @@ void GRMHD::Cons2Prim::perform() {
 		// We should raise an error instead, the c2p failed.
 		printf("C++ C2P FAILED.\n");
 		printf("Input conserved State Vector Q: \n");
-		NVARS(d) printf("Q[%d] = %e\n", d, Q[d]);
+		TDO(d,GRMHD::size) printf("Q[%d] = %e\n", d, Q[d]);
 		SI(Si.lo); SI(Si.up); S(BmagBmag); S(SconScon);
 		std::abort();
 		rho = rho_floor;

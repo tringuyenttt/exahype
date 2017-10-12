@@ -49,6 +49,8 @@
 #error The Tensish library needs the TDIM preprocessor variable defined to a numeric value
 #endif
 
+// Tensish do, similar to a compact Fortran "DO i=0,N" statement.
+#define TDO(i,N) for(int i=0; i<N; i++)
 #define DFOR(i) for(int i=0; i<TDIM; i++)
 
 // We use "CONTRACT" as a synonym to indicate that contractions are happening.
@@ -68,6 +70,10 @@ constexpr bool debug_tensish = true;
 
 #include <algorithm> // fill_n
 
+// probably helpful...
+#define struct_tensish_stored(NAME, PARENT, STORAGENAME, SIZE) \
+	struct NAME : public PARENT { double STORAGENAME[SIZE]; NAME() : PARENT(STORAGENAME) {} };
+
 namespace tensish {
 	// helper
 	inline const double SQ(double x) { return x*x; }
@@ -83,6 +89,7 @@ namespace tensish {
 	**/
 	namespace vec {
 		/// Storing an array and allowing () accss.
+		/// This is a lightweight version of std::array from the STL.
 		template<int N> struct stored {
 			int debug_size = N;
 			double data[N];

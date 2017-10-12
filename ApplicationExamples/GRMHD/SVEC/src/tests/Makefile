@@ -5,8 +5,12 @@ TEST=TEST_NEW_PDE_AUTONOMOUSLY
 # path to GRMHD base directory
 GRMHD=../../..
 
+# for tarch etc
+PEANO_INC=../../../../../Peano
+EXAHYPE_INC=../../../../../ExaHyPE
+
 # GRMHD Fortran formulation
-GRMHD_Finc=$(GRMHD)/GRMHD
+#GRMHD_Finc=$(GRMHD)/GRMHD
 FortranObjects=$(GRMHD)/GRMHD/Fortran
 FortranInitialData=$(GRMHD)/GRMHD/InitialData
 
@@ -17,14 +21,15 @@ GRMHD_Cinc=$(GRMHD)/GRMHD_cpp
 DIMSTRING=Dim2
 
 all:
-	g++ -c -g3 --std=c++11 -D$(DIMSTRING) -D$(TEST) -I$(GRMHD_Finc) -I$(GRMHD_Cinc) -I../ -I../../Peano/ -Wall \
-		indi-test.cc $(GRMHD_Cinc)/InitialData.cpp \
-		../PDE/Cons2Prim.cpp ../PDE/Prim2Cons.cpp ../PDE/PDE.cpp 
+	g++ -c -g3 --std=c++11 -D$(DIMSTRING) -D$(TEST) -I$(GRMHD_Cinc) -I../ -I$(PEANO_INC) -I$(EXAHYPE_INC) -Wall \
+		indi-test.cc $(GRMHD_Cinc)/InitialData/AnalyticalID.cpp \
+		../PDE/Cons2Prim.cpp ../PDE/Prim2Cons.cpp
+#		 ../PDE/PDE.cpp 
 	
 	g++ -g3 -oinditest.out \
 		$(FortranInitialData)/InitialDataFort.o \
 		$(FortranObjects)/{abort,C2P-GRMHD,C2PRoutines,Metric,Parameters,PDE}.o \
-		{indi-test,InitialData,Cons2Prim,PDE,Prim2Cons}.o -lgfortran
+		*.o -lgfortran
 
 clean:
 	rm -f *.o *.out

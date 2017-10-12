@@ -9,11 +9,16 @@
 #endif
 
 #include <stdio.h>
-#include "PDE/PDE.h"
-#include "InitialData.h"
+#include "InitialData/InitialData.h"
+#include "InitialData/AnalyticalID.h"
 #include <cmath>
 #include <algorithm>
 using namespace std;
+using namespace SVEC;
+
+#include "PDE/GRMHD-for-ExaHyPE.h"
+#include "PDE/PDE.cpph"
+using namespace GRMHDAdapterForExaHyPE;
 
 #include <iostream>
 #include <fstream>
@@ -22,13 +27,24 @@ using namespace std;
 
 constexpr double SNAN = std::numeric_limits<double>::signaling_NaN();
 
-#include "Fortran/PDE.h"
-
-// Fortran
+// Fortran directly here to avoid double inclusion from similar exahype projects
 extern "C" {
 void alfenwave_(const double* x,const double* const t,  double* Q);
 //void pdeprim2cons_(double* /* OUT */ Q, double* /* IN */ V);
 //void pdecons2prim_(double* /* OUT */ V, double* /* IN */ Q, int* iErr);
+void minimumtreedepth_(int* depth);
+void hastoadjustsolution_(double* t, bool* refine);
+void adjustedsolutionvalues_(const double* const x,const double* w,const double* t,const double* dt,double* Q);
+void pdeflux_(double* Fx, double* Fy, double* Fz, const double* const Q);
+void pdesource_(double* S, const double* const Q);
+void pdeeigenvalues_(double* lambda, const double* const Q, double* nv);
+void registerinitialdata_(const char* const id_name, int* id_name_len);
+
+void pdencp_(double* BgradQ, const double* const Q, const double* const gradQ);
+void pdematrixb_(double* Bn, const double* const Q, double* nv);
+
+void pdecons2prim_(double* V, const double* const Q, int* iErr);
+void pdeprim2cons_(double* Q, const double* const V);
 }
 
 int vacuumtest() {
@@ -110,6 +126,7 @@ void interp_deriv(const double* const xc, const double t, double **gradQ) {
 
 // enable nan tracker
 #include <fenv.h>
+#include <../../home/sven/numrel/exahype/Engine-ExaHyPE/ApplicationExamples/GRMHD/GRMHD_cpp/InitialData/AnalyticalID.h>
 
 
 extern "C" {
@@ -211,7 +228,7 @@ void cmain_() {
 		std::fill_n(FF[0], 3*nSize, 123456789);
 
 		//PDE(QC).flux(FCp);
-		Fluxes(FC[0], FC[1], FC[2], QC).zeroMaterialFluxes();
+		flux(QC, FC[0], FC[1], FC[2]).zeroMaterialFluxes();
 		// pdeflux_(FF[0], FF[1], FF[2], QF); // will not work due to broken F C2P
 		
 		readArray(FF[0], std::string("1.8880309866282984E-012   1.1043560762900662       0.96347212472583399      -0.26780863481617778       0.45685025174596872        0.0000000000000000      -0.44016248272562447       0.12234844223395951        1.0000000000000000        0.0000000000000000        0.0000000000000000        0.0000000000000000        0.0000000000000000        0.0000000000000000        0.0000000000000000        0.0000000000000000        0.0000000000000000        0.0000000000000000        0.0000000000000000"));
@@ -240,8 +257,8 @@ void cmain_() {
 		CHECK(QkC[dir],QkF[dir]);
 		}
 
-		PDE(QC).fusedSource(QkC[0],QkC[1],QkC[2], SC); // TODO: Zero Source terms for material parameters!
-		GRMHDSystem::Shadow(SC).zero_adm();
+		fusedSource(QC, QkC[0],QkC[1],QkC[2], SC).zero_adm(); // TODO: Zero Source terms for material parameters!
+		//GRMHD::Shadow(SC).zero_adm();
 		
 		readArray(SF, std::string("-0.0000000000000000       -53.205687704723701       -0.0000000000000000       -0.0000000000000000       -6.0536738979362745       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000       -0.0000000000000000"));
 		
@@ -250,12 +267,9 @@ void cmain_() {
 		
 		double QncpC[nSize];
 		std::fill_n(QncpC, nSize, NAN);
-		PDE::NCP ncp(QncpC);
-		ncp.zero_adm();
 		double *QkCpointer = QkC[0];
 		// const Gradients g(QkCpointer); // this does not work as nSize >> nVar
-		const Gradients g(QkC[0], QkC[1], QkC[2]);
-		PDE(QC).nonConservativeProduct(g, ncp);
+		nonConservativeProduct(QC, QkC[0], QkC[1], QkC[2], QncpC).zero_adm();
 		printf("NCP terms:\n");
 		CHECK(QncpC,SC);
 		

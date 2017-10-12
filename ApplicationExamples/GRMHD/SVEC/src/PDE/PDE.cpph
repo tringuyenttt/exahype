@@ -1,3 +1,6 @@
+#ifndef SVEC_GRMHD_PDE_CPP_IMPLEMENTATION
+#define SVEC_GRMHD_PDE_CPP_IMPLEMENTATION
+
 /**
  * A C++ variant of the GRMHD equations for ExaHyPE.
  * Read PDE.h for further documentation.
@@ -7,19 +10,20 @@
 #include "PDE.h"
 #include <cmath> // NAN
 
+using namespace SVEC;
+using namespace GRMHD;
+
 /******************************************************************************
  * Status of the PDE system:
  *   It is now equal to the schemes of BHAC and ECHO, i.e. it seems to be valid
  *   for the cowling approximation but not neccessarily for a dynamical
  *   spacetime.
- * 
- * Important TODO: Stripping of the determinant of the metric is missing.
  *****************************************************************************/
 
 #define S(x) printf(#x " = %e\n", x);
 #define SI(x) S(x(0));S(x(1));S(x(2));
 
-void GRMHD::FluxBase::prepare() {
+void PDE::Conserved::prepare() {
 	// Sij is the 3-Energy-Momentum tensor: We only need S^i_j in the flux.
 	SYMFOR(i,j) Sij.ul(i,j) = Si.up(i)*vel.lo(j) + ptot*delta(i,j) - Bmag.up(i)*Bmag.lo(j)/WW - BmagVel* vel.up(i) * Bmag.lo(j);
 	
@@ -27,7 +31,7 @@ void GRMHD::FluxBase::prepare() {
 	DFOR(k) zeta.up(k) = alpha*vel.up(k) - beta.up(k);
 }
 
-void GRMHD::FluxBase::compute(Flux& flux, int k) {
+void PDE::Conserved::flux(Flux& flux, const int k) {
 	// F^k: flux in direction k.
 
 	flux.Dens = Dens * zeta.up(k);
@@ -40,14 +44,8 @@ void GRMHD::FluxBase::compute(Flux& flux, int k) {
 	flux.phi = alpha*Bmag.up(k) - phi*beta.up(k);
 }
 
-void GRMHD::Fluxes::zeroMaterialFluxes() {
-	DFOR(k) {
-		F[k].alpha = 0;
-		F[k].beta.up = 0;
-		F[k].gam.lo = 0;
-	}
-}
-GRMHD::PDE& GRMHD::PDE::nonConservativeProduct(const Gradients& grad, Source& ncp) {
+template<class Gradients>
+void PDE::nonConservativeProduct(const Gradients& grad, Source& ncp) {
 	// This is the NCP = matrixB * gradQ
 	
 	// Sij is the 3-Energy-Momentum tensor. We need S^{ij} and S^i_j in the NCP.	
@@ -96,32 +94,37 @@ GRMHD::PDE& GRMHD::PDE::nonConservativeProduct(const Gradients& grad, Source& nc
 	CONTRACT(k) ncp.phi -= Bmag.up(k) * grad.lo(k).alpha;
 	CONTRACT(k) ncp.phi += phi * grad.lo(k).beta.up(k);
 	CONTRACT3(k,l,m) ncp.phi += alpha/2 * gam.up(l,m) * beta.up(k) * grad.lo(k).gam.lo(l,m);
-	
-	return *this; // chainable
 }
 
-void GRMHD::PDE::algebraicSource(Source& source) {
+void PDE::algebraicSource(Source& source) {
 	source.Dens = source.tau = source.Si.lo = source.Bmag.up = source.phi = 0;
 	addAlgebraicSource(source);
 }
 
-void GRMHD::PDE::addAlgebraicSource(Source &source) {
+void PDE::addAlgebraicSource(Source &source) {
 	source.phi -= alpha * damping_term_kappa * phi; // algebraic source
 	// CONTRACT2(l,m) Source.tau += lapse * Sij.up(l,m) * Kextr.lo(l,m);
 }
 
-void GRMHD::PDE::fusedSource(const Gradients& grad, Source& source) {
+template<class Gradients>
+void PDE::fusedSource(const Gradients& grad, Source& source) {
 	// This is the fusedSource = -NCP + AlgebraicSource
 
 	// 1. Compute NCP
-	nonConservativeProduct(grad, source);
+	nonConservativeProduct<Gradients>(grad, source);
 	// 2. Flip sign (move from lhs to rhs)
-	NVARS(m) source.Q[m] = -source.Q[m];
+	TDO(m,MHD::size) source.Q[m] = -source.Q[m];
 	// 3. Add the algebraic source
 	addAlgebraicSource(source);
 }
 
-void GRMHD::PDE::eigenvalues(const double* const Q, const int d, double* lambda) {
+void PDE::eigenvalues(Eigenvalues& lambda, const int d) {
 	//std::fill_n(lambda, nVar, 1.0);
-	NVARS(m) lambda[m] = 1.0;
+	TDO(m,GRMHD::size) lambda.Q[m] = 1.0;
+	// Trivial, should not be used.
+	
+	// In principle, the magnetosonic approximation would need access to all what
+	// PDE provides (cons,prim,full ADM). So no extra needs.
 }
+
+#endif /* SVEC_GRMHD_PDE_CPP_IMPLEMENTATION */

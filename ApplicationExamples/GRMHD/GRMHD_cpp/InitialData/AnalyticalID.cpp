@@ -7,6 +7,7 @@
 #include <cmath>
 constexpr double pi = M_PI;
 
+using namespace SVEC;
 using namespace std;
 
 
