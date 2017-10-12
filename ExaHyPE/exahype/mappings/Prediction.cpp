@@ -38,24 +38,19 @@ exahype::mappings::Prediction::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::Prediction::enterCellSpecification(int level) const {
-//  if (level < exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers()) {
-//    return peano::MappingSpecification(
-//        peano::MappingSpecification::Nop,
-//        peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
-//  }
-
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
+
+
+// The remaining specifications all are nop.
 peano::MappingSpecification
 exahype::mappings::Prediction::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
-
-// The remainder specs all are nop
 peano::MappingSpecification
 exahype::mappings::Prediction::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(

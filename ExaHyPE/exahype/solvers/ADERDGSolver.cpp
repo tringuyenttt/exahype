@@ -392,6 +392,7 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
     cellDescription.setFluctuationCompressed(-1);
 
     //TODO JMG / Dominic adapt for padding with optimized kernels
+    //TODO Tobias: Does it make sense to pad these arrays.
     const int dataPerFace     = (getNumberOfParameters()+getNumberOfVariables()) * DIMENSIONS_TIMES_TWO;
     const int unknownsPerFace = getNumberOfVariables() * DIMENSIONS_TIMES_TWO;
     cellDescription.setExtrapolatedPredictorAverages( DataHeap::getInstance().createData( dataPerFace,     dataPerFace  ) );
@@ -1001,8 +1002,10 @@ bool exahype::solvers::ADERDGSolver::updateStateInEnterCell(
     addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
                multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
                solverNumber); // TODO(Dominic): Can directly refine if we directly evaluate initial conditions here.
+
+  }
   // Fine grid cell based adaptive mesh refinement operations.
-  } else if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
+    else if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
     CellDescription& fineGridCellDescription =
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
     #ifdef Parallel

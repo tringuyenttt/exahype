@@ -67,12 +67,6 @@ exahype::mappings::SolutionUpdate::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::SolutionUpdate::enterCellSpecification(int level) const {
-//  if (level < exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers()) {
-//    return peano::MappingSpecification(
-//        peano::MappingSpecification::Nop,
-//        peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
-//  }
-
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
