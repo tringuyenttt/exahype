@@ -94,7 +94,8 @@ public class Context {
     throw new IllegalArgumentException("Cannot evaluate token's expression as boolean: "+expression);
   }
   
-  
+  /** Get a collection from the context */
+  @SuppressWarnings("unchecked") //cast to Collection<Object> is unchecked but normal
   public Collection<Object> getCollection(String key) throws IllegalArgumentException {
     checkCorruption();
     try {
