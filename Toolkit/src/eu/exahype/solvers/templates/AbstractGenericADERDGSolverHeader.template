@@ -137,11 +137,14 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     
     //override the size of unused data storage to -1 to not allocate it
     {%- if noTimeAveraging %}
-    int getTempUnknownsSize()          const {return -1;}
-    int getTempFluxUnknownsSize()      const {return -1;}
+    int getTempUnknownsSize()          const {return -1;} //lQhi not required
+    int getTempFluxUnknownsSize()      const {return -1;} //lFhi not required
     {%- endif %}
     {%- if !usePointSource %}
-    int getTempPointForceSourcesSize() const {return -1;}
+    int getTempPointForceSourcesSize() const {return -1;} //pointSource not required
+    {%- endif %}
+    {%- if !useNCP %}
+    int getTempSpaceTimeFluxUnknowns1Size() const {return -1;} //gradQ not required
     {%- endif %}
 };
 

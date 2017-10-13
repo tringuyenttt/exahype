@@ -937,18 +937,19 @@ public:
    * to change the allocated size independently of the solver parameters.
    * For example to add padding forthe optimised kernel
    */
-  virtual int getTempSpaceTimeUnknownsSize()     const {return getSpaceTimeDataPerCell()+getDataPerCell();} // TODO function should be renamed
-  virtual int getTempSpaceTimeFluxUnknownsSize() const {return getSpaceTimeFluxUnknownsPerCell();}
-  virtual int getTempUnknownsSize()              const {return getDataPerCell();} // TODO function should be renamed
-  virtual int getTempFluxUnknownsSize()          const {return getFluxUnknownsPerCell();}
-  virtual int getTempPointForceSourcesSize()     const {return getSpaceTimeFluxUnknownsPerCell();}
-  virtual int getBndFaceSize()                   const {return getDataPerFace();} // TODO function should be renamed
-  virtual int getBndTotalSize()                  const {return getDataPerCellBoundary();} // TODO function should be renamed
-  virtual int getBndFluxSize()                   const {return getUnknownsPerFace();} // TODO function should be renamed
-  virtual int getBndFluxTotalSize()              const {return getUnknownsPerCellBoundary();} // TODO function should be renamed
-  virtual int getTempStateSizedVectorsSize()     const {return getNumberOfVariables()+getNumberOfParameters();} //dataPoints
+  virtual int getTempSpaceTimeUnknownsSize()      const {return getSpaceTimeDataPerCell()+getDataPerCell();} // TODO function should be renamed
+  virtual int getTempSpaceTimeFluxUnknowns0Size() const {return getSpaceTimeFluxUnknownsPerCell();}
+  virtual int getTempSpaceTimeFluxUnknowns1Size() const {return getSpaceTimeFluxUnknownsPerCell();}
+  virtual int getTempUnknownsSize()               const {return getDataPerCell();} // TODO function should be renamed
+  virtual int getTempFluxUnknownsSize()           const {return getFluxUnknownsPerCell();}
+  virtual int getTempPointForceSourcesSize()      const {return getSpaceTimeFluxUnknownsPerCell();}
+  virtual int getBndFaceSize()                    const {return getDataPerFace();} // TODO function should be renamed
+  virtual int getBndTotalSize()                   const {return getDataPerCellBoundary();} // TODO function should be renamed
+  virtual int getBndFluxSize()                    const {return getUnknownsPerFace();} // TODO function should be renamed
+  virtual int getBndFluxTotalSize()               const {return getUnknownsPerCellBoundary();} // TODO function should be renamed
+  virtual int getTempStateSizedVectorsSize()      const {return getNumberOfVariables()+getNumberOfParameters();} //dataPoints
   
-  virtual bool alignTempArray()                  const {return false;}
+  virtual bool alignTempArray()                   const {return false;}
 
   /**
    * False for generic solver, may be true for optimized one

@@ -96,10 +96,12 @@ void exahype::solvers::initialiseTemporaryVariables(exahype::solvers::Prediction
       }
       //
       temporaryVariables._tempSpaceTimeFluxUnknowns[solverNumber] = new double*[2];
-      for (int i=0; i<2; ++i) { // max; see spaceTimePredictorNonlinear
-        temporaryVariables._tempSpaceTimeFluxUnknowns[solverNumber][i] = allocateArray( temporaryVariables._dataHeapIndices,
-                                                                                        aderdgSolver->getTempSpaceTimeFluxUnknownsSize() );
-      }
+      //lFi
+      temporaryVariables._tempSpaceTimeFluxUnknowns[solverNumber][0] = allocateArray( temporaryVariables._dataHeapIndices,
+                                                                                        aderdgSolver->getTempSpaceTimeFluxUnknowns0Size() );
+      //gradQ, might be not required if ncp is not used
+      temporaryVariables._tempSpaceTimeFluxUnknowns[solverNumber][1] = allocateArray( temporaryVariables._dataHeapIndices,
+                                                                                        aderdgSolver->getTempSpaceTimeFluxUnknowns1Size() );
       //
       temporaryVariables._tempUnknowns[solverNumber] = allocateArray( temporaryVariables._dataHeapIndices,
                                                                       aderdgSolver->getTempUnknownsSize() );

@@ -139,21 +139,28 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static void abortWithMsg(const char* const msg);
     
     //padded array size, override default ADERDGSolver values
-    int getTempSpaceTimeUnknownsSize()     const {return {{optNamespace}}::getTempSpaceTimeUnknownsSize();    }
-    int getTempSpaceTimeFluxUnknownsSize() const {return {{optNamespace}}::getTempSpaceTimeFluxUnknownsSize();}
-    int getTempUnknownsSize()              const {return {{optNamespace}}::getTempUnknownsSize();             }
-    int getTempFluxUnknownsSize()          const {return {{optNamespace}}::getTempFluxUnknownsSize();         }
-    int getTempPointForceSourcesSize()     const {return {{optNamespace}}::getTempPointForceSourcesSize();    }
-    int getBndFaceSize()                   const {return {{optNamespace}}::getBndFaceSize();                  }
-    int getBndTotalSize()                  const {return {{optNamespace}}::getBndTotalSize();                 }
-    int getBndFluxSize()                   const {return {{optNamespace}}::getBndFaceSize();                  }
-    int getBndFluxTotalSize()              const {return {{optNamespace}}::getBndTotalSize();                 }
-    int getTempStateSizedVectorsSize()     const {return {{optNamespace}}::getTempStateSizedVectorsSize();    }
+    int getTempSpaceTimeUnknownsSize()      const {return {{optNamespace}}::getTempSpaceTimeUnknownsSize();     }
+    int getTempSpaceTimeFluxUnknownsSize0() const {return {{optNamespace}}::getTempSpaceTimeFluxUnknowns0Size();}
+    int getTempSpaceTimeFluxUnknownsSize1() const {return {{optNamespace}}::getTempSpaceTimeFluxUnknowns1Size();}
+    int getTempUnknownsSize()               const {return {{optNamespace}}::getTempUnknownsSize();              }
+    int getTempFluxUnknownsSize()           const {return {{optNamespace}}::getTempFluxUnknownsSize();          }
+    int getTempPointForceSourcesSize()      const {return {{optNamespace}}::getTempPointForceSourcesSize();     }
+    int getBndFaceSize()                    const {return {{optNamespace}}::getBndFaceSize();                   }
+    int getBndTotalSize()                   const {return {{optNamespace}}::getBndTotalSize();                  }
+    int getBndFluxSize()                    const {return {{optNamespace}}::getBndFaceSize();                   }
+    int getBndFluxTotalSize()               const {return {{optNamespace}}::getBndTotalSize();                  }
+    int getTempStateSizedVectorsSize()      const {return {{optNamespace}}::getTempStateSizedVectorsSize();     }
     
     bool alignTempArray()                  const {return true;}
     
     bool usePaddedData_nVar() const {return true;}
     bool usePaddedData_nDoF() const {return true;}
+    
+    //override the size of unused data storage to -1 to not allocate it
+   
+    {%- if !useNCP %}
+    int getTempSpaceTimeFluxUnknowns1Size() const {return -1;} //gradQ not required
+    {%- endif %}
     
 };
 
