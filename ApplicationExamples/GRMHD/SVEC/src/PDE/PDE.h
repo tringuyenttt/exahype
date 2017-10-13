@@ -432,11 +432,12 @@ namespace SVEC {
 		template<class MHDtype>
 		struct DensitiedState : public MHDtype, public ADMBase::Full {
 			double MHDStorage[MHD::size];
+			double sqrtabsgamdet;
 			DensitiedState(const double* const QDensity) : MHDtype(MHDStorage), ADMBase::Full(QDensity) {
-				double sqrtdetgam = sqrt(gam.det);
+				sqrtabsgamdet = sqrt(std::abs(gam.det));
 				// For the quick and dirty, assume all MHD parts to be next to each other
 				for(int i=0; i<MHD::size; i++)
-					MHDStorage[i] = QDensity[i] / sqrtdetgam;
+					MHDStorage[i] = QDensity[i] / sqrtabsgamdet;
 			}
 		};
 				
@@ -576,13 +577,11 @@ namespace SVEC {
 			typedef typename P::Fluxes Fluxes;
 			typedef typename P::Gradients Gradients;
 			
-			double sqrtdetgam;
-			DensitiedPDE(const double* const Q) : P(Q) {
-				sqrtdetgam = sqrt(this->gam.det); }
+			DensitiedPDE(const double* const Q) : P(Q) {}
 
 			void weight(State& state) {
 				// For the quick and dirty, assume all MHD parts to be next to each other
-				for(int i=0; i<MHD::size; i++) state.Q[i] *= sqrtdetgam;
+				for(int i=0; i<MHD::size; i++) state.Q[i] *= this->gam.sqdet;
 			}
 			
 			void flux(Fluxes& flux) {
@@ -632,12 +631,12 @@ namespace SVEC {
 		
 		struct Prim2ConsDensified : public Prim2ConsRaw {
 			Prim2ConsDensified(double*const Q_, const double* const V) : Prim2ConsRaw(Q_,V) {
-				double sqrtdetgam = sqrt(gam.det);
-				
 				// For the quick and dirty, assume all MHD parts to be next to each other
 				for(int i=0; i<Hydro::size; i++)
-					Q[i] = Q[i] * sqrtdetgam;
+					Q[i] = Q[i] * gam.sqdet;
 			}
+			
+			void copyFullStateVector(); ///< Copy state vector incl Bmag*sqrt(detgam).
 		};
 		
 		// this is the actual Prim2Cons you should use

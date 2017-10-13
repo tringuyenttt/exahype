@@ -46,6 +46,13 @@ void GRMHD::Prim2ConsRaw::copyFullStateVector() {
 	copy_adm(Q);
 }
 
+void GRMHD::Prim2ConsDensified::copyFullStateVector() {
+	Prim2ConsRaw::copyFullStateVector();
+	// fix magnetic entries (this can be troublesome if there are no magnetic entries).
+	Magneto::Shadow mag(Q);
+	mag.multiply_magneto(gam.sqdet);
+}
+
 /*
 void GRMHD::Prim2Cons::toTensorDensity() {
 	// Multiply sqrt(det(g)) on all hydro variables in order to get tensor densities.

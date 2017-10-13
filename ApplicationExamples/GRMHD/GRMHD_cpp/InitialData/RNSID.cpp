@@ -3,6 +3,8 @@
 #include "InitialData/InitialData.h"
 
 using SVEC::GRMHD::Prim2Cons;
+#include "PDE/tensish.cpph"
+using namespace tensish;
 
 #ifndef RNSID_AVAILABLE
 
@@ -29,12 +31,14 @@ rnsid::rnsid() {
 	
 	// mapping for quantity vector
 	GRMHD::AbstractGRMHDSolver_ADERDG::VariableShortcuts var;
-	id->adm_idx.gxx = var.gij + 0;
-	id->adm_idx.gxy = var.gij + 1;
-	id->adm_idx.gxz = var.gij + 2;
-	id->adm_idx.gyy = var.gij + 3;
-	id->adm_idx.gyz = var.gij + 4;
-	id->adm_idx.gzz = var.gij + 5;
+	
+	// mind the order of Gij in the particular GRMHD application! (F vs C)
+	id->adm_idx.gxx = var.gij + sym::index(0,0);
+	id->adm_idx.gxy = var.gij + sym::index(0,1);
+	id->adm_idx.gxz = var.gij + sym::index(0,2);
+	id->adm_idx.gyy = var.gij + sym::index(1,1);
+	id->adm_idx.gyz = var.gij + sym::index(1,2);
+	id->adm_idx.gzz = var.gij + sym::index(2,2);
 	
 	id->adm_idx.alp    = var.lapse;
 	id->adm_idx.shift1 = var.shift + 0;
@@ -66,8 +70,11 @@ void rnsid::Interpolate(const double* x, double t, double* Q) {
 		V[4] = atmo_press;
 	}
 	
+	//NVARS(i) printf("V[%d]=%e\n", i, V[i]);
 	for(int i=0;i<nVar;i++) Q[i] = 0.0;
-	Prim2Cons(Q, V).copyFullStateVector();
+	Prim2Cons p2c(Q, V);
+	//NVARS(i) printf("Q[%d]=%e\n", i, Q[i]);
+	p2c.copyFullStateVector();
 }
 
 #endif /* RNSID_AVAILABLE */

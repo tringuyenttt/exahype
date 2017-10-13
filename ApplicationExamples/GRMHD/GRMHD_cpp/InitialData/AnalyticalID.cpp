@@ -27,7 +27,7 @@ AlfenWave::AlfenWave(const double* const x, const double t, double* Q) : VacuumI
 	*/
 
 	constexpr double time_offset = 1.0;
-	constexpr double gamma = GRMHD::Parameters::gamma;
+	constexpr double gamma = SVEC::GRMHD::Parameters::gamma;
 
 	double eta  = 1.;
 	double B0   = 1.0;

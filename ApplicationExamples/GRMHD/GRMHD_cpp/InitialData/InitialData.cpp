@@ -8,7 +8,7 @@ InitialDataCode& InitialDataCode::getInstance() {
 	static InitialDataCode* id = nullptr;
 	if(id) return *id;
 
-	if(1) {
+	if(0) {
 		logInfo("InitialDataCode", "Loading AlfenWaveCons Initial Data");
 		id = new AnalyticalID<AlfenWaveCons>;
 	}
@@ -18,7 +18,7 @@ InitialDataCode& InitialDataCode::getInstance() {
 		id = new pizzatov();
 	}
 	
-	if(0) {
+	if(1) {
 		logInfo("getInstance()", "Loading RNSID Initial Data");
 		id = new rnsid();
 	}

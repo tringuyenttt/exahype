@@ -70,10 +70,6 @@ constexpr bool debug_tensish = true;
 
 #include <algorithm> // fill_n
 
-// probably helpful...
-#define struct_tensish_stored(NAME, PARENT, STORAGENAME, SIZE) \
-	struct NAME : public PARENT { double STORAGENAME[SIZE]; NAME() : PARENT(STORAGENAME) {} };
-
 namespace tensish {
 	// helper
 	inline const double SQ(double x) { return x*x; }
@@ -402,7 +398,8 @@ namespace tensish {
 	struct metric3 {
 		sym::stored_D up;
 		const sym::const_shadow_D lo;
-		double det;
+		double det; ///< The determinant of the metric
+		double sqdet; ///< sqrt(abs(determinant))
 		
 		metric3(const double* const lo_)
 			: lo(lo_)
@@ -410,6 +407,7 @@ namespace tensish {
 		
 		void complete_from_lower() {
 			det = sym::det(lo);
+			sqdet = std::sqrt(std::abs(det));
 
 			// quick fix, should use templates and static_assert(N >= 0 && N <= 10, "N out of bounds!");
 			// instead.
@@ -442,7 +440,6 @@ namespace tensish {
 			target.lo=0; DFOR(i) CONTRACT(j) target.lo(i) += lo(i,j)*source.up(j); }
 		template<class UpLo> void raise_vec(UpLo& source) { raise_vec(source,source); }
 		template<class UpLo> void lower_vec(UpLo& source) { raise_vec(source,source); }
-
 	};
 
 } // namespace tensish
