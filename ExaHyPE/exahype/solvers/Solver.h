@@ -21,6 +21,8 @@
 #include <iostream>
 #include <vector>
 
+#include "tarch/compiler/CompilerSpecificSettings.h"
+#include "tarch/multicore/MulticoreDefinitions.h"
 #include "tarch/la/Vector.h"
 #include "tarch/multicore/BooleanSemaphore.h"
 
@@ -35,6 +37,11 @@
 #include "exahype/profilers/simple/NoOpProfiler.h"
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+
+#if defined(CompilerICC) && defined(SharedTBB)
+// See: https://www.threadingbuildingblocks.org/tutorial-intel-tbb-scalable-memory-allocator
+#include <tbb/cache_aligned_allocator.h> // prevents false sharing
+#endif
 
 // Some helpers
 constexpr int power(int basis, int exp) {
@@ -65,26 +72,35 @@ namespace exahype {
    *
    * All solvers must store the face data they send to neighbours at persistent addresses.
    */
+  #ifdef ALIGNMENT
+  #if defined(SharedTBB)
+  typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
+  #else
+  typedef peano::heap::HeapAllocator<double, ALIGNMENT > AlignedAllocator;
+  #endif
+  typedef peano::heap::AlignedDoubleSendReceiveTask<ALIGNMENT> AlignedDoubleSendReceiveTask;
+  #endif
+
   #if ALIGNMENT==16
   typedef peano::heap::DoubleHeap<
-    peano::heap::SynchronousDataExchanger<   double, true, peano::heap::AlignedDoubleSendReceiveTask<16>, std::vector< double, peano::heap::HeapAllocator<double, 16> > >,
-    peano::heap::SynchronousDataExchanger<   double, true, peano::heap::AlignedDoubleSendReceiveTask<16>, std::vector< double, peano::heap::HeapAllocator<double, 16> > >,
-    peano::heap::RLEBoundaryDataExchanger< double, true, peano::heap::AlignedDoubleSendReceiveTask<16>, std::vector< double, peano::heap::HeapAllocator<double, 16> > >,
-    std::vector< double, peano::heap::HeapAllocator<double, 16 > >
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    std::vector< double, AlignedAllocator >
   >     DataHeap;
   #elif ALIGNMENT==32
   typedef peano::heap::DoubleHeap<
-    peano::heap::SynchronousDataExchanger<   double, true, peano::heap::AlignedDoubleSendReceiveTask<32>, std::vector< double, peano::heap::HeapAllocator<double, 32> > >,
-    peano::heap::SynchronousDataExchanger<   double, true, peano::heap::AlignedDoubleSendReceiveTask<32>, std::vector< double, peano::heap::HeapAllocator<double, 32> > >,
-    peano::heap::RLEBoundaryDataExchanger< double, true, peano::heap::AlignedDoubleSendReceiveTask<32>, std::vector< double, peano::heap::HeapAllocator<double, 32> > >,
-    std::vector< double, peano::heap::HeapAllocator<double, 32 > >
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    std::vector< double, AlignedAllocator >
   >     DataHeap;
   #elif ALIGNMENT==64
   typedef peano::heap::DoubleHeap<
-    peano::heap::SynchronousDataExchanger<   double, true, peano::heap::AlignedDoubleSendReceiveTask<64>, std::vector< double, peano::heap::HeapAllocator<double, 64> > >,
-    peano::heap::SynchronousDataExchanger<   double, true, peano::heap::AlignedDoubleSendReceiveTask<64>, std::vector< double, peano::heap::HeapAllocator<double, 64> > >,
-    peano::heap::RLEBoundaryDataExchanger< double, true, peano::heap::AlignedDoubleSendReceiveTask<64>, std::vector< double, peano::heap::HeapAllocator<double, 64> > >,
-    std::vector< double, peano::heap::HeapAllocator<double, 64 > >
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::SynchronousDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    peano::heap::RLEBoundaryDataExchanger< double, true, AlignedDoubleSendReceiveTask, std::vector< double, AlignedAllocator > >,
+    std::vector< double, AlignedAllocator >
   >     DataHeap;
   #elif defined(ALIGNMENT)
   #error ALIGNMENT choice not supported
