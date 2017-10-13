@@ -22,7 +22,9 @@
  * We use Peano's logging
  */
 #include "tarch/logging/Log.h"
-
+{%- if patchwiseAdjust %}
+#include "tarch/la/Vector.h"
+{%- endif %}
 
 namespace {{project}}{
   class {{solver}};
@@ -46,14 +48,10 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
     
 {%- if patchwiseAdjust %}
     /**
+     * Patchwise adjust
      * @TODO LR : Document
      */
-    void adjustPatchSolution(
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double t,
-      const double dt,
-      double* luh);
+    void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) override;
 {%- else %}
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
