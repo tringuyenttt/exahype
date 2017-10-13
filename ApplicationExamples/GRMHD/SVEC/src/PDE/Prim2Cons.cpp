@@ -8,7 +8,7 @@ constexpr bool debug_p2c = false;
 #define S(x) printf(#x " = %e\n", x);
 #define SI(x) {DFOR(i) S(x(i)); }
 
-void GRMHD::Prim2Cons::prepare() {
+void GRMHD::Prim2ConsRaw::prepare() {
 	constexpr double gamma = GRMHD::Parameters::gamma;
 	double epsilon;
 
@@ -32,14 +32,14 @@ void GRMHD::Prim2Cons::prepare() {
 	enth = 1 + epsilon + press / rho;
 }
 
-void GRMHD::Prim2Cons::perform() {
+void GRMHD::Prim2ConsRaw::perform() {
 	// The hydro + magneto exact known prim2cons
 	Dens = rho * W;
 	DFOR(i) Si.lo(i) = Dens*enth*W*vel.lo(i) + BmagBmag*vel.lo(i) - BmagVel*Bmag.lo(i);
 	tau = Dens*enth*W - press + 0.5*(BmagBmag*(1+VelVel) - BmagVel*BmagVel);
 }
 
-void GRMHD::Prim2Cons::copyFullStateVector() {
+void GRMHD::Prim2ConsRaw::copyFullStateVector() {
 	// 1) Assume that Conserved Hydro vars have been set
 	// 2) Copy Magneto variables
 	copy_magneto(Q);

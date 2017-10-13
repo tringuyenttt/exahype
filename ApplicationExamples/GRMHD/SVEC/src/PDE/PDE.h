@@ -380,6 +380,38 @@ namespace SVEC {
 		typedef TwoTheories::StateVector<const double* const, Hydro::Conserved::ConstShadowExtendable, Magneto::ConstShadowExtendable> ConstShadowExtendable;
 		struct Stored : public Shadow { double MHDStorage[size]; Stored() : Shadow(MHDStorage) {} };
 	} // ns MHD
+	
+	// Generic PDE:
+	/*
+	template<class System>
+	struct GenericPDE : public System {
+		// the System defines the types of the constituents:
+		typedef typename System::State State;
+		typedef typename System::Fluxes Fluxes;
+		typedef typename System::Gradients Gradients;
+		
+		GenericPDE(const double* const Q) : System(Q) {}
+	
+		/// Conserved fluxes
+		void flux(Fluxes& flux);
+	
+		/// Not to be used today.
+		void eigenvalues(State& lambda, const int d);
+	
+		/// The BgradQ
+		void nonConservativeProduct(const Gradients& grad, State& ncp);
+	
+		/// Sets the algebraic source
+		void algebraicSource(State& Source_data);
+		
+		/// Adds the algebraic source (assumes Source=0 or similiar)
+		void addAlgebraicSource(State& Source_data);
+		
+		/// Computes the fusedSource = algebraicSource - NCP. This is the classical RightHandSide.
+		void fusedSource(const Gradients& grad, State& source);
+	};
+	*/
+	
 
 	// Naming suggestion: "GRMHD" for this namespace and "SVEC" for the parent.
 	namespace GRMHD { // need a better name
@@ -392,12 +424,7 @@ namespace SVEC {
 		// which can be copied, mapped and addressed easier.
 		struct Stored : public Shadow { double GRMHDStorage[size]; Stored() : Shadow(GRMHDStorage) {} };
 		
-		typedef GRMHD::Shadow Source;
-		typedef GRMHD::Shadow NCP;
-		typedef GRMHD::Shadow Flux;
-		typedef GRMHD::Shadow Eigenvalues;
-		typedef ConstShadow Gradient;
-		
+	
 		/**
 		 * The link between tensor densities and tensors: QDensity is a real conserved
 		 * vector and we remove the sqrt(gam.det)
@@ -422,9 +449,6 @@ namespace SVEC {
 		// retrieve the lower/upper components of gradients, we don't even allocate storage or
 		// provide conversion strategies.
 		
-		/// A shadow of Gradients in each direction: partial_i * something.
-		//typedef ConstLo<vec::const_shadow_D<Gradient> > Gradients;
-
 		/**
 		* The PDE structure wraps ("shadows") the read-only conserved vector Q in order to provide
 		* the possibility to compute the flux and the source terms. It inherits the conserved
@@ -497,74 +521,79 @@ namespace SVEC {
 		
 			
 		/// a temporary space for global system parameters
-		namespace Parameters {		
+		struct Parameters {		
 			// Ideal EOS:
 			// 4/3 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
 			// 2.0 used for TOV stars
-			constexpr double gamma = 2.0;
+			static constexpr double gamma = 2.0;
 	
 			// Divergence cleaning:
 			// 1.0 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
-			constexpr double DivCleaning_a = 1.0;
-		}
-
-		struct PDE : public Cons2Prim::Stored {
-			// Constraint damping constant
-			static constexpr double damping_term_kappa = Parameters::DivCleaning_a;
-			
-			PDE(const double* const Q) : Cons2Prim::Stored(Q) {}
-			
-			// function to add the tensor density factors
-			void mult_density(Shadow& State) {
-				double sqrtdetgam = sqrt(gam.det);
-				// For the quick and dirty, assume all MHD parts to be next to each other
-				for(int i=0; i<MHD::size; i++) State.Q[i] *= sqrtdetgam;
-			}
+			static constexpr double DivCleaning_a = 1.0;
+		};
 		
-			// The conserved fluxes moved to their own subclass in order to be
-			// able to compute them into only one direction
-			struct Conserved;
+		/**
+		 * The raw PDE makes use of sqrt(det(g_ij)) stripping of the input state and
+		 * adding on the output state. It also gets the full set of Primitives, the full
+		 * ADM variables and all variables extended (i.e. vel_lo and vel^up).
+		 * Therefore it is ready to do something.
+		 **/
+		struct RawPDE : public Cons2Prim::Stored, public Parameters {
+			// the System defines the types of the constituents:
+			typedef GRMHD::Shadow State;
+			typedef const GRMHD::ConstShadow Gradient;
+			typedef GenericLo<generic::shadow<Gradient, TDIM>, Gradient*> Gradients;
+			typedef GRMHD::Shadow Flux;
+			typedef GenericUp<generic::shadow<Flux, TDIM>, Flux*> Fluxes;
+			
+			RawPDE(const double* const Q) : Cons2Prim::Stored(Q) {}
+		
+			/// Conserved fluxes
+			void flux(Fluxes& flux);
 		
 			/// Not to be used today.
-			void eigenvalues(Eigenvalues& lambda, const int d);
+			void eigenvalues(State& lambda, const int d);
 		
 			/// The BgradQ
-			template<class Gradients>
-			void nonConservativeProduct(const Gradients& grad, NCP& ncp);
+			void nonConservativeProduct(const Gradients& grad, State& ncp);
 		
-			/// Optimized version which does not need the C2P invocation:
 			/// Sets the algebraic source
-			template<class StateVector>
-			static void algebraicSource(const StateVector& Q, Source& Source_data);
+			void algebraicSource(State& Source_data);
 			
-			/// Optimized version which does not need the C2P invocation:
 			/// Adds the algebraic source (assumes Source=0 or similiar)
-			template<class StateVector>
-			static void addAlgebraicSource(const StateVector& Q, Source& Source_data);
-			
-			//void algebraicSource(Source& Source_data);
-			//void addAlgebraicSource(Source& Source_data);
+			void addAlgebraicSource(State& Source_data);
 			
 			/// Computes the fusedSource = algebraicSource - NCP. This is the classical RightHandSide.
-			template<class Gradients>
-			void fusedSource(const Gradients& grad, Source& source);
+			void fusedSource(const Gradients& grad, State& source);
 		};
 		
-		/// Eigenvalues: Currently trivially 1. We provide static access in order
-		/// to avoid unneccessary boilerplate work.
-		//static void eigenvalues(const double* const Q, const int d, double* lambda);
-		
-		// Compute a single flux in one direction
-		struct PDE::Conserved : public PDE {
-			Mixed<sym::stored_D> Sij; ///< Sij is the 3-Energy-Momentum tensor: We only need S^i_j in the flux.
-			Up<vec::stored_D> zeta;   ///< Zeta is the transport velocity (curly V in BHAC paper)
-			Conserved(const double* const Q) : PDE(Q) { prepare(); }
-			void prepare();
+		/**
+		 * Add the sqrt(det(g_ij)) factor to all MHD variables on every PDE output.
+		 **/
+		template<class P>
+		struct DensitiedPDE : public P {
+			typedef typename P::State State;
+			typedef typename P::Fluxes Fluxes;
+			typedef typename P::Gradients Gradients;
 			
-			// Compute a flux in a certain direction
-			void flux(Flux& flux, const int k);
+			double sqrtdetgam;
+			DensitiedPDE(const double* const Q) : P(Q) {
+				sqrtdetgam = sqrt(this->gam.det); }
+
+			void weight(State& state) {
+				// For the quick and dirty, assume all MHD parts to be next to each other
+				for(int i=0; i<MHD::size; i++) state.Q[i] *= sqrtdetgam;
+			}
+			
+			void flux(Fluxes& flux) {
+				P::flux(flux); DFOR(i) weight(flux.up(i)); }
+			void nonConservativeProduct(const Gradients& grad, State& ncp) {
+				P::nonConservativeProduct(grad,ncp); weight(ncp); }
+			void addAlgebraicSource(State& source) {
+				P::addAlgebraicSource(source); weight(source); }
 		};
 		
+		typedef DensitiedPDE<RawPDE> PDE;
 		
 		/**
 		* The analytic GRHydro Primitive to Conserved conversion.
@@ -579,7 +608,7 @@ namespace SVEC {
 		*
 		* Use `copyFullStateVector` if you want to copy the Magneto and ADM from V to Q.
 		**/
-		struct Prim2Cons : public Hydro::Conserved::Shadow, public Magneto::ConstShadowExtendable, public Hydro::Primitives::ConstShadowExtendable, public ADMBase::Full {
+		struct Prim2ConsRaw : public Hydro::Conserved::Shadow, public Magneto::ConstShadowExtendable, public Hydro::Primitives::ConstShadowExtendable, public ADMBase::Full {
 			double W, enth, BmagBmag, BmagVel, VelVel;
 			
 			/**
@@ -589,7 +618,7 @@ namespace SVEC {
 			* However, if you have a mixed V-Q setting (i.e. B in Q, etc)
 			* then you need a different mapping.
 			**/
-			Prim2Cons(double*const Q_, const double* const V) :
+			Prim2ConsRaw(double*const Q_, const double* const V) :
 				Hydro::Conserved::Shadow(Q_),
 				Magneto::ConstShadowExtendable(V),
 				Hydro::Primitives::ConstShadowExtendable(V),
@@ -601,8 +630,8 @@ namespace SVEC {
 			void copyFullStateVector(); ///< See Cons2Prim copyFullStateVector
 		};
 		
-		struct Prim2ConsDensified : public Prim2Cons {
-			Prim2ConsDensified(double*const Q_, const double* const V) : Prim2Cons(Q_,V) {
+		struct Prim2ConsDensified : public Prim2ConsRaw {
+			Prim2ConsDensified(double*const Q_, const double* const V) : Prim2ConsRaw(Q_,V) {
 				double sqrtdetgam = sqrt(gam.det);
 				
 				// For the quick and dirty, assume all MHD parts to be next to each other
@@ -610,6 +639,9 @@ namespace SVEC {
 					Q[i] = Q[i] * sqrtdetgam;
 			}
 		};
+		
+		// this is the actual Prim2Cons you should use
+		typedef Prim2ConsDensified Prim2Cons;
 	} // ns GRMHD
 	
 	/**

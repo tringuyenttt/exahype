@@ -23,8 +23,7 @@ DIMSTRING=Dim2
 all:
 	g++ -c -g3 --std=c++11 -D$(DIMSTRING) -D$(TEST) -I$(GRMHD_Cinc) -I../ -I$(PEANO_INC) -I$(EXAHYPE_INC) -Wall \
 		indi-test.cc $(GRMHD_Cinc)/InitialData/AnalyticalID.cpp \
-		../PDE/Cons2Prim.cpp ../PDE/Prim2Cons.cpp
-#		 ../PDE/PDE.cpp 
+		../PDE/Cons2Prim.cpp ../PDE/Prim2Cons.cpp ../PDE/PDE-GRMHD.cpp
 	
 	g++ -g3 -oinditest.out \
 		$(FortranInitialData)/InitialDataFort.o \

@@ -11,7 +11,6 @@
 #include <cmath> // NAN
 
 using namespace SVEC;
-using namespace GRMHD;
 
 /******************************************************************************
  * Status of the PDE system:
@@ -23,31 +22,32 @@ using namespace GRMHD;
 #define S(x) printf(#x " = %e\n", x);
 #define SI(x) S(x(0));S(x(1));S(x(2));
 
-void PDE::Conserved::prepare() {
+void GRMHD::RawPDE::flux(Fluxes& flux) {
+	Mixed<sym::stored_D> Sij; ///< Sij is the 3-Energy-Momentum tensor: We only need S^i_j in the flux.
+	Up<vec::stored_D> zeta;   ///< Zeta is the transport velocity (curly V in BHAC paper)
+
 	// Sij is the 3-Energy-Momentum tensor: We only need S^i_j in the flux.
 	SYMFOR(i,j) Sij.ul(i,j) = Si.up(i)*vel.lo(j) + ptot*delta(i,j) - Bmag.up(i)*Bmag.lo(j)/WW - BmagVel* vel.up(i) * Bmag.lo(j);
 	
 	// Zeta is the transport velocity (curly V in BHAC paper)
 	DFOR(k) zeta.up(k) = alpha*vel.up(k) - beta.up(k);
+	
+	// F^k: flux in direction k, i.e. think of flux being flux.up(k).
+	DFOR(k) {
+		flux.up(k).Dens = Dens * zeta.up(k);
+		DFOR(i) flux.up(k).Si.lo(i) = alpha*Sij.ul(k,i) - beta.up(k)*Si.lo(i);
+		flux.up(k).tau = alpha*(Si.up(k) - vel.up(k)*Dens) - beta.up(k)*tau;
+		DFOR(j) flux.up(k).Bmag.up(j) = zeta.up(k)*Bmag.up(j) - zeta.up(j)*Bmag.up(k);
+		
+		// Constraint damping contributions:
+		DFOR(j) flux.up(k).Bmag.up(j) -= Bmag.up(k)*beta.up(j);
+		flux.up(k).phi = alpha*Bmag.up(k) - phi*beta.up(k);
+	}
+	
+	//mult_density(flux);
 }
 
-void PDE::Conserved::flux(Flux& flux, const int k) {
-	// F^k: flux in direction k.
-
-	flux.Dens = Dens * zeta.up(k);
-	DFOR(i) flux.Si.lo(i) = alpha*Sij.ul(k,i) - beta.up(k)*Si.lo(i);
-	flux.tau = alpha*(Si.up(k) - vel.up(k)*Dens) - beta.up(k)*tau;
-	DFOR(j) flux.Bmag.up(j) = zeta.up(k)*Bmag.up(j) - zeta.up(j)*Bmag.up(k);
-	
-	// Constraint damping contributions:
-	DFOR(j) flux.Bmag.up(j) -= Bmag.up(k)*beta.up(j);
-	flux.phi = alpha*Bmag.up(k) - phi*beta.up(k);
-	
-	mult_density(flux);
-}
-
-template<class Gradients>
-void PDE::nonConservativeProduct(const Gradients& grad, Source& ncp) {
+void GRMHD::RawPDE::nonConservativeProduct(const Gradients& grad, State& ncp) {
 	// This is the NCP = matrixB * gradQ
 	
 	// Sij is the 3-Energy-Momentum tensor. We need S^{ij} and S^i_j in the NCP.	
@@ -100,42 +100,39 @@ void PDE::nonConservativeProduct(const Gradients& grad, Source& ncp) {
 	}
 	
 	// phi
-	ncp.phi = 0; // remember the algebraic source: alpha * damping_term_kappa * phi
+	ncp.phi = 0; // remember the algebraic source: alpha * DivCleaning_a * phi
 	CONTRACT(k) ncp.phi -= Bmag.up(k) * grad.lo(k).alpha;
 	CONTRACT(k) ncp.phi += phi * grad.lo(k).beta.up(k);
 	CONTRACT3(k,l,m) ncp.phi += alpha/2 * gam.up(l,m) * beta.up(k) * grad.lo(k).gam.lo(l,m);
 	
-	mult_density(ncp);
+	// mult_density(ncp);
 }
 
-template<class StateType>
-void PDE::algebraicSource(const StateType& Q, Source& source) {
+void GRMHD::RawPDE::algebraicSource(State& source) {
 	source.Dens = source.tau = source.Si.lo = source.Bmag.up = source.phi = 0;
-	addAlgebraicSource<StateType>(Q, source);
+	addAlgebraicSource(source);
 }
 
-template<class StateType>
-void PDE::addAlgebraicSource(const StateType& Q, Source& source) {
-	source.phi -= Q.alpha * damping_term_kappa * Q.phi; // algebraic source
+void GRMHD::RawPDE::addAlgebraicSource(State& source) {
+	source.phi -= alpha * DivCleaning_a * phi; // algebraic source
 	// CONTRACT2(l,m) Source.tau += lapse * Sij.up(l,m) * Kextr.lo(l,m);
 	
 	// tensor density:
-	source.phi *= sqrt(Q.gam.det);
+	// source.phi *= sqrt(Q.gam.det);
 }
 
-template<class Gradients>
-void PDE::fusedSource(const Gradients& grad, Source& source) {
+void GRMHD::RawPDE::fusedSource(const Gradients& grad, State& source) {
 	// This is the fusedSource = -NCP + AlgebraicSource
 
 	// 1. Compute NCP
-	nonConservativeProduct<Gradients>(grad, source);
+	nonConservativeProduct(grad, source);
 	// 2. Flip sign (move from lhs to rhs)
 	TDO(m,MHD::size) source.Q[m] = -source.Q[m];
 	// 3. Add the algebraic source
-	addAlgebraicSource<PDE>(*this, source);
+	addAlgebraicSource(source);
 }
 
-void PDE::eigenvalues(Eigenvalues& lambda, const int d) {
+void GRMHD::RawPDE::eigenvalues(State& lambda, const int d) {
 	//std::fill_n(lambda, nVar, 1.0);
 	TDO(m,GRMHD::size) lambda.Q[m] = 1.0;
 	// Trivial, should not be used.

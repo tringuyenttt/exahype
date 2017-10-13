@@ -1,5 +1,7 @@
 
 // Independently:
+
+
 #if defined(Dim2)
 #define DIMENSIONS 2
 #elif defined(Dim3)
@@ -17,8 +19,8 @@ using namespace std;
 using namespace SVEC;
 
 #include "PDE/GRMHD-for-ExaHyPE.h"
-#include "PDE/PDE.cpph"
-using namespace GRMHDAdapterForExaHyPE;
+using namespace GRMHD;
+using namespace ExaHyPEAdapter;
 
 #include <iostream>
 #include <fstream>

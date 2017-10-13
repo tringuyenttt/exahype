@@ -106,12 +106,35 @@ namespace tensish {
 		};
 	} // ns dummy
 	
+	namespace generic {
+		// Storing anything. This is a POD without constructor.
+		template<typename T, int N> struct stored {
+			T data[N];
+			stored() = default;
+			T& operator()(int j) { return data[j]; }
+			const T& operator()(int j) const { return data[j]; }
+			T operator=(T val) { std::fill(data,N,val); return val; }
+		};
+		
+		// has N maybe for debugging or compile time bound checks
+		template<typename T, int N> struct shadow {
+			T *const data;
+			constexpr shadow(T *const foreign) : data(foreign) {}
+			T& operator()(int j) { return data[j]; }
+			const T& operator()(int j) const { return data[j]; }
+			T operator=(T val) { std::fill(data,N,val); return val; }
+		};
+	} // ns generic
+	
 	/**
 	* Vector (1-dimensional linear storage, i.e. just a fixed length array).
 	**/
 	namespace vec {
 		/// Storing an array and allowing () accss.
-		/// This is a lightweight version of std::array from the STL.
+		/// This is a lightweight version of std::array from the STL, but with the 
+		/// bound checks if debug_tensish is active.
+		/// TODO: Can we do similiar like http://de.cppreference.com/w/cpp/container/array/get
+		/// i.e compile time bound checks, hidden behind a constexpr operator()(int) interface?
 		template<int N> struct stored {
 			double data[N];
 			stored() { if(debug_tensish) std::fill_n(data,N,NAN); }
@@ -147,6 +170,16 @@ namespace tensish {
 		typedef stored<TDIM> stored_D;
 		typedef shadow<TDIM> shadow_D;
 		typedef const_shadow<TDIM> const_shadow_D;
+		
+		// a special structure for the 2vs3 dimensions problem.
+		// Does not really work. Is probably nowhere used.
+		template<typename T>
+		struct the2vs3guy {
+			T data[3]; // can suck up to three values but never exposes the third one
+			the2vs3guy() = default;
+			T& operator()(int j) { return (j<2)?data[j]:scalar::zero(); }
+			const T& operator()(int j) const { return (j<2)?data[j]:scalar::zero(); }
+		};
 	} // ns vec
 
 	/**
@@ -247,11 +280,45 @@ namespace tensish {
 	/*  Semantics                                                                */
 	/*                                                                           */
 	/*****************************************************************************/ 
+	
+	/// A generic up/lo type for generic types
+	template<class U, class T> struct GenericUp {
+		U up;
+		GenericUp() = default;
+		GenericUp(T payload) : up(payload) {}
+	};
+	
+	template<class L, class T> struct GenericLo {
+		L lo;
+		GenericLo() = default;
+		GenericLo(T payload) : lo(payload) {}
+	};
+	
+	template<class U, class L, class T> struct GenericUpLo {
+		U up; L lo;
+		
+		struct InitLo {
+			U up; L lo;
+			InitLo(T payload) : lo(payload) {}
+		};
+		struct InitUp {
+			U up; L lo;
+			InitUp(T payload) : up(payload) {}
+		};
+		struct ConstLo {
+			U up; const L lo;
+			ConstLo(T payload) : lo(payload) {}
+		};
+		struct ConstUp {
+			const U up; L lo;
+			ConstUp(T payload) : up(payload) {}
+		};
+	};
 
 	/// Represents a fully contravariant tensor (only upper indices)
 	template<class U> struct Up {
 		U up;
-		Up() {}
+		Up() = default;
 		Up(double* const payload) : up(payload) {}
 	};
 
