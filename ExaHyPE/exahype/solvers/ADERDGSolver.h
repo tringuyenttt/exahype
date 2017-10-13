@@ -937,7 +937,7 @@ public:
    * to change the allocated size independently of the solver parameters.
    * For example to add padding forthe optimised kernel
    */
-  virtual int getTempSpaceTimeUnknownsSize()      const {return getSpaceTimeDataPerCell()+getDataPerCell();} // TODO function should be renamed
+  virtual int getTempSpaceTimeUnknownsSize()      const {return getSpaceTimeDataPerCell();} // TODO function should be renamed
   virtual int getTempSpaceTimeFluxUnknowns0Size() const {return getSpaceTimeFluxUnknownsPerCell();}
   virtual int getTempSpaceTimeFluxUnknowns1Size() const {return getSpaceTimeFluxUnknownsPerCell();}
   virtual int getTempUnknownsSize()               const {return getDataPerCell();} // TODO function should be renamed
@@ -948,7 +948,7 @@ public:
   virtual int getBndFluxSize()                    const {return getUnknownsPerFace();} // TODO function should be renamed
   virtual int getBndFluxTotalSize()               const {return getUnknownsPerCellBoundary();} // TODO function should be renamed
   virtual int getTempStateSizedVectorsSize()      const {return getNumberOfVariables()+getNumberOfParameters();} //dataPoints
-  
+
   virtual bool alignTempArray()                   const {return false;}
 
   /**
