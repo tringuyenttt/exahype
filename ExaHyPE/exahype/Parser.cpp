@@ -275,11 +275,17 @@ int exahype::Parser::getNumberOfThreads() const {
   assertion(isValid());
   std::string token = getTokenAfter("shared-memory", "cores");
   logDebug("getNumberOfThreads()", "found token " << token);
-  int result = std::stoi(token);
-  if (result == 0) {
+
+  int result = 0;
+  try {
+    result = std::stoi(token);
+  }
+  catch (const std::invalid_argument& ia) {}
+
+  if (result <= 0) {
     logError("getNumberOfThreads()",
-             "Invalid number of cores set or token shared-memory missing: "
-                 << token);
+        "Invalid number of cores set or token shared-memory missing: "
+        << token);
     result = 1;
     _interpretationErrorOccured = true;
   }
@@ -292,7 +298,13 @@ tarch::la::Vector<DIMENSIONS, double> exahype::Parser::getDomainSize() const {
   tarch::la::Vector<DIMENSIONS, double> result;
 
   token = getTokenAfter("computational-domain", "dimension", 0);	
-  int dim = std::stoi(token);
+
+  int dim = -1;
+  try {
+    dim = std::stoi(token);
+  }
+  catch (const std::invalid_argument& ia) {}
+
   if (dim < DIMENSIONS) {
     logError("getDomainSize()",
              "dimension: value "<< token << " in specification file" <<
@@ -301,22 +313,25 @@ tarch::la::Vector<DIMENSIONS, double> exahype::Parser::getDomainSize() const {
     return result;
   }
 
-  token = getTokenAfter("computational-domain", "width", 0);
-  result(0) = std::stof(token);
-  token = getTokenAfter("computational-domain", "width", 1);
-  result(1) = std::stof(token);
-#if DIMENSIONS == 3
-  token = getTokenAfter("computational-domain", "width", 2);	
-  if (token.compare("offset")==0) {
-    logError("getDomainSize()",
-             "width: not enough values specified for " <<
-             DIMENSIONS<< " dimensions");
-    _interpretationErrorOccured = true;
-    return result;
-  }
-  
-  result(2) = std::stof(token);
-#endif
+  try {
+    token = getTokenAfter("computational-domain", "width", 0);
+    result(0) = std::stod(token);
+    token = getTokenAfter("computational-domain", "width", 1);
+    result(1) = std::stod(token);
+    #if DIMENSIONS == 3
+    token = getTokenAfter("computational-domain", "width", 2);
+    if (token.compare("offset")==0) {
+      logError("getDomainSize()",
+          "width: not enough values specified for " <<
+          DIMENSIONS<< " dimensions");
+      _interpretationErrorOccured = true;
+      return result;
+    }
+    result(2) = std::stod(token);
+    #endif
+  } catch (const std::invalid_argument& ia) {}
+
+  logDebug("getDomainSize()", "found size " << result);
   return result;
 }
 
@@ -324,24 +339,27 @@ tarch::la::Vector<DIMENSIONS, double> exahype::Parser::getOffset() const {
   assertion(isValid());
   std::string token;
   tarch::la::Vector<DIMENSIONS, double> result;
-  token = getTokenAfter("computational-domain", "offset", 0);
-  result(0) = std::stof(token);
-  token = getTokenAfter("computational-domain", "offset", 1);
-  result(1) = std::stof(token);
-#if DIMENSIONS == 3 
-  token = getTokenAfter("computational-domain", "offset", 2);	
-  if (token.compare("end-time")==0) {
-    logError("getOffset()",
-             "offset: not enough values specified for " <<
-             DIMENSIONS<< " dimensions");
-    _interpretationErrorOccured = true;
-    return result;
-  }
 
-  token = getTokenAfter("computational-domain", "offset", 2);
-  result(2) = std::stof(token);
-#endif
-  logDebug("getSize()", "found offset " << result);
+  try {
+    token = getTokenAfter("computational-domain", "offset", 0);
+    result(0) = std::stod(token);
+    token = getTokenAfter("computational-domain", "offset", 1);
+    result(1) = std::stod(token);
+    #if DIMENSIONS == 3
+    token = getTokenAfter("computational-domain", "offset", 2);
+    if (token.compare("end-time")==0) {
+      logError("getOffset()",
+               "offset: not enough values specified for " <<
+               DIMENSIONS<< " dimensions");
+      _interpretationErrorOccured = true;
+      return result;
+    }
+    token = getTokenAfter("computational-domain", "offset", 2);
+    result(2) = std::stod(token);
+    #endif
+  } catch (const std::invalid_argument& ia) {}
+
+  logDebug("getOffset()", "found offset " << result);
   return result;
 }
 
@@ -351,8 +369,7 @@ std::string exahype::Parser::getMulticorePropertiesFile() const {
   return result;
 }
 
-exahype::Parser::MPILoadBalancingType exahype::Parser::getMPILoadBalancingType()
-    const {
+exahype::Parser::MPILoadBalancingType exahype::Parser::getMPILoadBalancingType() const {
   std::string token = getTokenAfter("distributed-memory", "identifier");
   exahype::Parser::MPILoadBalancingType result = MPILoadBalancingType::Static;
   if (token.compare("static_load_balancing") == 0) {
@@ -371,7 +388,12 @@ std::string exahype::Parser::getMPIConfiguration() const {
 
 int exahype::Parser::getMPIBufferSize() const {
   std::string token = getTokenAfter("distributed-memory", "buffer-size");
-  int result = std::stoi(token);
+
+  int result = -1;
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
+
   if (result <= 0) {
     logError("getMPIBufferSize()", "Invalid MPI buffer size " << token);
     result = 64;
@@ -382,7 +404,12 @@ int exahype::Parser::getMPIBufferSize() const {
 
 int exahype::Parser::getMPITimeOut() const {
   std::string token = getTokenAfter("distributed-memory", "timeout");
-  int result = std::stoi(token);
+
+  int result = -1;
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
+
   if (result <= 0) {
     logError("getMPIBufferSize()", "Invalid MPI timeout value " << token);
     result = 0;
@@ -439,7 +466,12 @@ exahype::Parser::MulticoreOracleType exahype::Parser::getMulticoreOracleType()
 double exahype::Parser::getSimulationEndTime() const {
   std::string token = getTokenAfter("computational-domain", "end-time");
   logDebug("getSimulationEndTime()", "found token " << token);
-  double result = std::stof(token);
+
+  double result = -1.0;
+  try {
+    result = std::stod(token);
+  } catch (const std::invalid_argument& ia) {}
+
   if (result <= 0) {
     logError("getSimulationEndTime()",
              "Invalid simulation end-time: " << token);
@@ -489,7 +521,7 @@ double exahype::Parser::getFuseAlgorithmicStepsFactor() const {
           getTokenAfter("global-optimisation", "fuse-algorithmic-steps-factor");
 
       char* pEnd;
-      double result = std::strtod(token.c_str(), &pEnd);
+      double result = std::strtod(token.c_str(), &pEnd); // TODO(Dominic)
       logDebug("getFuseAlgorithmicStepsFactor()",
                "found fuse-algorithmic-steps-factor " << token);
 
@@ -510,7 +542,7 @@ double exahype::Parser::getFuseAlgorithmicStepsFactor() const {
 double exahype::Parser::getTimestepBatchFactor() const {
   std::string token = getTokenAfter("global-optimisation", "timestep-batch-factor");
   char* pEnd;
-  double result = std::strtod(token.c_str(), &pEnd);
+  double result = std::strtod(token.c_str(), &pEnd); // TODO(Dominic)
   logDebug("getFuseAlgorithmicStepsFactor()", "found timestep-batch-factor "
                                                   << token);
 
@@ -561,7 +593,7 @@ double exahype::Parser::getDoubleCompressionFactor() const {
   }
   else {
     char* pEnd;
-    double result = std::strtod(token.c_str(), &pEnd);
+    double result = std::strtod(token.c_str(), &pEnd); // TODO(Dominic)
     logDebug("getDoubleCompressionFactor()", "found double-compression "
                                                   << token);
 
@@ -630,17 +662,18 @@ std::string exahype::Parser::getIdentifier(int solverNumber) const {
 
 int exahype::Parser::getVariables(int solverNumber) const {
   std::string token;
-  int result;
   std::regex COLON_SEPARATED(R"(([A-Za-z]\w*):([0-9]+))");
   std::smatch match;
 
   // first check if we read in a number
+  int result = -1;
   token = getTokenAfter("solver", solverNumber + 1, "variables", 1);
-  result = std::stoi(token);
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
 
   if (result < 1) { // token is not a number
     result = 0;
-
     int i = 1;
     std::regex_search(token, match, COLON_SEPARATED);
     while (match.size() > 1) {
@@ -666,13 +699,15 @@ int exahype::Parser::getVariables(int solverNumber) const {
 
 int exahype::Parser::getParameters(int solverNumber) const {
   std::string token;
-  int result;
   std::regex COLON_SEPARATED(R"(([A-Za-z]\w*):([0-9]+))");
   std::smatch match;
 
   // first check if we read in a number
+  int result = -1;
   token = getTokenAfter("solver", solverNumber + 1, "parameters", 1);
-  result = std::stoi(token);
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
 
   if (result < 1) { // token is not a number
     result = 0;
@@ -702,14 +737,17 @@ int exahype::Parser::getParameters(int solverNumber) const {
 
 int exahype::Parser::getOrder(int solverNumber) const {
   std::string token;
+
   int result;
   token = getTokenAfter("solver", solverNumber + 1, "order", 1);
-  result = std::stoi(token);
-
-  if (result < 0) {
+  try {
+    result = std::stoi(token);
+  }
+  catch (const std::invalid_argument& ia) {
     logError("getOrder()", "'" << getIdentifier(solverNumber)
-                               << "': 'order': Value must not be negative.");
+        << "': 'order': Value must not be negative.");
     _interpretationErrorOccured = true;
+    result = -1;
   }
 
   logDebug("getOrder()", "found order " << result);
@@ -719,10 +757,13 @@ int exahype::Parser::getOrder(int solverNumber) const {
 
 double exahype::Parser::getMaximumMeshSize(int solverNumber) const {
   std::string token;
-  double result;
-  token =
-      getTokenAfter("solver", solverNumber + 1, "maximum-mesh-size", 1, 0);
-  result = std::stof(token);
+
+  double result = -1.0;
+  token = getTokenAfter("solver", solverNumber + 1, "maximum-mesh-size", 1, 0);
+  try {
+    result = std::stod(token);
+  } catch (const std::invalid_argument& ia) {}
+
   if (tarch::la::smallerEquals(result, 0.0)) {
     logError("getMaximumMeshSize(int)",
              "'" << getIdentifier(solverNumber)
@@ -736,15 +777,18 @@ double exahype::Parser::getMaximumMeshSize(int solverNumber) const {
 
 double exahype::Parser::getMaximumMeshDepth(int solverNumber) const {
   std::string token;
-  int result;
 
+  int result = 0;
   token = getTokenAfter("solver", solverNumber + 1, "maximum-mesh-depth", 1, 0);
-
   if (token==_noTokenFound) {
-    return 0;
+    return result;
   }
 
-  result = std::stoi(token);
+  result = -1;
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
+
   if (tarch::la::smaller(result, 0)) {
     logError("getMaximumMeshDepth(int)",
              "'" << getIdentifier(solverNumber)
@@ -779,9 +823,12 @@ exahype::solvers::Solver::TimeStepping exahype::Parser::getTimeStepping(
 
 double exahype::Parser::getDMPRelaxationParameter(int solverNumber) const {
   std::string token;
-  double result;
+
+  double result = -1.0;
   token = getTokenAfter("solver", solverNumber + 1, "dmp-relaxation-parameter", 1);
-  result = std::stof(token);
+  try {
+    result = std::stod(token);
+  } catch (const std::invalid_argument& ia) {}
 
   if (result < 0) {
     logError("getDMPRelaxationParameter()",
@@ -796,9 +843,12 @@ double exahype::Parser::getDMPRelaxationParameter(int solverNumber) const {
 
 double exahype::Parser::getDMPDifferenceScaling(int solverNumber) const {
   std::string token;
-  double result;
+
+  double result = -1.0;
   token = getTokenAfter("solver", solverNumber + 1, "dmp-difference-scaling", 1);
-  result = std::stof(token);
+  try {
+    result = std::stod(token);
+  } catch (const std::invalid_argument& ia) {}
 
   if (result < 0) {
     logError("getDMPDifferenceScaling()",
@@ -813,9 +863,12 @@ double exahype::Parser::getDMPDifferenceScaling(int solverNumber) const {
 
 int exahype::Parser::getDMPObservables(int solverNumber) const {
   std::string token;
-  int result;
+
+  int result = -1; // is required
   token = getTokenAfter("solver", solverNumber + 1, "dmp-observables", 1);
-  result = std::stoi(token);
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
 
   if (result < 0) {
     logError("getDMPObservables()",
@@ -830,15 +883,20 @@ int exahype::Parser::getDMPObservables(int solverNumber) const {
 
 int exahype::Parser::getStepsTillCured(int solverNumber) const {
   std::string token;
-  int result = 0;
+
+  int result = 0; // default value
   token = getTokenAfter("solver", solverNumber + 1, "steps-till-cured", 1);
   if (token.compare(_noTokenFound)!=0) {
-    result = std::stoi(token);
+    try {
+      result = std::stoi(token);
+    } catch (const std::invalid_argument& ia) {
+      result = -1;
+    }
 
     if (result < 0) {
       logError("getStepsTillCured()",
                "'" << getIdentifier(solverNumber)
-               << "': 'steps-till-cured': Value must not be negative.");
+               << "': 'steps-till-cured': Value must be integral and not negative.");
       _interpretationErrorOccured = true;
     }
 
@@ -849,15 +907,20 @@ int exahype::Parser::getStepsTillCured(int solverNumber) const {
 
 int exahype::Parser::getLimiterHelperLayers(int solverNumber) const {
   std::string token;
-  int result = 1; // default
+  int result = 1; // default value
   token = getTokenAfter("solver", solverNumber + 1, "helper-layers", 1);
 
   if (token.compare(_noTokenFound)!=0) {
-    result = std::stoi(token);
+    try {
+      result = std::stoi(token);
+    } catch (const std::invalid_argument& ia) {
+      result = -1;
+    }
+
     if (result < 1) {
       logError("getLimiterHelperLayers()",
                "'" << getIdentifier(solverNumber)
-               << "': 'helper-layers': Value must not be greater or equal to 1.");
+               << "': 'helper-layers': Value must be integral and greater or equal to 1.");
       _interpretationErrorOccured = true;
     }
     logInfo("getLimiterHelperLayers()", "found helper-layers " << result);
@@ -891,14 +954,16 @@ std::string exahype::Parser::getNameForPlotter(int solverNumber,
 
 int exahype::Parser::getUnknownsForPlotter(int solverNumber,
                                            int plotterNumber) const {
-  // We have to multiply with two as the token solver occurs twice (to open and
-  // close the section)
   std::string token = getTokenAfter("solver", solverNumber + 1, "plot",
                                     plotterNumber + 1, 3);
   logDebug("getUnknownsForPlotter()", "found token " << token);
   assertion3(token.compare(_noTokenFound) != 0, token, solverNumber,
              plotterNumber);
-  return std::stoi(token);
+  try {
+    return std::stoi(token);
+  } catch (const std::invalid_argument& ia) {
+    return 0;
+  }
 }
 
 double exahype::Parser::getFirstSnapshotTimeForPlotter(
@@ -910,7 +975,16 @@ double exahype::Parser::getFirstSnapshotTimeForPlotter(
   logDebug("getFirstSnapshotTimeForPlotter()", "found token " << token);
   assertion3(token.compare(_noTokenFound) != 0, token, solverNumber,
              plotterNumber);
-  return std::stof(token);
+
+  try {
+    return std::stod(token);
+  } catch (const std::invalid_argument& ia) {
+    logError("getFirstSnapshotTimeForPlotter()",
+        "'" << getIdentifier(solverNumber)
+        << "' - plotter "<<plotterNumber<<": 'time' value must be a float.");
+    _interpretationErrorOccured = true;
+    return std::numeric_limits<double>::max();
+  }
 }
 
 double exahype::Parser::getRepeatTimeForPlotter(int solverNumber,
@@ -922,7 +996,16 @@ double exahype::Parser::getRepeatTimeForPlotter(int solverNumber,
   logDebug("getRepeatTimeForPlotter()", "found token " << token);
   assertion3(token.compare(_noTokenFound) != 0, token, solverNumber,
              plotterNumber);
-  return std::stof(token);
+
+  try {
+    return std::stod(token);
+  } catch (const std::invalid_argument& ia) {
+    logError("getRepeatTimeForPlotter()",
+        "'" << getIdentifier(solverNumber)
+        << "' - plotter "<<plotterNumber<<": 'repeat' value must be a float.");
+    _interpretationErrorOccured = true;
+    return std::numeric_limits<double>::max();
+  }
 }
 
 std::string exahype::Parser::getFilenameForPlotter(int solverNumber,

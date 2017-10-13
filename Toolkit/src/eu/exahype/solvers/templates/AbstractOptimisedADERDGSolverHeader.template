@@ -139,22 +139,22 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static void abortWithMsg(const char* const msg);
     
     //padded array size, override default ADERDGSolver values
-    int getTempSpaceTimeUnknownsSize()     const {return {{optNamespace}}::getTempSpaceTimeUnknownsSize();    }
-    int getTempSpaceTimeFluxUnknownsSize() const {return {{optNamespace}}::getTempSpaceTimeFluxUnknownsSize();}
-    int getTempUnknownsSize()              const {return {{optNamespace}}::getTempUnknownsSize();             }
-    int getTempFluxUnknownsSize()          const {return {{optNamespace}}::getTempFluxUnknownsSize();         }
-    int getTempPointForceSourcesSize()     const {return {{optNamespace}}::getTempPointForceSourcesSize();    }
-    int getBndFaceSize()                   const {return {{optNamespace}}::getBndFaceSize();                  }
-    int getBndTotalSize()                  const {return {{optNamespace}}::getBndTotalSize();                 }
-    int getBndFluxSize()                   const {return {{optNamespace}}::getBndFaceSize();                  }
-    int getBndFluxTotalSize()              const {return {{optNamespace}}::getBndTotalSize();                 }
-    int getTempStateSizedVectorsSize()     const {return {{optNamespace}}::getTempStateSizedVectorsSize();    }
+    int getTempSpaceTimeUnknownsSize()      const {return {{optNamespace}}::getTempSpaceTimeUnknownsSize();     }
+    int getTempSpaceTimeFluxUnknowns0Size() const {return {{optNamespace}}::getTempSpaceTimeFluxUnknowns0Size();}
+    int getTempSpaceTimeFluxUnknowns1Size() const {return {{optNamespace}}::getTempSpaceTimeFluxUnknowns1Size();}
+    int getTempUnknownsSize()               const {return {{optNamespace}}::getTempUnknownsSize();              }
+    int getTempFluxUnknownsSize()           const {return {{optNamespace}}::getTempFluxUnknownsSize();          }
+    int getTempPointForceSourcesSize()      const {return {{optNamespace}}::getTempPointForceSourcesSize();     }
+    int getBndFaceSize()                    const {return {{optNamespace}}::getBndFaceSize();                   }
+    int getBndTotalSize()                   const {return {{optNamespace}}::getBndTotalSize();                  }
+    int getBndFluxSize()                    const {return {{optNamespace}}::getBndFaceSize();                   }
+    int getBndFluxTotalSize()               const {return {{optNamespace}}::getBndTotalSize();                  }
+    int getTempStateSizedVectorsSize()      const {return {{optNamespace}}::getTempStateSizedVectorsSize();     }
     
     bool alignTempArray()                  const {return true;}
     
     bool usePaddedData_nVar() const {return true;}
     bool usePaddedData_nDoF() const {return true;}
-    
 };
 
 #endif // __{{abstractSolver}}_CLASS_HEADER__

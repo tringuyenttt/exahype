@@ -33,25 +33,14 @@ exahype::mappings::Merging::communicationSpecification() const {
 
 peano::MappingSpecification
 exahype::mappings::Merging::touchVertexFirstTimeSpecification(int level) const {
-//  if (level < exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers()) {
-//    return peano::MappingSpecification(
-//        peano::MappingSpecification::Nop,
-//        peano::MappingSpecification::AvoidFineGridRaces,true);
-//  }
   return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+        peano::MappingSpecification::WholeTree,
+        peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 
 // Specifications below are all nop.
 peano::MappingSpecification
 exahype::mappings::Merging::enterCellSpecification(int level) const {
-//  if (level < exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers()) {
-//    return peano::MappingSpecification(
-//        peano::MappingSpecification::Nop,
-//        peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
-//  }
-
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);

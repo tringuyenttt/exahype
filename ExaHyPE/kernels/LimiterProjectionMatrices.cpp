@@ -220,7 +220,7 @@ double* kernels::matrixInverse(int n, double* a) {
   }
   
   // clean up
-  free(c);
+  delete[] c;
 
   return ia;
 }

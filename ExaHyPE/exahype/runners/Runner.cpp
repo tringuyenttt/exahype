@@ -747,7 +747,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     }
 
     repository.getState().switchToNeighbourDataDroppingContext();
-    repository.switchToGridErasing();
+    repository.switchToNeighbourDataMerging();
     repository.iterate(1,false);
 
     printStatistics();
