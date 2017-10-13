@@ -26,7 +26,7 @@ constexpr int nDim = DIMENSIONS;
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG" );
 
 void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) { // ,  exahype::Parser::ParserView constants) {
-	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
+	feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
 	// Initialize initial data
 	InitialDataCode::getInstance();
@@ -61,6 +61,9 @@ void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** F) {
 	#else
 	ExaGRMHD::Fluxes f(F);
 	#endif
+	
+	// Debugging: set all fluxes to zero
+	for(int d=0;d<DIMENSIONS;d++) NVARS(i) F[d][i] = 0;
 	
 	SVEC::GRMHD::PDE pde(Q);
 	pde.flux(f);
@@ -131,6 +134,9 @@ void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S)
 
 void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ, double* BgradQ) {
 	//PDE::NCP ncp(BgradQ);
+	
+	// debugging: set BgradQ to zero:
+	NVARS(i) BgradQ[i] = 0;
 	
 	// as we only have DIMENSIONS == 2 but TDIM == 3, construct a zero gradient
 	#if DIMENSIONS == 2

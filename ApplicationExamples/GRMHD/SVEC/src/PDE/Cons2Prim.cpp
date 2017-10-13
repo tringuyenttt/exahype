@@ -72,8 +72,6 @@ void GRMHD::Cons2Prim::perform() {
 	constexpr double rho_floor = 1.0e-4;
 	constexpr double gamma = GRMHD::Parameters::gamma;
 
-	// TODO here: Removal of 1./\sqrt{gamma}.
-
 	// RTSAFE gives us x = v^2, y = rho * h * Gamma^2.
 	bool failed = rtsafe(VelVel, RhoEnthWW);
 	if(debug_c2p) { printf("Outcome: "); S(VelVel); S(RhoEnthWW);}
@@ -81,8 +79,12 @@ void GRMHD::Cons2Prim::perform() {
 		// We should raise an error instead, the c2p failed.
 		printf("C++ C2P FAILED.\n");
 		printf("Input conserved State Vector Q: \n");
-		TDO(d,GRMHD::size) printf("Q[%d] = %e\n", d, Q[d]);
-		SI(Si.lo); SI(Si.up); S(BmagBmag); S(SconScon);
+		// makes no sense with densitied state
+		//TDO(d,MHD::size) printf("Q[%d] = %e\n", d, Q[d]);
+		S(Dens); S(tau); SI(Si.lo); SI(Si.up);
+		SI(Bmag.up); S(phi);
+		S(gam.det); S(gam.sqdet); S(alpha); SI(beta.up);
+		S(BmagBmag); S(SconScon);
 		std::abort();
 		rho = rho_floor;
 		press = p_floor;

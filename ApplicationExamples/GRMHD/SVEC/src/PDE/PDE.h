@@ -431,13 +431,17 @@ namespace SVEC {
 		 **/
 		template<class MHDtype>
 		struct DensitiedState : public MHDtype, public ADMBase::Full {
-			double MHDStorage[MHD::size];
-			double sqrtabsgamdet;
+			//double MHDStorage[MHD::size]; // what we used in the past
+			double MHDStorage[GRMHD::size]; // what we use now for simplicty for ADM
 			DensitiedState(const double* const QDensity) : MHDtype(MHDStorage), ADMBase::Full(QDensity) {
-				sqrtabsgamdet = sqrt(std::abs(gam.det));
-				// For the quick and dirty, assume all MHD parts to be next to each other
+				// For the quick and dirty, assume all MHD parts to be next to each other.
+				//for(int i=0; i<MHD::size; i++)
+				//	MHDStorage[i] = QDensity[i] / gam.sqdet;
+				
+				// we copy everything for simple ADM access in the primitives
+				std::copy_n(QDensity, GRMHD::size, MHDStorage);
 				for(int i=0; i<MHD::size; i++)
-					MHDStorage[i] = QDensity[i] / sqrtabsgamdet;
+					MHDStorage[i] /= gam.sqdet;
 			}
 		};
 				

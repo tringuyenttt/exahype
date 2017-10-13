@@ -122,7 +122,7 @@ void GRMHD::IntegralsWriter::mapQuantities(
 	double ExactCons[nVar], ExactPrim[nVar];
 	
 	//id->Interpolate(xpos, timeStamp, ExactCons);
-	AlfenWaveCons(x.data(),timeStamp,ExactCons);
+	InitialData(x.data(),timeStamp,ExactCons);
 	Cons2Prim(ExactPrim, ExactCons).copyFullStateVector();
 	
 	double localError[nVar];

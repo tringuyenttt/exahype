@@ -41,7 +41,9 @@ void GRMHD::DifferenceWithIDWriter::mapQuantities(
   double evolvedPrims[writtenUnknowns]={0.}, exactPrims[writtenUnknowns]={0.};
   Cons2Prim(evolvedPrims, Q).copyFullStateVector();
 
-  AlfenWave(x.data(),timeStamp,exactPrims);
+  double exactCons[writtenUnknowns]={0.};
+  InitialData(x.data(),timeStamp,exactCons);
+  Cons2Prim(exactPrims, exactCons).copyFullStateVector();
 
   double *localError = outputQuantities;
   for(int i=0; i<writtenUnknowns; i++) {
