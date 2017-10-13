@@ -258,6 +258,16 @@ namespace SVEC {
 		typedef StateVector<const double* const, UpLo<vec::const_shadow_D, vec::stored_D>::ConstUp, const double> ConstShadowExtendable;
 		typedef StateVector<double* const, UpLo<vec::shadow_D, vec::stored_D>::InitUp, double> ShadowExtendable;
 		struct Stored : public Shadow { double QMStored[size]; Stored() : Shadow(QMStored) {} };
+		
+		/// A zero-mimicro magnetic state vector for effectively turning off magnetic
+		/// contributions at compile time.
+		struct Zero {
+			scalar::zero phi;
+			UpLo<vec::zero, vec::zero> Bmag;
+			constexpr Zero(const double* const Q) {}
+			void copy_magneto(double* target) { std::abort(); }
+			void multiply_magneto(double* target) { std::abort(); }
+		};
 	} // ns Magneto
 
 	/**
@@ -282,12 +292,19 @@ namespace SVEC {
 			//constexpr int detg = 19;    // not yet
 		}
 		
-		template<typename state_vector, typename vector_up, typename metric_lo, typename scalar>
-		struct StateVector { // Material Parameters
+		/**
+		 * In pure GRMHD, the ADM variables are "material" parameters, i.e. they are constant after
+		 * initial data setting. In GRMHD, the ADM set is just (alpha,beta,gamma). With a dynamical
+		 * spacetime, it is (alpha,beta,gamma,kextr).
+		 **/
+		template<typename state_vector, typename scalar, typename vector_up, typename metric_lo, typename extrinsic_lo>
+		struct StateVector {
 			state_vector Q_ADM;
-			scalar &alpha;//, &detg; // Scalars: Lapse, Determinant of g_ij
+			scalar &alpha; ///< Lapse
+			// &detg; ///< Determinant of g_ij as material parameter.
 			vector_up beta; // Shift vector: (Conserved) Material parameter vector
 			metric_lo gam;  // 3-Metric: (Conserved) Material parameter tensor
+			extrinsic_lo Kext; ///< Extrinsic curvature tensor
 			
 			constexpr StateVector(state_vector Q) :
 				Q_ADM(Q),
@@ -312,28 +329,31 @@ namespace SVEC {
 		// are not recovered.
 		typedef StateVector<
 			const double* const,
+			const double,                       // lapse
 			const ConstUp<vec::const_shadow_D>, // shift
 			const ConstLo<sym::const_shadow_D>, // metric
-			const double
+			sym::illegal                        // extrinsic curvature
 			> ConstShadow;
 			
 		// A writable shadowed ADMBase. Writeable is only useful for setting the initial data.
 		// You can only set the lower components of the metric.
 		typedef StateVector<
 			double* const,
+			double,
 			Up<vec::shadow_D>,
 			Lo<sym::shadow_D>,
-			double
+			sym::illegal                        // extrinsic curvature
 			> Shadow;
 		
 		// This is what the PDE needs: A working metric (upper and lower) but only upper shift.
 		// This is read only (especially inside metric3).
 		typedef StateVector<
 			const double* const,
+			const double,
 			// ConstUp_Lo<vec::const_shadow, vec::stored_D>, // if you ever need beta_lo
 			ConstUp<vec::const_shadow_D>, // if you never need beta_lo
 			metric3, // could store only parts of the metric here, too.
-			const double
+			sym::illegal                        // extrinsic curvature
 			> Full;
 		
 	} // ns ADM

@@ -85,6 +85,28 @@ namespace tensish {
 	/*****************************************************************************/ 
 	
 	/**
+	 * Scalar classes which mimic doubles (i.e. real numbers, scalars) but have the
+	 * purpose to trick the API, i.e. do special things when asked for a value or
+	 * being a value assigned to.
+	 **/
+	namespace scalar {
+		// The invalid structure crashes the program once instanciated
+		struct invalid { invalid() { std::abort(); } };
+
+		// The illegal structure crashes once assigned or asked a value for
+		struct illegal {
+			operator double() const { std::abort(); return 0; }
+			void operator=(double val) { std::abort(); }
+		};
+		
+		// The zero mimics a zero when asked for and sucks the value when assigned to
+		struct zero {
+			operator double() const { return 0; }
+			void operator=(double val) {}
+		};
+	} // ns dummy
+	
+	/**
 	* Vector (1-dimensional linear storage, i.e. just a fixed length array).
 	**/
 	namespace vec {
@@ -115,6 +137,11 @@ namespace tensish {
 			constexpr const_shadow(const double* const foreign) : data(foreign) {}
 			const double& operator()(int j) const { tensish_bound(j<N); return data[j]; }
 		};
+
+		// helpers for some algebra
+		template<typename T> struct placeholder { T operator()(int j) { return T(); } };
+		typedef placeholder<scalar::zero> zero;
+		typedef placeholder<scalar::illegal> illegal;
 		
 		// abbreviations for typical uses in 3 dimensions.
 		typedef stored<TDIM> stored_D;
@@ -165,7 +192,6 @@ namespace tensish {
 		#define SYMFOR(i,j) DFOR(i) for(int j=0; j<=i; j++)
 		
 		/// Compute determinant of a symmetric matrix
-		/// TODO: Do with templates
 		template<class T> constexpr double det(const T &lo) {
 			#if TDIM == 3
 			return -lo(0,2)*lo(0,2)*lo(1,1) + 2*lo(0,1)*lo(0,2)*lo(1,2)
@@ -173,6 +199,8 @@ namespace tensish {
 			+lo(0,0)*lo(1,1)*lo(2,2);
 			#elif TDIM == 2
 			return lo(0,0)*lo(1,1) - lo(0,1)*lo(1,0);
+			#else
+			#error The programmer did not implement det for this dimension.
 			#endif
 		}
 		
@@ -203,6 +231,10 @@ namespace tensish {
 			constexpr const_shadow(const double* const foreign) : data(foreign) {}
 			const double& operator()(int i, int j) const { tensish_bound(i<N && j<N); return data[index(i,j)]; }
 		};
+		
+		template<typename T> struct placeholder { T operator()(int i, int j) { return T(); } };
+		typedef placeholder<scalar::zero> zero;
+		typedef placeholder<scalar::illegal> illegal;
 		
 		// abbreviations for typical uses in 3 dimensions.
 		typedef stored<TDIM> stored_D;
@@ -268,6 +300,7 @@ namespace tensish {
 	**/
 	template<class U, class L> struct UpLo {
 		U up; L lo;
+		constexpr UpLo() {}
 		
 		struct InitLo {
 			U up; L lo;
