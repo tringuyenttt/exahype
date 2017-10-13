@@ -7,8 +7,10 @@
 
 #include "peano/utils/Dimensions.h" // Defines DIMENSIONS
 //namespace GRMHD { constexpr int nVar = GRMHDSolver_FV::NumberOfVariables; } // ensure this is 19 or so
-#include "PDE/PDE.h"
 #include "InitialData/InitialData.h"
+
+#include "PDE/PDE-GRMHD-ExaHyPE.h"
+namespace SVEC::GRMHD::ExaHyPEAdapter = ExaGRMHD;
 
 #include "GRMHDSolver_ADERDG_Variables.h"
 #include "DebuggingHelpers.h"
@@ -53,7 +55,8 @@ void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** F) {
 	FT[1] = F[1];
 	FT[2] = Fz;
 	
-	GRMHD::Fluxes(FT, Q).zeroMaterialFluxes();
+	ExaGRMHD::flux(Q, FT).zeroMaterialFluxes();
+	
 	//DFOR(d) { zero2Din3D(F[d]); zeroHelpers(F[d]); }
 	zeroHelpers(F[0]); zeroHelpers(F[1]);
 }
@@ -104,11 +107,10 @@ exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinemen
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
-void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S_) {
-	PDE::Source S(S_);
-	PDE(Q).algebraicSource(S);
-	S.zero_adm();
-	zeroHelpers(S_);
+void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
+	
+	ExaGRMHD::algebraicSource(Q, S).zero_adm();
+	zeroHelpers(S);
 	//zero2Din3D(S_);
 }
 
@@ -119,10 +121,8 @@ void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,con
 	double gradZ[nVar] = {0.};
 	
 	// deconstruct the gradient matrix because we use more than the 19 variables of GRMHD.
-	const Gradients g(gradQ+0, gradQ+nVar, gradZ);
-	PDE pde(Q);
-	pde.nonConservativeProduct(g, ncp);
-	ncp.zero_adm();
+	ExaGRMHD::nonConservativeProduct(Q,gradQ+0,gradQ+nVar,gradZ,BgradQ).zero_adm();
+	
 	zeroHelpers(BgradQ);
 	//zero2Din3D(BgradQ);
 	
