@@ -13,7 +13,7 @@
  
 /**
 
-  The GRMHD PDE in the C++ formulation with ADERDG solver.
+ The GRMHD PDE in the C++ formulation with FV solver.
 
  */
 exahype-project GRMHD
@@ -28,7 +28,7 @@ exahype-project GRMHD
     dimension const                = 2
     width                          = 1.0, 1.0
     offset                         = 0.0, 0.0
-    end-time                       = 2.0
+    end-time                       = 10.0
   end computational-domain
   
   shared-memory
@@ -51,44 +51,47 @@ exahype-project GRMHD
     skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
     double-compression = 0.0
-    spawn-double-compression-as-background-thread = on
+    spawn-double-compression-as-background-thread = off
   end global-optimisation
 
-  solver ADER-DG GRMHDSolver_ADERDG
-    variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,pos:3,check:1
-    order const                    = 3
-    maximum-mesh-size              = 0.111133333339
+  solver Finite-Volumes GRMHDSolver_FV
+    /* NOTE: Since exahype currently does not compute the derivatives of
+     * the parameters, we cannot put the material parameters extra.
+     * Also currently dont store ,detg:1
+     **/
+    variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,sqdetg:1,spare:2,check:1
+    //parameters const               = pos:3,check:1
+    patch-size const               = 8
+    maximum-mesh-size              = 0.11111133333339
     maximum-mesh-depth             = 0
     time-stepping                  = global
-    type const = nonlinear
-    terms const = flux,ncp,source
+    type const         = godunov
+    terms const        = flux,ncp,source
     optimisation const = generic
     language const                 = C
-    // constants                      = dummy:dummy
-    /* not yet working: constants aka left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact */
+    constants  = foo:bar,blo:dez
 
-    plot vtk::Legendre::vertices::ascii ConservedWriter
-      variables const = 19
+    plot vtk::Cartesian::vertices::ascii ConservedWriter
+      variables const = 23
       time      = 0.0
-      repeat    = 0.000666667
+      repeat    = 0.00590278
       output    = ./vtk-output/conserved
     end plot
 
-    plot vtu::Legendre::vertices::ascii DifferenceWithIDWriter
-      variables const = 19
-      time      = 0.0
-      repeat    = 0.000666667
-      output    = ./vtk-output/diff-with-id
+    plot vtk::Cartesian::cells::ascii IntegralsWriter
+      variables const = 0
+      time = 1000.0
+      repeat = 0.000001
+      output = ./output/global-integrals
     end plot
-
-/*
+    
     plot vtu::Legendre::vertices::ascii PrimitiveWriter
-      variables const = 19
+      variables const = 23
       time      = 0.0
       repeat    = 0.000666667
       output    = ./vtk-output/primitive
     end plot
-*/
+
     plot vtk::Cartesian::cells::ascii IntegralsWriter
       variables const = 0
       time = 1000.0
@@ -97,6 +100,4 @@ exahype-project GRMHD
     end plot
 
   end solver
-
-
 end exahype-project

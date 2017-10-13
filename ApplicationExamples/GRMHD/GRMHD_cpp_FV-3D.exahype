@@ -25,9 +25,9 @@ exahype-project GRMHD
   log-file                         = whatever.log
 
   computational-domain
-    dimension const                = 2
-    width                          = 1.0, 1.0
-    offset                         = 0.0, 0.0
+    dimension const                = 3
+    width                          = 1.0, 1.0, 1.0
+    offset                         = 0.0, 0.0, 0.0
     end-time                       = 10.0
   end computational-domain
   
@@ -59,10 +59,10 @@ exahype-project GRMHD
      * the parameters, we cannot put the material parameters extra.
      * Also currently dont store ,detg:1
      **/
-    variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,pos:3,check:1
+    variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,sqdetg:1,spare:2,check:1
     //parameters const               = pos:3,check:1
     patch-size const               = 8
-    maximum-mesh-size              = 0.11111133333339
+    maximum-mesh-size              = 0.3333333339
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const         = godunov
@@ -72,10 +72,24 @@ exahype-project GRMHD
     constants  = foo:bar,blo:dez
 
     plot vtk::Cartesian::vertices::ascii ConservedWriter
-      variables const = 19
+      variables const = 23
       time      = 0.0
       repeat    = 0.00590278
       output    = ./vtk-output/conserved
+    end plot
+
+    plot vtk::Cartesian::cells::ascii IntegralsWriter
+      variables const = 0
+      time = 1000.0
+      repeat = 0.000001
+      output = ./output/global-integrals
+    end plot
+    
+    plot vtu::Legendre::vertices::ascii PrimitiveWriter
+      variables const = 23
+      time      = 0.0
+      repeat    = 0.000666667
+      output    = ./vtk-output/primitive
     end plot
 
     plot vtk::Cartesian::cells::ascii IntegralsWriter

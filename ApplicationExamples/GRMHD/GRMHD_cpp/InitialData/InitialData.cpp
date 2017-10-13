@@ -46,13 +46,15 @@ constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 
 /// a shorthand
 void InitialData(const double* x, double t, double* Q) {
+	for(int i=0;i<nVar;i++) Q[i] = 0.0; // Zeroize
+	
 	InitialDataCode::getInstance().Interpolate(x,t,Q);
 	
 	  // also store the positions for debugging
 	GRMHD::AbstractGRMHDSolver_ADERDG::Variables var(Q);
 	GRMHD::AbstractGRMHDSolver_ADERDG::VariableShortcuts Qi;
-	for(int i=0; i<DIMENSIONS; i++) var.pos(i) = x[i];
-	if(DIMENSIONS<3) Q[Qi.pos+2] = -1;
+	//for(int i=0; i<DIMENSIONS; i++) var.pos(i) = x[i];
+	//if(DIMENSIONS<3) Q[Qi.pos+2] = -1;
 	var.check() = 47110815;
 	//zero2Din3D(Q);
 

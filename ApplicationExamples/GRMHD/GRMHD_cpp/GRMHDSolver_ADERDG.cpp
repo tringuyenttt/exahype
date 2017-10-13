@@ -52,15 +52,25 @@ void GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,do
 void GRMHD::GRMHDSolver_ADERDG::flux(const double* const Q,double** F) {
 	
 	// as TDIM is 3 and DIMENSIONS is 2, come up with this dirty wrapper:
+	#if DIMENSIONS == 2
 	double *FT[3], Fz[nVar];
 	FT[0] = F[0];
 	FT[1] = F[1];
 	FT[2] = Fz;
+	ExaGRMHD::Fluxes f(FT);
+	#else
+	ExaGRMHD::Fluxes f(F);
+	#endif
 	
-	ExaGRMHD::flux(Q, FT).zeroMaterialFluxes();
+	SVEC::GRMHD::PDE pde(Q);
+	pde.flux(f);
+	f.zeroMaterialFluxes();
+	//ExaGRMHD::flux(Q, FT).zeroMaterialFluxes();
 	
 	//DFOR(d) { zero2Din3D(F[d]); zeroHelpers(F[d]); }
-	zeroHelpers(F[0]); zeroHelpers(F[1]);
+	for(int d=0;d<DIMENSIONS;d++) zeroHelpers(F[d]);
+	
+	for(int d=0;d<DIMENSIONS;d++) NVARS(i) { if(!std::isfinite(F[d][i])) { printf("F[%d][%d] = %e\n", d, i, F[d][i]); std::abort(); } }
 }
 
 
@@ -110,7 +120,10 @@ exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinemen
 }
 
 void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
+	// No algebraic source
+	for(int i=0;i<nVar;i++) S[i] = 0;
 	
+	return;	
 	ExaGRMHD::algebraicSource(Q, S).zero_adm();
 	zeroHelpers(S);
 	//zero2Din3D(S_);
@@ -120,10 +133,13 @@ void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,con
 	//PDE::NCP ncp(BgradQ);
 	
 	// as we only have DIMENSIONS == 2 but TDIM == 3, construct a zero gradient
+	#if DIMENSIONS == 2
 	double gradZ[nVar] = {0.};
-	
 	// deconstruct the gradient matrix because we use more than the 19 variables of GRMHD.
 	ExaGRMHD::nonConservativeProduct(Q,gradQ+0,gradQ+nVar,gradZ,BgradQ).zero_adm();
+	#else
+	ExaGRMHD::nonConservativeProduct(Q,gradQ,BgradQ).zero_adm();
+	#endif
 	
 	zeroHelpers(BgradQ);
 	//zero2Din3D(BgradQ);

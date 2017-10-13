@@ -36,9 +36,9 @@ void GRMHD::DifferenceWithIDWriter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 19;
+  const int writtenUnknowns = 23;
   
-  double evolvedPrims[writtenUnknowns], exactPrims[writtenUnknowns];
+  double evolvedPrims[writtenUnknowns]={0.}, exactPrims[writtenUnknowns]={0.};
   Cons2Prim(evolvedPrims, Q).copyFullStateVector();
 
   AlfenWave(x.data(),timeStamp,exactPrims);

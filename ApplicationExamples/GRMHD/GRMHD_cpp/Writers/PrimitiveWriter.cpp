@@ -42,6 +42,7 @@ void GRMHD::PrimitiveWriter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
+	for (int i=0; i<23; i++) outputQuantities[i] = -42;
 	Cons2Prim(outputQuantities, Q).copyFullStateVector();
 }
 

@@ -18,6 +18,7 @@ using namespace GRMHD;
 tarch::logging::Log GRMHD::GRMHDSolver_FV::_log( "GRMHD::GRMHDSolver_FV" );
 
 void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
+	InitialDataCode::getInstance();
 }
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
@@ -51,11 +52,15 @@ void GRMHD::GRMHDSolver_FV::flux(const double* const Q, double** F) {
 	}
 	
 	// as TDIM is 3 and DIMENSIONS is 2, come up with this dirty wrapper:
+	#if DIMENSIONS == 2
 	double *FT[3], Fz[nVar];
 	FT[0] = F[0];
 	FT[1] = F[1];
 	FT[2] = Fz;
 	ExaGRMHD::flux(Q,FT).zeroMaterialFluxes();
+	#else
+	ExaGRMHD::flux(Q,F).zeroMaterialFluxes();
+	#endif
 }
 
 
@@ -101,10 +106,14 @@ void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const d
 	//PDE::NCP ncp(BgradQ);
 	
 	// as we only have DIMENSIONS == 2 but TDIM == 3, construct a zero gradient
+	#if DIMENSIONS == 2
 	double gradZ[nVar] = {0.};
 	
 	// deconstruct the gradient matrix because we use more than the 19 variables of GRMHD.
 	ExaGRMHD::nonConservativeProduct(Q,gradQ+0,gradQ+nVar,gradZ,BgradQ).zero_adm();
+	#else
+	ExaGRMHD::nonConservativeProduct(Q,gradQ,BgradQ).zero_adm();
+	#endif
 }
 
 // Formerly optimized fusedSource

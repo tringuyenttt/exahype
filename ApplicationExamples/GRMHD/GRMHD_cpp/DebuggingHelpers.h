@@ -13,13 +13,15 @@ inline void zeroHelpers(double* Q) {
 	// debugging variables
 	GRMHD::AbstractGRMHDSolver_ADERDG::Variables var(Q);
 	GRMHD::AbstractGRMHDSolver_ADERDG::VariableShortcuts Qi;
-	for(int i=0;i<3;i++) Q[Qi.pos+i] = 0;
+	Q[Qi.sqdetg] = 0;
+	for(int i=0;i<2;i++) Q[Qi.spare+i] = 0;
 	var.check() = 0;
 }
 
 inline void zero2Din3D(double* Q) {
 	// don't do that any more.
 	return;
+	/*
 	
 	// 3D components which should not be in 2D
 	GRMHD::AbstractGRMHDSolver_ADERDG::VariableShortcuts pos;
@@ -32,6 +34,7 @@ inline void zero2Din3D(double* Q) {
 	for(int i=0; i<3; i++) Q[pos.gij+tensish::sym::index(2,i)] = 0;
 	 // 3rd component of debugging coordinate vector
 	Q[pos.pos+2] = 0;
+	*/
 }
 
 // The shared ID, moved here temporarily
@@ -85,7 +88,7 @@ inline void fail(const std::string msg) {
 }
 
 inline bool isUnphysical(const double* const Q) {
-	bool isUnphysical = isAllZero(Q) || !holdsVacuumSpacetime(Q);
+	bool isUnphysical = isAllZero(Q);// || !holdsVacuumSpacetime(Q);
 	if(isUnphysical) fail("is unphysical");
 }
 

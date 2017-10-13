@@ -25,15 +25,15 @@ exahype-project GRMHD
   log-file                         = whatever.log
 
   computational-domain
-    dimension const                = 3
-    width                          = 1.0, 1.0, 1.0
-    offset                         = 0.0, 0.0, 0.0
+    dimension const                = 2
+    width                          = 1.0, 1.0
+    offset                         = 0.0, 0.0
     end-time                       = 2.0
   end computational-domain
   
   shared-memory
     identifier               = dummy
-    cores                    = 4
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  
   
@@ -57,7 +57,7 @@ exahype-project GRMHD
   solver ADER-DG GRMHDSolver_ADERDG
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,sqdetg:1,spare:2,check:1
     order const                    = 3
-    maximum-mesh-size              = 0.3333333339
+    maximum-mesh-size              = 0.111133333339
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
