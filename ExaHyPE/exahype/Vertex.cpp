@@ -262,14 +262,12 @@ void exahype::Vertex::setMergePerformed(
 #if Parallel
 bool exahype::Vertex::hasToCommunicate(
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
-  if (isBoundary()) {
+  if (!isInside()) {
     return false;
   }
   if (tarch::la::allGreater(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers())) {
     return  false;
   }
-
-  assertion(isInside());
   return true;
 }
 

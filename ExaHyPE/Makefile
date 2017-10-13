@@ -193,7 +193,7 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		#TODO SVENK: make fortran code compatible with these flags
 		COMPILER_LFLAGS += -xCORE-AVX2 -fma
 	else
-$(error Unknown option for variable [ARCHITECTURE])
+        $(error Unknown option for variable [ARCHITECTURE])
 	endif
 
 else ifeq ($(call tolower,$(COMPILER)),gnu)
@@ -254,16 +254,19 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
 		COMPILER_CFLAGS  += -march=knl
 		COMPILER_LFLAGS  += -march=knl
+    else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
+		COMPILER_CFLAGS  += -march=sandybridge
+		COMPILER_LFLAGS  += -march=sandybridge
 	else ifeq ($(call tolower,$(ARCHITECTURE)),hsw)
 		COMPILER_CFLAGS  += -march=haswell
 		COMPILER_LFLAGS  += -march=haswell
 	else
-$(error Unknown option for variable [ARCHITECTURE])
+		$(error Unknown option for variable [ARCHITECTURE])
 	endif
 
 else ifeq ($(call tolower,$(COMPILER)),manual)
 	ifndef EXAHYPE_CC
-$(error COMPILER=manual at least requries user to set EXAHYPE_CC)
+		$(error COMPILER=manual at least requries user to set EXAHYPE_CC)
 	else
 		CC=$(EXAHYPE_CC)
 	endif
