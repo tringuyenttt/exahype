@@ -73,7 +73,7 @@ namespace exahype {
    * All solvers must store the face data they send to neighbours at persistent addresses.
    */
   #ifdef ALIGNMENT
-  #if defined(SharedTBB)
+  #if defined(CompilerICC) && defined(SharedTBB)
   typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
   #else
   typedef peano::heap::HeapAllocator<double, ALIGNMENT > AlignedAllocator;
