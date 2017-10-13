@@ -153,6 +153,16 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     {%- if patchwiseAdjust %}
     void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final {};
     {%- endif %}
+    
+    {%- if isLinear %}
+    // Override array size to adapt to the linear case (ADERDGSolver is by default configured for nonlinear), 
+    // note: basisSize = number of degree of freedom = order+1 = _nodesPerCoordinateAxis
+    
+    // lQi, needs to be (basisSize + 1, basisSize, basisSize, basisSize, numberOfVariables+numberOfParameters) (note: one less basisSize in 2d)
+    int getTempSpaceTimeUnknownsSize()      const {return (_numberOfVariables+_numberOfParameters) * power(_nodesPerCoordinateAxis, DIMENSIONS) * (1+_nodesPerCoordinateAxis); } 
+    //lFi, needs to be (basisSize, basisSize, basisSize, basisSize, 2*DIMENSIONS+1, numberOfVariables) (note: one less basisSize in 2d)
+    int getTempSpaceTimeFluxUnknowns0Size() const {return _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS+1) * (2*DIMENSIONS+1);} 
+    {%- endif %}
 };
 
 #endif // __{{abstractSolver}}_CLASS_HEADER__
