@@ -8,7 +8,7 @@ InitialDataCode& InitialDataCode::getInstance() {
 	static InitialDataCode* id = nullptr;
 	if(id) return *id;
 
-	if(0) {
+	if(1) {
 		logInfo("InitialDataCode", "Loading AlfenWaveCons Initial Data");
 		id = new AnalyticalID<AlfenWaveCons>;
 	}
@@ -18,7 +18,7 @@ InitialDataCode& InitialDataCode::getInstance() {
 		id = new pizzatov();
 	}
 	
-	if(1) {
+	if(0) {
 		logInfo("getInstance()", "Loading RNSID Initial Data");
 		id = new rnsid();
 	}
@@ -42,6 +42,7 @@ InitialDataCode& InitialDataCode::getInstance() {
 
 #include "PDE/PDE.h"
 #include "GRMHDSolver_ADERDG_Variables.h"
+constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 
 /// a shorthand
 void InitialData(const double* x, double t, double* Q) {
@@ -55,5 +56,5 @@ void InitialData(const double* x, double t, double* Q) {
 	var.check() = 47110815;
 	//zero2Din3D(Q);
 
-	NVARS(i) { if(!std::isfinite(Q[i])) { printf("Qid[%d] = %e\n", i, Q[i]); std::abort(); } }
+	for(int i=0;i<nVar;i++) { if(!std::isfinite(Q[i])) { printf("Qid[%d] = %e\n", i, Q[i]); std::abort(); } }
 }

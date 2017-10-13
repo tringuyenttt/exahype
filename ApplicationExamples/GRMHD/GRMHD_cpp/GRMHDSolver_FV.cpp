@@ -1,9 +1,10 @@
 #include "GRMHDSolver_FV.h"
 #include <algorithm> // fill_n
+#include "peano/utils/Dimensions.h"
 
-#include "peano/utils/Dimensions.h" // Defines DIMENSIONS
-//namespace GRMHD { constexpr int nVar = GRMHDSolver_FV::NumberOfVariables; } // ensure this is 19 or so
-#include "PDE/PDE.h"
+#include "PDE/PDE-GRMHD-ExaHyPE.h"
+//namespace SVEC::GRMHD::ExaHyPEAdapter = ExaGRMHD;
+#define ExaGRMHD SVEC::GRMHD::ExaHyPEAdapter
 
 #include "InitialData/InitialData.h"
 #include "GRMHDSolver_FV_Variables.h"
@@ -29,7 +30,7 @@ void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,
 void GRMHD::GRMHDSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
 	// Provide eigenvalues for the 9 SRMHD variables (D,S_j,tau,B^j),
 	// we split off the 11 ADM material parameters (N^i,g_ij,detg)
-	PDE::eigenvalues(Q, dIndex, lambda);
+	ExaGRMHD::eigenvalues(Q, dIndex, lambda);
 	//NVARS(m) printf("EV[%d]=%f\n", m, lambda[m]);
 }
 
@@ -54,7 +55,7 @@ void GRMHD::GRMHDSolver_FV::flux(const double* const Q, double** F) {
 	FT[0] = F[0];
 	FT[1] = F[1];
 	FT[2] = Fz;
-	GRMHD::Fluxes(FT, Q).zeroMaterialFluxes();
+	ExaGRMHD::flux(Q,FT).zeroMaterialFluxes();
 }
 
 
@@ -84,9 +85,7 @@ void GRMHD::GRMHDSolver_FV::algebraicSource(const double* const Q,double* S) {
 	// Todo: Should not do a C2P in order to fill out the algebraic source.
 	// Or should just return zero here as the Fortran code does.
 	
-	PDE::Source s(S);
-	PDE(Q).algebraicSource(s);
-	s.zero_adm();
+	ExaGRMHD::algebraicSource(Q,S).zero_adm();
 }
 
 void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
@@ -99,15 +98,13 @@ void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const d
 		return;
 	}
 	
-	PDE::NCP ncp(BgradQ);
+	//PDE::NCP ncp(BgradQ);
 	
 	// as we only have DIMENSIONS == 2 but TDIM == 3, construct a zero gradient
 	double gradZ[nVar] = {0.};
 	
 	// deconstruct the gradient matrix because we use more than the 19 variables of GRMHD.
-	const Gradients g(gradQ+0, gradQ+nVar, gradZ);
-	PDE(Q).nonConservativeProduct(g, ncp);
-	ncp.zero_adm();
+	ExaGRMHD::nonConservativeProduct(Q,gradQ+0,gradQ+nVar,gradZ,BgradQ).zero_adm();
 }
 
 // Formerly optimized fusedSource

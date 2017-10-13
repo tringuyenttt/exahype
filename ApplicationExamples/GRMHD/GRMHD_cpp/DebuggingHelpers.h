@@ -68,7 +68,7 @@ inline bool isAllZero(const double* const Q) {
 
 // Check whether Q holds the vacuum spacetime up to some uncertainty
 inline bool holdsVacuumSpacetime(const double* const Q) {
-	using namespace GRMHD;
+	using namespace SVEC;
 	using namespace tarch::la;
 	
 	ADMBase::ConstShadow adm(Q);

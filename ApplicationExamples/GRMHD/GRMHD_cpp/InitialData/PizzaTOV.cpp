@@ -1,9 +1,12 @@
 #include "tarch/logging/Log.h"
 #include "AbstractGRMHDSolver_ADERDG.h"
 #include "GRMHDSolver_ADERDG_Variables.h"
-#include "InitialData/InitialData.h"
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "InitialData/InitialData.h"
+using SVEC::GRMHD::Prim2Cons;
+
 
 #ifndef PIZZATOV_AVAILABLE
 
@@ -97,8 +100,8 @@ void pizzatov::Interpolate(const double* x, double t, double* Q) {
 		V[4] = atmo_press;
 	}
 	
-	NVARS(i) Q[i] = 0.0;
-	GRMHD::Prim2Cons(Q, V).copyFullStateVector();
+	for(int i=0;i<nVar;i++) Q[i] = 0.0;
+	Prim2Cons(Q, V).copyFullStateVector();
 }
 
 #endif  /* PIZZATOV_AVAILABLE */

@@ -7,6 +7,8 @@
 #include "PDE/PDE.h"
 #include "Writers/IntegralsWriter.h"
 #include "InitialData/InitialData.h"
+using SVEC::GRMHD::Cons2Prim;
+
 #include "kernels/GaussLegendreQuadrature.h"
 #include <cmath>
 
@@ -113,7 +115,7 @@ void GRMHD::IntegralsWriter::mapQuantities(
 
 	// reduce the primitive quantities
 	double V[nVar];
-	GRMHD::Cons2Prim(V, Q).copyFullStateVector();
+	Cons2Prim(V, Q).copyFullStateVector();
 	primitives.addValue(V, dV);
 
 	// now do the convergence test, as we have exact initial data
@@ -121,7 +123,7 @@ void GRMHD::IntegralsWriter::mapQuantities(
 	
 	//id->Interpolate(xpos, timeStamp, ExactCons);
 	AlfenWaveCons(x.data(),timeStamp,ExactCons);
-	GRMHD::Cons2Prim(ExactPrim, ExactCons).copyFullStateVector();
+	Cons2Prim(ExactPrim, ExactCons).copyFullStateVector();
 	
 	double localError[nVar];
 	for(int i=0; i<nVar; i++) {

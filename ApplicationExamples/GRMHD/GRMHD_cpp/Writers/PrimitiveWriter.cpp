@@ -1,6 +1,7 @@
 #include "PrimitiveWriter.h"
-#include "PDE/PDE.h"
-
+#include "AbstractGRMHDSolver_ADERDG.h"
+#include "PDE/PDE-GRMHD-ExaHyPE.h"
+using SVEC::GRMHD::Cons2Prim;
 
 GRMHD::PrimitiveWriter::PrimitiveWriter(GRMHDSolver_FV&  solver) {
   // @todo Please insert your code here
@@ -41,7 +42,7 @@ void GRMHD::PrimitiveWriter::mapQuantities(
     double* outputQuantities,
     double timeStamp
 ) {
-	GRMHD::Cons2Prim(outputQuantities, Q).copyFullStateVector();
+	Cons2Prim(outputQuantities, Q).copyFullStateVector();
 }
 
 

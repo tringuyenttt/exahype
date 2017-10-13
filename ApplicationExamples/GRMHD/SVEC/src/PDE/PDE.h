@@ -650,8 +650,9 @@ namespace SVEC {
 	 * not store anything for Bmag.
 	 **/
 	namespace GRHD {
+		struct empty {
+		};
 	} // ns GRHD (not GRMHD)
-
 } // namespace SVEC
 
 #endif /* GRMHD_PDE_CPP */

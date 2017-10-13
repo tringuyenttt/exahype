@@ -2,6 +2,8 @@
 #include "GRMHDSolver_ADERDG_Variables.h"
 #include "InitialData/InitialData.h"
 
+using SVEC::GRMHD::Prim2Cons;
+
 #ifndef RNSID_AVAILABLE
 
 #include <stdlib.h>
@@ -64,8 +66,8 @@ void rnsid::Interpolate(const double* x, double t, double* Q) {
 		V[4] = atmo_press;
 	}
 	
-	NVARS(i) Q[i] = 0.0;
-	GRMHD::Prim2Cons(Q, V).copyFullStateVector();
+	for(int i=0;i<nVar;i++) Q[i] = 0.0;
+	Prim2Cons(Q, V).copyFullStateVector();
 }
 
 #endif /* RNSID_AVAILABLE */

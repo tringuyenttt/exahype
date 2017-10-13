@@ -6,8 +6,9 @@
 //   www.exahype.eu
 // ========================
 #include "DifferenceWithIDWriter.h"
-#include "PDE/PDE.h"
+
 #include "InitialData/InitialData.h"
+using SVEC::GRMHD::Cons2Prim;
 
 
 GRMHD::DifferenceWithIDWriter::DifferenceWithIDWriter(GRMHDSolver_ADERDG&  solver) {
@@ -38,7 +39,7 @@ void GRMHD::DifferenceWithIDWriter::mapQuantities(
   const int writtenUnknowns = 19;
   
   double evolvedPrims[writtenUnknowns], exactPrims[writtenUnknowns];
-  GRMHD::Cons2Prim(evolvedPrims, Q).copyFullStateVector();
+  Cons2Prim(evolvedPrims, Q).copyFullStateVector();
 
   AlfenWave(x.data(),timeStamp,exactPrims);
 

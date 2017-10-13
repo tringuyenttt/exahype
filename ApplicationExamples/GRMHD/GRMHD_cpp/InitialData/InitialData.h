@@ -1,7 +1,7 @@
 #ifndef __INITIAL_DATA_ADAPTER_GRMHD_cpp__
 #define __INITIAL_DATA_ADAPTER_GRMHD_cpp__
 
-#include "PDE/PDE.h"
+#include "PDE/PDE-GRMHD-ExaHyPE.h"
 #include <cmath> 
 #include <string>
 

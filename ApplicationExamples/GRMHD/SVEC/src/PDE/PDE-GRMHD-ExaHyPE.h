@@ -12,6 +12,12 @@
 
 #include "PDE/PDE.h"
 
+#if !defined(TEST_NEW_PDE_AUTONOMOUSLY)
+#include "peano/utils/Dimensions.h" // Defines DIMENSIONS
+#include "AbstractGRMHDSolver_ADERDG.h" // Defines: nVar
+#endif
+
+
 namespace SVEC {
 namespace GRMHD {
 namespace ExaHyPEAdapter {
@@ -20,10 +26,7 @@ namespace ExaHyPEAdapter {
 		// for an autonomous test distinct from ExaHyPE
 		constexpr int nVar = 19;
 	#else
-		// If you include to ExaHyPE instead:
-		#include "peano/utils/Dimensions.h" // Defines DIMENSIONS
-		#include "AbstractGRMHDSolver_FV.h" // Defines: nVar
-		constexpr int nVar = GRMHD::AbstractGRMHDSolver_FV::NumberOfVariables;  // ensure this is 19 or so
+		constexpr int nVar = /*global*/::GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;  // ensure this is 19 or so
 	#endif
 
 	#ifdef NVARS
@@ -31,7 +34,7 @@ namespace ExaHyPEAdapter {
 	#endif
 
 	// a very handy macro.
-	#define NVARS(i) for(int i=0; i < SVEC::GRMHDAdapterForExaHyPE::nVar; i++)
+	#define NVARS(i) for(int i=0; i < SVEC::GRMHD::ExaHyPEAdapter::nVar; i++)
 
 
 	/**
@@ -150,7 +153,16 @@ namespace ExaHyPEAdapter {
 		GRMHD::PDE(Q).fusedSource(g, s);
 		return s;
 	}
-
+	
+	inline GRMHD::Shadow eigenvalues(const double* const Q, const int dIndex, double* lambda) {
+		GRMHD::Shadow L(lambda);
+		GRMHD::PDE(Q).eigenvalues(L,dIndex);
+		return L;
+	}
+	
+	// Also provide the Prim2Cons and Cons2Prim for convenience.
+	typedef SVEC::GRMHD::Prim2Cons Prim2Cons;
+	typedef SVEC::GRMHD::Cons2Prim Cons2Prim;
 } // ns ExaHyPEAdapter
 } // ns GRMHD
 } // ns SVEC

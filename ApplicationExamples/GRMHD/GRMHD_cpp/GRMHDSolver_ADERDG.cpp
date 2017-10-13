@@ -10,7 +10,9 @@
 #include "InitialData/InitialData.h"
 
 #include "PDE/PDE-GRMHD-ExaHyPE.h"
-namespace SVEC::GRMHD::ExaHyPEAdapter = ExaGRMHD;
+//namespace SVEC::GRMHD::ExaHyPEAdapter = ExaGRMHD;
+#define ExaGRMHD SVEC::GRMHD::ExaHyPEAdapter
+using namespace tensish;
 
 #include "GRMHDSolver_ADERDG_Variables.h"
 #include "DebuggingHelpers.h"
@@ -115,7 +117,7 @@ void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S)
 }
 
 void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ, double* BgradQ) {
-	PDE::NCP ncp(BgradQ);
+	//PDE::NCP ncp(BgradQ);
 	
 	// as we only have DIMENSIONS == 2 but TDIM == 3, construct a zero gradient
 	double gradZ[nVar] = {0.};
