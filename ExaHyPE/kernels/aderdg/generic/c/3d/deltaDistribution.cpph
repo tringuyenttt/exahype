@@ -58,9 +58,9 @@ void kernels::aderdg::generic::c::deltaDistribution(
   double x0[DIMENSIONS];
   double x[DIMENSIONS];
 
-  constexpr int numberOfVariables = solver.NumberOfVariables;
-  constexpr int numberOfParameters = solver.NumberOfParameters;
-  constexpr int numberOfPointSources = solver.NumberOfPointSources;
+  constexpr int numberOfVariables = SolverType::NumberOfVariables;
+  constexpr int numberOfParameters = SolverType::NumberOfParameters;
+  constexpr int numberOfPointSources = SolverType::NumberOfPointSources;
 
 
 

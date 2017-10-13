@@ -48,9 +48,9 @@ void kernels::aderdg::generic::c::deltaDistribution(
   double x[DIMENSIONS];
 
 
-  constexpr int numberOfVariables = solver.NumberOfVariables;
-  constexpr int numberOfParameters = solver.NumberOfParameters;
-  constexpr int numberOfPointSources = solver.NumberOfPointSources;  //1 at the moment
+  constexpr int numberOfVariables = SolverType::NumberOfVariables;
+  constexpr int numberOfParameters = SolverType::NumberOfParameters;
+  constexpr int numberOfPointSources = SolverType::NumberOfPointSources;  //1 at the moment
 
   //maybe reset tempStateSizedVector to 0 with std::memset
 

@@ -25,7 +25,7 @@ void kernels::aderdg::generic::c::solutionAdjustment(
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
   constexpr int order              = SolverType::Order;
   constexpr int basisSize          = order+1;
-  
+  printf("Solution Adjustment \n");
   idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
   
   double x[3];
