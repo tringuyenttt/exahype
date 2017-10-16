@@ -87,13 +87,15 @@ def prepareOutputDirectory(i_outputDirectory):
 
 def generateContext(i_config):
     context = copy.copy(i_config)
-    context['nVarPad'] = getSizeWithPadding(context['nVar'])
-    context['nDofPad'] = getSizeWithPadding(context['nDof'])
-    context['nDof3D'] = 1 if context['nDim'] == 2 else context['nDof']
+    context['nVarPad']  = getSizeWithPadding(context['nVar'])
+    context['nParPad']  = getSizeWithPadding(context['nPar'])
+    context['nDataPad'] = getSizeWithPadding(context['nData'])
+    context['nDofPad']  = getSizeWithPadding(context['nDof'])
+    context['nDof3D']   = 1 if context['nDim'] == 2 else context['nDof']
     context['isLinear'] = context['numerics'] == "linear"
-    context['solverHeader'] = context['solverName'].split('::')[1] + '.h'
+    context['solverHeader']      = context['solverName'].split('::')[1] + '.h'
     context['codeNamespaceList'] = context['codeNamespace'].split('::')
-    context['guardNamespace'] = '_'.join(context['codeNamespaceList']).upper()
+    context['guardNamespace']    = '_'.join(context['codeNamespaceList']).upper()
     return context
 
     
