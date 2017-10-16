@@ -23,7 +23,19 @@ void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs, exahype:
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
 	// Set the 9 SRMHD variables (D,S_j,tau,B^j) and the 10 [11] ADM material parameters (N^i,g_ij,[detg])
-	if(tarch::la::equals(t,0.0)) InitialData(x,t,Q);
+	if(tarch::la::equals(t,0.0)) {
+		InitialData(x,t,Q);
+	} else {
+		// overwrite ADM variables in order to avoid diffusion and so on
+		double QDummy[nVar];
+		InitialData(x,t,QDummy);
+		// Copy ADM variables
+		std::copy_n(
+			QDummy+SVEC::ADMBase::AbsoluteIndices::offset,
+			SVEC::ADMBase::size, 
+			Q     +SVEC::ADMBase::AbsoluteIndices::offset
+		);
+	}
 
 }
 
@@ -73,19 +85,50 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
     const double* const stateIn,
     double* stateOut) {
 	// SET BV for all 9 variables + 11 parameters.
+	
 	// EXACT FV AlfenWave BC
-	InitialData(x, t, stateOut);
+	// InitialData(x, t, stateOut);
+	
+	// NEUTRON STAR reflective + outflow BC:
+	NVARS(i) stateOut[i] = stateIn[i];
+	switch(faceIndex) {
+		case 0:
+		case 2:
+		case 4: {
+			// reflective BC:
+			SVEC::GRMHD::Shadow Q(stateOut);
+			
+			// vectors: flip sign
+			Q.Si.lo(d) *= -1;
+			Q.Bmag.up(d) *= -1;
+			
+			// Note: ADM BC should never be used anywhere as
+			// ADM variables are parameters in this setup anyway!
+			Q.beta.up(d) *= -1;
+			// Symmetric Tensors: flip sign of off-diagonal
+			DFOR(i) if(i != d) Q.gam.lo(i,d) *= -1;
+			
+			break;
+		}
+		case 1:
+		case 3:
+		case 5:
+			// outflow BC
+			break;
+	}
 }
 
 void GRMHD::GRMHDSolver_FV::algebraicSource(const double* const Q,double* S) {
 	// set source to zero
-	//NVARS(i) S[i] = 0;
-	//return;
+	NVARS(i) S[i] = 0;
+	return;
 	
 	if(isUnphysical(Q)) {
 		NVARS(i) S[i] = NAN;
 		return;
 	}
+	
+
 	
 	// Todo: Should not do a C2P in order to fill out the algebraic source.
 	// Or should just return zero here as the Fortran code does.
@@ -103,7 +146,8 @@ void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const d
 		return;
 	}
 	
-	//PDE::NCP ncp(BgradQ);
+	// debugging: set BgradQ to zero:
+	NVARS(i) BgradQ[i] = 0;
 	
 	// as we only have DIMENSIONS == 2 but TDIM == 3, construct a zero gradient
 	#if DIMENSIONS == 2

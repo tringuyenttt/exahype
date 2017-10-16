@@ -14,8 +14,6 @@ using SVEC::GRMHD::Cons2Prim;
 
 #include "kernels/aderdg/generic/c/sizes.cpph"
 
-
-
 GRMHD::IntegralsWriter::IntegralsWriter(exahype::solvers::LimitingADERDGSolver&  solver)
 	: IntegralsWriter() { plotForADERSolver = true; }
 
@@ -28,6 +26,7 @@ GRMHD::IntegralsWriter::IntegralsWriter(GRMHD::GRMHDSolver_FV&  solver)
 GRMHD::IntegralsWriter::IntegralsWriter() :
 	conserved("output/cons-"),
 	primitives("output/prim-"),
+	adm("output/const-adm-"), // for proof
 	errors("output/error-"),
 	statistics("output/volform")
 {
@@ -51,6 +50,18 @@ GRMHD::IntegralsWriter::IntegralsWriter() :
 	primitives.add(7, "bz");
 	primitives.add(8, "psi");
 	
+	// should all be static:
+	adm.add(9, "lapse");
+	adm.add(10, "shiftx");
+	adm.add(11, "shifty");
+	adm.add(12, "shiftz");
+	adm.add(13, "gxx"); 	// gij ordering: Tensish (C)
+	adm.add(14, "gxy");
+	adm.add(15, "gyy");
+	adm.add(16, "gxz");
+	adm.add(17, "gyz");
+	adm.add(18, "gzz");
+
 	errors.add(0, "rho");
 	errors.add(1, "velx");
 	errors.add(2, "vely");
@@ -60,6 +71,17 @@ GRMHD::IntegralsWriter::IntegralsWriter() :
 	errors.add(6, "by");
 	errors.add(7, "bz");
 	errors.add(8, "psi");
+	// for proof
+	adm.add(9, "lapse");
+	adm.add(10, "shiftx");
+	adm.add(11, "shifty");
+	adm.add(12, "shiftz");
+	adm.add(13, "gxx"); 	// gij ordering: Tensish (C)
+	adm.add(14, "gxy");
+	adm.add(15, "gyy");
+	adm.add(16, "gxz");
+	adm.add(17, "gyz");
+	adm.add(18, "gzz");
 }
 
 
@@ -112,6 +134,7 @@ void GRMHD::IntegralsWriter::mapQuantities(
 
 	// reduce the conserved quantities
 	conserved.addValue(Q, dV);
+	adm.addValue(Q, dV);
 
 	// reduce the primitive quantities
 	double V[nVar];

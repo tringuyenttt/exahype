@@ -29,6 +29,7 @@ class GRMHD::IntegralsWriter: public exahype::plotters::Plotter::UserOnTheFlyPos
   static const int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
   exahype::plotters::ascii::MultipleReductionsWriter conserved;
   exahype::plotters::ascii::MultipleReductionsWriter primitives;
+  exahype::plotters::ascii::MultipleReductionsWriter adm;
   exahype::plotters::ascii::MultipleReductionsWriter errors;
   exahype::plotters::ascii::ReductionsWriter statistics;
   
