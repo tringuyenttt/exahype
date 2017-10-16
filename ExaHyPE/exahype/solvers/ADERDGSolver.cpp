@@ -1000,11 +1000,9 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
     logDebug("updateStateInEnterCell(...)","Add new uniform grid cell with offset "<<fineGridVerticesEnumerator.getVertexPosition() <<
             " at level "<<fineGridVerticesEnumerator.getLevel());
 
-    tarch::multicore::Lock lock(HeapSemaphore);
     addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
                multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
                solverNumber); // TODO(Dominic): Can directly refine if we directly evaluate initial conditions here.
-    lock.free();
     result._newComputeCellAllocated |= true;
   } else if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
     // Fine grid cell based adaptive mesh refinement operations.
@@ -1071,7 +1069,6 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
         fineGridCell.getCellDescriptionsIndex());
 
     // TODO(Dominic): Pass limiter status flag down to the new cell
-    tarch::multicore::Lock lock(HeapSemaphore);
     addNewDescendantIfAugmentingRequested(
             fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
             coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
@@ -1080,7 +1077,6 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
             fineGridCell,fineGridVertices,fineGridVerticesEnumerator,fineGridPositionOfCell,
             coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex(),
             initialGrid);
-    lock.free();
   }
 
   return result;
@@ -1152,6 +1148,8 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
   }
 
   if (vetoErasing) {
+    waitUntilAllBackgroundTasksHaveTerminated();
+
     tarch::multicore::Lock lock(HeapSemaphore);
     int coarseGridCellElement = tryGetElement(fineGridCellDescription.getParentIndex(),
                                               fineGridCellDescription.getSolverNumber());

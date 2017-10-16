@@ -328,6 +328,9 @@ void exahype::Cell::addNewCellDescription(
     const int parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
     const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
+  exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
+  tarch::multicore::Lock lock(exahype::HeapSemaphore);
+
   if (_cellData.getCellDescriptionsIndex() == multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
     setupMetaData();
   }
@@ -347,6 +350,9 @@ void exahype::Cell::addNewCellDescription(
   const int                                     parentIndex,
   const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
   const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
+  exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
+  tarch::multicore::Lock lock(exahype::HeapSemaphore);
+
   if (_cellData.getCellDescriptionsIndex() == multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
     setupMetaData();
   }

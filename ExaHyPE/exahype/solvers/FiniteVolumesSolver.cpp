@@ -315,11 +315,9 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::FiniteV
   if (fineGridCellElement==exahype::solvers::Solver::NotFound &&
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
       tarch::la::allGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())) {
-    tarch::multicore::Lock lock(HeapSemaphore);
     addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
                multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
                solverNumber);
-    lock.free();
 
     result._newComputeCellAllocated = true;
     // Fine grid cell based adaptive mesh refinement operations are not implemented.
