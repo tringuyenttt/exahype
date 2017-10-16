@@ -86,6 +86,15 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
     void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0)  final {}
     {%- endif %}
     
+    /**
+     * Default implementation. Has to be be overwritten by user's solver if you 
+     * make the corresponding use operation activate the feature.
+     *
+     * See superclass for function's semantics.
+     */
+    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) override {}
+    virtual void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) override {}
+    
 };
 
 
