@@ -307,7 +307,7 @@ exahype::plotters::Plotter::Plotter(
             postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
-      if (equalsIgnoreCase(_identifier, ADERDG2CarpetHDF5::getIdentifier())) {
+      if (equalsIgnoreCase(_identifier, FiniteVolume2CarpetHDF5::getIdentifier())) {
         _device = new FiniteVolume2CarpetHDF5(
 	              postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
