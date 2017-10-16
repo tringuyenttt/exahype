@@ -23,13 +23,13 @@ namespace c {
 
 #if DIMENSIONS == 2
 
-template <bool useSourceOrNCP, bool useFlux, int numberOfVariables, int basisSize>
+template <bool useSource, bool useFlux, int numberOfVariables, int basisSize>
 void volumeIntegralLinear(double* lduh, const double* const lFhi,
                           const tarch::la::Vector<DIMENSIONS, double>& dx) {
   // for linear non-conservative PDE, the volume integral is trivial, since it
   // only involves the element mass matrix, which later will cancel
 
-  idx4 idx_lFhi(DIMENSIONS, basisSize, basisSize, numberOfVariables);
+  idx4 idx_lFhi(DIMENSIONS+1, basisSize, basisSize, numberOfVariables);
   idx3 idx_lduh(basisSize, basisSize, numberOfVariables);
 
   const int basisSize2 = basisSize * basisSize;
@@ -39,14 +39,24 @@ void volumeIntegralLinear(double* lduh, const double* const lFhi,
 
   for (int j = 0; j < basisSize; j++) {
     for (int k = 0; k < basisSize; k++) {
+#if defined(_GLL)
+      double weight = kernels::gaussLobattoWeights[order][j] *
+	              kernels::gaussLobattoWeights[order][k];
+#else      
       double weight = kernels::gaussLegendreWeights[order][j] *
                       kernels::gaussLegendreWeights[order][k];
+#endif      
 
       // Fortran: lduh(:,k,j) = -SUM(lFhi(:,k,j,1:nDim), dim = 4) * weight
       for (int l = 0; l < numberOfVariables; l++) {
         for (int m = 0; m < DIMENSIONS; m++) {
           lduh[idx_lduh(j, k, l)] -= weight * lFhi[idx_lFhi(m, j, k, l)];
         }
+
+	if(useSource){
+	  int m=2;
+	  lduh[idx_lduh(j, k, l)] -= weight * lFhi[idx_lFhi(m, j, k, l)];
+	}
       }
     }
   }

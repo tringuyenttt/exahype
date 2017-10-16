@@ -61,7 +61,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
 {% if useNCP %}
   double ncp[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
 {% endif %}
-  double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value)
+  double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx[0] * dt; //Assume dx[0] == dx[1] == dx[2]
   int ijk_; //helper counter
   
@@ -78,7 +78,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
   // 1. Trivial initial guess
   for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
     for (int l = 0; l < {{nDof}}; l++) {
-      std::copy(&luh[{{nVar}}*ijk], &luh[{{nVar}}*ijk]+{{nVar}}, &lQi[{{nVarPad}}*(l+{{nDof}}*ijk)]);
+      std::copy(&luh[{{nData}}*ijk], &luh[{{nData}}*ijk]+{{nData}}, &lQi[{{nDataPad}}*(l+{{nDof}}*ijk)]);
     }
   }
 
@@ -95,7 +95,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
       // Compute the fluxes
       for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
         // Call PDE fluxes
-        const double* Q = &lQi[{{nVarPad}}*(i+{{nDof}}*jkl)];
+        const double* Q = &lQi[{{nDataPad}}*(i+{{nDof}}*jkl)];
         double* F[{{nDim}}];
         F[0] = &lFi[{{nVarPad}}*(jkl+{{nDof**nDim}}*i)];
         F[1] = &lFi[{{nVarPad}}*(jkl+{{nDof**nDim}}*i)+{{1*(nDof**nDim)*nDof*nVarPad}}];
@@ -125,7 +125,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
         const double weight = weights3[jkl] * FLCoeff[i];
         #pragma simd
         for (int n = 0; n < {{nVar}}; n++) {
-          rhs[n+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)] = weight * luh[n+{{nVar}}*jkl];
+          rhs[n+{{nVarPad}}*(jkl+{{nDof**nDim}}*i)] = weight * luh[n+{{nData}}*jkl];
         }
       }
       
@@ -167,14 +167,14 @@ void {{codeNamespace}}::picardLoopNonlinear(
 #ifdef USE_IPO
           #pragma forceinline
 #endif
-          {{gemm_gradQ_x}}(&lQi[{{nVarPad}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))]);
+          {{gemm_gradQ_x}}(&lQi[{{nDataPad}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof*nDof}}*(k+{{nDof}}*j))]);
 {% else %}
           for (int l = 0; l < {{nDof}}; l++) {
             for (int m = 0; m < {{nDof}}; m++) {
               #pragma simd
               for (int n = 0; n < {{nVar}}; n++) {
                 gradQ[n+{{nVar}}*(0+{{nDim}}*(i+{{nDof}}*(l+{{nDof}}*(k+{{nDof}}*j))))] += inverseDx[0] *
-                    lQi[n+{{nVarPad}}*(i+{{nDof}}*(m+{{nDof}}*(k+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
+                    lQi[n+{{nDataPad}}*(i+{{nDof}}*(m+{{nDof}}*(k+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
               }
             }
           } 
@@ -218,14 +218,14 @@ void {{codeNamespace}}::picardLoopNonlinear(
 #ifdef USE_IPO
           #pragma forceinline
 #endif
-          {{gemm_gradQ_y}}(&lQi[{{nVarPad}}*(i+{{nDof}}*(k+{{nDof*nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof}}*(k+{{nDof*nDof}}*j))+{{nVarPad}}]);
+          {{gemm_gradQ_y}}(&lQi[{{nDataPad}}*(i+{{nDof}}*(k+{{nDof*nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof}}*(k+{{nDof*nDof}}*j))+{{nVarPad}}]);
 {% else %}
           for (int l = 0; l < {{nDof}}; l++) {
             for (int m = 0; m < {{nDof}}; m++) {
               #pragma simd
               for (int n = 0; n < {{nVar}}; n++) {
                 gradQ[n+{{nVar}}*(1+{{nDim}}*(i+{{nDof}}*(k+{{nDof}}*(l+{{nDof}}*j))))] += inverseDx[0] *
-                    lQi[n+{{nVarPad}}*(i+{{nDof}}*(k+{{nDof}}*(m+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
+                    lQi[n+{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*(m+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
               }
             }
           }
@@ -267,14 +267,14 @@ void {{codeNamespace}}::picardLoopNonlinear(
 #ifdef USE_IPO
           #pragma forceinline
 #endif
-          {{gemm_gradQ_z}}(&lQi[{{nVarPad}}*(i+{{nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof}}*(k+{{nDof}}*j))+{{2*nVarPad}}]);
+          {{gemm_gradQ_z}}(&lQi[{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*j))], &dudxT_by_dx[0], &gradQ[{{nVarPad*nDim}}*(i+{{nDof}}*(k+{{nDof}}*j))+{{2*nVarPad}}]);
 {% else %}
           for (int l = 0; l < {{nDof}}; l++) {
             for (int m = 0; m < {{nDof}}; m++) {
               #pragma simd
               for (int n = 0; n < {{nVar}}; n++) {
                 gradQ[n+{{nVar}}*(2+{{nDim}}*(i+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*l))))] += inverseDx [0] *
-                    lQi[n+{{nVarPad}}*(i+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*m)))] * dudx[l+{{nDofPad}}*m];
+                    lQi[n+{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*m)))] * dudx[l+{{nDofPad}}*m];
               }
             }
           }
@@ -295,12 +295,12 @@ void {{codeNamespace}}::picardLoopNonlinear(
         profiler->stop("spaceTimePredictor");
         profiler->start("spaceTimePredictor_PDEfusedSource");
 {% endif %}           
-        // Old code (for reference): solver.{{solverName}}::fusedSource(&lQi[{{nVarPad}}*it], &gradQNoPad[0], &lSi[shift]);
+        // Old code (for reference): solver.{{solverName}}::fusedSource(&lQi[{{nDataPad}}*it], &gradQNoPad[0], &lSi[shift]);
 {% if useSource %}
 #ifdef USE_IPO
         #pragma forceinline recursive
 #endif
-        solver.{{solverName}}::algebraicSource(&lQi[{{nVarPad}}*it], &lSi[shift]);
+        solver.{{solverName}}::algebraicSource(&lQi[{{nDataPad}}*it], &lSi[shift]);
 {% else %}
         std::memset(&lSi[shift], 0, {{nVarPad}} * sizeof(double));
 {% endif %}
@@ -315,7 +315,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
 #ifdef USE_IPO
         #pragma forceinline recursive
 #endif
-        solver.{{solverName}}::nonConservativeProduct(&lQi[{{nVarPad}}*it], &gradQNoPad[0], ncp);
+        solver.{{solverName}}::nonConservativeProduct(&lQi[{{nDataPad}}*it], &gradQNoPad[0], ncp);
         #pragma simd
         for(int n = 0; n<{{nVarPad}}; n++) {
           lSi[n+shift] -= ncp[n];
@@ -359,10 +359,12 @@ void {{codeNamespace}}::picardLoopNonlinear(
         }
       }
 {% endif %}
-      for (int l = 0; l < {{nDof*nVarPad}}; l++) {
-        sq_res += (new_lQi_slice[l] - lQi[l+{{nDof*nVarPad}}*ijk]) * (new_lQi_slice[l] - lQi[l+{{nDof*nVarPad}}*ijk]);
+      for(int l = 0; l < {{nDof}}; l++) {
+        for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
+          sq_res += (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]) * (new_lQi_slice[n+{{nVarPad}}*l] - lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)]);
+          lQi[n+{{nDataPad}}*(l+{{nDof}}*ijk)] = new_lQi_slice[n+{{nVarPad}}*l];
+        }
       }
-      std::copy(&new_lQi_slice[0], &new_lQi_slice[0]+{{nDof*nVarPad}}, &lQi[{{nDof*nVarPad}}*ijk]);
     }
 
     // 5. Exit condition

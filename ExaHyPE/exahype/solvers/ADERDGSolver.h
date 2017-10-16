@@ -280,6 +280,8 @@ private:
    * registered. Returns false otherwise.
    *
    * TODO(Dominic): More docu.
+   *
+   * \note This operations is not thread-safe
    */
   bool eraseCellDescriptionIfNecessary(
       const int cellDescriptionsIndex,
@@ -290,6 +292,8 @@ private:
   /**
    * Initialise cell description of type Cell.
    * Initialise the refinement event with None.
+   *
+   * \note This operations is not thread-safe
    */
   void addNewCell(
       exahype::Cell& fineGridCell,
@@ -309,6 +313,8 @@ private:
    *
    * Additionally, copies the information if a face is inside
    * from the parent to the new child cell.
+   *
+   * \note This operations is not thread-safe
    */
   void addNewDescendantIfAugmentingRequested(
       exahype::Cell& fineGridCell,
@@ -330,9 +336,12 @@ private:
    * Additionally, copies the information if a face is inside
    * from the parent to the new child cell.
    *
+   * \return True if a cell description of type Cell was allocated
+   * on the fineGridCell
+   *
    * \note This operations is not thread-safe
    */
-  void addNewCellIfRefinementRequested(
+  bool addNewCellIfRefinementRequested(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -937,7 +946,7 @@ public:
    * to change the allocated size independently of the solver parameters.
    * For example to add padding forthe optimised kernel
    */
-  virtual int getTempSpaceTimeUnknownsSize()      const {return getSpaceTimeDataPerCell()+getDataPerCell();} // TODO function should be renamed
+  virtual int getTempSpaceTimeUnknownsSize()      const {return getSpaceTimeDataPerCell();} // TODO function should be renamed
   virtual int getTempSpaceTimeFluxUnknowns0Size() const {return getSpaceTimeFluxUnknownsPerCell();}
   virtual int getTempSpaceTimeFluxUnknowns1Size() const {return getSpaceTimeFluxUnknownsPerCell();}
   virtual int getTempUnknownsSize()               const {return getDataPerCell();} // TODO function should be renamed
@@ -948,7 +957,7 @@ public:
   virtual int getBndFluxSize()                    const {return getUnknownsPerFace();} // TODO function should be renamed
   virtual int getBndFluxTotalSize()               const {return getUnknownsPerCellBoundary();} // TODO function should be renamed
   virtual int getTempStateSizedVectorsSize()      const {return getNumberOfVariables()+getNumberOfParameters();} //dataPoints
-  
+
   virtual bool alignTempArray()                   const {return false;}
 
   /**
@@ -1012,8 +1021,9 @@ public:
   virtual void riemannSolver(double* FL, double* FR,
                              const double* const QL,const double* const QR,
                              const double dt,
-                             const int direction,
-                             bool isBoundaryFace) = 0;
+                             const int normalNonZero,
+                             bool isBoundaryFace,
+                             int faceIndex) = 0;
 
   /**
    * Return the normal fluxes (or fluctuations) and state variables at the boundary.
@@ -1105,9 +1115,9 @@ public:
       const double dt) = 0;
 
   /**
-   * PointSource kernel
+   * DeltaDistribution kernel (pointSource)
    **/
-  virtual void pointSource(
+  virtual void deltaDistribution(
     const double t,
     const double dt, 
     const tarch::la::Vector<DIMENSIONS,double>& center,
@@ -1452,7 +1462,7 @@ public:
       const bool initialGrid,
       const int solverNumber) override;
 
-  bool updateStateInEnterCell(
+   UpdateStateInEnterCellResult updateStateInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1629,11 +1639,11 @@ public:
    * has initially no meaning and
    * equals std::numeric_limits<double>::max().
    */
-  void setInitialConditions(
+  void adjustSolution(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  CellUpdateResult fusedTimeStep(
+  UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       double** tempSpaceTimeUnknowns,

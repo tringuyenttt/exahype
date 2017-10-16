@@ -19,7 +19,11 @@
 #include "peano/utils/Globals.h"
 #include "tarch/la/Vector.h"
 
+
+#include "kernels/GaussLobattoQuadrature.h"
+
 #include "kernels/GaussLegendreQuadrature.h"
+
 
 #include "kernels/DGMatrices.h"
 
@@ -78,10 +82,21 @@ namespace aderdg {
 namespace generic {
 namespace c {
 
-
 /**
  * @param SolverType Has to be of type ADERDG Solver.
  */
+template <bool usePointSource, bool useSource, bool useFlux, bool useNCP, bool useMM ,typename SolverType>
+void spaceTimePredictorLinear(SolverType& solver,
+    double* lQbnd, double* lFbnd,
+    double** tempSpaceTimeUnknowns,
+    double** tempSpaceTimeFluxUnknowns,
+    double*  tempUnknowns,
+    double*  tempFluxUnknowns,
+    const double* const luh,
+    const tarch::la::Vector<DIMENSIONS, double>& dx,
+    const double dt,
+    double* tempPointForceSources);
+
 template <bool useSource, bool useFlux, bool useNCP, bool noTimeAveraging, typename SolverType>
 void spaceTimePredictorNonlinear(
     SolverType& solver,
@@ -200,14 +215,12 @@ void volumeUnknownsRestriction(
     
 //TODO KD    
 template <typename SolverType>
-void pointSource(
+void deltaDistribution(
     SolverType& solver,
     const double t,
     const double dt,
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
-    const int numberOfVariables, 
-    const int numberOfParameters, 
     const int basisSize,
     double* tempPointForceSources //memory space for forceVector
     );
@@ -225,7 +238,7 @@ void pointSource(
 #include "kernels/aderdg/generic/c/2d/spaceTimePredictorLinear.cpph"
 #include "kernels/aderdg/generic/c/2d/spaceTimePredictorNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/stableTimeStepSize.cpph"
-#include "kernels/aderdg/generic/c/2d/pointSource.cpph"
+#include "kernels/aderdg/generic/c/2d/deltaDistribution.cpph"
 #include "kernels/aderdg/generic/c/2d/surfaceIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/2d/surfaceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/2d/volumeIntegralLinear.cpph"
@@ -240,7 +253,7 @@ void pointSource(
 #include "kernels/aderdg/generic/c/3d/spaceTimePredictorLinear.cpph"
 #include "kernels/aderdg/generic/c/3d/spaceTimePredictorNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/stableTimeStepSize.cpph"
-#include "kernels/aderdg/generic/c/3d/pointSource.cpph"
+#include "kernels/aderdg/generic/c/3d/deltaDistribution.cpph"
 #include "kernels/aderdg/generic/c/3d/surfaceIntegralLinear.cpph"
 #include "kernels/aderdg/generic/c/3d/surfaceIntegralNonlinear.cpph"
 #include "kernels/aderdg/generic/c/3d/volumeIntegralLinear.cpph"

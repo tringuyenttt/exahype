@@ -63,6 +63,9 @@ l_parser.add_argument("solverName",
 l_parser.add_argument("numberOfVariables", 
                       type=int, 
                       help="the number of quantities")
+l_parser.add_argument("numberOfParameters", 
+                      type=int, 
+                      help="the number of parameters (fixed quantities)")
 l_parser.add_argument("order", 
                       type=int, 
                       help="the order of the approximation polynomial")
@@ -98,9 +101,10 @@ config = {
            "pathToOptKernel"       : l_commandLineArguments.pathToOptKernel,
            "solverName"            : l_commandLineArguments.solverName,
            "nVar"                  : l_commandLineArguments.numberOfVariables,
+           "nPar"                  : l_commandLineArguments.numberOfParameters,
+           "nData"                 : l_commandLineArguments.numberOfVariables + l_commandLineArguments.numberOfParameters,
            "nDof"                  : (l_commandLineArguments.order)+1,
            "nDim"                  : l_commandLineArguments.dimension,
-           "nPar"                  : 0, #TODO JMG add paramters ?
            "useDeepProfiler"       : l_commandLineArguments.deepProfiling,
            "useFlux"               : l_commandLineArguments.useFlux,
            "useNCP"                : l_commandLineArguments.useNCP,

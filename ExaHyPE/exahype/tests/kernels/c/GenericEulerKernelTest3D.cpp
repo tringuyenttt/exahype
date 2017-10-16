@@ -23,6 +23,9 @@ namespace exahype {
 namespace tests {
 namespace c {
 
+
+
+  
 void GenericEulerKernelTest::flux(const double *const Q, double **F) {
   double *f = F[0];
   double *g = F[1];
@@ -555,7 +558,7 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
   double lFhbnd[480] = {0.0};  // nVar * nDOFy * nDOF_z * 6
 
   // TODO(Dominic): Fix test
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<false,false,false,false,GenericEulerKernelTest>(
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<false,false,false,false,false,GenericEulerKernelTest>(
       *this,
       lQhbnd, lFhbnd,
       tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,

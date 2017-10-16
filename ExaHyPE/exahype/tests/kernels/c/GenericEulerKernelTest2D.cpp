@@ -50,6 +50,7 @@ void GenericEulerKernelTest::flux(const double *Q, double **F) {
   g[4] = irho * Q[2] * (Q[4] + p);
 }
 
+
 void GenericEulerKernelTest::algebraicSource(const double* const Q, double *S) {
   S[0] = 0.0;
   S[1] = 0.0;
@@ -839,7 +840,7 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
   double lFhbnd[80];  // nVar * nDOFy * 4
 
   _setNcpAndMatrixBToZero = true;
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<false,false,false,false,GenericEulerKernelTest>(
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<false,false,false,false,false,GenericEulerKernelTest>(
       *this,
       lQhbnd, lFhbnd,
       tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,

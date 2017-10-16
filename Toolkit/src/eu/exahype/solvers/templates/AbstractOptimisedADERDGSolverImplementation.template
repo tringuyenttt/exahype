@@ -156,17 +156,18 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
 }
 
 
-
+{%- if !patchwiseAdjust %}
 void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
 {%- if enableProfiler %}
   _profiler->start("solutionAdjustment");
 {%- endif %}
   {{optNamespace}}::adjustPointSolution(*static_cast<{{solver}}*>(this), luh, center, dx, t, dt );
+
 {%- if enableProfiler %}
   _profiler->stop("solutionAdjustment");
 {%- endif %}
 }
-
+{%- endif %}
 
 
 void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
@@ -224,15 +225,15 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 }
 
 
-void {{project}}::{{abstractSolver}}::pointSource(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double* tempPointForceSources) {
+void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double* tempPointForceSources) {
 {%- if usePointSource %}
 {%- if enableProfiler %}
-  _profiler->start("pointSource");
+  _profiler->start("deltaDistribution");
 {%- endif %}
   //TODO JMG
-  //kernels::aderdg::generic::c::pointSource<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, getNumberOfVariables(),getNumberOfParameters(),getNodesPerCoordinateAxis(), tempPointForceSources);
+  //kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, getNumberOfVariables(),getNumberOfParameters(),getNodesPerCoordinateAxis(), tempPointForceSources);
 {%- if enableProfiler %}
-  _profiler->stop("pointSource");
+  _profiler->stop("deltaDistribution");
 {%- endif %}
 {%- else %}
   //Point sources aren't defined, this method should be empty
@@ -251,7 +252,7 @@ void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const
   abortWithMsg("If this operation is entered (nonConservativeProduct), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
-void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) {
+void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
   abortWithMsg("If this operation is entered (pointSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 

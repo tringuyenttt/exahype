@@ -10,7 +10,13 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
+//#include "../../../../GaussLegendreQuadrature.h"
+#if defined(_GLL)
+#include "../../../../GaussLobattoQuadrature.h"
+#else
 #include "../../../../GaussLegendreQuadrature.h"
+
+#endif    
 #include "../../../../KernelUtils.h"
 
 namespace kernels {
@@ -33,9 +39,18 @@ void solutionUpdate(SolverType& solver, double* luh, const double* const lduh, c
   for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
       for (int k = 0; k < basisSize; k++) {
-        const double weight = kernels::gaussLegendreWeights[order][i] *
+      #if defined(_GLL)
+      const double weight = kernels::gaussLobattoWeights[order][i] *
+                              kernels::gaussLobattoWeights[order][j] *
+                              kernels::gaussLobattoWeights[order][k];
+
+      #else
+      const double weight = kernels::gaussLegendreWeights[order][i] *
                               kernels::gaussLegendreWeights[order][j] *
                               kernels::gaussLegendreWeights[order][k];
+
+      #endif
+        
         const double updateSize = dt / weight;
 
         for (int l = 0; l < numberOfVariables; l++) {

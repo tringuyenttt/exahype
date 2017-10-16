@@ -537,14 +537,24 @@ Productions
       { -> [New variable.with_name(name,value)] }
     |
     {list}   [name]:identifier token_colon [value]:int_number token_comma variable_list
-      { -> [New variable.with_name(name,value),variable_list.variable] };
-	  
+      { -> [New variable.with_name(name,value),variable_list.variable] }
+    |
+    {list_int} [value]:int_number token_comma variable_list
+      { -> [New variable.without_name(value),variable_list.variable] }
+    ;
+  
   id_list {->id+} =
     {single_identifier} [value]:identifier
       { -> [New id.identifier(value)] }
     |
-    {list_identifier} [value]:identifier token_comma id_list
-      { -> [New id.identifier(value),id_list.id] }    
+    {single} [value]:identifier token_colon [mult]:int_number
+      { -> [New id.identifier_with_mult(value,mult)] }
+    |
+    {list_id} [value]:identifier token_comma id_list
+      { -> [New id.identifier(value),id_list.id] }
+    |
+    {list_id_with_mult} [value]:identifier token_colon [mult]:int_number token_comma id_list
+      { -> [New id.identifier_with_mult(value,mult),id_list.id] }
     ;
 
 Abstract Syntax Tree
@@ -624,6 +634,7 @@ Abstract Syntax Tree
 
   id = 
       {identifier} [value]:identifier
+    | {identifier_with_mult} [value]:identifier [multiplicity]:int_number
     ;
     
   constant = 

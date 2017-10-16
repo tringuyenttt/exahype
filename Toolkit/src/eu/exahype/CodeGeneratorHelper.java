@@ -104,6 +104,7 @@ public class CodeGeneratorHelper {
                   + " " + namespace
                   + " " + projectName + "::" + solverName 
                   + " " + numberOfUnknowns 
+                  + " " + numberOfParameters 
                   + " " + order 
                   + " " + dimensions 
                   + " " + numericsParameter 

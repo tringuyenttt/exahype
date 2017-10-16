@@ -38,7 +38,6 @@ class SpaceTimePredictorGenerator:
 
 
     def generateCode(self):
-        self.m_context['bndFaceSize'] = self.m_context['nVarPad'] * self.m_context['nDof'] * self.m_context['nDof3D']
         self.m_context['nDof_seq'] = range(0,self.m_context['nDof'])
         gemmName = 'gemm_'+str(self.m_context['nVar'])+'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])
         self.m_context['gemm_rhs_x'] = gemmName+'_rhs_x'
@@ -152,7 +151,7 @@ class SpaceTimePredictorGenerator:
                                         # K
                                         self.m_context['nDof'],    \
                                         # LDA
-                                        self.m_context['nVarPad'] * self.m_context['nDof'], \
+                                        self.m_context['nDataPad'] * self.m_context['nDof'], \
                                         # LDB
                                         self.m_context['nDofPad'], \
                                         # LDC
@@ -179,7 +178,7 @@ class SpaceTimePredictorGenerator:
                                         # K
                                         self.m_context['nDof'],    \
                                         # LDA
-                                        self.m_context['nVarPad'] * (self.m_context['nDof'] ** 2), \
+                                        self.m_context['nDataPad'] * (self.m_context['nDof'] ** 2), \
                                         # LDB
                                         self.m_context['nDofPad'], \
                                         # LDC
@@ -207,7 +206,7 @@ class SpaceTimePredictorGenerator:
                                             # K
                                             self.m_context['nDof'],    \
                                             # LDA
-                                            self.m_context['nVarPad'] * (self.m_context['nDof'] ** 3), \
+                                            self.m_context['nDataPad'] * (self.m_context['nDof'] ** 3), \
                                             # LDB
                                             self.m_context['nDofPad'], \
                                             # LDC

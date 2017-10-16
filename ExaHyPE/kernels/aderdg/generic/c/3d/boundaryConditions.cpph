@@ -15,7 +15,13 @@
 
 #include <algorithm>
 
+//#include "kernels/GaussLegendreQuadrature.h"
+#if defined(_GLL)
+#include "kernels/GaussLobattoQuadrature.h"
+#else
 #include "kernels/GaussLegendreQuadrature.h"
+#endif      
+
 #include "kernels/DGMatrices.h"
 #include "kernels/KernelUtils.h"
 
@@ -71,9 +77,19 @@ void kernels::aderdg::generic::c::boundaryConditions(
   double x[DIMENSIONS];
   x[normalNonZero] = cellCentre[normalNonZero] + (-0.5 + f)*cellSize[normalNonZero];
   for (int i = 0; i < basisSize; i++) {  // loop over dof
-    x[d2] = cellCentre[d2] + cellSize[d2] * (kernels::gaussLegendreNodes[order][i] - 0.5);  
+  #if defined(_GLL)
+    const double node = kernels::gaussLobattoNodes[basisSize-1][basisSize-1-i];
+#else      
+    const double node = kernels::gaussLegendreNodes[basisSize-1][i];
+#endif  
+    x[d2] = cellCentre[d2] + cellSize[d2] * (node - 0.5);  
     for (int j = 0; j < basisSize; j++) {  // loop over dof
-      x[d1] = cellCentre[d1] + cellSize[d1] * (kernels::gaussLegendreNodes[order][j] - 0.5); 
+    #if defined(_GLL)
+    const double node = kernels::gaussLobattoNodes[basisSize-1][basisSize-1-j];
+#else      
+    const double node = kernels::gaussLegendreNodes[basisSize-1][j];
+#endif  
+      x[d1] = cellCentre[d1] + cellSize[d1] * (node - 0.5); 
       
       solver.boundaryValues(
           x,t,dt,faceIndex,normalNonZero,

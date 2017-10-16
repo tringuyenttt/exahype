@@ -22,7 +22,9 @@
  * We use Peano's logging
  */
 #include "tarch/logging/Log.h"
-
+{%- if patchwiseAdjust %}
+#include "tarch/la/Vector.h"
+{%- endif %}
 
 namespace {{project}}{
   class {{solver}};
@@ -44,6 +46,13 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      */
     void init(std::vector<std::string>& cmdlineargs{% if hasConstants %}, exahype::Parser::ParserView& constants{% endif %});
     
+{%- if patchwiseAdjust %}
+    /**
+     * Patchwise adjust
+     * @TODO LR : Document
+     */
+    void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) override;
+{%- else %}
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
      *
@@ -57,7 +66,8 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      *                         as C array (already allocated).
      */
     void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) override;
-    
+{%- endif %}
+
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
      *
@@ -169,7 +179,14 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * 
      * @TODO: Document me, please.
     **/
-    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) final override;
+    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) final override;
+{%- endif %}
+
+{%- if useMaterialParam %}
+    /**
+     * @TODO LR : document
+     */
+    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
 {%- endif %}
 };
 

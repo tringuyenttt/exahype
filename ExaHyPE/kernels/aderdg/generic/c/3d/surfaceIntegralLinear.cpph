@@ -34,8 +34,15 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
   // x faces
   for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
-      const double weight = kernels::gaussLegendreWeights[order][i] *
+    #if defined(_GLL)
+      const double weight = kernels::gaussLobattoWeights[order][i] *
+                            kernels::gaussLobattoWeights[order][j];
+    #else
+    const double weight = kernels::gaussLegendreWeights[order][i] *
                             kernels::gaussLegendreWeights[order][j];
+
+    #endif				
+    
       const double updateSize = weight / dx[0];
 
       for (int k = 0; k < basisSize; k++) {
@@ -54,8 +61,13 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
   for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
       for (int k = 0; k < basisSize; k++) {
+       #if defined(_GLL)
+        const double weight = kernels::gaussLobattoWeights[order][i] *
+                              kernels::gaussLobattoWeights[order][k];
+       #else
         const double weight = kernels::gaussLegendreWeights[order][i] *
                               kernels::gaussLegendreWeights[order][k];
+       #endif
         const double updateSize = weight / dx[1];
 
         // back flux minus front flux
@@ -73,8 +85,13 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
   for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
       for (int k = 0; k < basisSize; k++) {
+       #if defined(_GLL)
+       const double weight = kernels::gaussLobattoWeights[order][j] *
+                             kernels::gaussLobattoWeights[order][k];
+        #else
         const double weight = kernels::gaussLegendreWeights[order][j] *
                               kernels::gaussLegendreWeights[order][k];
+       #endif
         const double updateSize = weight / dx[2];
 
         // bottom flux minus top flux

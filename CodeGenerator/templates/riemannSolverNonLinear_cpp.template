@@ -41,17 +41,17 @@ void {{codeNamespace}}::riemannSolver(
 #endif
 
   double tmp_bnd[{{nVarPad*nDof*nDof3D}}] __attribute__((aligned(ALIGNMENT)));
-  double QavL[{{nVarPad}}] __attribute__((aligned(ALIGNMENT))) = {0.};
-  double QavR[{{nVarPad}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+  double QavL[{{nDataPad}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
+  double QavR[{{nDataPad}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
   
   for(int i=0;i<{{nDof*nDof3D}};i++) {
     #pragma simd
-    for(int n=0; n<{{nVarPad}}; n++) {
-      QavL[n] += weights2[i] * lQhbndL[n+{{nVarPad}}*i];
+    for(int n=0; n<{{nDataPad}}; n++) {
+      QavL[n] += weights2[i] * lQhbndL[n+{{nDataPad}}*i];
     }
     #pragma simd
-    for(int n=0; n<{{nVarPad}}; n++) {
-      QavR[n] += weights2[i] * lQhbndR[n+{{nVarPad}}*i];
+    for(int n=0; n<{{nDataPad}}; n++) {
+      QavR[n] += weights2[i] * lQhbndR[n+{{nDataPad}}*i];
     }
   }
   
@@ -72,10 +72,12 @@ void {{codeNamespace}}::riemannSolver(
     smax = std::max(smax, std::max(fabs(lambdaL[ivar]), fabs(lambdaR[ivar])));
   }
   
-  
-  #pragma simd
-  for(int i=0; i<{{nVarPad*nDof*nDof3D}}; i++) {
-    tmp_bnd[i] = smax * (lQhbndL[i]-lQhbndR[i]);
+  //skip parameters
+  for(int j=0; j<{{nDof*nDof3D}}; j++){
+    #pragma simd
+    for(int i=0; i<{{nVarPad}}; i++) {
+      tmp_bnd[i+{{nVarPad}}*j] = smax * (lQhbndL[i+{{nDataPad}}*j]-lQhbndR[i+{{nDataPad}}*j]);
+    }
   }
   
   #pragma simd
@@ -91,15 +93,15 @@ void {{codeNamespace}}::riemannSolver(
   
 {% if useNCP %}
   //add non-conservative product part
-  double Qavg[{{nVar}}] __attribute__((aligned(ALIGNMENT))) = {0.};
-  double gradQ[{{nDim*nVar}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+  double Qavg[{{nData}}] __attribute__((aligned(ALIGNMENT))) = {0.0};  {# TODO JMG fix Qavg sized nData but initialized nVar when generic fixed#}
+  double gradQ[{{nDim*nVar}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
   double ncp[{{nVarPad}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
-  
+
   for(int ij=0; ij<{{nDof*nDof3D}}; ij++) {
     #pragma simd
     for(int n=0; n < {{nVar}}; n++) {
-       Qavg[n] = 0.5 * (lQhbndL[n+{{nVarPad}}*ij] + lQhbndR[n+{{nVarPad}}*ij]);
-       gradQ[n+{{nVar}}*normalNonZero] = lQhbndR[n+{{nVarPad}}*ij] - lQhbndL[n+{{nVarPad}}*ij];
+       Qavg[n] = 0.5 * (lQhbndL[n+{{nDataPad}}*ij] + lQhbndR[n+{{nDataPad}}*ij]);
+       gradQ[n+{{nVar}}*normalNonZero] = lQhbndR[n+{{nDataPad}}*ij] - lQhbndL[n+{{nDataPad}}*ij];
     }
 #ifdef USE_IPO
     #pragma forceinline recursive

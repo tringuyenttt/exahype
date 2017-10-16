@@ -744,8 +744,10 @@ public:
    * \note We overwrite the facewise limiter status values with the new value
    * in order to use the updateLimiterStatusAfterSetInitialConditions function
    * afterwards which calls determineLimiterStatus(...) again.
+   *
+   * returns true if a new limiter patch was allocated.
    */
-  void updateLimiterStatusDuringLimiterStatusSpreading(
+  bool updateLimiterStatusDuringLimiterStatusSpreading(
       const int cellDescriptionsIndex, const int solverElement) const;
 
   bool markForRefinement(
@@ -759,7 +761,7 @@ public:
       const bool initialGrid,
       const int solverNumber) override;
 
-  bool updateStateInEnterCell(
+  UpdateStateInEnterCellResult updateStateInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -847,12 +849,12 @@ public:
    * This includes computing, sending, and merging
    * of the min/max values.
    */
-  void setInitialConditions(
+  void adjustSolution(
       const int cellDescriptionsIndex,
       const int element) final override;
 
 
-  CellUpdateResult fusedTimeStep(
+  UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       double** tempSpaceTimeUnknowns,
@@ -916,7 +918,7 @@ public:
    * in order to reuse the determineLimiterStatusAfterSolutionUpdate function
    * which calls determineLimiterStatus(...) again.
    */
-  void updateLimiterStatusAndMinAndMaxAfterSetInitialConditions(
+  void updateLimiterStatusAndMinAndMaxAfterAdjustSolution(
       const int cellDescriptionsIndex,
       const int element);
 

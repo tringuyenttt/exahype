@@ -31,7 +31,10 @@ public class GenericADERDG implements Solver {
     final boolean useSource          = kernel.useSource();
     final boolean useNCP             = kernel.useNCP();
     final boolean usePointSource     = kernel.usePointSource();
-    final boolean noTimeAveraging    = kernel.noTimeAveraging(); 
+    final boolean useMaterialParam   = kernel.useMaterialParameterMatrix();
+    final boolean noTimeAveraging    = kernel.noTimeAveraging();
+    final boolean patchwiseAdjust    = kernel.patchwiseAdjust();
+    final int numberOfPointSources   = kernel.getNumberOfPointSources();
     
     templateEngine = new TemplateEngine();
     context = new Context();
@@ -48,6 +51,7 @@ public class GenericADERDG implements Solver {
     context.put("order"             , order);
     context.put("numberOfVariables" , numberOfVariables);
     context.put("numberOfParameters", numberOfParameters);
+    context.put("numberOfPointSources", numberOfPointSources);
     
     //boolean
     context.put("enableProfiler"    , enableProfiler);
@@ -58,7 +62,10 @@ public class GenericADERDG implements Solver {
     context.put("useSource"         , useSource);
     context.put("useNCP"            , useNCP);
     context.put("usePointSource"    , usePointSource);
+    context.put("useMaterialParam"  , useMaterialParam);
     context.put("noTimeAveraging"   , noTimeAveraging);
+    context.put("patchwiseAdjust"   , patchwiseAdjust);
+
     
     //boolean as String
     context.put("useFlux_s"         , boolToTemplate(useFlux));

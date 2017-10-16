@@ -1,11 +1,13 @@
 package eu.exahype.kernel;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import eu.exahype.node.PIds;
 import eu.exahype.node.AIds;
 import eu.exahype.node.AIdentifierId;
+import eu.exahype.node.AIdentifierWithMultId;
 
 import eu.exahype.node.AAderdgSolver;
 import eu.exahype.node.ALimitingAderdgSolver;
@@ -22,34 +24,36 @@ public class ADERDGKernel {
   /**
    * Configuration parameter: id of the options
    */
-  public static final String GENERIC_OPTION_ID      = "generic";
-  public static final String OPTIMISED_OPTION_ID    = "optimised";
+  public static final String GENERIC_OPTION_ID           = "generic";
+  public static final String OPTIMISED_OPTION_ID         = "optimised";
 
-  public static final String LINEAR_OPTION_ID       = "linear";
-  public static final String NONLINEAR_OPTION_ID    = "nonlinear";
-  public static final String USER_DEFINED_OPTION_ID = "user";
-  public static final String LEGENDRE_OPTION_ID     = "gausslegendre";
-  public static final String LOBATTO_OPTION_ID      = "gausslobatto";
+  public static final String LINEAR_OPTION_ID            = "linear";
+  public static final String NONLINEAR_OPTION_ID         = "nonlinear";
+  public static final String USER_DEFINED_OPTION_ID      = "user";
+  public static final String LEGENDRE_OPTION_ID          = "gausslegendre";
+  public static final String LOBATTO_OPTION_ID           = "gausslobatto";
     
-  public static final String FLUX_OPTION_ID        = "flux";
-  public static final String SOURCE_OPTION_ID      = "source";
-  public static final String NCP_OPTION_ID         = "ncp";
-  public static final String POINTSOURCE_OPTION_ID = "pointsources";
+  public static final String FLUX_OPTION_ID              = "flux";
+  public static final String SOURCE_OPTION_ID            = "source";
+  public static final String NCP_OPTION_ID               = "ncp";
+  public static final String POINTSOURCE_OPTION_ID       = "pointsources";
+  public static final String MATERIALPARAMETER_OPTION_ID = "materialparameters";
 
-  public static final String NO_TIME_AVG_OPTION_ID = "notimeavg";
+  public static final String NO_TIME_AVG_OPTION_ID       = "notimeavg";
+  public static final String PATCHWISE_ADJUST_OPTION_ID  = "patchwiseadjust";
   
   private Set<String> type;
-  private Set<String> terms;
+  private Map<String, Integer> terms;
   private Set<String> optimisation;
   
   public ADERDGKernel(PSolver solver) throws IllegalArgumentException {
     if(solver instanceof AAderdgSolver) {
       type = parseIds(((AAderdgSolver) solver).getKernelType());
-      terms = parseIds(((AAderdgSolver) solver).getKernelTerms());
+      terms = parseIdsToMap(((AAderdgSolver) solver).getKernelTerms());
       optimisation = parseIds(((AAderdgSolver) solver).getKernelOpt());
     } else if(solver instanceof ALimitingAderdgSolver) {
       type = parseIds(((ALimitingAderdgSolver) solver).getKernelType());
-      terms = parseIds(((ALimitingAderdgSolver) solver).getKernelTerms());
+      terms = parseIdsToMap(((ALimitingAderdgSolver) solver).getKernelTerms());
       optimisation = parseIds(((ALimitingAderdgSolver) solver).getKernelOpt());
     } else {
       throw new IllegalArgumentException("No kernel definition found");
@@ -68,24 +72,28 @@ public class ADERDGKernel {
   }
   
   private static Set<String> parseIds(PIds idsRaw) {
-    return ((AIds)idsRaw).getId().stream().map(e -> ((AIdentifierId)e).getValue().getText()).collect(Collectors.toSet());
+    return ((AIds)idsRaw).getId().stream().map(e -> (e instanceof AIdentifierId) ? ((AIdentifierId)e).getValue().getText() : ((AIdentifierWithMultId)e).getValue().getText()).collect(Collectors.toSet());
+  }
+  
+  private static Map<String, Integer> parseIdsToMap(PIds idsRaw) {
+    return ((AIds)idsRaw).getId().stream().collect(Collectors.toMap(
+      (e -> (e instanceof AIdentifierId) ? ((AIdentifierId)e).getValue().getText() : ((AIdentifierWithMultId)e).getValue().getText()),
+      (e -> (e instanceof AIdentifierId) ? Integer.valueOf(-1) : Integer.valueOf(((AIdentifierWithMultId)e).getMultiplicity().getText()))
+    ));
   }
   
   private void validate() throws IllegalArgumentException {
     if(!type.contains(LINEAR_OPTION_ID) ^ type.contains(NONLINEAR_OPTION_ID)) {//should be only one
       throw new IllegalArgumentException("nonlinear or linear not specified or both specified in the kernel type");
     }
+    if(usePointSource() && getNumberOfPointSources() < 0) {
+      throw new IllegalArgumentException("point sources used but number not specified! In the specification file, use "+POINTSOURCE_OPTION_ID+":X, with X the number of point sources.");
+    }
   }
 
   public enum KernelType {
-    GenericNonlinearADERDGWithLegendrePoints,
-    GenericNonlinearADERDGWithLobattoPoints,
-    GenericLinearADERDGWithLegendrePoints,
-    GenericLinearADERDGWithLobattoPoints,
-    OptimisedNonlinearADERDGWithLegendrePoints,
-    OptimisedNonlinearADERDGWithLobattoPoints,
-    OptimisedLinearADERDGWithLegendrePoints,
-    OptimisedLinearADERDGWithLobattoPoints,
+    GenericADERDG,
+    OptimisedADERDG,
     UserDefined,
     Unknown
   }
@@ -95,33 +103,14 @@ public class ADERDGKernel {
   }
 
   public KernelType getKernelType() {
-    if ( 
-      type.contains(NONLINEAR_OPTION_ID) && 
-      optimisation.contains(OPTIMISED_OPTION_ID) && 
-      type.contains(LEGENDRE_OPTION_ID)
-      ||
-      type.contains(NONLINEAR_OPTION_ID) && 
-      optimisation.contains(OPTIMISED_OPTION_ID)
-   ) {
-     return KernelType.OptimisedNonlinearADERDGWithLegendrePoints;
+    if (optimisation.contains(OPTIMISED_OPTION_ID)) {
+     return KernelType.OptimisedADERDG;
    }
       
    // default kernel - must be last   
-   if ( 
-  	  type.contains(NONLINEAR_OPTION_ID) && 
-  	  optimisation.contains(GENERIC_OPTION_ID) && 
-  	  type.contains(LEGENDRE_OPTION_ID)
-  	  ||
-  	  type.contains(NONLINEAR_OPTION_ID) && 
-  	  optimisation.contains(GENERIC_OPTION_ID)
-  	  ||
-  	  type.contains(NONLINEAR_OPTION_ID) &&
-  	  type.contains(LEGENDRE_OPTION_ID)
-      ||  	  
-  	  type.contains(NONLINEAR_OPTION_ID)
-  	) {
-      return KernelType.GenericNonlinearADERDGWithLegendrePoints;
-	}
+   if(optimisation.contains(GENERIC_OPTION_ID)) {
+      return KernelType.GenericADERDG;
+  }
   
     return  KernelType.Unknown;
   }
@@ -132,23 +121,39 @@ public class ADERDGKernel {
   }
 
   public boolean useFlux() {
-    return terms.contains(FLUX_OPTION_ID);
+    return terms.containsKey(FLUX_OPTION_ID);
   }
   
   public boolean useSource() {
-    return terms.contains(SOURCE_OPTION_ID);
+    return terms.containsKey(SOURCE_OPTION_ID);
   }
   
   public boolean useNCP() {
-    return terms.contains(NCP_OPTION_ID);
+    return terms.containsKey(NCP_OPTION_ID);
   }
   
   public boolean usePointSource() {
-    return terms.contains(POINTSOURCE_OPTION_ID);
+    return terms.containsKey(POINTSOURCE_OPTION_ID);
+  }
+  
+  public boolean useMaterialParameterMatrix() {
+    return terms.containsKey(MATERIALPARAMETER_OPTION_ID);
   }
   
   public boolean noTimeAveraging() {
     return optimisation.contains(NO_TIME_AVG_OPTION_ID);
+  }
+  
+  public boolean patchwiseAdjust() {
+    return optimisation.contains(PATCHWISE_ADJUST_OPTION_ID);
+  }
+  
+  public int getNumberOfPointSources() {
+    if(usePointSource()) {
+      return terms.get(POINTSOURCE_OPTION_ID);
+    }
+    
+    return -1;
   }
   
   //(type: [...], terms: [...], opt: [...])
@@ -161,7 +166,7 @@ public class ADERDGKernel {
     }
     sb.deleteCharAt(sb.length()-2);
     sb.append("], terms: [");
-    for(String s : terms) {
+    for(String s : terms.keySet()) {
       sb.append(s);
       sb.append(", ");
     }

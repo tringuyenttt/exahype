@@ -177,7 +177,7 @@ void exahype::mappings::SolutionUpdate::enterCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
-        exahype::solvers::Solver::CellUpdateResult result;
+        exahype::solvers::Solver::UpdateResult result;
 
         if (exahype::State::fuseADERDGPhases()) {
           result =

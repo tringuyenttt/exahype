@@ -51,7 +51,7 @@ namespace {
                              "volumeUnknownsProlongation",
                              "volumeUnknownsRestriction",
                              "boundaryConditions",
-                             "pointSource"
+                             "deltaDistribution"
                              };
   constexpr const char* deepProfilingTags[]{
                              "spaceTimePredictor_PDEflux",
@@ -461,6 +461,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _DMPObservables(DMPObservables),
      _minimumLimiterStatusForActiveFVPatch(limiterHelperLayers+1),
      _minimumLimiterStatusForTroubledCell (2*limiterHelperLayers+1) {
+
   // register tags with profiler
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
@@ -978,7 +979,7 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
 ///////////////////////////////////
 // CELL-LOCAL MESH REFINEMENT
 ///////////////////////////////////
-bool exahype::solvers::ADERDGSolver::updateStateInEnterCell(
+exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGSolver::updateStateInEnterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -988,7 +989,7 @@ bool exahype::solvers::ADERDGSolver::updateStateInEnterCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const bool initialGrid,
     const int solverNumber) {
-  bool refineFineGridCell = false;
+  UpdateStateInEnterCellResult result;
 
   // Fine grid cell based uniform mesh refinement.
   const int fineGridCellElement =
@@ -999,13 +1000,14 @@ bool exahype::solvers::ADERDGSolver::updateStateInEnterCell(
     logDebug("updateStateInEnterCell(...)","Add new uniform grid cell with offset "<<fineGridVerticesEnumerator.getVertexPosition() <<
             " at level "<<fineGridVerticesEnumerator.getLevel());
 
+    tarch::multicore::Lock lock(HeapSemaphore);
     addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
                multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
                solverNumber); // TODO(Dominic): Can directly refine if we directly evaluate initial conditions here.
-
-  }
-  // Fine grid cell based adaptive mesh refinement operations.
-    else if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
+    lock.free();
+    result._newComputeCellAllocated |= true;
+  } else if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
+    // Fine grid cell based adaptive mesh refinement operations.
     CellDescription& fineGridCellDescription =
         getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
     #ifdef Parallel
@@ -1047,7 +1049,7 @@ bool exahype::solvers::ADERDGSolver::updateStateInEnterCell(
 
       // marking for augmentation
       updateAugmentationStatus(fineGridCellDescription);
-      refineFineGridCell |= // TODO(Dominic): Change to the template version.
+      result._refinementRequested |= // TODO(Dominic): Change to the template version.
           markForAugmentation(
               fineGridCellDescription,
               neighbourCellDescriptionIndices,
@@ -1069,16 +1071,19 @@ bool exahype::solvers::ADERDGSolver::updateStateInEnterCell(
         fineGridCell.getCellDescriptionsIndex());
 
     // TODO(Dominic): Pass limiter status flag down to the new cell
+    tarch::multicore::Lock lock(HeapSemaphore);
     addNewDescendantIfAugmentingRequested(
             fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
             coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
-    addNewCellIfRefinementRequested(
-        fineGridCell,fineGridVertices,fineGridVerticesEnumerator,fineGridPositionOfCell,
-        coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex(),
-        initialGrid);
+    result._newComputeCellAllocated |=
+        addNewCellIfRefinementRequested(
+            fineGridCell,fineGridVertices,fineGridVerticesEnumerator,fineGridPositionOfCell,
+            coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex(),
+            initialGrid);
+    lock.free();
   }
 
-  return refineFineGridCell;
+  return result;
 }
 
 bool exahype::solvers::ADERDGSolver::markForRefinement(
@@ -1147,6 +1152,7 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
   }
 
   if (vetoErasing) {
+    tarch::multicore::Lock lock(HeapSemaphore);
     int coarseGridCellElement = tryGetElement(fineGridCellDescription.getParentIndex(),
                                               fineGridCellDescription.getSolverNumber());
     if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
@@ -1161,6 +1167,7 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
                    coarseGridCellDescription.toString());
       }
     }
+    lock.free();
   }
 
   return refineFineGridCell;
@@ -1389,7 +1396,7 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfAugmentingRequested(
   }
 }
 
-void exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
+bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1401,7 +1408,7 @@ void exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
       coarseGridCellDescription.getRefinementEvent()==CellDescription::Refining) {
     assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell,
                coarseGridCellDescription.toString());
-    int fineGridCellElement =
+    const int fineGridCellElement =
         tryGetElement(fineGridCell.getCellDescriptionsIndex(),
                       coarseGridCellDescription.getSolverNumber());
 
@@ -1409,11 +1416,11 @@ void exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
       addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
                  coarseGridCellDescriptionsIndex,
                  coarseGridCellDescription.getSolverNumber());
-      fineGridCellElement =
+      const int newFineGridCellElement =
           tryGetElement(fineGridCell.getCellDescriptionsIndex(),
                         coarseGridCellDescription.getSolverNumber());
       CellDescription& fineGridCellDescription =
-          getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridCellElement);
+          getCellDescription(fineGridCell.getCellDescriptionsIndex(),newFineGridCellElement);
       fineGridCellDescription.setIsInside(coarseGridCellDescription.getIsInside());
 
       prolongateVolumeData(
@@ -1436,7 +1443,9 @@ void exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
     }
 
     coarseGridCellDescription.setRefinementEvent(CellDescription::Refining);
+    return true;
   }
+  return false;
 }
 
 void exahype::solvers::ADERDGSolver::prolongateVolumeData(
@@ -1855,7 +1864,7 @@ bool exahype::solvers::ADERDGSolver::evaluateRefinementCriterionAfterSolutionUpd
   return false;
 }
 
-exahype::solvers::Solver::CellUpdateResult exahype::solvers::ADERDGSolver::fusedTimeStep(
+exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTimeStep(
     const int cellDescriptionsIndex,
     const int element,
     double** tempSpaceTimeUnknowns,
@@ -1877,7 +1886,7 @@ exahype::solvers::Solver::CellUpdateResult exahype::solvers::ADERDGSolver::fused
       tempUnknowns,tempFluxUnknowns,
       tempPointForceSources);
 
-  CellUpdateResult result;
+  UpdateResult result;
   result._timeStepSize       = startNewTimeStep(cellDescription);
   result._refinementRequested= evaluateRefinementCriterionAfterSolutionUpdate(cellDescriptionsIndex,element);
   return result;
@@ -1931,7 +1940,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
 
 
-    pointSource(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources); //TODO KD
+    deltaDistribution(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources);
     // luh, t, dt, cell cell center, cell size, data allocation for forceVect
 
     //TODO JMG move everything to inverseDx and use Peano to get it when Dominic implemente it
@@ -2163,7 +2172,7 @@ void exahype::solvers::ADERDGSolver::reconstructStandardTimeSteppingDataAfterRol
   cellDescription.setPreviousCorrectorTimeStepSize(std::numeric_limits<double>::max());
 }
 
-void exahype::solvers::ADERDGSolver::setInitialConditions(
+void exahype::solvers::ADERDGSolver::adjustSolution(
     const int cellDescriptionsIndex,
     const int element) {
   // reset helper variables
@@ -2855,8 +2864,9 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
     riemannSolver(
         FL,FR,QL,QR,
-        std::min(pLeft.getCorrectorTimeStepSize(),pRight.getCorrectorTimeStepSize()),
-        normalDirection, false);
+        std::min(pLeft.getCorrectorTimeStepSize(),
+            pRight.getCorrectorTimeStepSize()),
+        normalDirection, false, -1);
 
     for(int i=0; i<dofPerFace; ++i) {
       assertion8(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || (std::isfinite(FL[i]) && std::isfinite(FR[i])),
@@ -2957,11 +2967,11 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(
   if (faceIndex % 2 == 0) {
     riemannSolver(FOut, FIn, QOut, QIn,
         p.getCorrectorTimeStepSize(),
-        normalDirection,true);
+	normalDirection,true,faceIndex);
   } else {
     riemannSolver(FIn, FOut, QIn, QOut,
         p.getCorrectorTimeStepSize(),
-        normalDirection,true);
+        normalDirection,true,faceIndex);
   }
 
   for(int i=0; i<dofPerFace; ++i) {
@@ -3568,7 +3578,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   riemannSolver(
       FL, FR, QL, QR,
       cellDescription.getCorrectorTimeStepSize(),
-      normalDirection,false);
+      normalDirection,false,-1);
 
   for (int ii = 0; ii<dataPerFace; ii++) {
     assertion10(std::isfinite(QR[ii]), cellDescription.toString(),

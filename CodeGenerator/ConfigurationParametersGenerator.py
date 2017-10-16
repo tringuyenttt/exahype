@@ -33,7 +33,6 @@ class ConfigurationParametersGenerator:
 
 
     def generateCode(self):
-        self.m_context['nVarWithParPad'] = Backend.getSizeWithPadding(self.m_context['nVar'] + self.m_context['nPar'])
         self.m_context['isLinearCText'] = 'true' if self.m_context['isLinear'] else 'false' #c++ true/false instead of True/False
 
         TemplatingUtils.renderAsFile('configurationParameters_cpph.template', self.m_filename, self.m_context)

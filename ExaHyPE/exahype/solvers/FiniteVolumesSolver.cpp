@@ -297,7 +297,7 @@ bool exahype::solvers::FiniteVolumesSolver::markForRefinement(
   return false;
 }
 
-bool exahype::solvers::FiniteVolumesSolver::updateStateInEnterCell(
+exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::FiniteVolumesSolver::updateStateInEnterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -308,20 +308,26 @@ bool exahype::solvers::FiniteVolumesSolver::updateStateInEnterCell(
     const bool initialGrid,
     const int solverNumber) {
   // Fine grid cell based uniform mesh refinement.
+  UpdateStateInEnterCellResult result;
+
   int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if (fineGridCellElement==exahype::solvers::Solver::NotFound &&
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
       tarch::la::allGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())) {
+    tarch::multicore::Lock lock(HeapSemaphore);
     addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
                multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
                solverNumber);
+    lock.free();
+
+    result._newComputeCellAllocated = true;
     // Fine grid cell based adaptive mesh refinement operations are not implemented.
   } else if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
     // do nothing
   }
 
-  return false;
+  return result;
 }
 
 void exahype::solvers::FiniteVolumesSolver::addNewCell(
@@ -623,7 +629,7 @@ void exahype::solvers::FiniteVolumesSolver::rollbackToPreviousTimeStep(
   cellDescription.setPreviousTimeStepSize(std::numeric_limits<double>::max());
 }
 
-void exahype::solvers::FiniteVolumesSolver::setInitialConditions(
+void exahype::solvers::FiniteVolumesSolver::adjustSolution(
     const int cellDescriptionsIndex,
     const int element) {
   // reset helper variables
@@ -647,7 +653,7 @@ void exahype::solvers::FiniteVolumesSolver::setInitialConditions(
   }
 }
 
-exahype::solvers::Solver::CellUpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStep(
+exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fusedTimeStep(
     const int cellDescriptionsIndex,
     const int element,
     double** tempSpaceTimeUnknowns,
@@ -657,7 +663,7 @@ exahype::solvers::Solver::CellUpdateResult exahype::solvers::FiniteVolumesSolver
     double*  tempPointForceSources) {
   updateSolution(cellDescriptionsIndex,element);
 
-  CellUpdateResult result;
+  UpdateResult result;
   result._timeStepSize = startNewTimeStep(cellDescriptionsIndex,element);
   return result;
 }

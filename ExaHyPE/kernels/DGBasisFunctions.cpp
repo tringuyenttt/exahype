@@ -263,11 +263,23 @@ void kernels::initBasisFunctions(const std::set<int>& orders) {
   basisFunctionSecondDerivatives[9][9] = (UnivariateFunction) basisFunctionSecondDerivative_9_9;
 }
 
+
 // Basis functions in interval (0,1).
 double basisFunction_0_0(const double s) {
   return 1;
 }
 
+double basisFunctionFirstDerivative_0_0(const double s) {
+  return 0;
+}
+
+double basisFunctionSecondDerivative_0_0(const double s) {
+  return 0;
+}
+
+
+
+#if !defined(_GLL)
 double basisFunction_1_0(const double s) {
   return -1.73205080756888*s + 1.36602540378444;
 }
@@ -323,6 +335,7 @@ double basisFunction_4_3(const double s) {
 double basisFunction_4_4(const double s) {
   return (1.10353370192663*s - 0.0517668509633166)*(1.38441918000096*s - 0.319475969624385)*(2.20706740385327*s - 1.10353370192663)*(5.43906090552822*s - 4.1839141394754);
 }
+
 
 double basisFunction_5_0(const double s) {
   return -48.8475703740572*pow_5(s) + 144.89336104348*pow_4(s) - 161.633448563357*pow_3(s) + 83.3561716652067*pow_2(s) - 19.3888996957563*s + 1.56567320015126;
@@ -487,10 +500,6 @@ double basisFunction_9_9(const double s) {
 
 
 // First derivative of basis functions in interval (0,1).
-double basisFunctionFirstDerivative_0_0(const double s) {
-  return 0;
-}
-
 double basisFunctionFirstDerivative_1_0(const double s) {
   return -1.73205080756888;
 }
@@ -710,10 +719,6 @@ double basisFunctionFirstDerivative_9_9(const double s) {
 
 
 // Second derivative of basis functions in interval (0,1).
-double basisFunctionSecondDerivative_0_0(const double s) {
-  return 0;
-}
-
 double basisFunctionSecondDerivative_1_0(const double s) {
   return 0;
 }
@@ -929,3 +934,659 @@ double basisFunctionSecondDerivative_9_8(const double s) {
 double basisFunctionSecondDerivative_9_9(const double s) {
   return 275603.597742043*pow_7(s) - 860230.091993451*pow_6(s) + 1076701.4050875*pow_5(s) - 691506.703857538*pow_4(s) + 241840.69613389*pow_3(s) - 44932.9730214039*pow_2(s) + 3957.77387258443*s - 120.057239941923;
 }
+#else
+
+double basisFunction_1_0(const double s){
+return -s+1.000000000;
+}
+double basisFunction_1_1(const double s){
+return 1.*s
+;
+}
+double basisFunction_2_0(const double s){
+return (2.*s-1.)*(s-1.)
+;
+}
+double basisFunction_2_1(const double s){
+return (-4.*s+4.)*s
+;
+}
+double basisFunction_2_2(const double s){
+return (2.*s-1.0)*s
+;
+}
+double basisFunction_3_0(const double s){
+return -1.381966011*(3.618033988*s-1.)*(s-.7236067977)*(s-1.)
+;
+}
+double basisFunction_3_1(const double s){
+return 11.18033989*s*(s-.7236067977)*(s-1.)
+;
+}
+double basisFunction_3_2(const double s){
+return -11.18033989*s*(s-.2763932022500211)*(s-1.000000000000000)
+;
+}
+double basisFunction_3_3(const double s){
+return 4.999999998*s*(s-.2763932022500211)*(s-.7236067977499789)
+;
+}
+double basisFunction_4_0(const double s){
+return 2.417424305*(5.791287849*s-1.)*(s-.5)*(s-.8273268354)*(s-1.)
+;
+}
+double basisFunction_4_1(const double s){
+return -32.66666666*s*(s-.5)*(s-.8273268354)*(s-1.)
+;
+}
+double basisFunction_4_2(const double s){
+return 37.33333332*s*(s-.1726731646)*(s-.8273268354)*(s-1.)
+;
+}
+double basisFunction_4_3(const double s){
+return -32.66666666*s*(s-.1726731646)*(s-.5)*(s-1.)
+;
+}
+double basisFunction_4_4(const double s){
+return 14.*s*(s-.1726731646)*(s-.5)*(s-.8273268354)
+;
+}
+double basisFunction_5_0(const double s){
+return -4.933838196*(8.512642355*s-1.)*(s-.3573842418)*(s-.6426157582)*(s-.882527662)*(s-1.)
+;
+}
+double basisFunction_5_1(const double s){
+return 100.0722106*s*(s-.3573842418)*(s-.6426157582)*(s-.882527662)*(s-1.)
+;
+}
+double basisFunction_5_2(const double s){
+return -121.167457*s*(s-.117472338)*(s-.6426157582)*(s-.882527662)*(s-1.)
+;
+}
+double basisFunction_5_3(const double s){
+return 121.167457*s*(s-.117472338)*(s-.3573842418)*(s-.882527662)*(s-1.)
+;
+}
+double basisFunction_5_4(const double s){
+return -100.0722106*s*(s-.117472338)*(s-.3573842418)*(s-.6426157582)*(s-1.)
+;
+}
+double basisFunction_5_5(const double s){
+return 42.00000003*s*(s-.117472338)*(s-.3573842418)*(s-.6426157582)*(s-.882527662)
+;
+}
+double basisFunction_6_0(const double s){
+return 11.20522285*(11.78022087*s-1.)*(s-.2655756033)*(s-.5)*(s-.7344243967)*(s-.9151119481)*(s-1.)
+;
+}
+double basisFunction_6_1(const double s){
+return -318.2636613*s*(s-.2655756033)*(s-.5)*(s-.7344243967)*(s-.9151119481)*(s-1.)
+;
+}
+double basisFunction_6_2(const double s){
+return 397.4636614*s*(s-0.8488805186e-1)*(s-.5)*(s-.7344243967)*(s-.9151119481)*(s-1.)
+;
+}
+double basisFunction_6_3(const double s){
+return -422.4000002*s*(s-0.8488805186e-1)*(s-.2655756033)*(s-.7344243967)*(s-.9151119481)*(s-1.)
+;
+}
+double basisFunction_6_4(const double s){
+return 397.4636612*s*(s-0.8488805186e-1)*(s-.2655756033)*(s-.5)*(s-.9151119481)*(s-1.)
+;
+}
+double basisFunction_6_5(const double s){
+return -318.2636612*s*(s-0.8488805186e-1)*(s-.2655756033)*(s-.5)*(s-.7344243967)*(s-1.)
+;
+}
+double basisFunction_6_6(const double s){
+return 132.*s*(s-0.8488805186e-1)*(s-.2655756033)*(s-.5)*(s-.7344243967)*(s-.9151119481)
+;
+}
+double basisFunction_7_0(const double s){
+return -27.51173814*(15.59334411*s-1.)*(s-.2041499093)*(s-.395350391)*(s-.604649609)*(s-.7958500907)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_1(const double s){
+return 1042.012507*s*(s-.2041499093)*(s-.395350391)*(s-.604649609)*(s-.7958500907)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_2(const double s){
+return -1325.841514*s*(s-0.6412992575e-1)*(s-.395350391)*(s-.604649609)*(s-.7958500907)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_3(const double s){
+return 1457.89616*s*(s-0.6412992575e-1)*(s-.2041499093)*(s-.604649609)*(s-.7958500907)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_4(const double s){
+return -1457.896161*s*(s-0.6412992575e-1)*(s-.2041499093)*(s-.395350391)*(s-.7958500907)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_5(const double s){
+return 1325.841514*s*(s-0.6412992575e-1)*(s-.2041499093)*(s-.395350391)*(s-.604649609)*(s-.9358700743)*(s-1.)
+;
+}
+double basisFunction_7_6(const double s){
+return -1042.012508*s*(s-0.6412992575e-1)*(s-.2041499093)*(s-.395350391)*(s-.604649609)*(s-.7958500907)*(s-1.)
+;
+}
+double basisFunction_7_7(const double s){
+return 429.0000002*s*(s-0.6412992575e-1)*(s-.2041499093)*(s-.395350391)*(s-.604649609)*(s-.7958500907)*(s-.9358700743)
+;
+}
+double basisFunction_8_0(const double s){
+return 71.67303331*(19.95171593*s-.9999999998)*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_1(const double s){
+return -3490.440193*s*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_2(const double s){
+return 4495.614715*s*(s-0.5012100229e-1)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_3(const double s){
+return -5050.031668*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_4(const double s){
+return 5229.714284*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.3184412681)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_5(const double s){
+return -5050.031667*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.8385931398)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_6(const double s){
+return 4495.614714*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.9498789977)*(s-1.)
+;
+}
+double basisFunction_8_7(const double s){
+return -3490.440194*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-1.)
+;
+}
+double basisFunction_8_8(const double s){
+return 1430.000001*s*(s-0.5012100229e-1)*(s-.1614068602)*(s-.3184412681)*(s-.5)*(s-.6815587319)*(s-.8385931398)*(s-.9498789977)
+;
+}
+double basisFunction_9_0(const double s){
+return -195.6130694*(24.85518998*s-.9999999998)*(s-.1306130674472474)*(s-.2610375250947777)*(s-.4173605211668065)*(s-.5826394788331934)*(s-.7389624749052223)*(s-.8693869325527526)*(s-.9597669540832294)*(s-1.000000000000000)
+;
+}
+double basisFunction_9_1(const double s){
+return 11908.19794*s*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_2(const double s){
+return -15466.98443*s*(s-0.4023304592e-1)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_3(const double s){
+return 17625.61894*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_4(const double s){
+return -18666.08441*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_5(const double s){
+return 18666.0844*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_6(const double s){
+return -17625.61894*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.8693869326)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_7(const double s){
+return 15466.98442*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.9597669541)*(s-1.)
+;
+}
+double basisFunction_9_8(const double s){
+return -11908.19795*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-1.)
+;
+}
+double basisFunction_9_9(const double s){
+return 4862.000006*s*(s-0.4023304592e-1)*(s-.1306130674)*(s-.2610375251)*(s-.4173605212)*(s-.5826394788)*(s-.7389624749)*(s-.8693869326)*(s-.9597669541)
+;
+}
+
+
+double basisFunctionFirstDerivative_1_0(const double s){
+return -1
+;
+}
+double basisFunctionFirstDerivative_1_1(const double s){
+return 1.
+;
+}
+double basisFunctionFirstDerivative_2_0(const double s){
+return 4.*s-3.
+;
+}
+double basisFunctionFirstDerivative_2_1(const double s){
+return -8.*s+4.
+;
+}
+double basisFunctionFirstDerivative_2_2(const double s){
+return 4.*s-1.0
+;
+}
+double basisFunctionFirstDerivative_3_0(const double s){
+return -14.99999999*pow_2(s)+19.99999999*s-5.999999998
+;
+}
+double basisFunctionFirstDerivative_3_1(const double s){
+return 33.54101967*pow_2(s)-38.54101967*s+8.090169945
+;
+}
+double basisFunctionFirstDerivative_3_2(const double s){
+return -33.54101967*pow_2(s)+28.54101967*s-3.090169945
+;
+}
+double basisFunctionFirstDerivative_3_3(const double s){
+return 14.99999999*pow_2(s)-9.999999996*s+.9999999996
+;
+}
+double basisFunctionFirstDerivative_4_0(const double s){
+return 56.00000000*pow_3(s)-105.0000000*pow_2(s)+60.00000000*s-10.00000000
+;
+}
+double basisFunctionFirstDerivative_4_1(const double s){
+return -130.6666666*pow_3(s)+228.0780298*pow_2(s)-113.7446965*s+13.51300498
+;
+}
+double basisFunctionFirstDerivative_4_2(const double s){
+return 149.3333333*pow_3(s)-223.9999999*pow_2(s)+85.33333331*s-5.333333329
+;
+}
+double basisFunctionFirstDerivative_4_3(const double s){
+return -130.6666666*pow_3(s)+163.9219701*pow_2(s)-49.58863678*s+2.820328355
+;
+}
+double basisFunctionFirstDerivative_4_4(const double s){
+return 56.*pow_3(s)-62.99999999*pow_2(s)+18.00000000*s-.9999999997
+;
+}
+double basisFunctionFirstDerivative_5_0(const double s){
+return -210.0000000*pow_4(s)+504.0000000*pow_3(s)-420.0000000*pow_2(s)+140.0000000*s-15.00000001
+;
+}
+double basisFunctionFirstDerivative_5_1(const double s){
+return 500.3610530*pow_4(s)-1153.843661*pow_3(s)+899.0635716*pow_2(s)-263.1639690*s+20.28283187
+;
+}
+double basisFunctionFirstDerivative_5_2(const double s){
+return -605.837285*pow_4(s)+1280.796125*pow_3(s)-868.3723060*pow_2(s)+196.9964711*s-8.072374533
+;
+}
+double basisFunctionFirstDerivative_5_3(const double s){
+return 605.837285*pow_4(s)-1142.553015*pow_3(s)+661.0076411*pow_2(s)-120.7089057*s+4.489369293
+;
+}
+double basisFunctionFirstDerivative_5_4(const double s){
+return -500.3610530*pow_4(s)+847.6005509*pow_3(s)-439.6989065*pow_2(s)+74.87640333*s-2.699826626
+;
+}
+double basisFunctionFirstDerivative_5_5(const double s){
+return 210.0000001*pow_4(s)-336.0000003*pow_3(s)+168.0000002*pow_2(s)-28.00000002*s+1.000000000
+;
+}
+double basisFunctionFirstDerivative_6_0(const double s){
+return -1260.000001*pow_2(s)+792.0000006*pow_5(s)-2310.000001*pow_4(s)+2520.000001*pow_3(s)-21.00000000+280.0000001*s
+;
+}
+double basisFunctionFirstDerivative_6_1(const double s){
+return 2674.636787*pow_2(s)+28.40315321-1909.581967*pow_5(s)+5434.530162*pow_4(s)-5706.881280*pow_3(s)-523.7415985*s
+;
+}
+double basisFunctionFirstDerivative_6_2(const double s){
+return -2554.606475*pow_2(s)+2384.781967*pow_5(s)-6427.830816*pow_4(s)+6222.282591*pow_3(s)+390.8106327*s-11.33797046
+;
+}
+double basisFunctionFirstDerivative_6_3(const double s){
+return 1958.400000*pow_2(s)-2534.400001*pow_5(s)+6336.000003*pow_4(s)-5529.600002*pow_3(s)+6.400000007-243.2000002*s
+;
+}
+double basisFunctionFirstDerivative_6_4(const double s){
+return -1393.076080*pow_2(s)+2384.781967*pow_5(s)-5496.079022*pow_4(s)+4358.779004*pow_3(s)-4.099929630+161.0320296*s
+;
+}
+double basisFunctionFirstDerivative_6_5(const double s){
+return 934.6457669*pow_2(s)-1909.581967*pow_5(s)+4113.379677*pow_4(s)-3064.580312*pow_3(s)+2.634746873-104.9010636*s
+;
+}
+double basisFunctionFirstDerivative_6_6(const double s){
+return -360.0000000*pow_2(s)+792.*pow_5(s)-1650.000001*pow_4(s)+1200.000000*pow_3(s)-1.000000001+39.99999999*s
+;
+}
+double basisFunctionFirstDerivative_7_0(const double s){
+return -3003.000000*pow_6(s)-3150.000000*pow_2(s)+10296.00000*pow_5(s)-13860.00000*pow_4(s)+9239.999998*pow_3(s)-27.99999999+503.9999998*s
+;
+}
+double basisFunctionFirstDerivative_7_1(const double s){
+return 7294.087549*pow_6(s)+6651.499582*pow_2(s)-24607.35506*pow_5(s)+32349.96292*pow_4(s)-20783.66574*pow_3(s)+37.87519718-939.8090762*s
+;
+}
+double basisFunctionFirstDerivative_7_2(const double s){
+return -9280.890598*pow_6(s)-6305.513395*pow_2(s)+30196.17380*pow_5(s)-37697.75790*pow_4(s)+22399.79138*pow_3(s)-15.13857964+699.4519965*s
+;
+}
+double basisFunctionFirstDerivative_7_3(const double s){
+return 10205.27312*pow_6(s)+4837.071012*pow_2(s)-31531.22893*pow_5(s)+36713.02415*pow_4(s)-19789.23361*pow_3(s)+8.595816335-437.8811675*s
+;
+}
+double basisFunctionFirstDerivative_7_4(const double s){
+return -10205.27313*pow_6(s)-3514.322474*pow_2(s)+29700.40980*pow_5(s)-32135.97628*pow_4(s)+15856.03599*pow_3(s)-5.620377986+296.1506383*s
+;
+}
+double basisFunctionFirstDerivative_7_5(const double s){
+return 9280.890598*pow_6(s)+2544.307783*pow_2(s)-25489.16979*pow_5(s)+25930.24791*pow_4(s)-12047.31432*pow_3(s)+3.883318853-207.7069353*s
+;
+}
+double basisFunctionFirstDerivative_7_6(const double s){
+return -7294.087556*pow_6(s)-1738.042510*pow_2(s)+19157.17025*pow_5(s)-18724.50087*pow_4(s)+8424.386313*pow_3(s)-2.595374778+139.7945450*s
+;
+}
+double basisFunctionFirstDerivative_7_7(const double s){
+return 3003.000001*pow_6(s)+675.0000004*pow_2(s)-7722.000004*pow_5(s)+7425.000004*pow_4(s)-3300.000002*pow_3(s)+1.000000001-54.00000004*s
+;
+}
+double basisFunctionFirstDerivative_8_0(const double s){
+return -45045.00002*pow_6(s)-6930.000002*pow_2(s)+72072.00004*pow_5(s)-60060.00003*pow_4(s)+27720.00002*pow_3(s)-35.99999999+11440.00000*pow_7(s)+839.9999998*s
+;
+}
+double basisFunctionFirstDerivative_8_1(const double s){
+return 108724.2556*pow_6(s)+14581.97080*pow_2(s)-171247.2984*pow_5(s)+139445.9162*pow_4(s)-62069.50539*pow_3(s)+48.69949034-27923.52153*pow_7(s)-1563.086510*s
+;
+}
+double basisFunctionFirstDerivative_8_2(const double s){
+return -136532.5022*pow_6(s)-13751.76728*pow_2(s)+207689.8823*pow_5(s)-160880.3414*pow_4(s)+66372.00952*pow_3(s)-19.47740332+35964.91774*pow_7(s)+1161.027617*s
+;
+}
+double basisFunctionFirstDerivative_8_3(const double s){
+return 147819.0282*pow_6(s)+10540.22631*pow_2(s)-214174.4428*pow_5(s)+155266.3458*pow_4(s)-58338.35193*pow_3(s)+11.08992782-40400.25336*pow_7(s)-728.8234795*s
+;
+}
+double basisFunctionFirstDerivative_8_4(const double s){
+return -146432.0000*pow_6(s)-7723.885712*pow_2(s)+200821.0286*pow_5(s)-135972.5715*pow_4(s)+46986.97141*pow_3(s)+41837.71425*pow_7(s)-7.314285709+497.3714282*s
+;
+}
+double basisFunctionFirstDerivative_8_5(const double s){
+return 134982.7453*pow_6(s)+5741.081792*pow_2(s)-175665.5943*pow_5(s)+112329.3136*pow_4(s)-36645.70191*pow_3(s)-40400.25335*pow_7(s)+5.181491354-357.8625503*s
+;
+}
+double basisFunctionFirstDerivative_8_6(const double s){
+return -115221.9218*pow_6(s)-4256.775942*pow_2(s)+143758.1416*pow_5(s)-88353.65850*pow_4(s)+27871.54464*pow_3(s)+35964.91769*pow_7(s)-3.748881746+260.9786022*s
+;
+}
+double basisFunctionFirstDerivative_8_7(const double s){
+return 86740.39529*pow_6(s)+2954.150055*pow_2(s)-105295.7174*pow_5(s)+63249.99601*pow_4(s)-19596.96641*pow_3(s)-27923.52153*pow_7(s)+2.569661267-179.6051089*s
+;
+}
+double basisFunctionFirstDerivative_8_8(const double s){
+return -35035.00003*pow_6(s)-1155.000001*pow_2(s)+42042.00004*pow_5(s)-25025.00000*pow_4(s)+7700.000004*pow_3(s)+11440.00001*pow_7(s)-1.000000001+70.00000004*s
+;
+}
+double basisFunctionFirstDerivative_9_0(const double s){
+return -360360.0001*pow_6(s)-13860.00001*pow_2(s)+360360.0002*pow_5(s)-210210.0001*pow_4(s)+72072.00004*pow_3(s)-43758.00001*pow_8(s)-45.00000001+194480.0001*pow_7(s)+1320.000001*s
+;
+}
+double basisFunctionFirstDerivative_9_1(const double s){
+return 865973.9347*pow_6(s)+29092.21651*pow_2(s)-852744.0956*pow_5(s)+486264.0301*pow_4(s)-160870.4160*pow_3(s)+107173.7815*pow_8(s)+60.87629002-472495.0930*pow_7(s)-2452.682594*s
+;
+}
+double basisFunctionFirstDerivative_9_2(const double s){
+return -1077516.876*pow_6(s)-27333.76761*pow_2(s)+1025744.107*pow_5(s)-557073.3006*pow_4(s)+171066.4565*pow_3(s)-139202.8598*pow_8(s)-24.35589342+602517.8550*pow_7(s)+1819.083138*s
+;
+}
+double basisFunctionFirstDerivative_9_3(const double s){
+return 1153743.366*pow_6(s)+20926.62864*pow_2(s)-1048223.421*pow_5(s)+534027.4458*pow_4(s)-149752.9186*pow_3(s)+158630.5703*pow_8(s)+13.88757696-668217.1740*pow_7(s)-1143.479010*s
+;
+}
+double basisFunctionFirstDerivative_9_4(const double s){
+return -1133579.313*pow_6(s)-15396.44343*pow_2(s)+977962.3255*pow_5(s)-466897.9280*pow_4(s)+120805.4413*pow_3(s)-167994.7597*pow_8(s)-9.198709517+684319.4827*pow_7(s)+783.8034559*s
+;
+}
+double basisFunctionFirstDerivative_9_5(const double s){
+return 1047196.204*pow_6(s)+11578.25305*pow_2(s)-860510.9547*pow_5(s)+389227.2705*pow_4(s)-95273.91186*pow_3(s)+6.589286061+167994.7596*pow_8(s)-659638.5944*pow_7(s)-570.4170033*s
+;
+}
+double basisFunctionFirstDerivative_9_6(const double s){
+return -917879.1207*pow_6(s)-8844.145045*pow_2(s)+724988.0663*pow_5(s)-315599.6722*pow_4(s)+74700.82880*pow_3(s)-4.905768347-158630.5703*pow_8(s)+600827.3898*pow_7(s)+428.2417019*s
+;
+}
+double basisFunctionFirstDerivative_9_7(const double s){
+return 757571.9672*pow_6(s)+6691.400610*pow_2(s)-581842.3476*pow_5(s)+247181.1755*pow_4(s)-57358.43120*pow_3(s)+3.659127859+139202.8597*pow_8(s)-511105.0236*pow_7(s)-320.9037874*s
+;
+}
+double basisFunctionFirstDerivative_9_8(const double s){
+return -559374.1652*pow_6(s)-4702.142748*pow_2(s)+422434.3224*pow_5(s)-176989.0217*pow_4(s)+40626.95118*pow_3(s)-2.551909673-107173.7816*pow_8(s)+384895.1591*pow_7(s)+224.3541010*s
+;
+}
+double basisFunctionFirstDerivative_9_9(const double s){
+return 224224.0003*pow_6(s)+1848.000001*pow_2(s)-168168.0001*pow_5(s)+70070.00008*pow_4(s)-16016.00000*pow_3(s)+43758.00008*pow_8(s)-155584.0003*pow_7(s)+1.000000001-88.00000006*s
+;
+}
+
+double basisFunctionSecondDerivative_1_0(const double s){
+return 0
+;
+}
+double basisFunctionSecondDerivative_1_1(const double s){
+return 0
+;
+}
+double basisFunctionSecondDerivative_2_0(const double s){
+return 4.
+;
+}
+double basisFunctionSecondDerivative_2_1(const double s){
+return -8.
+;
+}
+double basisFunctionSecondDerivative_2_2(const double s){
+return 4.
+;
+}
+double basisFunctionSecondDerivative_3_0(const double s){
+return -29.99999998*s+19.99999999
+;
+}
+double basisFunctionSecondDerivative_3_1(const double s){
+return 67.08203934*s-38.54101967
+;
+}
+double basisFunctionSecondDerivative_3_2(const double s){
+return -67.08203934*s+28.54101967
+;
+}
+double basisFunctionSecondDerivative_3_3(const double s){
+return 29.99999998*s-9.999999996
+;
+}
+double basisFunctionSecondDerivative_4_0(const double s){
+return 168.0000000*pow_2(s)-210.0000000*s+60.00000000
+;
+}
+double basisFunctionSecondDerivative_4_1(const double s){
+return -391.9999998*pow_2(s)+456.1560596*s-113.7446965
+;
+}
+double basisFunctionSecondDerivative_4_2(const double s){
+return 447.9999999*pow_2(s)-447.9999998*s+85.33333331
+;
+}
+double basisFunctionSecondDerivative_4_3(const double s){
+return -391.9999998*pow_2(s)+327.8439402*s-49.58863678
+;
+}
+double basisFunctionSecondDerivative_4_4(const double s){
+return 168.*pow_2(s)-126.0000000*s+18.00000000
+;
+}
+double basisFunctionSecondDerivative_5_0(const double s){
+return -840.0000000*pow_3(s)+1512.000000*pow_2(s)-840.0000000*s+140.0000000
+;
+}
+double basisFunctionSecondDerivative_5_1(const double s){
+return 2001.444212*pow_3(s)-3461.530983*pow_2(s)+1798.127143*s-263.1639690
+;
+}
+double basisFunctionSecondDerivative_5_2(const double s){
+return -2423.349140*pow_3(s)+3842.388375*pow_2(s)-1736.744612*s+196.9964711
+;
+}
+double basisFunctionSecondDerivative_5_3(const double s){
+return 2423.349140*pow_3(s)-3427.659045*pow_2(s)+1322.015282*s-120.7089057
+;
+}
+double basisFunctionSecondDerivative_5_4(const double s){
+return -2001.444212*pow_3(s)+2542.801653*pow_2(s)-879.3978130*s+74.87640333
+;
+}
+double basisFunctionSecondDerivative_5_5(const double s){
+return 840.0000004*pow_3(s)-1008.000001*pow_2(s)+336.0000004*s-28.00000002
+;
+}
+double basisFunctionSecondDerivative_6_0(const double s){
+return -2520.000002*s+3960.000003*pow_4(s)-9240.000004*pow_3(s)+7560.000003*pow_2(s)+280.0000001
+;
+}
+double basisFunctionSecondDerivative_6_1(const double s){
+return 5349.273574*s-9547.909835*pow_4(s)+21738.12065*pow_3(s)-17120.64384*pow_2(s)-523.7415985
+;
+}
+double basisFunctionSecondDerivative_6_2(const double s){
+return -5109.212950*s+11923.90984*pow_4(s)-25711.32326*pow_3(s)+18666.84777*pow_2(s)+390.8106327
+;
+}
+double basisFunctionSecondDerivative_6_3(const double s){
+return 3916.800000*s-12672.00000*pow_4(s)+25344.00001*pow_3(s)-16588.80001*pow_2(s)-243.2000002
+;
+}
+double basisFunctionSecondDerivative_6_4(const double s){
+return -2786.152160*s+11923.90984*pow_4(s)-21984.31609*pow_3(s)+13076.33701*pow_2(s)+161.0320296
+;
+}
+double basisFunctionSecondDerivative_6_5(const double s){
+return 1869.291534*s-9547.909835*pow_4(s)+16453.51871*pow_3(s)-9193.740936*pow_2(s)-104.9010636
+;
+}
+double basisFunctionSecondDerivative_6_6(const double s){
+return -720.0000000*s+3960.*pow_4(s)-6600.000004*pow_3(s)+3600.000000*pow_2(s)+39.99999999
+;
+}
+double basisFunctionSecondDerivative_7_0(const double s){
+return -18018.00000*pow_5(s)-6300.000000*s+51480.00000*pow_4(s)-55440.00000*pow_3(s)+27719.99999*pow_2(s)+503.9999998
+;
+}
+double basisFunctionSecondDerivative_7_1(const double s){
+return 43764.52529*pow_5(s)+13302.99916*s-123036.7753*pow_4(s)+129399.8517*pow_3(s)-62350.99722*pow_2(s)-939.8090762
+;
+}
+double basisFunctionSecondDerivative_7_2(const double s){
+return -55685.34359*pow_5(s)-12611.02679*s+150980.8690*pow_4(s)-150791.0316*pow_3(s)+67199.37414*pow_2(s)+699.4519965
+;
+}
+double basisFunctionSecondDerivative_7_3(const double s){
+return 61231.63872*pow_5(s)+9674.142024*s-157656.1446*pow_4(s)+146852.0966*pow_3(s)-59367.70083*pow_2(s)-437.8811675
+;
+}
+double basisFunctionSecondDerivative_7_4(const double s){
+return -61231.63878*pow_5(s)-7028.644948*s+148502.0490*pow_4(s)-128543.9051*pow_3(s)+47568.10797*pow_2(s)+296.1506383
+;
+}
+double basisFunctionSecondDerivative_7_5(const double s){
+return 55685.34359*pow_5(s)+5088.615566*s-127445.8490*pow_4(s)+103720.9916*pow_3(s)-36141.94296*pow_2(s)-207.7069353
+;
+}
+double basisFunctionSecondDerivative_7_6(const double s){
+return -43764.52534*pow_5(s)-3476.085020*s+95785.85125*pow_4(s)-74898.00348*pow_3(s)+25273.15894*pow_2(s)+139.7945450
+;
+}
+double basisFunctionSecondDerivative_7_7(const double s){
+return 18018.00001*pow_5(s)+1350.000001*s-38610.00002*pow_4(s)+29700.00002*pow_3(s)-9900.000006*pow_2(s)-54.00000004
+;
+}
+double basisFunctionSecondDerivative_8_0(const double s){
+return -270270.0001*pow_5(s)-13860.00000*s+360360.0002*pow_4(s)-240240.0001*pow_3(s)+83160.00006*pow_2(s)+80080.00000*pow_6(s)+839.9999998
+;
+}
+double basisFunctionSecondDerivative_8_1(const double s){
+return 652345.5336*pow_5(s)+29163.94160*s-856236.4920*pow_4(s)+557783.6648*pow_3(s)-186208.5162*pow_2(s)-195464.6507*pow_6(s)-1563.086510
+;
+}
+double basisFunctionSecondDerivative_8_2(const double s){
+return -819195.0132*pow_5(s)-27503.53456*s+1038449.412*pow_4(s)-643521.3656*pow_3(s)+199116.0286*pow_2(s)+251754.4242*pow_6(s)+1161.027617
+;
+}
+double basisFunctionSecondDerivative_8_3(const double s){
+return 886914.1692*pow_5(s)+21080.45262*s-1070872.214*pow_4(s)+621065.3832*pow_3(s)-175015.0558*pow_2(s)-282801.7735*pow_6(s)-728.8234795
+;
+}
+double basisFunctionSecondDerivative_8_4(const double s){
+return -878592.0000*pow_5(s)-15447.77142*s+1004105.143*pow_4(s)-543890.2860*pow_3(s)+140960.9142*pow_2(s)+292863.9998*pow_6(s)+497.3714282
+;
+}
+double basisFunctionSecondDerivative_8_5(const double s){
+return 809896.4718*pow_5(s)+11482.16358*s-878327.9715*pow_4(s)+449317.2544*pow_3(s)-109937.1057*pow_2(s)-282801.7734*pow_6(s)-357.8625503
+;
+}
+double basisFunctionSecondDerivative_8_6(const double s){
+return -691331.5308*pow_5(s)-8513.551884*s+718790.7080*pow_4(s)-353414.6340*pow_3(s)+83614.63392*pow_2(s)+251754.4238*pow_6(s)+260.9786022
+;
+}
+double basisFunctionSecondDerivative_8_7(const double s){
+return 520442.3717*pow_5(s)+5908.300110*s-526478.5870*pow_4(s)+252999.9840*pow_3(s)-58790.89923*pow_2(s)-195464.6507*pow_6(s)-179.6051089
+;
+}
+double basisFunctionSecondDerivative_8_8(const double s){
+return -210210.0002*pow_5(s)-2310.000002*s+210210.0002*pow_4(s)-100100.0000*pow_3(s)+23100.00001*pow_2(s)+80080.00007*pow_6(s)+70.00000004
+;
+}
+double basisFunctionSecondDerivative_9_0(const double s){
+return -2162160.001*pow_5(s)-27720.00002*s+1801800.001*pow_4(s)-840840.0004*pow_3(s)+216216.0001*pow_2(s)-350064.0001*pow_7(s)+1361360.001*pow_6(s)+1320.000001
+;
+}
+double basisFunctionSecondDerivative_9_1(const double s){
+return 5195843.608*pow_5(s)+58184.43302*s-4263720.478*pow_4(s)+1945056.120*pow_3(s)-482611.2480*pow_2(s)+857390.2520*pow_7(s)-3307465.651*pow_6(s)-2452.682594
+;
+}
+double basisFunctionSecondDerivative_9_2(const double s){
+return -6465101.256*pow_5(s)-54667.53522*s+5128720.535*pow_4(s)-2228293.202*pow_3(s)+513199.3695*pow_2(s)-1113622.878*pow_7(s)+4217624.985*pow_6(s)+1819.083138
+;
+}
+double basisFunctionSecondDerivative_9_3(const double s){
+return 6922460.196*pow_5(s)+41853.25728*s-5241117.105*pow_4(s)+2136109.783*pow_3(s)-449258.7558*pow_2(s)+1269044.562*pow_7(s)-4677520.218*pow_6(s)-1143.479010
+;
+}
+double basisFunctionSecondDerivative_9_4(const double s){
+return -6801475.878*pow_5(s)-30792.88686*s+4889811.628*pow_4(s)-1867591.712*pow_3(s)+362416.3239*pow_2(s)-1343958.078*pow_7(s)+4790236.379*pow_6(s)+783.8034559
+;
+}
+double basisFunctionSecondDerivative_9_5(const double s){
+return 6283177.224*pow_5(s)+23156.50610*s-4302554.774*pow_4(s)+1556909.082*pow_3(s)-285821.7356*pow_2(s)+1343958.077*pow_7(s)-4617470.161*pow_6(s)-570.4170033
+;
+}
+double basisFunctionSecondDerivative_9_6(const double s){
+return -5507274.724*pow_5(s)-17688.29009*s+3624940.332*pow_4(s)-1262398.689*pow_3(s)+224102.4864*pow_2(s)-1269044.562*pow_7(s)+4205791.729*pow_6(s)+428.2417019
+;
+}
+double basisFunctionSecondDerivative_9_7(const double s){
+return 4545431.803*pow_5(s)+13382.80122*s-2909211.738*pow_4(s)+988724.7020*pow_3(s)-172075.2936*pow_2(s)+1113622.878*pow_7(s)-3577735.165*pow_6(s)-320.9037874
+;
+}
+double basisFunctionSecondDerivative_9_8(const double s){
+return -3356244.991*pow_5(s)-9404.285496*s+2112171.612*pow_4(s)-707956.0868*pow_3(s)+121880.8535*pow_2(s)-857390.2528*pow_7(s)+2694266.114*pow_6(s)+224.3541010
+;
+}
+double basisFunctionSecondDerivative_9_9(const double s){
+return 1345344.002*pow_5(s)+3696.000002*s-840840.0005*pow_4(s)+280280.0003*pow_3(s)-48048.00000*pow_2(s)+350064.0006*pow_7(s)-1089088.002*pow_6(s)-88.00000006
+;
+}
+
+
+#endif  
+
