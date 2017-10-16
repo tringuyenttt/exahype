@@ -26,13 +26,13 @@
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
+#include "exahype/VertexOperations.h"
+
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #include "exahype/mappings/LimiterStatusSpreading.h"
 
-#ifdef Parallel
 bool exahype::mappings::MeshRefinement::IsFirstIteration = true;
-#endif
 
 bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = false;
 
@@ -293,10 +293,33 @@ void exahype::mappings::MeshRefinement::enterCell(
   for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if (solver->getMeshUpdateRequest()) {
-      // TODO(Dominic): Minimise lock scope
-      // Lock must be placed here because of
-      // LimitingADERDGSolver's limiter patch allocation
-      tarch::multicore::Lock lock(_semaphore);
+      bool adjustSolution = exahype::mappings::MeshRefinement::IsFirstIteration;
+
+      // Update limiter status and allocate limiter patch if necessary
+      // Further evalute the limiter status based refinement criterion
+      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+        if (element!=exahype::solvers::Solver::NotFound) {
+          const tarch::la::Vector<TWO_POWER_D_TIMES_TWO_POWER_D,int>& indicesAdjacentToFineGridVertices =
+              exahype::VertexOperations::readCellDescriptionsIndex(
+                  fineGridVerticesEnumerator,fineGridVertices);
+          if (multiscalelinkedcell::adjacencyInformationIsConsistent(
+              indicesAdjacentToFineGridVertices)) {
+            tarch::multicore::Lock lock(_semaphore);
+            auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+            adjustSolution |=
+                limitingADERDGSolver->updateLimiterStatusDuringLimiterStatusSpreading(
+                    fineGridCell.getCellDescriptionsIndex(),element);
+            refineFineGridCell |=
+                limitingADERDGSolver->
+                  evaluateLimiterStatusRefinementCriterion(
+                        fineGridCell.getCellDescriptionsIndex(),element);
+          }
+        }
+      }
+
+      // TODO(Dominic): Is normally only necessary to check if we need to adjust the solution
+      // However mark for refinement currently does some more things
       refineFineGridCell |=
           solver->markForRefinement(
               fineGridCell,
@@ -309,7 +332,8 @@ void exahype::mappings::MeshRefinement::enterCell(
               IsInitialMeshRefinement,
               solverNumber);
 
-      refineFineGridCell |=
+
+      exahype::solvers::Solver::UpdateStateInEnterCellResult result =
           solver->updateStateInEnterCell(
               fineGridCell,
               fineGridVertices,
@@ -320,31 +344,27 @@ void exahype::mappings::MeshRefinement::enterCell(
               fineGridPositionOfCell,
               IsInitialMeshRefinement,
               solverNumber);
-      lock.free();
+      refineFineGridCell |= result._refinementRequested;
+      adjustSolution     |= result._newComputeCellAllocated;
 
-      // TODO(Dominic): I planned the following:
-      // In the first iteration, make sure already existing cells have the most up-to-date
-      // solution values. Later, only impose initial conditions for
-      // newly created cells, compute a new limiter status if necessary
-      //
-      // However this turned out to be more complicated than anticipated
-      // because of the LimitingADERDGSolver introducing limiter patches
-      // in multiple iterations. We have to ensure those work
-      // with correct initial data as well.
+      // Synchronise time stepping and adjust the solution
+      // if necessary
       if (fineGridCell.isInitialised()) {
         const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
           solver->zeroTimeStepSizes(fineGridCell.getCellDescriptionsIndex(),element);
           solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(),element);
 
-          solver->setInitialConditions(
-              fineGridCell.getCellDescriptionsIndex(),
-              element);
+          if (adjustSolution) {
+            solver->adjustSolution(
+                fineGridCell.getCellDescriptionsIndex(),
+                element);
 
-          if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                updateLimiterStatusAndMinAndMaxAfterSetInitialConditions(
-                    fineGridCell.getCellDescriptionsIndex(),element);
+            if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
+                  updateLimiterStatusAndMinAndMaxAfterAdjustSolution(
+                      fineGridCell.getCellDescriptionsIndex(),element);
+            }
           }
         }
 
@@ -386,9 +406,9 @@ void exahype::mappings::MeshRefinement::leaveCell(
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
     // TODO(Dominic): Computationally heaviest operation is
-    // restriction of volume unknows up to a parent during
+    // restriction of volume unknowns up to a parent during
     // erasing operations. This is mostly localised.
-    // Multicoreising of this routine is thus postponed.
+    // Multicore-ising of this routine is currently postponed.
 
     if (solver->getMeshUpdateRequest()) {
         solver->updateStateInLeaveCell(
@@ -430,7 +450,7 @@ void exahype::mappings::MeshRefinement::leaveCell(
 //      enddforx
 //  }
 
-  // TODO(Dominic): Erasse coarse grid vertices if not vetoed
+  // TODO(Dominic): Erase coarse grid vertices if not vetoed
   //    dfor2(v)
   //    if (
   //        fineGridVertices[ fineGridVerticesEnumerator(v) ].canErase()
@@ -444,14 +464,26 @@ void exahype::mappings::MeshRefinement::leaveCell(
   //    }
   //    enddforx
 
-  // Ensure we have no hanging nodes on the boundary
+  // Ensure we have no hanging nodes on the boundary if at least one inside vertex
+  // is refined
   if (fineGridCell.isRefined()) {
+    bool atLeastOneInsideVertexIsRefined = false;
     dfor2(k)
-      if (fineGridVertices[ fineGridVerticesEnumerator(k) ].isBoundary() &&
-          fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==Vertex::Records::Unrefined) {
-        fineGridVertices[ fineGridVerticesEnumerator(k) ].refine();
+      if (fineGridVertices[ fineGridVerticesEnumerator(k) ].isInside() &&
+          fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==Vertex::Records::Refined) {
+        atLeastOneInsideVertexIsRefined = true;
+        break;
       }
     enddforx
+
+    if (atLeastOneInsideVertexIsRefined) {
+      dfor2(k)
+        if (fineGridVertices[ fineGridVerticesEnumerator(k) ].isBoundary() &&
+            fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==exahype::Vertex::Records::Unrefined) {
+          fineGridVertices[ fineGridVerticesEnumerator(k) ].refine();
+        }
+      enddforx
+    }
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);

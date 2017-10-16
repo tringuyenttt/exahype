@@ -280,6 +280,8 @@ private:
    * registered. Returns false otherwise.
    *
    * TODO(Dominic): More docu.
+   *
+   * \note This operations is not thread-safe
    */
   bool eraseCellDescriptionIfNecessary(
       const int cellDescriptionsIndex,
@@ -290,6 +292,8 @@ private:
   /**
    * Initialise cell description of type Cell.
    * Initialise the refinement event with None.
+   *
+   * \note This operations is not thread-safe
    */
   void addNewCell(
       exahype::Cell& fineGridCell,
@@ -309,6 +313,8 @@ private:
    *
    * Additionally, copies the information if a face is inside
    * from the parent to the new child cell.
+   *
+   * \note This operations is not thread-safe
    */
   void addNewDescendantIfAugmentingRequested(
       exahype::Cell& fineGridCell,
@@ -330,9 +336,12 @@ private:
    * Additionally, copies the information if a face is inside
    * from the parent to the new child cell.
    *
+   * \return True if a cell description of type Cell was allocated
+   * on the fineGridCell
+   *
    * \note This operations is not thread-safe
    */
-  void addNewCellIfRefinementRequested(
+  bool addNewCellIfRefinementRequested(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1453,7 +1462,7 @@ public:
       const bool initialGrid,
       const int solverNumber) override;
 
-  bool updateStateInEnterCell(
+   UpdateStateInEnterCellResult updateStateInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1630,11 +1639,11 @@ public:
    * has initially no meaning and
    * equals std::numeric_limits<double>::max().
    */
-  void setInitialConditions(
+  void adjustSolution(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  CellUpdateResult fusedTimeStep(
+  UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       double** tempSpaceTimeUnknowns,

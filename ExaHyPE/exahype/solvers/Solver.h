@@ -462,13 +462,21 @@ class exahype::solvers::Solver {
   enum class RefinementControl { Keep = 0, Refine = 1, Erase = 2 };
 
   /**
-   *
+   * TODO(Dominic): Add docu.
    */
-  typedef struct CellUpdateResult {
+  typedef struct UpdateResult {
     double _timeStepSize                     = std::numeric_limits<double>::max();
     LimiterDomainChange _limiterDomainChange = LimiterDomainChange::Regular;
     bool _refinementRequested                = false;
-  } CellUpdateResult;
+  } UpdateResult;
+
+  /**
+   * TODO(Dominic): Add docu.
+   */
+  typedef struct UpdateStateInEnterCellResult {
+    bool _refinementRequested = false;
+    bool _newComputeCellAllocated   = false;
+  } UpdateStateInEnterCellResult;
 
   /**
    * This struct is used in the AMR context
@@ -1125,8 +1133,7 @@ class exahype::solvers::Solver {
    * like marking for refinement, erasing, augmenting,
    * or deaugmenting.
    *
-   * Returns true if a performed action requires to
-   * refine the mesh.
+   * \return a struct of type UpdateStateInEnterCellResult.
    *
    * \note We use this at the moment only
    * for refinement events. We can consider later
@@ -1134,7 +1141,7 @@ class exahype::solvers::Solver {
    * (solution update, predictor comp.) into
    * this hook.
    */
-  virtual bool updateStateInEnterCell(
+  virtual UpdateStateInEnterCellResult updateStateInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -1317,7 +1324,7 @@ class exahype::solvers::Solver {
    *
    * \note Has no const modifier since kernels are not const functions yet.
    */
-  virtual void setInitialConditions(
+  virtual void adjustSolution(
       const int cellDescriptionsIndex,
       const int element) = 0;
 
@@ -1340,7 +1347,7 @@ class exahype::solvers::Solver {
    * performs an FV update. Performs some additional
    * tasks.
    */
-  virtual CellUpdateResult fusedTimeStep(
+  virtual UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       double** tempSpaceTimeUnknowns,

@@ -545,7 +545,7 @@ public:
       const bool initialGrid,
       const int solverNumber) override;
 
-  bool updateStateInEnterCell(
+  UpdateStateInEnterCellResult updateStateInEnterCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -615,11 +615,11 @@ public:
       const int cellDescriptionsIndex,
       const int element);
 
-  void setInitialConditions(
+  void adjustSolution(
       const int cellDescriptionsIndex,
       const int element) final override;
 
-  CellUpdateResult fusedTimeStep(
+  UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       double** tempSpaceTimeUnknowns,
