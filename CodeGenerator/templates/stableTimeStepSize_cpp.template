@@ -36,7 +36,7 @@ double {{codeNamespace}}::stableTimeStepSize(
 #ifdef USE_IPO
       #pragma forceinline recursive
 #endif
-      solver.{{solverName}}::eigenvalues(&luh[{{nVar}}*ijk], d, lambda);
+      solver.{{solverName}}::eigenvalues(&luh[{{nData}}*ijk], d, lambda);
       
       double maxEigenvalue = 0.0;
       for (int ivar = 0; ivar < {{nVar}}; ivar++) {

@@ -22,31 +22,33 @@ namespace {{namespaceName}} {
 {% endfor %}
 namespace converter {
 
-  constexpr int getLuhArraySize()        { return {{(nDof**nDim)*nVar}};}
+//TODO JMG adapt to parameters and fix
 
-  constexpr int getBndGenArraySize()     { return {{2 * nDim * nDof * nDof3D * nVar}};}
-  constexpr int getBndOptArraySize()     { return {{2 * nDim * nDof * nDof3D * nVarPad}};}
+  // constexpr int getLuhArraySize()        { return {{(nDof**nDim)*nVar}};}
 
-  constexpr int getBndFaceGenArraySize() { return {{nDof * nDof3D * nVar}};}
-  constexpr int getBndFaceOptArraySize() { return {{nDof * nDof3D * nVarPad}};}
+  // constexpr int getBndGenArraySize()     { return {{2 * nDim * nDof * nDof3D * nVar}};}
+  // constexpr int getBndOptArraySize()     { return {{2 * nDim * nDof * nDof3D * nVarPad}};}
 
-  constexpr int getFhiGenArraySize()     { return {{(nDof ** nDim) * nVar * (nDim+1)}};}
-  constexpr int getFhiOptArraySize()     { return {{(nDof ** nDim) * nVarPad * (nDim+1)}};}
+  // constexpr int getBndFaceGenArraySize() { return {{nDof * nDof3D * nVar}};}
+  // constexpr int getBndFaceOptArraySize() { return {{nDof * nDof3D * nVarPad}};}
 
-  constexpr int getQhiGenArraySize()     { return {{(nDof ** nDim) * nVar}};}
-  constexpr int getQhiOptArraySize()     { return {{(nDof ** nDim) * nVarPad}};}
+  // constexpr int getFhiGenArraySize()     { return {{(nDof ** nDim) * nVar * (nDim+1)}};}
+  // constexpr int getFhiOptArraySize()     { return {{(nDof ** nDim) * nVarPad * (nDim+1)}};}
 
-  void Bnd_optimised2generic(const double* const opt, double* gen);
-  void Bnd_generic2optimised(const double* const gen, double* opt);
+  // constexpr int getQhiGenArraySize()     { return {{(nDof ** nDim) * nVar}};}
+  // constexpr int getQhiOptArraySize()     { return {{(nDof ** nDim) * nVarPad}};}
 
-  void BndFace_optimised2generic(const double* const opt, double* gen);
-  void BndFace_generic2optimised(const double* const gen, double* opt);
+  // void Bnd_optimised2generic(const double* const opt, double* gen);
+  // void Bnd_generic2optimised(const double* const gen, double* opt);
 
-  void Fhi_optimised2generic(const double* const opt, double* gen);
-  void Fhi_generic2optimised(const double* const gen, double* opt);
+  // void BndFace_optimised2generic(const double* const opt, double* gen);
+  // void BndFace_generic2optimised(const double* const gen, double* opt);
 
-  void Qhi_optimised2generic(const double* const opt, double* gen);
-  void Qhi_generic2optimised(const double* const gen, double* opt);
+  // void Fhi_optimised2generic(const double* const opt, double* gen);
+  // void Fhi_generic2optimised(const double* const gen, double* opt);
+
+  // void Qhi_optimised2generic(const double* const opt, double* gen);
+  // void Qhi_generic2optimised(const double* const gen, double* opt);
 
 }
 {% for namespaceName in codeNamespaceList %}

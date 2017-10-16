@@ -13,102 +13,103 @@
 
 #include "{{pathToOptKernel}}/converter.h"
 
-void {{codeNamespace}}::converter::Bnd_optimised2generic(const double* const opt, double* gen) {
-  for(int d=0; d<{{2 * nDim}}; d++) {
-    for(int ij=0; ij<{{nDof*nDof3D}}; ij++) {
-      for(int n=0; n<{{nVar}}; n++) {
-        gen[n+{{nVar}}*(ij+{{nDof*nDof3D}}*d)] = opt[n+{{nVarPad}}*(ij+{{nDof*nDof3D}}*d)];
-      }
-    }    
-  }
-}
+//TODO JMG adapt to parameters and fix
 
-void {{codeNamespace}}::converter::Bnd_generic2optimised(const double* const gen, double* opt) {
-  for(int d=0; d<{{2 * nDim}}; d++) {
-    for(int ij=0; ij<{{nDof*nDof3D}}; ij++) {
-      for(int n=0; n<{{nVar}}; n++) {
-        opt[n+{{nVarPad}}*(ij+{{nDof*nDof3D}}*d)] = gen[n+{{nVar}}*(ij+{{nDof*nDof3D}}*d)];
-      }
-    }    
-  }
-}
+// void {{codeNamespace}}::converter::Bnd_optimised2generic(const double* const opt, double* gen) {
+  // for(int d=0; d<{{2 * nDim}}; d++) {
+    // for(int ij=0; ij<{{nDof*nDof3D}}; ij++) {
+      // for(int n=0; n<{{nVar}}; n++) {
+        // gen[n+{{nVar}}*(ij+{{nDof*nDof3D}}*d)] = opt[n+{{nVarPad}}*(ij+{{nDof*nDof3D}}*d)];
+      // }
+    // }    
+  // }
+// }
 
-void {{codeNamespace}}::converter::BndFace_optimised2generic(const double* const opt, double* gen) {
-  for(int ij=0; ij<{{nDof*nDof3D}}; ij++) {
-    for(int n=0; n<{{nVar}}; n++) {
-      gen[n+{{nVar}}*ij] = opt[n+{{nVarPad}}*ij];
-    }
-  }    
-}
+// void {{codeNamespace}}::converter::Bnd_generic2optimised(const double* const gen, double* opt) {
+  // for(int d=0; d<{{2 * nDim}}; d++) {
+    // for(int ij=0; ij<{{nDof*nDof3D}}; ij++) {
+      // for(int n=0; n<{{nVar}}; n++) {
+        // opt[n+{{nVarPad}}*(ij+{{nDof*nDof3D}}*d)] = gen[n+{{nVar}}*(ij+{{nDof*nDof3D}}*d)];
+      // }
+    // }    
+  // }
+// }
 
-void {{codeNamespace}}::converter::BndFace_generic2optimised(const double* const gen, double* opt) {
-  for(int ij=0; ij<{{nDof*nDof3D}}; ij++) {
-    for(int n=0; n<{{nVar}}; n++) {
-      opt[n+{{nVarPad}}*ij] = gen[n+{{nVar}}*ij];
-    }
-  }    
-}
+// void {{codeNamespace}}::converter::BndFace_optimised2generic(const double* const opt, double* gen) {
+  // for(int ij=0; ij<{{nDof*nDof3D}}; ij++) {
+    // for(int n=0; n<{{nVar}}; n++) {
+      // gen[n+{{nVar}}*ij] = opt[n+{{nVarPad}}*ij];
+    // }
+  // }    
+// }
+
+// void {{codeNamespace}}::converter::BndFace_generic2optimised(const double* const gen, double* opt) {
+  // for(int ij=0; ij<{{nDof*nDof3D}}; ij++) {
+    // for(int n=0; n<{{nVar}}; n++) {
+      // opt[n+{{nVarPad}}*ij] = gen[n+{{nVar}}*ij];
+    // }
+  // }    
+// }
 
 {% if noVarPadding %}
-void {{codeNamespace}}::converter::Fhi_optimised2generic(const double* const opt, double* gen) {
-  const int size = getFhiOptArraySize();
-  std::memcpy(gen, opt, size*sizeof(double));
-}
+// void {{codeNamespace}}::converter::Fhi_optimised2generic(const double* const opt, double* gen) {
+  // const int size = getFhiOptArraySize();
+  // std::memcpy(gen, opt, size*sizeof(double));
+// }
 
-void {{codeNamespace}}::converter::Fhi_generic2optimised(const double* const gen, double* opt) {
-  const int size = getFhiOptArraySize();
-  std::memcpy(opt, gen, size*sizeof(double));
-}
+// void {{codeNamespace}}::converter::Fhi_generic2optimised(const double* const gen, double* opt) {
+  // const int size = getFhiOptArraySize();
+  // std::memcpy(opt, gen, size*sizeof(double));
+// }
 
-void {{codeNamespace}}::converter::Qhi_optimised2generic(const double* const opt, double* gen) {
-  const int size = getQhiOptArraySize();
-  std::memcpy(gen, opt, size*sizeof(double));
-}
+// void {{codeNamespace}}::converter::Qhi_optimised2generic(const double* const opt, double* gen) {
+  // const int size = getQhiOptArraySize();
+  // std::memcpy(gen, opt, size*sizeof(double));
+// }
 
-void {{codeNamespace}}::converter::Qhi_generic2optimised(const double* const gen, double* opt) {
-  const int size = getQhiOptArraySize();
-  std::memcpy(opt, gen, size*sizeof(double));
-}
+// void {{codeNamespace}}::converter::Qhi_generic2optimised(const double* const gen, double* opt) {
+  // const int size = getQhiOptArraySize();
+  // std::memcpy(opt, gen, size*sizeof(double));
+// }
 
 {% else %} {# == !noVarPadding , nVar padded to nVarPad #}
+// void {{codeNamespace}}::converter::Fhi_optimised2generic(const double* const opt, double* gen) {
+  // for(int b=0; b<{{nDim+1}}; b++) {
+    // for(int j=0; j<{{nDof**nDim}}; j++) {
+      // #pragma simd
+      // for(int i=0; i<{{nVar}}; i++) {
+        // gen[i+{{nVar}}*j+b*{{(nDof ** nDim) * nVar}}] = opt[i+{{nVarPad}}*j+b*{{(nDof ** nDim) * nVarPad}}];
+      // }
+    // }
+  // }
+// }
 
-void {{codeNamespace}}::converter::Fhi_optimised2generic(const double* const opt, double* gen) {
-  for(int b=0; b<{{nDim+1}}; b++) {
-    for(int j=0; j<{{nDof**nDim}}; j++) {
-      #pragma simd
-      for(int i=0; i<{{nVar}}; i++) {
-        gen[i+{{nVar}}*j+b*{{(nDof ** nDim) * nVar}}] = opt[i+{{nVarPad}}*j+b*{{(nDof ** nDim) * nVarPad}}];
-      }
-    }
-  }
-}
+// void {{codeNamespace}}::converter::Fhi_generic2optimised(const double* const gen, double* opt) {
+  // for(int b=0; b<{{nDim+1}}; b++) {
+    // for(int j=0; j<{{nDof**nDim}}; j++) {
+      // #pragma simd
+      // for(int i=0; i<{{nVar}}; i++) {
+        // opt[i+{{nVarPad}}*j+b*{{(nDof ** nDim) * nVarPad}}] = gen[i+{{nVar}}*j+b*{{(nDof ** nDim) * nVar}}];
+      // }
+    // }
+  // }
+// }
 
-void {{codeNamespace}}::converter::Fhi_generic2optimised(const double* const gen, double* opt) {
-  for(int b=0; b<{{nDim+1}}; b++) {
-    for(int j=0; j<{{nDof**nDim}}; j++) {
-      #pragma simd
-      for(int i=0; i<{{nVar}}; i++) {
-        opt[i+{{nVarPad}}*j+b*{{(nDof ** nDim) * nVarPad}}] = gen[i+{{nVar}}*j+b*{{(nDof ** nDim) * nVar}}];
-      }
-    }
-  }
-}
+// void {{codeNamespace}}::converter::Qhi_optimised2generic(const double* const opt, double* gen) {
+  // for(int j=0; j<{{nDof**nDim}}; j++) {
+    // #pragma simd
+    // for(int i=0; i<{{nVar}}; i++) {
+      // gen[i+{{nVar}}*j] = opt[i+{{nVarPad}}*j];
+    // }
+  // }
+// }
 
-void {{codeNamespace}}::converter::Qhi_optimised2generic(const double* const opt, double* gen) {
-  for(int j=0; j<{{nDof**nDim}}; j++) {
-    #pragma simd
-    for(int i=0; i<{{nVar}}; i++) {
-      gen[i+{{nVar}}*j] = opt[i+{{nVarPad}}*j];
-    }
-  }
-}
-
-void {{codeNamespace}}::converter::Qhi_generic2optimised(const double* const gen, double* opt) {
-  for(int j=0; j<{{nDof**nDim}}; j++) {
-    #pragma simd
-    for(int i=0; i<{{nVar}}; i++) {
-      opt[i+{{nVarPad}}*j] = gen[i+{{nVar}}*j];
-    }
-  }
-}
+// void {{codeNamespace}}::converter::Qhi_generic2optimised(const double* const gen, double* opt) {
+  // for(int j=0; j<{{nDof**nDim}}; j++) {
+    // #pragma simd
+    // for(int i=0; i<{{nVar}}; i++) {
+      // opt[i+{{nVarPad}}*j] = gen[i+{{nVar}}*j];
+    // }
+  // }
+// }
 {% endif %}

@@ -23,15 +23,15 @@ void {{codeNamespace}}::solutionUpdate(
 ) {
 #ifdef __INTEL_COMPILER
   __assume_aligned(weights3, ALIGNMENT);
-  __assume_aligned(luh, ALIGNMENT); //luh should be aligned, see Solver.h
-  __assume_aligned(lduh, ALIGNMENT); //luh should be aligned, see Solver.h
+  __assume_aligned(luh,      ALIGNMENT); //luh  should be aligned, see Solver.h
+  __assume_aligned(lduh,     ALIGNMENT); //lduh should be aligned, see Solver.h
 #endif
 
   for(int ijk=0;ijk<{{nDof**nDim}};ijk++) {
     const double coeff = dt/weights3[ijk];
     #pragma simd
-    for(int n=0;n<{{nVar}};n++) {
-      luh[n+ijk*{{nVar}}] += coeff*lduh[n+ijk*{{nVar}}]; //simd+fma
+    for(int n=0;n<{{nVar}};n++) { //update only the variables, lduh contains no parameters
+      luh[n+ijk*{{nData}}] += coeff*lduh[n+ijk*{{nVar}}]; //simd+fma
     }
   }
  

@@ -54,8 +54,8 @@ void {{codeNamespace}}::boundaryConditions(
     #pragma forceinline recursive
 #endif
     solver.{{solverName}}::boundaryValues(x,t,dt,faceIndex,normalNonZero,
-                          &fluxIn[(ii+jj*{{nDof3D}})*{{nVarPad}}],&stateIn[(ii+jj*{{nDof3D}})*{{nVarPad}}],
-                          &fluxOut[(ii+jj*{{nDof3D}})*{{nVarPad}}],&stateOut[(ii+jj*{{nDof3D}})*{{nVarPad}}]);   
+                          &fluxIn[(ii+jj*{{nDof3D}})*{{nVarPad}}],&stateIn[(ii+jj*{{nDof3D}})*{{nDataPad}}],
+                          &fluxOut[(ii+jj*{{nDof3D}})*{{nVarPad}}],&stateOut[(ii+jj*{{nDof3D}})*{{nDataPad}}]);   
     }
   }
   

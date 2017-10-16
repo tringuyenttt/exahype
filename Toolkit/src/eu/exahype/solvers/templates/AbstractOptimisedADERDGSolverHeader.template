@@ -144,8 +144,8 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     int getTempPointForceSourcesSize()      const {return {{optNamespace}}::getTempPointForceSourcesSize();     }
     int getBndFaceSize()                    const {return {{optNamespace}}::getBndFaceSize();                   }
     int getBndTotalSize()                   const {return {{optNamespace}}::getBndTotalSize();                  }
-    int getBndFluxSize()                    const {return {{optNamespace}}::getBndFaceSize();                   }
-    int getBndFluxTotalSize()               const {return {{optNamespace}}::getBndTotalSize();                  }
+    int getBndFluxSize()                    const {return {{optNamespace}}::getBndFluxSize();                   }
+    int getBndFluxTotalSize()               const {return {{optNamespace}}::getBndFluxTotalSize();              }
     int getTempStateSizedVectorsSize()      const {return {{optNamespace}}::getTempStateSizedVectorsSize();     }
     
     bool alignTempArray()                  const {return true;}

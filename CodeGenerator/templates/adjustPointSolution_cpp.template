@@ -33,7 +33,7 @@ void {{codeNamespace}}::adjustPointSolution(
     for(int i=0;i<{{nDof}};i++) {
       x[0] = center[0] + dx[0] * (gaussLegendreNodes[{{order}}][i] - 0.5);
 
-      solver.{{solverName}}::adjustPointSolution(x, t, dt, &luh[pos*{{nVar}}]);
+      solver.{{solverName}}::adjustPointSolution(x, t, dt, &luh[pos*{{nData}}]);
       pos++;
     }
   }
@@ -46,7 +46,7 @@ void {{codeNamespace}}::adjustPointSolution(
       for(int i=0;i<{{nDof}};i++) {
         x[0] = center[0] + dx[0] * (gaussLegendreNodes[{{order}}][i] - 0.5);
 
-        solver.{{solverName}}::adjustPointSolution(x, t, dt, &luh[pos*{{nVar}}]);
+        solver.{{solverName}}::adjustPointSolution(x, t, dt, &luh[pos*{{nData}}]);
         pos++;
       }
     }

@@ -38,7 +38,7 @@ void {{codeNamespace}}::predictorNonlinear(
 {% endif %}
 #endif  
 
-  std::memset(lQhi, 0, {{(nDof**nDim)*nVarPad}} * sizeof(double));
+  std::memset(lQhi, 0, {{(nDof**nDim)*nDataPad}} * sizeof(double));
   std::memset(lFhi, 0, {{nDim*(nDof**nDim)*nVarPad}} * sizeof(double));
 {% if useSourceOrNCP %}
   std::memset(lShi, 0, {{(nDof**nDim)*nVarPad}} * sizeof(double));
@@ -51,10 +51,10 @@ void {{codeNamespace}}::predictorNonlinear(
         // Matrix-Vector Products
         for (int m = 0; m < {{nDof}}; m++) {
           #pragma simd
-          for (int n = 0; n < {{nVarPad}}; n++) {
+          for (int n = 0; n < {{nDataPad}}; n++) {
             // Fortran: lQhi(:,k,j,i) = lQi(:,:,k,j,i) * wGPN(:)
-            lQhi[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*i))] += weights1[m] *
-                lQi[n+{{nVarPad}}*(m+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*i)))];
+            lQhi[n+{{nDataPad}}*(k+{{nDof}}*(j+{{nDof}}*i))] += weights1[m] *
+                lQi[n+{{nDataPad}}*(m+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*i)))];
           }
           #pragma simd
           for (int n = 0; n < {{nVarPad}}; n++) {

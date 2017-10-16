@@ -34,8 +34,8 @@ void {{codeNamespace}}::extrapolatorNonlinear(
   __assume_aligned(FLCoeff, ALIGNMENT);
 #endif
   
-  std::memset(lQhbnd, 0, {{2*nDim*bndFaceSize}} * sizeof(double));
-  std::memset(lFhbnd, 0, {{2*nDim*bndFaceSize}} * sizeof(double));
+  std::memset(lQhbnd, 0, {{2*nDim*nDataPad*nDof*nDof3D}} * sizeof(double));
+  std::memset(lFhbnd, 0, {{2*nDim*nVarPad*nDof*nDof3D }} * sizeof(double));
 
   // x-direction: face 1 (left) and face 2 (right)
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
@@ -43,21 +43,25 @@ void {{codeNamespace}}::extrapolatorNonlinear(
     for (int x = 0; x < {{nDof}}; x++) {
       for (int m = 0; m < {{nDof}}; m++) {
         #pragma simd
-        for (int n = 0; n < {{nVarPad}}; n++) {    
+        for (int n = 0; n < {{nDataPad}}; n++) {    
           // Fortran: lQhbnd(:,j,i,1) = lQhi(:,:,j,i) * FLCoeff(:)
-          lQhbnd[n+{{nVarPad}}*yz+{{0*bndFaceSize}}] +=
-              FLCoeff[x] * weights1[m] * lQi[n+{{nVarPad}}*(m+{{nDof}}*(x+{{nDof}}*yz))];
+          lQhbnd[n+{{nDataPad}}*yz+{{0*nDataPad*nDof*nDof3D}}] +=
+              FLCoeff[x] * weights1[m] * lQi[n+{{nDataPad}}*(m+{{nDof}}*(x+{{nDof}}*yz))];
 
           // Fortran: lQhbnd(:,j,i,2) = lQhi(:,:,j,i) * FRCoeff(:)
-          lQhbnd[n+{{nVarPad}}*yz+{{1*bndFaceSize}}] +=
-              FRCoeff[x] * weights1[m] * lQi[n+{{nVarPad}}*(m+{{nDof}}*(x+{{nDof}}*yz))];
-
+          lQhbnd[n+{{nDataPad}}*yz+{{1*nDataPad*nDof*nDof3D}}] +=
+              FRCoeff[x] * weights1[m] * lQi[n+{{nDataPad}}*(m+{{nDof}}*(x+{{nDof}}*yz))];
+{% if nDataPad != nVarPad %}
+        }
+        #pragma simd
+        for (int n = 0; n < {{nVarPad}}; n++) {  
+{% endif %}
           // Fortran: lFhbnd(:,j,i,1) = lFhi_x(:,:,j,i) * FLCoeff(:)
-          lFhbnd[n+{{nVarPad}}*yz+{{0*bndFaceSize}}] +=
+          lFhbnd[n+{{nVarPad}}*yz+{{0*nVarPad*nDof*nDof3D}}] +=
               FLCoeff[x] * weights1[m] * lFi[n+{{nVarPad}}*(x+{{nDof}}*(yz+{{nDof*nDof3D}}*m))];
 
           // Fortran: lFhbnd(:,j,i,2) = lFhi_x(:,:,j,i) * FRCoeff(:)
-          lFhbnd[n+{{nVarPad}}*yz+{{1*bndFaceSize}}] +=
+          lFhbnd[n+{{nVarPad}}*yz+{{1*nVarPad*nDof*nDof3D}}] +=
               FRCoeff[x] * weights1[m] * lFi[n+{{nVarPad}}*(x+{{nDof}}*(yz+{{nDof*nDof3D}}*m))];
         }
       }
@@ -77,21 +81,25 @@ void {{codeNamespace}}::extrapolatorNonlinear(
       {% endif %}
       for (int m = 0; m < {{nDof}}; m++) {
         #pragma simd
-        for (int n = 0; n < {{nVarPad}}; n++) {
+        for (int n = 0; n < {{nDataPad}}; n++) {
           // Fortran: lQhbnd(:,j,i,3) = lQhi(:,j,:,i) * FLCoeff(:)
-          lQhbnd[n+{{nVarPad}}*xz+{{2*bndFaceSize}}] +=
-              FLCoeff[y]* weights1[m] * lQi[n+{{nVarPad}}*(m+{{nDof}}*(x+{{nDof}}*(y+{{nDof3D}}*z)))];
+          lQhbnd[n+{{nDataPad}}*xz+{{2*nDataPad*nDof*nDof3D}}] +=
+              FLCoeff[y]* weights1[m] * lQi[n+{{nDataPad}}*(m+{{nDof}}*(x+{{nDof}}*(y+{{nDof3D}}*z)))];
 
           // Fortran: lQhbnd(:,j,i,4) = lQhi(:,j,:,i) * FRCoeff(:)
-          lQhbnd[n+{{nVarPad}}*xz+{{3*bndFaceSize}}] +=
-              FRCoeff[y]* weights1[m] * lQi[n+{{nVarPad}}*(m+{{nDof}}*(x+{{nDof}}*(y+{{nDof3D}}*z)))];
-
+          lQhbnd[n+{{nDataPad}}*xz+{{3*nDataPad*nDof*nDof3D}}] +=
+              FRCoeff[y]* weights1[m] * lQi[n+{{nDataPad}}*(m+{{nDof}}*(x+{{nDof}}*(y+{{nDof3D}}*z)))];
+{% if nDataPad != nVarPad %}
+        }
+        #pragma simd
+        for (int n = 0; n < {{nVarPad}}; n++) {  
+{% endif %}
           // Fortran: lFhbnd(:,j,i,3) = lFhi_y(:,:,j,i) * FLCoeff(:)
-          lFhbnd[n+{{nVarPad}}*xz+{{2*bndFaceSize}}] +=
+          lFhbnd[n+{{nVarPad}}*xz+{{2*nVarPad*nDof*nDof3D}}] +=
               FLCoeff[y] * weights1[m] * lFi[n+{{nVarPad}}*(x+{{nDof}}*(y+{{nDof}}*(z+{{nDof3D}}*m)))+{{1*(nDof**nDim)*nDof*nVarPad}}];
 
           // Fortran: lFhbnd(:,j,i,4) = lFhi_y(:,:,j,i) * FRCoeff(:)
-          lFhbnd[n+{{nVarPad}}*xz+{{3*bndFaceSize}}] +=
+          lFhbnd[n+{{nVarPad}}*xz+{{3*nVarPad*nDof*nDof3D}}] +=
               FRCoeff[y] * weights1[m] * lFi[n+{{nVarPad}}*(x+{{nDof}}*(y+{{nDof}}*(z+{{nDof3D}}*m)))+{{1*(nDof**nDim)*nDof*nVarPad}}];
         }
       }
@@ -105,21 +113,25 @@ void {{codeNamespace}}::extrapolatorNonlinear(
     for (int z = 0; z < {{nDof}}; z++) {
       for (int m = 0; m < {{nDof}}; m++) {
         #pragma simd
-        for (int n = 0; n < {{nVarPad}}; n++) {
+        for (int n = 0; n < {{nDataPad}}; n++) {
           // Fortran: lQhbnd(:,j,i,5) = lQhi(:,j,i,:) * FLCoeff(:)
-          lQhbnd[n+{{nVarPad}}*xy+{{4*bndFaceSize}}] +=
-              FLCoeff[z] * weights1[m] * lQi[n+{{nVarPad}}*(m+{{nDof}}*(xy+{{nDof*nDof}}*z))];
+          lQhbnd[n+{{nDataPad}}*xy+{{4*nDataPad*nDof*nDof3D}}] +=
+              FLCoeff[z] * weights1[m] * lQi[n+{{nDataPad}}*(m+{{nDof}}*(xy+{{nDof*nDof}}*z))];
 
           // Fortran: lQhbnd(:,j,i,6) = lQhi(:,j,i,:) * FRCoeff(:)
-          lQhbnd[n+{{nVarPad}}*xy+{{5*bndFaceSize}}] +=
-              FRCoeff[z] * weights1[m] * lQi[n+{{nVarPad}}*(m+{{nDof}}*(xy+{{nDof*nDof}}*z))];
-
+          lQhbnd[n+{{nDataPad}}*xy+{{5*nDataPad*nDof*nDof3D}}] +=
+              FRCoeff[z] * weights1[m] * lQi[n+{{nDataPad}}*(m+{{nDof}}*(xy+{{nDof*nDof}}*z))];
+{% if nDataPad != nVarPad %}
+        }
+        #pragma simd
+        for (int n = 0; n < {{nVarPad}}; n++) {  
+{% endif %}
           // Fortran: lFhbnd(:,j,i,5) = lFhi_z(:,:,j,i) * FLCoeff(:)
-          lFhbnd[n+{{nVarPad}}*xy+{{4*bndFaceSize}}] +=
+          lFhbnd[n+{{nVarPad}}*xy+{{4*nVarPad*nDof*nDof3D}}] +=
               FLCoeff[z] * weights1[m] * lFi[n+{{nVarPad}}*(xy+{{nDof*nDof}}*(z+{{nDof}}*m))+{{2*(nDof**nDim)*nDof*nVarPad}}];
 
           // Fortran: lFhbnd(:,j,i,6) = lFhi_z(:,:,j,i) * FRCoeff(:)
-          lFhbnd[n+{{nVarPad}}*xy+{{5*bndFaceSize}}] +=
+          lFhbnd[n+{{nVarPad}}*xy+{{5*nVarPad*nDof*nDof3D}}] +=
               FRCoeff[z] * weights1[m] * lFi[n+{{nVarPad}}*(xy+{{nDof*nDof}}*(z+{{nDof}}*m))+{{2*(nDof**nDim)*nDof*nVarPad}}];
         }
       }
