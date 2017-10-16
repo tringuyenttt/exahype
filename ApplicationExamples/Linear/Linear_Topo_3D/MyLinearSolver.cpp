@@ -14,23 +14,15 @@ void Linear::MyLinearSolver::init(std::vector<std::string>& cmdlineargs) {
   // @todo Please implement/augment if required
 }
 
-exahype::solvers::ADERDGSolver::AdjustSolutionValue Linear::MyLinearSolver::useAdjustSolution(const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) const {
-  // @todo Please implement/augment if required
-  return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PatchWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
-}
 
 
-
-void Linear::MyLinearSolver::adjustPatchSolution(
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double t,
-      const double dt,
-      double* luh) {
+void Linear::MyLinearSolver::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
 
   constexpr int basisSize = MyLinearSolver::Order+1;
   int num_nodes = basisSize;
   int numberOfData=MyLinearSolver::NumberOfParameters+MyLinearSolver::NumberOfVariables;
+
+  if ( !tarch::la::equals(t,0.0) ) return;
 
   //  int nx = std::ceil((1/dx[0]))*(num_nodes-1)+1;
   //  int ny = std::ceil((1/dx[1]))*(num_nodes-1)+1;
@@ -40,7 +32,7 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   int ny;
   int nz;
   
- // std::cout << nx << " "<< ny << " "<< nz <<std::endl;
+  //std::cout << nx << " "<< ny << " "<< nz <<std::endl;
 
  // std::exit(-1);
 
@@ -48,7 +40,7 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   kernels::idx3 id_3(basisSize,basisSize,basisSize);
 
 
-  int n = cellCentre[0] > 0.5 ? 1 : 0 ;
+  int n = center[0] > 0.5 ? 1 : 0 ;
   
   int ne_x = std::round(1/dx[0]);
   int ne_y = std::round(1/dx[1]);
@@ -63,9 +55,9 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   double block_width_y=1.0;
   double block_width_z=1.0;
 
-  double offset_x=cellCentre[0]-0.5*dx[0];
-  double offset_y=cellCentre[1]-0.5*dx[1];
-  double offset_z=cellCentre[2]-0.5*dx[2];  
+  double offset_x=center[0]-0.5*dx[0];
+  double offset_y=center[1]-0.5*dx[1];
+  double offset_z=center[2]-0.5*dx[2];  
 
   double width_x=dx[0];
   double width_y=dx[1];
@@ -94,7 +86,7 @@ void Linear::MyLinearSolver::adjustPatchSolution(
     k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
   }
 
-  //  std::cout <<"n: " <<n <<" nx: " << nx << " i_m : "<< i_m << " j_m : "<< j_m << " k_m : "<< k_m << std::endl;
+  //  //std::cout <<"n: " <<n <<" nx: " << nx << " i_m : "<< i_m << " j_m : "<< j_m << " k_m : "<< k_m << std::endl;
 
 
   double* left_bnd_x = new double[ny*nz];
@@ -147,89 +139,89 @@ void Linear::MyLinearSolver::adjustPatchSolution(
 
 
 
-   // std::cout << "left" << std::endl;
+   // //std::cout << "left" << std::endl;
   
    // for (int i=0; i< ny*nz; i++){
-   //     std::cout << left_bnd_x[i] << std::endl;     
+   //     //std::cout << left_bnd_x[i] << std::endl;     
    // }
 
    // for (int i=0; i<  ny*nz; i++){
-   //     std::cout << left_bnd_y[i] << std::endl;
+   //     //std::cout << left_bnd_y[i] << std::endl;
    // }
 
    // for (int i=0; i<  ny*nz; i++){
-   //     std::cout << left_bnd_z[i] << std::endl;
+   //     //std::cout << left_bnd_z[i] << std::endl;
    // }
 
-   // std::cout << "right" << std::endl;
+   // //std::cout << "right" << std::endl;
    
    // for (int i=0; i< ny*nz; i++){
-   //     std::cout << right_bnd_x[i] << std::endl;     
+   //     //std::cout << right_bnd_x[i] << std::endl;     
    // }
 
    // for (int i=0; i<  ny*nz; i++){
-   //     std::cout << right_bnd_y[i] << std::endl;
+   //     //std::cout << right_bnd_y[i] << std::endl;
    // }
 
    // for (int i=0; i<  ny*nz; i++){
-   //     std::cout << right_bnd_z[i] << std::endl;
+   //     //std::cout << right_bnd_z[i] << std::endl;
    // }
 
 
-   // std::cout << "back" <<std::endl;
+   // //std::cout << "back" <<std::endl;
    
    // for (int i=0; i< ny*nx; i++){
-   //     std::cout << back_bnd_x[i] << std::endl;     
+   //     //std::cout << back_bnd_x[i] << std::endl;     
    // }
 
    // for (int i=0; i<  ny*nx; i++){
-   //     std::cout << back_bnd_y[i] << std::endl;
+   //     //std::cout << back_bnd_y[i] << std::endl;
    // }
 
    // for (int i=0; i<  ny*nx; i++){
-   //     std::cout << back_bnd_z[i] << std::endl;
+   //     //std::cout << back_bnd_z[i] << std::endl;
    // }
    
-   // std::cout <<"front" << std::endl;
+   // //std::cout <<"front" << std::endl;
    
    // for (int i=0; i< ny*nx; i++){
-   //     std::cout << front_bnd_x[i] << std::endl;     
+   //     //std::cout << front_bnd_x[i] << std::endl;     
    // }
 
    // for (int i=0; i<  ny*nx; i++){
-   //     std::cout << front_bnd_y[i] << std::endl;
+   //     //std::cout << front_bnd_y[i] << std::endl;
    // }
 
    // for (int i=0; i<  ny*nx; i++){
-   //     std::cout << front_bnd_z[i] << std::endl;
+   //     //std::cout << front_bnd_z[i] << std::endl;
    // }
 
-   // std::cout <<"top" << std::endl;
+   // //std::cout <<"top" << std::endl;
    
    // for (int i=0; i< nz*nx; i++){
-   //     std::cout << top_bnd_x[i] << std::endl;     
+   //     //std::cout << top_bnd_x[i] << std::endl;     
    // }
 
    // for (int i=0; i<  nz*nx; i++){
-   //     std::cout << top_bnd_y[i] << std::endl;
+   //     //std::cout << top_bnd_y[i] << std::endl;
    // }
 
    // for (int i=0; i<  nz*nx; i++){
-   //     std::cout << top_bnd_z[i] << std::endl;
+   //     //std::cout << top_bnd_z[i] << std::endl;
    // }
 
-   // std::cout << "bottom" << std::endl;
+   // //std::cout << "bottom" << std::endl;
    
    // for (int i=0; i< nz*nx; i++){
-   //     std::cout << bottom_bnd_x[i] << std::endl;     
+   //     //std::cout << bottom_bnd_x[i] << std::endl;     
    // }
 
    // for (int i=0; i<  nz*nx; i++){
-   //     std::cout << bottom_bnd_y[i] << std::endl;
+   //     //std::cout << bottom_bnd_y[i] << std::endl;
    // }
 
    // for (int i=0; i<  nz*nx; i++){
-   //     std::cout << bottom_bnd_z[i] << std::endl;
+   //     //std::cout << bottom_bnd_z[i] << std::endl;
    // }
 
 
@@ -251,10 +243,10 @@ void Linear::MyLinearSolver::adjustPatchSolution(
   //j_m =  std::round((offset_y/width_y) *(num_nodes-1));
   //  k_m =  std::round((offset_z/width_z) *(num_nodes-1));
 
-  // std::cout<< width_x<< "  " <<  width_y<< "  " <<  width_z<< "  " << std::endl;
-  // std::cout<< offset_x<< "  " << offset_y<< "  " << offset_z<< "  " << std::endl;
+  // //std::cout<< width_x<< "  " <<  width_y<< "  " <<  width_z<< "  " << std::endl;
+  // //std::cout<< offset_x<< "  " << offset_y<< "  " << offset_z<< "  " << std::endl;
 
-  //  std::cout<< std::endl;
+  //  //std::cout<< std::endl;
 
   // if (int(offset_x/width_x) == 0)
   //   {
@@ -365,21 +357,25 @@ void Linear::MyLinearSolver::adjustPatchSolution(
 	double z= gl_vals_z[id_3(k,j,i)];
 
 
-	// std::cout << std::endl;	
-	// std::cout <<"x" << x - (offset_x+width_x*kernels::gaussLegendreNodes[num_nodes-1][i]) << std::endl;
-	// std::cout <<"y" << y - (offset_y+width_y*kernels::gaussLegendreNodes[num_nodes-1][j]) << std::endl;
-	// std::cout <<"z" << z - (offset_z+width_z*kernels::gaussLegendreNodes[num_nodes-1][k]) << std::endl;
+	// //std::cout << std::endl;	
+	// //std::cout <<"x" << x - (offset_x+width_x*kernels::gaussLegendreNodes[num_nodes-1][i]) << std::endl;
+	// //std::cout <<"y" << y - (offset_y+width_y*kernels::gaussLegendreNodes[num_nodes-1][j]) << std::endl;
+	// //std::cout <<"z" << z - (offset_z+width_z*kernels::gaussLegendreNodes[num_nodes-1][k]) << std::endl;
 
-	// std::cout << std::endl;	
+	// //std::cout << std::endl;	
 
 	//Pressure
-	luh[id_4(k,j,i,0)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+	luh[id_4(k,j,i,0)]  = std::exp(-((x-3.0)*(x-3.0)+(y-4.0)*(y-4.0)+(z-5.0)*(z-5.0)));
+
 	//luh[id_4(k,j,i,0)] = 0.0;
 	
 	// //Velocity
 	luh[id_4(k,j,i,1)]  = 0;
-	luh[id_4(k,j,i,2)]  = 0;
+	luh[id_4(k,j,i,2)]  = std::exp(-((x-3.0)*(x-3.0)+(y-4.0)*(y-4.0)+(z-5.0)*(z-5.0)));
 	luh[id_4(k,j,i,3)]  = 0;
+
+
+	////std::cout << 	luh[id_4(k,j,i,1)] << "," <<  luh[id_4(k,j,i,2)] << "," << luh[id_4(k,j,i,3)]	 << std::endl;	
 
 	luh[id_4(k,j,i,4)]  = 1.0;   //rho
 	luh[id_4(k,j,i,5)]  = 1.484; //c	
@@ -406,46 +402,46 @@ void Linear::MyLinearSolver::adjustPatchSolution(
     }
   }
   
-  // //std::cout << jacobian[id_3(j,i)] << std::endl;
-	// // std::cout << q_x[id_xy(j,i)] << std::endl;
-	// // std::cout << q_y[id_xy(j,i)] << std::endl;
-	// // std::cout << r_x[id_xy(j,i)] << std::endl;	
-	// // std::cout << r_y[id_xy(j,i)] << std::endl;
-	// // std::cout <<  std::endl;
+  // //////std::cout << jacobian[id_3(j,i)] << std::endl;
+	// // ////std::cout << q_x[id_xy(j,i)] << std::endl;
+	// // ////std::cout << q_y[id_xy(j,i)] << std::endl;
+	// // ////std::cout << r_x[id_xy(j,i)] << std::endl;	
+	// // ////std::cout << r_y[id_xy(j,i)] << std::endl;
+	// // ////std::cout <<  std::endl;
 }
 
-void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) {
-  // Dimensions             = 3
-  // Number of variables    = 11 + #parameters
+// void Linear::MyLinearSolver::adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) {
+//   // Dimensions             = 3
+//   // Number of variables    = 11 + #parameters
   
-  // @todo Please implement/augment if required
-  // State variables:
-  double x_0[3]={0.5 , 0.5 ,0.5};
-  double exponent=0;
+//   // @todo Please implement/augment if required
+//   // State variables:
+//   double x_0[3]={0.5 , 0.5 ,0.5};
+//   double exponent=0;
 
-  for(int i=0 ; i < 3 ; i++){
-    exponent = exponent + (x[i]-x_0[i])*(x[i]-x_0[i]);
-  }
+//   for(int i=0 ; i < 3 ; i++){
+//     exponent = exponent + (x[i]-x_0[i])*(x[i]-x_0[i]);
+//   }
     
-  Q[ 0] = 0.0; //std::exp(-exponent/0.01);
-  Q[ 1] = 0.0;
-  Q[ 2] = 0.0;
-  Q[ 3] = 0.0;   // Material parameters:
-  Q[ 6] = 0.0;
-  Q[ 7] = 0.0;
-  Q[ 8] = 0.0;
-  Q[ 9] = 0.0;
-  Q[10] = 0.0;
-  Q[11] = 0.0;
-  Q[12] = 0.0;
-  Q[13] = 0.0;
-  Q[14] = 0.0;
-  Q[15] = 0.0;
-  Q[16] = 0.0;
-  Q[17] = 0.0;
-  Q[18] = 0.0;
+//   Q[ 0] = 0.0; //std::exp(-exponent/0.01);
+//   Q[ 1] = 0.0;
+//   Q[ 2] = 0.0;
+//   Q[ 3] = 0.0;   // Material parameters:
+//   Q[ 6] = 0.0;
+//   Q[ 7] = 0.0;
+//   Q[ 8] = 0.0;
+//   Q[ 9] = 0.0;
+//   Q[10] = 0.0;
+//   Q[11] = 0.0;
+//   Q[12] = 0.0;
+//   Q[13] = 0.0;
+//   Q[14] = 0.0;
+//   Q[15] = 0.0;
+//   Q[16] = 0.0;
+//   Q[17] = 0.0;
+//   Q[18] = 0.0;
   
-}
+// }
 
 void Linear::MyLinearSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
   // Dimensions             = 3
@@ -499,7 +495,9 @@ void Linear::MyLinearSolver::flux(const double* const Q,double** F) {
   double s_y=Q[14];
   double s_z=Q[15];
 
-  
+
+  std::cout << "Flux" << std::endl;
+  std::cout << u << "," << v << "," << w << std::endl;
   
   F[0][ 0] = -jacobian*(q_x*u+q_y*v+q_z*w);
   F[0][ 1] = 0.0;
@@ -515,6 +513,8 @@ void Linear::MyLinearSolver::flux(const double* const Q,double** F) {
   F[2][ 1] = 0.0;
   F[2][ 2] = 0.0;
   F[2][ 3] = 0.0;
+
+  std::cout << F[0][0] << "," << F[1][0] << "," << F[2][0] << std::endl;
 }
 
 
@@ -626,82 +626,87 @@ void Linear::MyLinearSolver::coefficientMatrix(const double* const Q,const int d
 
 
 
-void Linear::MyLinearSolver::algebraicSource(const double* const Q,double* S) {
+// void Linear::MyLinearSolver::algebraicSource(const double* const Q,double* S) {
 
-  S[0] = 10*Q[0];
-  S[1] = 10*Q[1];
-  S[2] = 10*Q[2];
-  S[3] = 10*Q[3];
-}
+//   S[0] = 10*Q[0];
+//   S[1] = 10*Q[1];
+//   S[2] = 10*Q[2];
+//   S[3] = 10*Q[3];
+// }
 
 
-void Linear::MyLinearSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n){
+// void Linear::MyLinearSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n){
 
-  double pi = 3.14159265359;
-  double sigma = 0.1149;
-  double t0 = 0.7;
-  double f = 0.0;
-  double M0 = 10.0;
+//   double pi = 3.14159265359;
+//   double sigma = 0.1149;
+//   double t0 = 0.7;
+//   double f = 0.0;
+//   double M0 = 10.0;
   
-  if(n == 0){
-    f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+//   if(n == 0){
+//     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
     
-    x0[0] = 0.25;
-    x0[1] = 0.5;
-    x0[2] = 0.5;
+//     x0[0] = 0.25;
+//     x0[1] = 0.5;
+//     x0[2] = 0.5;
     
-    forceVector[0] = 1.*f;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-    forceVector[3] = 0.0;
-  }else if(n == 1){
-    f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+//     forceVector[0] = 1.*f;
+//     forceVector[1] = 0.0;
+//     forceVector[2] = 0.0;
+//     forceVector[3] = 0.0;
+//   }else if(n == 1){
+//     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
     
-    x0[0] = 0.75;
-    x0[1] = 0.5;
-    x0[2] = 0.5;
+//     x0[0] = 0.75;
+//     x0[1] = 0.5;
+//     x0[2] = 0.5;
     
-    forceVector[0] = 1.*f;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-    forceVector[3] = 0.0;
-  }else if(n == 2){
-    f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+//     forceVector[0] = 1.*f;
+//     forceVector[1] = 0.0;
+//     forceVector[2] = 0.0;
+//     forceVector[3] = 0.0;
+//   }else if(n == 2){
+//     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
     
-    x0[0] = 0.5;
-    x0[1] = 0.25;
-    x0[2] = 0.5;
+//     x0[0] = 0.5;
+//     x0[1] = 0.25;
+//     x0[2] = 0.5;
     
-    forceVector[0] = 1.*f;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-    forceVector[3] = 0.0;
-  }else if(n == 3){
-    f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+//     forceVector[0] = 1.*f;
+//     forceVector[1] = 0.0;
+//     forceVector[2] = 0.0;
+//     forceVector[3] = 0.0;
+//   }else if(n == 3){
+//     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
     
-    x0[0] = 0.5;
-    x0[1] = 0.75;
-    x0[2] = 0.5;
+//     x0[0] = 0.5;
+//     x0[1] = 0.75;
+//     x0[2] = 0.5;
     
-    forceVector[0] = 1.*f;
-    forceVector[1] = 0.0;
-    forceVector[2] = 0.0;
-    forceVector[3] = 0.0;
-  }
+//     forceVector[0] = 1.*f;
+//     forceVector[1] = 0.0;
+//     forceVector[2] = 0.0;
+//     forceVector[3] = 0.0;
+//   }
     
 
-}
+// }
+
 void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const Q, double* rhs){
 
   double rho = Q[4];  
   double c   = Q[5];
   double jacobian = Q[6];  
   double mu  = rho*c*c;
-
+  // std::cout <<"MM" << std::endl;
+  // std::cout << rhs[0] << "," << rhs[1] << "," << rhs[2] << "," << rhs[3] << std::endl;
   rhs[0]=mu/jacobian * rhs[0];
   rhs[1]=1/rho * rhs[1];
   rhs[2]=1/rho * rhs[2];
   rhs[3]=1/rho * rhs[3];
+
+  //std::cout << rhs[0] << "," << rhs[1] << "," << rhs[2] << "," << rhs[3] << std::endl;
+
 
   rhs[4]=mu/jacobian * rhs[4];
   rhs[5]=1/rho * rhs[5];
@@ -716,7 +721,7 @@ void Linear::MyLinearSolver::multiplyMaterialParameterMatrix(const double* const
 }
 
 
-void Linear::MyLinearSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
+void Linear::MyLinearSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
 
   constexpr int numberOfVariables  = MyLinearSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
@@ -743,12 +748,12 @@ void Linear::MyLinearSolver::riemannSolver(double* FL,double* FR,const double* c
   double l_p[3]={0,0,0};  
   double l_m[3]={0,0,0};
 
-  //std::cout<<isBoundaryFace<<std::endl;
+  //////std::cout<<isBoundaryFace<<std::endl;
   
   double norm_p_qr=1.0;
   double norm_m_qr=1.0;
 
-  //std::cout<<isBoundaryFace<<std::endl;
+  //////std::cout<<isBoundaryFace<<std::endl;
 
   for (int i = 0; i < basisSize; i++) {
     for (int j = 0; j < basisSize; j++) {
