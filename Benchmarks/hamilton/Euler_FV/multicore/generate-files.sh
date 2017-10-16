@@ -27,13 +27,13 @@ io=no-output # or output
 
 kernels=gengodunov # this is just an identifier; actual kernels must be chosen before building the executables # gengodunov or genmusclhancock
 
-# Derived options
-
-for fuseAlgorithmicSteps in "on" "off"
-do
 i=0
 mesh=regular-$i
 h=${hMax[i]}
+
+# Derived options
+for fuseAlgorithmicSteps in "on" "off"
+do
 
 prefix=$project-$io-$kernels
 if [ "$fuseAlgorithmicSteps" == "on" ]; then
@@ -46,15 +46,15 @@ prefix+="-$mesh"
 for patchSize in 7 11 15 19 # corresponds to orders=3 5 7 9
 do
   # SIMULATION END TIME
-  T=(  0.00333333333334 0.00111111111112 0.00037037037038 0.000123456790124 0.0000411522633746  )            # p=3
-  if (( order == 5 )); then
-    T=( 0.00212121212122 0.000707070707072 0.0002356902357 0.0000785634118968 0.0000261878039657 )  # p=5; (2*3+1)/(2*order+1)*T_3 ceiled with sig. 1e-6
+  T=(  0.00333333333334 0.00111111111112 0.00037037037038 0.000123456790124 0.0000411522633746  )        # N=7
+  if (( patchSize == 11 )); then
+    T=( 0.00212121212122 0.000707070707072 0.0002356902357 0.0000785634118968 0.0000261878039657 )       # N=11; 11/7*T_3 ceiled with sig. 1e-6
   fi
-  if (( order == 7 )); then
-    T=( 0.0015555555555587 0.0005185185185227 0.0001728395061773 0.0000576131687245 0.0000192043895748 ) # p=7
+  if (( patchSize == 15 )); then
+    T=( 0.0015555555555587 0.0005185185185227 0.0001728395061773 0.0000576131687245 0.0000192043895748 ) # N=15
   fi
-  if (( order == 9 )); then
-    T=(0.0012280701754411 0.0004093567251495 0.0001364522417189 0.0000454840805720 0.0000151613601906 ) # p=9
+  if (( patchSize == 17 )); then
+    T=(0.0012280701754411 0.0004093567251495 0.0001364522417189 0.0000454840805720 0.0000151613601906 )  # N=19
   fi
   t=${T[i]}
 
