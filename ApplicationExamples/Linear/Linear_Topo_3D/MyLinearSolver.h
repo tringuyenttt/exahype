@@ -133,7 +133,6 @@ class Linear::MyLinearSolver : public Linear::AbstractMyLinearSolver {
      */
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
 
-    
     void coefficientMatrix(const double* const Q,const int d,double* Bn);
 
     void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;    

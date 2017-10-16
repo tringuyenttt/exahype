@@ -2,8 +2,8 @@
 
 #include "MyLinearSolver_Variables.h"
 
-#include "../../ExaHyPE/kernels/KernelUtils.h"
-#include "../../ExaHyPE/kernels/DGMatrices.h"
+#include "../../../ExaHyPE/kernels/KernelUtils.h"
+#include "../../../ExaHyPE/kernels/DGMatrices.h"
 
 #include "CurvilinearTransformation.h"
 
@@ -496,8 +496,6 @@ void Linear::MyLinearSolver::flux(const double* const Q,double** F) {
   double s_z=Q[15];
 
 
-  std::cout << "Flux" << std::endl;
-  std::cout << u << "," << v << "," << w << std::endl;
   
   F[0][ 0] = -jacobian*(q_x*u+q_y*v+q_z*w);
   F[0][ 1] = 0.0;
@@ -514,7 +512,6 @@ void Linear::MyLinearSolver::flux(const double* const Q,double** F) {
   F[2][ 2] = 0.0;
   F[2][ 3] = 0.0;
 
-  std::cout << F[0][0] << "," << F[1][0] << "," << F[2][0] << std::endl;
 }
 
 
