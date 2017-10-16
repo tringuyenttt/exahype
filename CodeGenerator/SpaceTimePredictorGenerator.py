@@ -155,7 +155,7 @@ class SpaceTimePredictorGenerator:
                                         # LDB
                                         self.m_context['nDofPad'], \
                                         # LDC
-                                        self.m_context['nDPad'] * self.m_context['nDim'] * self.m_context['nDof'], \
+                                        self.m_context['nVarPad'] * self.m_context['nDim'] * self.m_context['nDof'], \
                                         # alpha
                                         1,                         \
                                         # beta
