@@ -318,8 +318,12 @@ void exahype::mappings::MeshRefinement::enterCell(
         }
       }
 
-      // TODO(Dominic): Is normally only necessary to check if we need to adjust the solution
+      // TODO(Dominic): It is normally only necessary to check the
+      // refinement criterion if we need to adjust the solution
       // However mark for refinement currently does some more things
+      // Additionally, we would need to memorise where to refine /
+      // erase in order to not break the behaviour of the
+      // state machine
       refineFineGridCell |=
           solver->markForRefinement(
               fineGridCell,
