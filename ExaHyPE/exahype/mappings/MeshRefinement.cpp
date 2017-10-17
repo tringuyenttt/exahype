@@ -467,16 +467,14 @@ void exahype::mappings::MeshRefinement::leaveCell(
   // Ensure we have no hanging nodes on the boundary if at least one inside vertex
   // is refined
   if (fineGridCell.isRefined()) {
-    bool atLeastOneInsideVertexIsRefined = false;
+    bool oneInsideVertexIsRefined = false;
     dfor2(k)
-      if (fineGridVertices[ fineGridVerticesEnumerator(k) ].isInside() &&
-          fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==Vertex::Records::Refined) {
-        atLeastOneInsideVertexIsRefined = true;
-        break;
-      }
+       oneInsideVertexIsRefined |=
+            fineGridVertices[ fineGridVerticesEnumerator(k) ].isInside() &&
+            fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==Vertex::Records::Refined;
     enddforx
 
-    if (atLeastOneInsideVertexIsRefined) {
+    if (oneInsideVertexIsRefined) {
       dfor2(k)
         if (fineGridVertices[ fineGridVerticesEnumerator(k) ].isBoundary() &&
             fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==exahype::Vertex::Records::Unrefined) {
