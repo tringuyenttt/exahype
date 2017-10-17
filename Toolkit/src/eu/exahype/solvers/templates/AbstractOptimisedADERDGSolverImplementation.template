@@ -21,10 +21,14 @@
   init(cmdlineargs {%- if hasConstants %}, constants{% endif %});
 }
 
+
+
 {{project}}::{{abstractSolver}}::{{abstractSolver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping {%- if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler {%- endif %} ):
   exahype::solvers::ADERDGSolver("{{solver}}",{{optNamespace}}::getNumberOfVariable(),{{optNamespace}}::getNumberOfParameter(),{{optNamespace}}::getBasisSize(),
                                  maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping {%- if enableProfiler %}, std::move(profiler){% endif %}) {
 }
+
+
 
 void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
 	// This string is used in the --version output to identify compile time constants
@@ -35,6 +39,8 @@ void {{project}}::{{abstractSolver}}::constantsToString(std::ostream& os) {
 	   << "order=" << Order
 	   << ")";
 }
+
+
 
 void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* lQhbnd,double* lFhbnd,double** tempSpaceTimeUnknowns,double** tempSpaceTimeFluxUnknowns,double* tempUnknowns,double* tempFluxUnknowns,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& inverseDx,const double dt, double* pointForceSources) {
 {%- if enableProfiler %}
@@ -162,6 +168,7 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
 }
 
 
+
 {%- if !patchwiseAdjust %}
 void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
 {%- if enableProfiler %}
@@ -176,11 +183,12 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
 {%- endif %}
 
 
+
 void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
 {%- if enableProfiler %}
   _profiler->start("faceUnknownsProlongation");
 {%- endif %}
-  // {{optNamespace}}::faceUnknownsProlongation( lQhbndFine, lFhbndFine, lQhbndCoarse, lFhbndCoarse, coarseGridLevel, fineGridLevel, subfaceIndex, getNumberOfVariables(), getNumberOfParameters(), getNodesPerCoordinateAxis() ); //TODO JMG, uncomment in Toolkit when kernel implemented
+  {{optNamespace}}::faceUnknownsProlongation( lQhbndFine, lFhbndFine, lQhbndCoarse, lFhbndCoarse, coarseGridLevel, fineGridLevel, subfaceIndex);
 {%- if enableProfiler %}
   _profiler->start("false");
 {%- endif %}
@@ -192,7 +200,7 @@ void {{project}}::{{abstractSolver}}::faceUnknownsRestriction(double* lQhbndCoar
 {%- if enableProfiler %}
   _profiler->start("faceUnknownsRestriction");
 {%- endif %}
-  // {{optNamespace}}::faceUnknownsRestriction( lQhbndCoarse, lFhbndCoarse, lQhbndFine, lFhbndFine, coarseGridLevel, fineGridLevel, subfaceIndex, getNumberOfVariables(), getNumberOfParameters(), getNodesPerCoordinateAxis() ); //TODO JMG, uncomment in Toolkit when kernel implemented
+  {{optNamespace}}::faceUnknownsRestriction( lQhbndCoarse, lFhbndCoarse, lQhbndFine, lFhbndFine, coarseGridLevel, fineGridLevel, subfaceIndex);
 {%- if enableProfiler %}
   _profiler->stop("faceUnknownsRestriction");
 {%- endif %}
@@ -204,7 +212,7 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsProlongation(double* luhFine
 {%- if enableProfiler %}
   _profiler->start("volumeUnknownsProlongation");
 {%- endif %}
-  // {{optNamespace}}::volumeUnknownsProlongation( luhFine, luhCoarse, coarseGridLevel, fineGridLevel, subcellIndex, getNumberOfVariables(), getNumberOfParameters(), getNodesPerCoordinateAxis() ); //TODO JMG, uncomment in Toolkit when kernel implemented
+  {{optNamespace}}::volumeUnknownsProlongation( luhFine, luhCoarse, coarseGridLevel, fineGridLevel, subcellIndex);
 {%- if enableProfiler %}
   _profiler->stop("volumeUnknownsProlongation");
 {%- endif %}
@@ -216,7 +224,7 @@ void {{project}}::{{abstractSolver}}::volumeUnknownsRestriction(double* luhCoars
 {%- if enableProfiler %}
   _profiler->start("volumeUnknownsRestriction");
 {%- endif %}
-  // {{optNamespace}}::volumeUnknownsRestriction( luhCoarse, luhFine, coarseGridLevel, fineGridLevel, subcellIndex, getNumberOfVariables(), getNumberOfParameters(), getNodesPerCoordinateAxis() ); //TODO JMG, uncomment in Toolkit when kernel implemented
+  {{optNamespace}}::volumeUnknownsRestriction( luhCoarse, luhFine, coarseGridLevel, fineGridLevel, subcellIndex);
 {%- if enableProfiler %}
   _profiler->stop("volumeUnknownsRestriction");
 {%- endif %}

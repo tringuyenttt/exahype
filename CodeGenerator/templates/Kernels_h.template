@@ -138,6 +138,45 @@ namespace {{namespaceName}} {
     const int normalNonZero 
   );
 
+//AMR Routines
+//------------
+
+  void faceUnknownsProlongation(
+    double* lQhbndFine,
+    double* lFhbndFine,
+    const double* lQhbndCoarse,
+    const double* lFhbndCoarse,
+    const int coarseGridLevel,
+    const int fineGridLevel,
+    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
+  );
+
+  void faceUnknownsRestriction(
+    double* lQhbndCoarse,
+    double* lFhbndCoarse,
+    const double* lQhbndFine,
+    const double* lFhbndFine,
+    const int coarseGridLevel,
+    const int fineGridLevel,
+    const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
+  );
+
+  void volumeUnknownsProlongation(
+    double* luhFine,
+    const double* luhCoarse,
+    const int coarseGridLevel,
+    const int fineGridLevel,
+    const tarch::la::Vector<DIMENSIONS, int>& subcellIndex
+  );
+  
+  void volumeUnknownsRestriction(
+    double* luhCoarse,
+    const double* luhFine,
+    const int coarseGridLevel,
+    const int fineGridLevel,
+    const tarch::la::Vector<DIMENSIONS, int>& subcellIndex
+  );
+  
 {% for namespaceName in codeNamespaceList %}
 }
 {% endfor %}

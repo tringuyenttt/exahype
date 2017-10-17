@@ -43,6 +43,7 @@ import ConfigurationParametersGenerator
 import BoundaryConditionsGenerator
 import ConverterGenerator
 import GemmsCPPGenerator
+import AMRRoutinesGenerator
 
 g_config                 = {}
 g_simdWidth              = {  'noarch' : 1,
@@ -128,6 +129,8 @@ def generateComputeKernels():
     boundaryConditionsGenerator.generateCode()
     converterGenerator = ConverterGenerator.ConverterGenerator(generateContext(g_config))
     converterGenerator.generateCode()
+    amrRoutinesGenerator = AMRRoutinesGenerator.AMRRoutinesGenerator(generateContext(g_config))
+    amrRoutinesGenerator.generateCode()
 
 
 def executeLibxsmmGenerator(i_commandLineParameters):
