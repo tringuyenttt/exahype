@@ -432,14 +432,17 @@ namespace SVEC {
 		template<class MHDtype>
 		struct DensitiedState : public MHDtype, public ADMBase::Full {
 			//double MHDStorage[MHD::size]; // what we used in the past
-			double MHDStorage[GRMHD::size]; // what we use now for simplicty for ADM
+			//double MHDStorage[GRMHD::size]; // what we use now for simplicty for ADM
+			
+			constexpr static int debuggingGRMHDsize = 23;
+			double MHDStorage[debuggingGRMHDsize]; // what we use even beyond to store the debugging stuff
 			DensitiedState(const double* const QDensity) : MHDtype(MHDStorage), ADMBase::Full(QDensity) {
 				// For the quick and dirty, assume all MHD parts to be next to each other.
 				//for(int i=0; i<MHD::size; i++)
 				//	MHDStorage[i] = QDensity[i] / gam.sqdet;
 				
 				// we copy everything for simple ADM access in the primitives
-				std::copy_n(QDensity, GRMHD::size, MHDStorage);
+				std::copy_n(QDensity, debuggingGRMHDsize, MHDStorage); // DEBU
 				for(int i=0; i<MHD::size; i++)
 					MHDStorage[i] /= gam.sqdet;
 			}

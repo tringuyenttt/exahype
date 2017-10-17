@@ -53,8 +53,9 @@ void InitialData(const double* x, double t, double* Q) {
 	  // also store the positions for debugging
 	GRMHD::AbstractGRMHDSolver_ADERDG::Variables var(Q);
 	GRMHD::AbstractGRMHDSolver_ADERDG::VariableShortcuts Qi;
-	//for(int i=0; i<DIMENSIONS; i++) var.pos(i) = x[i];
-	//if(DIMENSIONS<3) Q[Qi.pos+2] = -1;
+	constexpr int posI = 19; // position 19
+	for(int i=0; i<DIMENSIONS; i++) Q[posI+i] = x[i];
+	if(DIMENSIONS<3) Q[posI+2] = -1;
 	var.check() = 47110815;
 	//zero2Din3D(Q);
 

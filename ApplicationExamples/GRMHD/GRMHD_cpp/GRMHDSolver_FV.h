@@ -84,6 +84,9 @@ class GRMHD::GRMHDSolver_FV : public GRMHD::AbstractGRMHDSolver_FV {
      */
     void flux(const double* const Q,double** F) override;
     
+    // to avoid numeric diffusion of the pseudo-material parameters
+    double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) override;
+    
 };
 
 

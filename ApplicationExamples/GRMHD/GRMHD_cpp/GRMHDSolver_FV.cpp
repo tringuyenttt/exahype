@@ -22,10 +22,12 @@ void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs, exahype:
 }
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
+	constexpr bool overwriteADMalways = false;
+	
 	// Set the 9 SRMHD variables (D,S_j,tau,B^j) and the 10 [11] ADM material parameters (N^i,g_ij,[detg])
 	if(tarch::la::equals(t,0.0)) {
 		InitialData(x,t,Q);
-	} else {
+	} else if(overwriteADMalways) {
 		// overwrite ADM variables in order to avoid diffusion and so on
 		double QDummy[nVar];
 		InitialData(x,t,QDummy);
@@ -36,14 +38,37 @@ void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,
 			Q     +SVEC::ADMBase::AbsoluteIndices::offset
 		);
 	}
-
 }
+
+#include "kernels/finitevolumes/riemannsolvers/c/riemannsolvers.h"
+
+double GRMHD::GRMHDSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) {
+
+  // Default FV Riemann Solver
+  // TODO: We could write an optimized one here which does not ask for the eigenvalues.
+  double lambda= kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, GRMHDSolver_FV>(*static_cast<GRMHDSolver_FV*>(this), fL,fR,qL,qR,normalNonZero);
+  
+  // reset the numerical diffusion
+  for(int i = 9; i < 23; i++) {
+	fL[i] = 0;
+	fR[i] = 0;
+  }
+
+  return lambda;
+}
+
 
 
 void GRMHD::GRMHDSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
 	// Provide eigenvalues for the 9 SRMHD variables (D,S_j,tau,B^j),
 	// we split off the 11 ADM material parameters (N^i,g_ij,detg)
-	ExaGRMHD::eigenvalues(Q, dIndex, lambda);
+	
+	// this does a C2P for ones. We don't like that.
+	// ExaGRMHD::eigenvalues(Q, dIndex, lambda);
+	
+	NVARS(i) lambda[i] = 1.0;
+	
+	
 	//NVARS(m) printf("EV[%d]=%f\n", m, lambda[m]);
 }
 
@@ -59,7 +84,7 @@ void GRMHD::GRMHDSolver_FV::flux(const double* const Q, double** F) {
 		//NVARS(m) printf("Q[%d]=%e\n", m, Q[m]);
 		//std::abort();
 		// Set everything to some neutral value
-		DFOR(i) NVARS(m) F[i][m] = NAN; // neutral = 0
+		DFOR(i) NVARS(m) F[i][m] = 0;
 		return;
 	}
 	
@@ -104,6 +129,7 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
 			
 			// Note: ADM BC should never be used anywhere as
 			// ADM variables are parameters in this setup anyway!
+			
 			Q.beta.up(d) *= -1;
 			// Symmetric Tensors: flip sign of off-diagonal
 			DFOR(i) if(i != d) Q.gam.lo(i,d) *= -1;
@@ -142,7 +168,7 @@ void GRMHD::GRMHDSolver_FV::nonConservativeProduct(const double* const Q,const d
 	//return;
 	
 	if(isUnphysical(Q)) {
-		NVARS(i) BgradQ[i] = NAN;
+		NVARS(i) BgradQ[i] = 0;
 		return;
 	}
 	

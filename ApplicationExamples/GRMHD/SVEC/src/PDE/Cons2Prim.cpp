@@ -40,10 +40,13 @@ void GRMHD::Cons2Prim::prepare() {
 }
 
 constexpr bool debug_c2p = false;
+#define S_STR_HELPER(x) #x
+#define S_STR(x) S_STR_HELPER(x)
 #define SL(x,l) printf(l " = %e\n", x);
 #define S(x) SL(x, #x)
 // https://stackoverflow.com/a/5459929 for expanding before insertion
-#define SI(x) {DFOR(i) S(x(i)); }
+#define SI(x) { DFOR(i) SL(x(i), #x "(" S_STR(i) ")"); }
+#define SIsym(x) { SYMFOR(i,j) SL(x(i,j), #x "(" S_STR(i) "," S_STR(j) ")"); }
 
 // At this stage, we have all primitives recovered and can postcompute some quantities. This is as a
 // service or can be used for 
@@ -83,8 +86,18 @@ void GRMHD::Cons2Prim::perform() {
 		//TDO(d,MHD::size) printf("Q[%d] = %e\n", d, Q[d]);
 		S(Dens); S(tau); SI(Si.lo); SI(Si.up);
 		SI(Bmag.up); S(phi);
-		S(gam.det); S(gam.sqdet); S(alpha); SI(beta.up);
 		S(BmagBmag); S(SconScon);
+		
+		// metric stuff which should not matter anyway because it is
+		// constant. Anyway let us print the coordinates where this happens:
+		S(gam.det); S(gam.sqdet); S(alpha);
+		SI(beta.up); SIsym(gam.up);
+		// debugging: Coordinates
+		SL(Q[19], "Coord:x");
+		SL(Q[20], "Coord:y");
+		SL(Q[21], "Coord:z");
+		SL(Q[22], "proof");
+		
 		std::abort();
 		rho = rho_floor;
 		press = p_floor;

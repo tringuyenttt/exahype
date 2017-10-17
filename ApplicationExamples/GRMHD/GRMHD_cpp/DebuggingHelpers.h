@@ -88,8 +88,9 @@ inline void fail(const std::string msg) {
 }
 
 inline bool isUnphysical(const double* const Q) {
-	bool isUnphysical = isAllZero(Q);// || !holdsVacuumSpacetime(Q);
-	if(isUnphysical) fail("is unphysical");
+	bool isUnphysicalOutcome = isAllZero(Q);// || !holdsVacuumSpacetime(Q);
+	//if(isUnphysical) fail("is unphysical");
+	return isUnphysicalOutcome;
 }
 
 

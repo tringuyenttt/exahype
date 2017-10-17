@@ -46,11 +46,11 @@ rnsid::rnsid() {
 	id->adm_idx.shift3 = var.shift + 2;
 	
 	// Note these are the primitives? ...
-	id->hydro_idx.rho   = var.rho;
-	id->hydro_idx.velx  = var.vel + 0;
-	id->hydro_idx.vely  = var.vel + 1;
-	id->hydro_idx.velz  = var.vel + 2;
-	id->hydro_idx.press = var.E;
+	id->hydro_idx.rho   = 0;
+	id->hydro_idx.velx  = var.vel + 0; // 1
+	id->hydro_idx.vely  = var.vel + 1; // 2
+	id->hydro_idx.velz  = var.vel + 2; // 3
+	id->hydro_idx.press = 4; // we store the pressure
 	
 	id->Run();
 }
@@ -61,7 +61,7 @@ void rnsid::Interpolate(const double* x, double t, double* Q) {
 	id->Interpolate(x, V);
 	
 	// treatment of the atmostphere PROBABLY not done by RNSID
-	const double atmo_rho = 1e-13;
+	const double atmo_rho = 1e-11;
 	const double atmo_press = 1e-7;
 	if(V[0] < atmo_rho) {
 		V[0] = atmo_rho;
