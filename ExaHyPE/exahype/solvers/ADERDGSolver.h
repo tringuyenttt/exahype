@@ -1204,7 +1204,7 @@ public:
 
   /**
    * A criterion determining if the degrees of freedoms of
-   * the cell-wise solution luh are physically admissible.
+   * the cell-wise solution are physically admissible.
    *
    * \note We require that the cell-local minimum and maximum
    * of the solution values has been computed

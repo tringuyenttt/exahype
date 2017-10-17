@@ -34,7 +34,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   12/10/2017 19:22
+    * @date   17/10/2017 13:55
     */
    class exahype::records::Vertex { 
       
@@ -56,6 +56,7 @@ namespace exahype {
             #else
             tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
             #endif
+            bool _markedForErasing;
             bool _isHangingNode;
             RefinementControl _refinementControl;
             int _adjacentCellsHeight;
@@ -82,7 +83,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             
             /**
@@ -139,6 +140,26 @@ namespace exahype {
  #endif 
  {
                _CellDescriptionsIndex = (CellDescriptionsIndex);
+            }
+            
+            
+            
+            inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _markedForErasing;
+            }
+            
+            
+            
+            inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _markedForErasing = markedForErasing;
             }
             
             
@@ -439,12 +460,12 @@ namespace exahype {
             /**
              * Generated
              */
-            Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             /**
              * Generated
              */
-            Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             /**
              * Generated
@@ -532,6 +553,26 @@ namespace exahype {
                assertion(elementIndex<TWO_POWER_D);
                _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                
+            }
+            
+            
+            
+            inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._markedForErasing;
+            }
+            
+            
+            
+            inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._markedForErasing = markedForErasing;
             }
             
             
@@ -999,7 +1040,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   12/10/2017 19:22
+    * @date   17/10/2017 13:55
     */
    class exahype::records::VertexPacked { 
       
@@ -1011,6 +1052,7 @@ namespace exahype {
          
          struct PersistentRecords {
             tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+            bool _markedForErasing;
             int _adjacentCellsHeight;
             tarch::la::Vector<DIMENSIONS,double> _x;
             int _level;
@@ -1035,7 +1077,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             
             /**
@@ -1092,6 +1134,26 @@ namespace exahype {
  #endif 
  {
                _CellDescriptionsIndex = (CellDescriptionsIndex);
+            }
+            
+            
+            
+            inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _markedForErasing;
+            }
+            
+            
+            
+            inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _markedForErasing = markedForErasing;
             }
             
             
@@ -1422,12 +1484,12 @@ namespace exahype {
             /**
              * Generated
              */
-            VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             /**
              * Generated
              */
-            VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+            VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
             
             /**
              * Generated
@@ -1515,6 +1577,26 @@ namespace exahype {
                assertion(elementIndex<TWO_POWER_D);
                _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                
+            }
+            
+            
+            
+            inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               return _persistentRecords._markedForErasing;
+            }
+            
+            
+            
+            inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+               _persistentRecords._markedForErasing = markedForErasing;
             }
             
             
@@ -2008,7 +2090,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::Vertex { 
          
@@ -2030,6 +2112,7 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               bool _markedForErasing;
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -2050,7 +2133,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -2107,6 +2190,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -2329,12 +2432,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -2422,6 +2525,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -2785,7 +2908,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::VertexPacked { 
          
@@ -2797,6 +2920,7 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               bool _markedForErasing;
                int _adjacentCellsHeight;
                tarch::la::Vector<DIMENSIONS,double> _x;
                int _level;
@@ -2819,7 +2943,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -2876,6 +3000,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -3125,12 +3269,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -3218,6 +3362,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -3605,7 +3769,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::Vertex { 
          
@@ -3627,6 +3791,7 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               bool _markedForErasing;
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -3651,7 +3816,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                
                /**
@@ -3708,6 +3873,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -3968,12 +4153,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
@@ -4061,6 +4246,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -4488,7 +4693,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::VertexPacked { 
          
@@ -4500,6 +4705,7 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               bool _markedForErasing;
                int _adjacentCellsHeight;
                tarch::la::Vector<DIMENSIONS,double> _x;
                int _level;
@@ -4522,7 +4728,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                
                /**
@@ -4579,6 +4785,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -4863,12 +5089,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
@@ -4956,6 +5182,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -5404,7 +5650,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::Vertex { 
          
@@ -5426,6 +5672,7 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               bool _markedForErasing;
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -5446,7 +5693,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -5503,6 +5750,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -5725,12 +5992,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -5818,6 +6085,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -6181,7 +6468,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::VertexPacked { 
          
@@ -6193,6 +6480,7 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               bool _markedForErasing;
                int _adjacentCellsHeight;
                tarch::la::Vector<TWO_POWER_D,int> _adjacentRanks;
                
@@ -6215,7 +6503,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -6272,6 +6560,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -6524,12 +6832,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -6617,6 +6925,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -7007,7 +7335,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::Vertex { 
          
@@ -7029,6 +7357,7 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               bool _markedForErasing;
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -7043,7 +7372,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -7100,6 +7429,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -7244,12 +7593,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -7337,6 +7686,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -7596,7 +7965,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::VertexPacked { 
          
@@ -7608,6 +7977,7 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               bool _markedForErasing;
                int _adjacentCellsHeight;
                
                /** mapping of records:
@@ -7628,7 +7998,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                
                /**
@@ -7685,6 +8055,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -7856,12 +8246,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const bool& parentRegularPersistentSubgrid, const bool& parentRegularPersistentSubgridInPreviousIteration);
                
                /**
                 * Generated
@@ -7949,6 +8339,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -8232,7 +8642,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::Vertex { 
          
@@ -8254,6 +8664,7 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               bool _markedForErasing;
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -8272,7 +8683,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                
                /**
@@ -8329,6 +8740,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -8511,12 +8942,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
@@ -8604,6 +9035,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -8927,7 +9378,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::VertexPacked { 
          
@@ -8939,6 +9390,7 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               bool _markedForErasing;
                int _adjacentCellsHeight;
                tarch::la::Vector<TWO_POWER_D,int> _adjacentRanks;
                
@@ -8959,7 +9411,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                
                /**
@@ -9016,6 +9468,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -9222,12 +9694,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<TWO_POWER_D,int>& adjacentRanks, const bool& adjacentSubtreeForksIntoOtherRank);
                
                /**
                 * Generated
@@ -9315,6 +9787,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -9659,7 +10151,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::Vertex { 
          
@@ -9681,6 +10173,7 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               bool _markedForErasing;
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -9699,7 +10192,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                
                /**
@@ -9756,6 +10249,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -9938,12 +10451,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                /**
                 * Generated
@@ -10031,6 +10544,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -10354,7 +10887,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::VertexPacked { 
          
@@ -10366,6 +10899,7 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               bool _markedForErasing;
                int _adjacentCellsHeight;
                tarch::la::Vector<DIMENSIONS,double> _x;
                int _level;
@@ -10386,7 +10920,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                
                /**
@@ -10443,6 +10977,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -10646,12 +11200,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain, const tarch::la::Vector<DIMENSIONS,double>& x, const int& level);
                
                /**
                 * Generated
@@ -10739,6 +11293,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -11080,7 +11654,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::Vertex { 
          
@@ -11102,6 +11676,7 @@ namespace exahype {
                #else
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
                #endif
+               bool _markedForErasing;
                bool _isHangingNode;
                RefinementControl _refinementControl;
                int _adjacentCellsHeight;
@@ -11114,7 +11689,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
                
                
                /**
@@ -11171,6 +11746,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -11275,12 +11870,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
                
                /**
                 * Generated
                 */
-               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain);
+               Vertex(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain);
                
                /**
                 * Generated
@@ -11368,6 +11963,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
@@ -11587,7 +12202,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   12/10/2017 19:22
+       * @date   17/10/2017 13:55
        */
       class exahype::records::VertexPacked { 
          
@@ -11599,6 +12214,7 @@ namespace exahype {
             
             struct PersistentRecords {
                tarch::la::Vector<TWO_POWER_D,int> _CellDescriptionsIndex;
+               bool _markedForErasing;
                int _adjacentCellsHeight;
                
                /** mapping of records:
@@ -11617,7 +12233,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
+               PersistentRecords(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
                
                
                /**
@@ -11674,6 +12290,26 @@ namespace exahype {
  #endif 
  {
                   _CellDescriptionsIndex = (CellDescriptionsIndex);
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _markedForErasing = markedForErasing;
                }
                
                
@@ -11799,12 +12435,12 @@ namespace exahype {
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const InsideOutsideDomain& insideOutsideDomain);
                
                /**
                 * Generated
                 */
-               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain);
+               VertexPacked(const tarch::la::Vector<TWO_POWER_D,int>& CellDescriptionsIndex, const bool& markedForErasing, const bool& isHangingNode, const RefinementControl& refinementControl, const int& adjacentCellsHeight, const int& adjacentCellsHeightOfPreviousIteration, const int& numberOfAdjacentRefinedCells, const InsideOutsideDomain& insideOutsideDomain);
                
                /**
                 * Generated
@@ -11892,6 +12528,26 @@ namespace exahype {
                   assertion(elementIndex<TWO_POWER_D);
                   _persistentRecords._CellDescriptionsIndex[elementIndex]= CellDescriptionsIndex;
                   
+               }
+               
+               
+               
+               inline bool getMarkedForErasing() const 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  return _persistentRecords._markedForErasing;
+               }
+               
+               
+               
+               inline void setMarkedForErasing(const bool& markedForErasing) 
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif 
+ {
+                  _persistentRecords._markedForErasing = markedForErasing;
                }
                
                
