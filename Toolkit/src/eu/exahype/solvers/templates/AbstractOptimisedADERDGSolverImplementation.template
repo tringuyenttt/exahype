@@ -261,6 +261,3 @@ void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const
 void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
   abortWithMsg("If this operation is entered (pointSource), you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
-
-void {{project}}::{{abstractSolver}}::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
-  abortWithMsg("If this operation is entered (adjustPointSolution), you have activated the corresponding guard. Then you have to re-implement this routine, too." );}
