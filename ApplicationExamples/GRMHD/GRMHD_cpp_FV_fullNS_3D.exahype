@@ -61,7 +61,7 @@ exahype-project GRMHD
      **/
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,sqdetg:1,spare:2,check:1
     //parameters const               = pos:3,check:1
-    patch-size const               = 10
+    patch-size const               = 8
     maximum-mesh-size              = 6.66666669
     maximum-mesh-depth             = 0
     time-stepping                  = global

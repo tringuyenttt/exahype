@@ -12,21 +12,6 @@ using namespace std; // sqrt, max
 double RTSAFE_C2P_RMHD1(const double X1, const double X2, const double XACC, const double gam, const double d, const double e, const double s2, const double b2, const double sb2, double& w,bool& failed);
 void FUNC_C2P_RMHD1(const double x,double& f,double& df,const double gam,const double d,const double e,const double s2,const double b2, const double sb2,double& w);
 
-// Remember: The removal or adding of \sqrt{gamma} to the quantities.
-
-void GRMHD::Cons2Prim::fromTensorDensity() {
-	std::abort();
-	/*
-	// Convert from tensor density to regular tensor (density):
-	double sqrtgamdet = sqrt(gam.det);
-	Dens /= sqrtgamdet;
-	DFOR(i) Si.lo(i) /= sqrtgamdet;
-	tau /= sqrtgamdet;
-	BMAG ALSO NEEDS TREATMENT
-	// ==> This does not work as Conserved Hydro is read only.
-	*/
-}
-
 // At this stage, we can prepare conservative variables but do not yet have access to primitive ones.
 void GRMHD::Cons2Prim::prepare() {
 	// B_i: Needed for Sij and preparation:
@@ -70,35 +55,48 @@ void GRMHD::Cons2Prim::copyFullStateVector() {
 	copy_adm(V);
 }
 
+// small helper
+bool isEnvSet(const char* str) { return std::getenv(str); }
+
 void GRMHD::Cons2Prim::perform() {
-	constexpr double p_floor   = 1.0e-5;
-	constexpr double rho_floor = 1.0e-4;
-	constexpr double gamma = GRMHD::Parameters::gamma;
+	// Experiment: Checking whether atmo values are suitable for flooring.
+	constexpr double p_floor   = atmo_press; // 1.0e-5;
+	constexpr double rho_floor = atmo_rho; // 1.0e-4;
+	//constexpr double gamma = gamma;
+	
+	constexpr bool crash_on_failure = false;
 
 	// RTSAFE gives us x = v^2, y = rho * h * Gamma^2.
-	bool failed = rtsafe(VelVel, RhoEnthWW);
+	failed = rtsafe(VelVel, RhoEnthWW);
 	if(debug_c2p) { printf("Outcome: "); S(VelVel); S(RhoEnthWW);}
 	if (failed) {
-		// We should raise an error instead, the c2p failed.
-		printf("C++ C2P FAILED.\n");
-		printf("Input conserved State Vector Q: \n");
-		// makes no sense with densitied state
-		//TDO(d,MHD::size) printf("Q[%d] = %e\n", d, Q[d]);
-		S(Dens); S(tau); SI(Si.lo); SI(Si.up);
-		SI(Bmag.up); S(phi);
-		S(BmagBmag); S(SconScon);
+		if(crash_on_failure) {
+			// We should raise an error instead, the c2p failed.
+			printf("C++ C2P FAILED.\n");
+			printf("Input conserved State Vector Q: \n");
+			// makes no sense with densitied state
+			//TDO(d,MHD::size) printf("Q[%d] = %e\n", d, Q[d]);
+			S(Dens); S(tau); SI(Si.lo); SI(Si.up);
+			SI(Bmag.up); S(phi);
+			S(BmagBmag); S(SconScon);
+			
+			// metric stuff which should not matter anyway because it is
+			// constant. Anyway let us print the coordinates where this happens:
+			S(gam.det); S(gam.sqdet); S(alpha);
+			SI(beta.up); SIsym(gam.up);
+			// debugging: Coordinates
+			SL(Q[19], "Coord:x");
+			SL(Q[20], "Coord:y");
+			SL(Q[21], "Coord:z");
+			SL(Q[22], "proof");
+			
+			std::abort();
+		} else {
+			if(!isEnvSet("EXAHYPE_SILENT_C2P"))
+				printf("C2P Failure at x=[%f,%f,%f]\n", Q[19],Q[20],Q[21]);
+		}
 		
-		// metric stuff which should not matter anyway because it is
-		// constant. Anyway let us print the coordinates where this happens:
-		S(gam.det); S(gam.sqdet); S(alpha);
-		SI(beta.up); SIsym(gam.up);
-		// debugging: Coordinates
-		SL(Q[19], "Coord:x");
-		SL(Q[20], "Coord:y");
-		SL(Q[21], "Coord:z");
-		SL(Q[22], "proof");
-		
-		std::abort();
+		// this is (probably!) the atmosphere treatment:
 		rho = rho_floor;
 		press = p_floor;
 		DFOR(i) vel.up(i) = 0;
@@ -109,7 +107,7 @@ void GRMHD::Cons2Prim::perform() {
 		//vel.up=0; DFOR(i) CONTRACT(j)  vel.up(i) +=  vel.lo(j) * gam.up(i,j);
 		vel.lo=0; DFOR(i) CONTRACT(j)  vel.lo(i) +=  vel.up(j) * gam.lo(i,j);
 		press     = (gamma-1)/gamma*((1.-VelVel)*RhoEnthWW - rho); // Ideal EOS
-		press     = max(1.e-15, press); // bracketing
+		press     = max(p_floor, press); // bracketing // TODO: was atmo_press before.
 		if(debug_c2p) { S(rho); SI(vel.up); SI(vel.lo); S(press); }
 	}
 }

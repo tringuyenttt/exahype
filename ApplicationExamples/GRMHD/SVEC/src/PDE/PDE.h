@@ -451,11 +451,25 @@ namespace SVEC {
 		typedef DensitiedState<MHD::ConstShadow> Densitied;
 		typedef DensitiedState<MHD::ConstShadowExtendable> DensitiedExtendable;
 		
-
-		// A type storing the gradients of the conserved vector in one direction.
-		// Since it does not make sense to
-		// retrieve the lower/upper components of gradients, we don't even allocate storage or
-		// provide conversion strategies.
+					
+		/// a temporary space for global system parameters
+		///
+		/// Later, when we want to have runtime parameters, these parameters should probably
+		/// be replaced by a pointer to a central parameter class.
+		struct Parameters {
+			// Ideal EOS:
+			// 4/3 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
+			// 2.0 used for TOV stars
+			static constexpr double gamma = 2.0;
+	
+			// Divergence cleaning:
+			// 1.0 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
+			static constexpr double DivCleaning_a = 1.0;
+			
+			static constexpr double atmo_rho = 1e-11;
+			static constexpr double atmo_press = 1e-7;
+		};
+		
 		
 		/**
 		* The PDE structure wraps ("shadows") the read-only conserved vector Q in order to provide
@@ -476,7 +490,7 @@ namespace SVEC {
 				ADMBase::Full(Q_)
 		*/
 		// NEW:
-		struct Cons2Prim : public GRMHD::DensitiedExtendable, public Hydro::Primitives::ShadowExtendable {
+		struct Cons2Prim : public GRMHD::DensitiedExtendable, public Hydro::Primitives::ShadowExtendable, public Parameters {
 			Cons2Prim(double* const V, const double* const Q_) :
 				GRMHD::DensitiedExtendable(Q_),
 				Hydro::Primitives::ShadowExtendable(V)
@@ -493,10 +507,8 @@ namespace SVEC {
 				BmagScon,	///< B_i*S^i: Magn field times squared cons momentum
 				VelVel,		///< V^2 = v_i*v^i: Squared three velocity
 				ptot;		///< ptot = p_hydro + p_mag: Total pressure
-
-			// TODO Remove this function
-			/// Removes tensor densities
-			void fromTensorDensity();
+				
+			bool	failed; ///< Stores whether the C2P failed or not
 			
 			/// Prepares the Conserved B_i, S^i as well as the quantities neccessary to compute
 			/// The energy momentum tensor.
@@ -527,26 +539,13 @@ namespace SVEC {
 			Stored(const double* const Q_) : Cons2Prim(V, Q_) {}
 		};
 		
-			
-		/// a temporary space for global system parameters
-		struct Parameters {		
-			// Ideal EOS:
-			// 4/3 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
-			// 2.0 used for TOV stars
-			static constexpr double gamma = 2.0;
-	
-			// Divergence cleaning:
-			// 1.0 used in ADERDG3D-SRMHD-Z4 by MD, 01.Nov2016
-			static constexpr double DivCleaning_a = 1.0;
-		};
-		
 		/**
 		 * The raw PDE makes use of sqrt(det(g_ij)) stripping of the input state and
 		 * adding on the output state. It also gets the full set of Primitives, the full
 		 * ADM variables and all variables extended (i.e. vel_lo and vel^up).
 		 * Therefore it is ready to do something.
 		 **/
-		struct RawPDE : public Cons2Prim::Stored, public Parameters {
+		struct RawPDE : public Cons2Prim::Stored {
 			// the System defines the types of the constituents:
 			typedef GRMHD::Shadow State;
 			typedef const GRMHD::ConstShadow Gradient;

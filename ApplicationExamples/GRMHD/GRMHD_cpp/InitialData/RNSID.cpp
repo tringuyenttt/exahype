@@ -1,6 +1,7 @@
 #include "AbstractGRMHDSolver_ADERDG.h"
 #include "GRMHDSolver_ADERDG_Variables.h"
 #include "InitialData/InitialData.h"
+#include "PDE/PDE.h"
 
 using SVEC::GRMHD::Prim2Cons;
 #include "PDE/tensish.cpph"
@@ -61,8 +62,8 @@ void rnsid::Interpolate(const double* x, double t, double* Q) {
 	id->Interpolate(x, V);
 	
 	// treatment of the atmostphere PROBABLY not done by RNSID
-	const double atmo_rho = 1e-11;
-	const double atmo_press = 1e-7;
+	const double atmo_rho = SVEC::GRMHD::Parameters::atmo_rho;
+	const double atmo_press = SVEC::GRMHD::Parameters::atmo_press;
 	if(V[0] < atmo_rho) {
 		V[0] = atmo_rho;
 	}

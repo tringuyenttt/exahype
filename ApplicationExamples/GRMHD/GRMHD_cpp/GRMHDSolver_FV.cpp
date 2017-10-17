@@ -22,21 +22,37 @@ void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs, exahype:
 }
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
-	constexpr bool overwriteADMalways = false;
-	
 	// Set the 9 SRMHD variables (D,S_j,tau,B^j) and the 10 [11] ADM material parameters (N^i,g_ij,[detg])
 	if(tarch::la::equals(t,0.0)) {
 		InitialData(x,t,Q);
-	} else if(overwriteADMalways) {
-		// overwrite ADM variables in order to avoid diffusion and so on
-		double QDummy[nVar];
-		InitialData(x,t,QDummy);
-		// Copy ADM variables
-		std::copy_n(
-			QDummy+SVEC::ADMBase::AbsoluteIndices::offset,
-			SVEC::ADMBase::size, 
-			Q     +SVEC::ADMBase::AbsoluteIndices::offset
-		);
+	} else {
+		constexpr bool floorAtmosphere = true;
+		if(floorAtmosphere) {
+			// Try to treat the atmosphere
+			SVEC::GRMHD::Shadow qout(Q);
+			SVEC::GRMHD::Cons2Prim::Stored prim(Q);
+			if(prim.failed || prim.rho < prim.atmo_rho) {
+				// floor the primitives
+				prim.rho = prim.atmo_rho;
+				DFOR(i) prim.vel.up(i) = 0;
+				prim.press = prim.atmo_press;
+				
+				SVEC::GRMHD::Prim2Cons(Q, prim.V);
+			}
+		}
+		
+		constexpr bool overwriteADMalways = false;
+		if(overwriteADMalways) {
+			// overwrite ADM variables in order to avoid diffusion and so on
+			double QDummy[nVar];
+			InitialData(x,t,QDummy);
+			// Copy ADM variables
+			std::copy_n(
+				QDummy+SVEC::ADMBase::AbsoluteIndices::offset,
+				SVEC::ADMBase::size, 
+				Q     +SVEC::ADMBase::AbsoluteIndices::offset
+			);
+		}
 	}
 }
 
