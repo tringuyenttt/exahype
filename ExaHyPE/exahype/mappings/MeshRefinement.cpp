@@ -378,6 +378,21 @@ void exahype::mappings::MeshRefinement::enterCell(
     }
   }
 
+  // Mark fine grid vertices for erasing if the fine grid cell is not initialised
+  dfor2(v)
+    fineGridVertices[ fineGridVerticesEnumerator(v) ].vetoErasing();
+  enddforx
+  if (
+      fineGridCell.isRefined()
+      &&
+      fineGridVerticesEnumerator.getLevel() >=
+        exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers()-1
+  ) {
+    dfor2(v)
+      fineGridVertices[ fineGridVerticesEnumerator(v) ].markForErasing();
+    enddforx
+  }
+
   // Refine all adjacent vertices if necessary and possible.
   //    if (refineFineGridCell && _state.refineInitialGridInTouchVertexLastTime()) {
   if (refineFineGridCell) {
@@ -401,10 +416,13 @@ void exahype::mappings::MeshRefinement::eraseVerticesIfPossibleAndEnforeRegulari
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator) {
-  bool oneInsideVertexIsRefined     = false;
-  bool allInnerVerticesAreUnrefined = true;
+  bool oneInsideVertexIsRefined         = false;
+  bool allInnerVerticesAreUnrefined     = true;
+
+  bool allCoarseGridVerticesCanBeErased = true;
 
   dfor2(k)
+    // fine grid
     oneInsideVertexIsRefined |=
         fineGridVertices[ fineGridVerticesEnumerator(k) ].isInside() &&
         fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==Vertex::Records::Refined;
@@ -412,11 +430,16 @@ void exahype::mappings::MeshRefinement::eraseVerticesIfPossibleAndEnforeRegulari
         (!fineGridVertices[ fineGridVerticesEnumerator(k) ].isInside() ||
             fineGridVertices[ fineGridVerticesEnumerator(k)].getRefinementControl()
             ==Vertex::Records::Unrefined);
+    // coarse grid
+    allCoarseGridVerticesCanBeErased &= coarseGridVertices[ coarseGridVerticesEnumerator(k) ].getCanBeErased();
   enddforx
 
   // ensure we have no hanging nodes on the boundary if at least one inside vertex
   // is refined
-  if (oneInsideVertexIsRefined) {
+  if (
+      oneInsideVertexIsRefined &&
+      !allCoarseGridVerticesCanBeErased
+  ) {
     dfor2(k)
       if (
           !fineGridVertices[ fineGridVerticesEnumerator(k) ].getCanBeErased() &&
@@ -424,26 +447,30 @@ void exahype::mappings::MeshRefinement::eraseVerticesIfPossibleAndEnforeRegulari
         if (fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==exahype::Vertex::Records::Unrefined) {
           fineGridVertices[ fineGridVerticesEnumerator(k) ].refine();
         }
-        fineGridVertices[ fineGridVerticesEnumerator(k) ].vetoErasing();
+        if (
+            fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==exahype::Vertex::Records::Refined ||
+            fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()==exahype::Vertex::Records::RefinementTriggered
+        ) {
+          fineGridVertices[ fineGridVerticesEnumerator(k) ].vetoErasing();
+        }
       }
     enddforx
   }
 
   // erase vertices
-  if (allInnerVerticesAreUnrefined) {
-    dfor2(k)
-      if (
-          fineGridVertices[ fineGridVerticesEnumerator(k) ].getCanBeErased()
-          &&
-          (fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()
-              == exahype::Vertex::Records::Refined)
-              &&
-              coarseGridVertices[ coarseGridVerticesEnumerator(k) ].getCanBeErased() // this prevents oscillations
-      ) {
-        fineGridVertices[fineGridVerticesEnumerator(k) ].erase();
-      }
-    enddforx
-  }
+  dfor2(k)
+    if (
+        (allCoarseGridVerticesCanBeErased
+        ||
+        (allInnerVerticesAreUnrefined &&
+        fineGridVertices[ fineGridVerticesEnumerator(k) ].getCanBeErased()))
+        &&
+        fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl()
+        == exahype::Vertex::Records::Refined
+    ) {
+      fineGridVertices[fineGridVerticesEnumerator(k) ].erase();
+    }
+  enddforx
 }
 
 void exahype::mappings::MeshRefinement::leaveCell(
@@ -491,13 +518,9 @@ void exahype::mappings::MeshRefinement::leaveCell(
     fineGridCell.shutdownMetaData();
   }
 
-  // veto vertex erasing initialised cells and on the
-  // first few tree levels
+  // veto vertex erasing initialised cells
   if (
-      fineGridCell.isInitialised() ||
-      tarch::la::oneGreater(
-          fineGridVerticesEnumerator.getCellSize(),
-          exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers())
+      fineGridCell.isInitialised()
   ) {
     dfor2(v)
       coarseGridVertices[ coarseGridVerticesEnumerator(v) ].vetoErasing();
