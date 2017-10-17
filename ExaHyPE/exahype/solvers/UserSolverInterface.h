@@ -73,7 +73,6 @@ public:
    * 
    * @TODO: Document me, please.
    **/
-  virtual void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0) = 0;
   virtual void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) = 0;
 
   /**
