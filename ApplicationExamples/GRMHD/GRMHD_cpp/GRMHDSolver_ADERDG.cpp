@@ -32,33 +32,64 @@ void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) { //
 	InitialDataCode::getInstance();
 }
 
+#include "kernels/aderdg/generic/Kernels.h"
+void GRMHD::GRMHDSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) {
+	kernels::aderdg::generic::c::riemannSolverNonlinear<true,GRMHDSolver_ADERDG>(*static_cast<GRMHDSolver_ADERDG*>(this),FL,FR,QL,QR,dt,normalNonZeroIndex);
+	
+	// This is for 3D. for 2D it is one basisSize less.
+	kernels::idx3 idx_FLR(basisSize, basisSize, NumberOfVariables);
+	for (int i = 0; i < basisSize; i++) {
+	for (int j = 0; j < basisSize; j++) {
+		resetNumericalDiffusionOnADM(FL+idx_FLR(i, j, 0));
+		resetNumericalDiffusionOnADM(FR+idx_FLR(i, j, 0));
+	}}
+}
+
 void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const {
 	// ensure numberOfObservables == 2
 	observables[0] = Q[0]; // conserved density
 	observables[1] = Q[4]; // conserved tau
 	
-	// Question: Shall we make a C2P here and map the RMD and pressure?
-	// we should also check the velocities for superluminal!
+	// Q: Shall we make a C2P here and map the primitive RMD and pressure?
+	// observables[2] = prim.rho;
+	// observables[3] = prim.press;
+	// Can we use the DMP to check for superluminant velocities if we store a
+	// observables[3] = prim.VelVel;
 }
 
-// Limiting criteria
+bool pointwiseIsPhysicallyAdmissible(const double* const Q) {
+	// pre-C2P plausibility check on the conserved quantities
+	// This is *probably* already caught by the DMP.
+	if(Q[0]<0) return false;
+
+	// try to do a C2P and check the primitives for correctness
+	SVEC::GRMHD::Cons2Prim::Stored prim(Q);
+	return (!prim.failed) &&
+	       (prim.rho > 0) && (prim.press > 0) && (prim.VelVel < 1);
+}
+
 bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
 	const double* const solution,
 	const double* const observablesMin, const double* const observablesMax,const int numberOfObservables,
 	const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
 	const double t, const double dt) const {
-	
-	// first, check the observablesMin whether they are useful:
-	// rho>0, vel^i<1, etc.
 
-	// here, we need to do at each point in the patch:
-		
-	// 1. A C2P. If it fails, return false => this is stupid, we already did a C2P at the mapping step.
-	// 2. The DMP, we could impose it ourselves here.
-		
-	// Do something different
+	// Q: Do we have to check the observables{Min,Max} whether they are useful?
+
+	if(observablesMin[0] < 0) return false; // conserved density
+	if(observablesMin[1] < 0) return false; // conserved tau
+
+	// delegate to pointwise evaluation
+	constexpr int basisSize3D = (DIMENSIONS==3) ? basisSize : 1;
+	kernels::idx4 idx(basisSize3D,basisSize,basisSize,NumberOfVariables);
+	for(int iz = 0; iz < basisSize3D; iz++) {
+	for(int iy = 0; iy < basisSize;   iy++) {
+	for(int ix = 0; ix < basisSize;   ix++) {
+		if(!pointwiseIsPhysicallyAdmissible(solution+idx(iz,iy,ix,0)))
+			return false;
+	}}}
+
 	return true;
-
 }
 
 

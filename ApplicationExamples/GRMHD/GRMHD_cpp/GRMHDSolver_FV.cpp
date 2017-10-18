@@ -63,12 +63,8 @@ double GRMHD::GRMHDSolver_FV::riemannSolver(double* fL, double *fR, const double
   // Default FV Riemann Solver
   // TODO: We could write an optimized one here which does not ask for the eigenvalues.
   double lambda= kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, GRMHDSolver_FV>(*static_cast<GRMHDSolver_FV*>(this), fL,fR,qL,qR,normalNonZero);
-  
-  // reset the numerical diffusion
-  for(int i = 9; i < 23; i++) {
-	fL[i] = 0;
-	fR[i] = 0;
-  }
+  resetNumericalDiffusionOnADM(fL);
+  resetNumericalDiffusionOnADM(fR);
 
   return lambda;
 }

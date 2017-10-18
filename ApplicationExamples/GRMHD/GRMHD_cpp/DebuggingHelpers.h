@@ -9,6 +9,15 @@ inline void enableNanCatcher() {
 	feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 }
 
+inline void resetNumericalDiffusionOnADM(double* const flux) {
+  // reset the numerical diffusion for a flux in some direction.
+  // This sets all fluxes for ADM and helper variables to zero.
+  for(int i = 9; i < 23; i++) {
+	flux[i] = 0;
+  }
+}
+
+
 // intermediate place
 inline void setNeutronStarBoundaryConditions(const int faceIndex, const int d, const double* const stateIn, double* const stateOut) {
 	// NEUTRON STAR reflective + outflow BC:
@@ -96,8 +105,8 @@ inline void InitialData(const double* const x,const double t,double* Q) {
 // We workaround by returning some kind of "neutral" values which go well with the scheme.
 
 inline bool isAllZero(const double* const Q) {
-	bool allzero=true; NVARS(i) { if(Q[i]!=0) allzero=false; }
-	return allzero;
+	NVARS(i) { if(Q[i]!=0) return false; }
+	return true;
 }
 
 // Check whether Q holds the vacuum spacetime up to some uncertainty

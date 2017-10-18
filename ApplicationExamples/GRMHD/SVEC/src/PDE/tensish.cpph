@@ -60,7 +60,7 @@
 #define CONTRACT4(i,j,k,l) DFOR(i) DFOR(j) DFOR(k) DFOR(l)
 
 // Length assertions with Tensish. Should use Peano assertions here.
-constexpr bool debug_tensish = true;
+constexpr bool debug_tensish = false;
 
 #include <iostream>
 #include <cstdlib>

@@ -65,7 +65,8 @@ exahype-project GRMHD
     optimisation const = generic
     language const                 = C
 
-    limiter-type const             = musclhancock 
+    // musclhancock doesnt work in the moment
+    limiter-type const             = godunov
     limiter-optimisation const     = generic
     limiter-language const         = C
     dmp-observables                = 2
@@ -84,21 +85,37 @@ exahype-project GRMHD
       output    = ./vtk-output/conserved
     end plot
 
-    plot vtu::Legendre::vertices::ascii DifferenceWithIDWriter
+    plot vtk::Legendre::vertices::binary DifferenceWithIDWriter
       variables const = 23
       time      = 0.0
       repeat    = 0.000666667
       output    = ./vtk-output/diff-with-id
     end plot
 
-    plot vtu::Legendre::vertices::ascii PrimitiveWriter
+    plot vtk::Legendre::vertices::binary PrimitiveWriter
       variables const = 23
       time      = 0.0
       repeat    = 0.000666667
       output    = ./vtk-output/primitive
     end plot
+    
+    plot Carpet::Cartesian::Vertices::HDF5 ConservedWriter
+      variables const = 23
+      time = 0.0
+      repeat = 1000.000001
+      output = ./hdf5/conserved2d
+      select = x:0,y:0
+    end plot
+    
+    plot Carpet::Cartesian::Vertices::HDF5 PrimitiveWriter
+      variables const = 23
+      time = 0.0
+      repeat = 1000.000001
+      output = ./hdf5/primitive2d
+      select = x:0,y:0
+    end plot
 
-    plot vtk::Cartesian::cells::ascii IntegralsWriter
+    plot vtk::Cartesian::cells::binary IntegralsWriter
       variables const = 0
       time = 0.0
       repeat = 0.000001
