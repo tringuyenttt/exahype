@@ -169,14 +169,16 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
           new mpibalancing::GreedyBalancing(
             getCoarsestGridLevelForLoadBalancing(_boundingBoxSize),
-            getCoarsestGridLevelForLoadBalancing(_boundingBoxSize)+1 // TODO(Dominic): What does the +1 do here?
+            getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize)+1 /*boundary regularity*/
           )
         );
         break;
       case exahype::mappings::LoadBalancing::LoadBalancingAnalysis::Hotspot:
         logInfo("initDistributedMemoryConfiguration()", "use global hotspot elimination without joins (mpibalancing/StaticBalancing)");
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
-            new mpibalancing::HotspotBalancing(false,getCoarsestGridLevelForLoadBalancing(_boundingBoxSize)+1) // TODO(Dominic): What does the +1 do here?
+            new mpibalancing::HotspotBalancing(
+                false,getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize)+1 /*boundary regularity*/
+          )
         );
         break;
     }
@@ -358,8 +360,7 @@ int exahype::runners::Runner::getCoarsestGridLevelForLoadBalancing(
   return std::max( 3, getCoarsestGridLevelOfAllSolvers(boundingBoxSize) );
 }
 
-
-int exahype::runners::Runner::getFinestGridLevelOfAllSolvers(
+int exahype::runners::Runner::getFinestUniformGridLevelOfAllSolvers(
     tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
   double hMax = exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers();
 
@@ -367,6 +368,11 @@ int exahype::runners::Runner::getFinestGridLevelOfAllSolvers(
 
   logDebug( "getCoarsestGridLevelOfAllSolvers()", "regular grid depth of " << peanoLevel << " (1 means a single cell)");
   return peanoLevel;
+}
+
+int exahype::runners::Runner::getFinestUniformGridLevelForLoadBalancing(
+    tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const {
+  return std::max( 3, getFinestUniformGridLevelOfAllSolvers(boundingBoxSize) );
 }
 
 double
@@ -622,9 +628,12 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     repository.iterate();
     meshSetupIterations++;
 
-    repository.getState().endedGridConstructionIteration( getFinestGridLevelOfAllSolvers(_boundingBoxSize) );
+    repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
     plotMeshSetupInfo(repository,meshSetupIterations);
+
+    std::cout << "repository.getState().continueToConstructGrid()=" <<  repository.getState().continueToConstructGrid() << std::endl;
+    std::cout << "exahype::solvers::Solver::oneSolverHasNotAttainedStableState()="<< exahype::solvers::Solver::oneSolverHasNotAttainedStableState() << std::endl;
 
     meshUpdate = true;
   }
@@ -633,7 +642,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   logInfo("createGrid()", "more status spreading.");
   int extraIterations =
       std::max (
-          3, // two extra iteration to spread the helper and augmentation status, one to allocate memory
+          4, // two extra iteration to spread the helper and augmentation status, one to allocate memory
           exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell());
   while (
       extraIterations > 0
@@ -648,7 +657,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     extraIterations--;
     meshSetupIterations++;
 
-    repository.getState().endedGridConstructionIteration( getFinestGridLevelOfAllSolvers(_boundingBoxSize) );
+    repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
     plotMeshSetupInfo(repository,meshSetupIterations);
   }

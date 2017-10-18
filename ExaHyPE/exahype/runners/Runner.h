@@ -322,8 +322,19 @@ class exahype::runners::Runner {
   int getCoarsestGridLevelForLoadBalancing(
       tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const;
 
-  int getFinestGridLevelOfAllSolvers(
+  /**
+   * Run through all the solvers and identify the finest grid level in the tree
+   * that will be populated by a solver in a uniform manner.
+   */
+  int getFinestUniformGridLevelOfAllSolvers(
       tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const;
+
+  /**
+   * The same as ::getFinestUniformGridLevelOfAllSolvers but
+   * returns at least a value of 3 (Peano) levels.
+   */
+  int getFinestUniformGridLevelForLoadBalancing(
+        tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) const;
 
   /**
    * Compute the coarsest mesh size according to the bounding box size.
