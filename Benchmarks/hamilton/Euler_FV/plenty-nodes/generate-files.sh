@@ -78,7 +78,7 @@ do
       sed -i 's,'$project'-no-output-regular-0,'$prefix',g' $newScript
       sed -i 's,p3,p'$patchSize',g' $newScript
 
-      sed -i 's,nodes=1,nodes='$nodes',' $newScript
+      sed -i -r 's,nodes(\s*)=(\s*)([0-9]*),nodes\1=\2'$nodes',' $newScript
       sed -i 's,tasksPerNode=1,tasksPerNode='$tasksPerNode',' $newScript
       sed -i 's,coresPerTask=1,coresPerTask='$coresPerTask',' $newScript
 
