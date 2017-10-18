@@ -13,8 +13,7 @@ inline void zeroHelpers(double* Q) {
 	// debugging variables
 	GRMHD::AbstractGRMHDSolver_ADERDG::Variables var(Q);
 	GRMHD::AbstractGRMHDSolver_ADERDG::VariableShortcuts Qi;
-	Q[Qi.sqdetg] = 0;
-	for(int i=0;i<2;i++) Q[Qi.spare+i] = 0;
+	for(int i=0;i<2;i++) Q[Qi.coordinates+i] = 0;
 	var.check() = 0;
 }
 

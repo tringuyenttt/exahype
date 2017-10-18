@@ -55,7 +55,7 @@ exahype-project GRMHD
   end global-optimisation
 
   solver ADER-DG GRMHDSolver_ADERDG
-    variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,sqdetg:1,spare:2,check:1
+    variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1
     order const                    = 3
     maximum-mesh-size              = 0.111133333339
     maximum-mesh-depth             = 0

@@ -11,8 +11,19 @@
 using SVEC::GRMHD::Cons2Prim;
 
 
+GRMHD::DifferenceWithIDWriter::DifferenceWithIDWriter(GRMHDSolver_FV&  solver) {
+  // @todo Please insert your code here
+}
+
+
+
 GRMHD::DifferenceWithIDWriter::DifferenceWithIDWriter(GRMHDSolver_ADERDG&  solver) {
-  // @TODO Please insert your code here.
+  // @todo Please insert your code here
+}
+
+
+GRMHD::DifferenceWithIDWriter::DifferenceWithIDWriter(exahype::solvers::LimitingADERDGSolver&  solver) {
+  // @todo Please insert your code here
 }
 
 GRMHD::DifferenceWithIDWriter::~DifferenceWithIDWriter() {

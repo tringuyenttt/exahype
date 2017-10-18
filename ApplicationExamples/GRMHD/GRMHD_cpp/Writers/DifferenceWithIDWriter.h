@@ -15,11 +15,13 @@
 #define POSTPROCESSING_DifferenceWithIDWriter_CLASS_HEADER_
 
 #include "exahype/plotters/Plotter.h"
+#include "exahype/solvers/LimitingADERDGSolver.h"
 
 
 namespace GRMHD {
   /* Forward declaration: */
-class GRMHDSolver_ADERDG; 
+  class GRMHDSolver_ADERDG;
+  class GRMHDSolver_FV;
 
 
   class DifferenceWithIDWriter;
@@ -28,6 +30,8 @@ class GRMHDSolver_ADERDG;
 class GRMHD::DifferenceWithIDWriter : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
 public:
   DifferenceWithIDWriter(GRMHDSolver_ADERDG&  solver);
+  DifferenceWithIDWriter(GRMHDSolver_FV&      solver);
+  DifferenceWithIDWriter(exahype::solvers::LimitingADERDGSolver&  solver);
   virtual ~DifferenceWithIDWriter();
 
   void startPlotting(double time) override;

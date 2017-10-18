@@ -26,9 +26,9 @@ exahype-project GRMHD
   log-file                         = whatever.log
 
   computational-domain
-    dimension const                = 2
-    width                          = 1.0, 1.0
-    offset                         = 0.0, 0.0
+    dimension const                = 3
+    width                          = 1.0, 1.0, 1.0
+    offset                         = 0.0, 0.0, 0.0
     end-time                       = 1000.000000001
   end computational-domain
   
@@ -73,7 +73,7 @@ exahype-project GRMHD
     dmp-difference-scaling         = 1e-3 
     steps-till-cured               = 0
 
-    constants  = foo:bar,blo:dez
+    //constants  = foo:bar,blo:dez
 
     plot vtk::Cartesian::vertices::limited::binary ConservedWriter
       variables const = 19

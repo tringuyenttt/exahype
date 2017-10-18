@@ -17,7 +17,7 @@ using namespace GRMHD;
 
 tarch::logging::Log GRMHD::GRMHDSolver_FV::_log( "GRMHD::GRMHDSolver_FV" );
 
-void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
+void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs) { //, exahype::Parser::ParserView& constants) {
 	InitialDataCode::getInstance();
 }
 
