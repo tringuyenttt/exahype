@@ -103,7 +103,7 @@ exahype-project GRMHD
       variables const = 23
       time = 0.0
       repeat = 1000.000001
-      output = ./hdf5/conserved2d
+      output = ./hdf5/conserved1d
       select = x:0,y:0
     end plot
     
@@ -111,7 +111,7 @@ exahype-project GRMHD
       variables const = 23
       time = 0.0
       repeat = 1000.000001
-      output = ./hdf5/primitive2d
+      output = ./hdf5/primitive1d
       select = x:0,y:0
     end plot
 
