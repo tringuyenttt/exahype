@@ -57,11 +57,8 @@ class DGMatrixGenerator:
         
         # Kxi
         Kxi = Utils.assembleStiffnessMatrix(self.m_xGPN, self.m_wGPN, self.m_context['nDof'])
-        self.m_context['Kxi'] = Utils.matrixPadAndFlatten_ColMajor(Kxi,l_padSize)
-
-        # Kxi_T
-        Kxi_T = Utils.matrixTranspose(Kxi)
-        self.m_context['Kxi_T'] =Utils.matrixPadAndFlatten_ColMajor(Kxi_T,l_padSize)
+        self.m_context['Kxi']   = Utils.matrixPadAndFlatten_ColMajor(Kxi,l_padSize)
+        self.m_context['Kxi_T'] = Utils.matrixPadAndFlatten_RowMajor(Kxi,l_padSize)
 
         # iK1
         iK1 = Utils.matrixTranspose(Utils.matrixInverse(Utils.assembleK1(Kxi, self.m_xGPN, self.m_context['nDof'])))
@@ -70,19 +67,17 @@ class DGMatrixGenerator:
         # dudx
         MM   = Utils.assembleMassMatrix(self.m_xGPN, self.m_wGPN, self.m_context['nDof'])
         dudx = Utils.assembleDiscreteDerivativeOperator(MM,Kxi)
-        self.m_context['dudx'] = Utils.matrixPadAndFlatten_ColMajor(dudx,l_padSize)
+        self.m_context['dudx']   = Utils.matrixPadAndFlatten_ColMajor(dudx,l_padSize)
+        self.m_context['dudx_T'] = Utils.matrixPadAndFlatten_RowMajor(dudx,l_padSize)
         
-        # dudx_T
-        dudx_T = Utils.matrixTranspose(dudx)
-        self.m_context['dudx_T'] = Utils.matrixPadAndFlatten_ColMajor(dudx_T,l_padSize)
         
         #fineGridProjector1d
         fineGridProjector1d_0 = Utils.assembleFineGridProjector1d(self.m_xGPN, 0, self.m_context['nDof'])
         fineGridProjector1d_1 = Utils.assembleFineGridProjector1d(self.m_xGPN, 1, self.m_context['nDof'])
         fineGridProjector1d_2 = Utils.assembleFineGridProjector1d(self.m_xGPN, 2, self.m_context['nDof'])
-        self.m_context['fineGridProjector1d_0'] = Utils.matrixPadAndFlatten_ColMajor(fineGridProjector1d_0,l_padSize)
-        self.m_context['fineGridProjector1d_1'] = Utils.matrixPadAndFlatten_ColMajor(fineGridProjector1d_1,l_padSize)
-        self.m_context['fineGridProjector1d_2'] = Utils.matrixPadAndFlatten_ColMajor(fineGridProjector1d_2,l_padSize)
+        self.m_context['fineGridProjector1d_0']   = Utils.matrixPadAndFlatten_ColMajor(fineGridProjector1d_0,l_padSize)
+        self.m_context['fineGridProjector1d_1']   = Utils.matrixPadAndFlatten_ColMajor(fineGridProjector1d_1,l_padSize)
+        self.m_context['fineGridProjector1d_2']   = Utils.matrixPadAndFlatten_ColMajor(fineGridProjector1d_2,l_padSize)
         self.m_context['fineGridProjector1d_T_0'] = Utils.matrixPadAndFlatten_RowMajor(fineGridProjector1d_0,l_padSize)
         self.m_context['fineGridProjector1d_T_1'] = Utils.matrixPadAndFlatten_RowMajor(fineGridProjector1d_1,l_padSize)
         self.m_context['fineGridProjector1d_T_2'] = Utils.matrixPadAndFlatten_RowMajor(fineGridProjector1d_2,l_padSize)
@@ -90,9 +85,4 @@ class DGMatrixGenerator:
         #generate files 
         TemplatingUtils.renderAsFile('DGMatrices_h.template',   self.m_filenameRoot+'.h',   self.m_context)
         TemplatingUtils.renderAsFile('DGMatrices_cpp.template', self.m_filenameRoot+'.cpp', self.m_context)
-
         
-
-        
-    
-    

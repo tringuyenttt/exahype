@@ -80,11 +80,7 @@ def matrixPadAndFlatten_RowMajor(M, padSize):
 # d e f  
 # => a d 0 b e 0 c f 0    
 def matrixPadAndFlatten_ColMajor(M, padSize):
-    Mt = matrixTranspose(M)
-    result = []
-    for i in range(len(Mt)):
-        result += vectorPad(Mt[i], padSize)
-    return result
+    return matrixPadAndFlatten_RowMajor(matrixTranspose(M), padSize)
 
     
 #****************************************
