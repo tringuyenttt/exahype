@@ -133,6 +133,7 @@ std::string CartesianSlicer::planeLabel() const {
 	if(!active(0) && !active(1) &&  active_2) return "xy";
 	if( active(0) && !active(1) && !active_2) return "yz";
 	if(!active(0) &&  active(1) &&  active_2) return "xz";
+	return "unknowns";
 }
 
 RegionSlicer* RegionSlicer::fromSelectionQuery(const std::string& select) {
