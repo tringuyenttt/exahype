@@ -40,6 +40,7 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	// default values for init(...)-level runtime parameters:
 	dim(DIMENSIONS),
 	slicer(nullptr),
+	dimextension(".xyz"),
 	component(-100),
 	iteration(0),
 	writtenQuantitiesNames(_writtenQuantitiesNames),
@@ -66,10 +67,13 @@ exahype::plotters::CarpetHDF5Writer::CarpetHDF5Writer(
 	writtenCellIdx = patchCellIdx; // without slicing, this is true.
 
 	slicer = Slicer::bestFromSelectionQuery(select);
+	bool isCartesianSlicer = (slicer->getIdentifier() == "CartesianSlicer");
 	if(slicer) {
 		logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<basisFilename);
-		if(slicer->getIdentifier() == "CartesianSlicer") {
-			dim = static_cast<CartesianSlicer*>(slicer)->targetDim;
+		if(isCartesianSlicer) {
+			exahype::plotters::CartesianSlicer* cs = static_cast<CartesianSlicer*>(slicer);
+			dim = cs->targetDim;
+			dimextension = std::string(".") + cs->planeLabel();
 		}
 	}
 
@@ -147,11 +151,20 @@ void exahype::plotters::CarpetHDF5Writer::writeBasicGroup(H5::H5File* file) {
 
 /**
  * Opens or switchs the currently active H5 file or the list of H5 files.
+ * 
+ * ATTENTION: The composal of the CarpetHDF5 filename has to be chosen carefully. Some (!) readers except
+ *    for 1D files a pattern *.{x,y,z}.h5
+ *    for 2D files a pattern *.{xy,yz,xz}.h5
+ *    for 3D files a pattern *.xyz.h5
+ *    (all patterns here are bash linux command line globbing patterns)
+ * This is especially for the readers from David Radice (https://bitbucket.org/dradice/scidata)
+ * and Wolfgang Kastaun (https://bitbucket.org/DrWhat/pycactuset). In contrast, the Visit plugin does not
+ * care about the names of the files.
  **/
 void exahype::plotters::CarpetHDF5Writer::openH5() {
 	std::string local_filename, suffix, prefix, sep("-");
 	prefix = basisFilename;
-	suffix = (oneFilePerTimestep?(sep + "it" + toString(iteration)):"") + ".h5";
+	suffix = (oneFilePerTimestep?(sep + "it" + toString(iteration)):"") + dimextension + ".h5";
 	
 	closeH5(); // just to be sure
 	int writtenUnknown=0;
@@ -213,6 +226,13 @@ void exahype::plotters::CarpetHDF5Writer::plotPatch(
 	component++;
 }
 
+/**
+ * ATTENTION at  composing the HDF5 data field names for the Carpet file format!
+ * Many (actually all I know) codes parse these field names with regexps which are sometimes not too flexible.
+ * For instance, Visit requries the presence of "::" in the field name.
+ * Scidata parses with this python regexp: r"(\w+:?:?\w*\[?\d*\]?) it=(\d+) tl=(\d+) rl=(\d+) c=(\d+)$"
+ * That means the whitespace is crucial and has to be exactly like this.
+ **/
 void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
       const dvec& offsetOfPatch, const dvec& sizeOfPatch, const dvec& dx,
       double* mappedCell, double timeStamp,
@@ -225,7 +245,8 @@ void exahype::plotters::CarpetHDF5Writer::plotPatchForSingleUnknown(
 	name += field_name ? field_name : "miserable-failure";
 	
 	std::stringstream component_name;
-	component_name << name << " it=" << iteration << "tl=0 m=0 rl=0 c=" << component;
+	// Attention: I removed "tl=0 m=0 rl=0" => "tl=0 rl=0" for scidata.
+	component_name << name << " it=" << iteration << " tl=0 rl=0 c=" << component;
 	
 	// 1) Compose a continous storage which is suitable.
 	// TODO: I'm sure HDF5 provides a more performant way to interpret the different data layout.

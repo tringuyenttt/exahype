@@ -106,7 +106,7 @@ std::string RegionSlicer::toString() const {
 
 std::string CartesianSlicer::toString() const {
 	stringstream s;
-	s << "CartesianSlicer(Dim["<<baseDim<<"] to Dim["<<targetDim<<"], req="<<req<<")";
+	s << "CartesianSlicer(Dim["<<baseDim<<" -> "<<targetDim<<"], req="<<req<<"="<<planeLabel()<<")";
 	return s.str();
 }
 
@@ -122,6 +122,18 @@ std::string CartesianSlicer::debugVerbose() {
 	return s.str();
 }
 
+std::string CartesianSlicer::planeLabel() const {
+	// 1D cutting:
+	bool active_2 = DIMENSIONS == 3 ? active(2) : true;
+	if(!active(0) &&  active(1) &&  active_2) return "x";
+	if( active(0) && !active(1) &&  active_2) return "y";
+	if( active(0) &&  active(1) && !active_2) return "z";
+	
+	// 2D cutting, returns "xy", "xz" or "yz"
+	if(!active(0) && !active(1) &&  active_2) return "xy";
+	if( active(0) && !active(1) && !active_2) return "yz";
+	if(!active(0) &&  active(1) &&  active_2) return "xz";
+}
 
 RegionSlicer* RegionSlicer::fromSelectionQuery(const std::string& select) {
 	dvec regionOfInterestLeftBottomFront, regionOfInterestRightTopBack;

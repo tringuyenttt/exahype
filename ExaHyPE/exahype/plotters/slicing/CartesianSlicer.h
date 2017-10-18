@@ -145,10 +145,22 @@ struct exahype::plotters::CartesianSlicer : public exahype::plotters::Slicer {
 		return ret;
 	}
 	
+	/// Produces the string "CartesianSlicer"
+	/// Used for the Slicer registry
 	std::string getIdentifier() const override { return "CartesianSlicer"; }
+	
+	/// Gives a string like "xy" or "x" indicating the names of the requested planes.
+	/// Useful for constructing file names of output files, for instance in Carpet.
+	std::string planeLabel() const;
+	
+	/// Produces a string like "CartesianSlicer(Dim[3] to Dim[1], req=[0,0,nan])"
+	/// Useful for stdout.
 	std::string toString() const override;
-	/// Gives rich debugging output. For shorter output, look for the getIdentifier function.
+	
+	/// Produces 5-lines output including all internal states.
+	/// Useful for debugging output.
 	std::string debugVerbose();
+	
 	//std::ostream& operator<<(std::ostream &s,const exahype::plotters::CartesianSlicer& c);
 
 }; // class CartesianSlicer

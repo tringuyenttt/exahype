@@ -136,6 +136,7 @@ public:
   int                 patchFieldsSize;  ///< as a service: basisSize^DIMENSIONS * writtenUnkowns, ie. the written without dimensional reduction
   int                 writtenFieldsSize; ///< basisSize^dim * writtenUnknowns, ie the really written incl. dimensional reduction
   int                 singleFieldSize; ///< just basisSize^DIM
+  std::string         dimextension; ///< A file extension reflecting good Cactus standards, like "xyz", "xy" or "x" before ".h5"
 
   // Things to be counted by this instance
   int                 component; ///< An internal counter of the components (=patches) written out in one plot cycle
