@@ -33,9 +33,9 @@ void singleLevelFaceUnknownsProlongation(double* fine, const double* coarse, con
             fine[(m2*{{nDof}}+m1)*dataSize+d] +=
                 coarse[(n2*{{nDof}}+n1)*dataSize+d]
 {% if nDim==3 %}
-                * {{codeNamespace}}::fineGridProjector1d[{{nDof-1}}][subfaceIndex[0]][n2][m2]
+                * {{codeNamespace}}::fineGridProjector1d[subfaceIndex[1]][m2*{{nDofPad}}+n2]
 {% endif %}
-                * {{codeNamespace}}::fineGridProjector1d[{{nDof-1}}][subfaceIndex[1]][n1][m1];
+                * {{codeNamespace}}::fineGridProjector1d[subfaceIndex[0]][m1*{{nDofPad}}+n1];
           }
         }
       }
@@ -52,9 +52,9 @@ void singleLevelFaceUnknownsRestriction(double* coarse, const double* fine, cons
           for (int n1 = 0; n1<{{nDof}}; n1++) {          
             coarse[(m2*{{nDof}}+m1)*dataSize+d] +=
                              fine[(n2*{{nDof}}+n1)*dataSize+d]
-                             * {{codeNamespace}}::fineGridProjector1d[{{nDof-1}}][subfaceIndex[0]][m1][n1]
+                             * {{codeNamespace}}::fineGridProjector1d_T[subfaceIndex[0]][m1*{{nDofPad}}+n1]
 {% if nDim==3 %}                             
-                             * {{codeNamespace}}::fineGridProjector1d[{{nDof-1}}][subfaceIndex[1]][m2][n2]
+                             * {{codeNamespace}}::fineGridProjector1d_T[subfaceIndex[1]][m2*{{nDofPad}}+n2]
 {% endif %}
                              * {{codeNamespace}}::weights2[n2*{{nDof}}+n1]
                              / {{codeNamespace}}::weights2[m2*{{nDof}}+m1]
@@ -78,10 +78,10 @@ void singleLevelVolumeUnknownsProlongation(double* fine, const double* coarse, c
                 fine[((m3*{{nDof}}+m2)*{{nDof}}+m1)*dataSize+d]
                         += coarse[((m3*{{nDof}}+m2)*{{nDof}}+m1)*dataSize+d] *
 {% if nDim==3 %} 
-                        {{codeNamespace}}::fineGridProjector1d[{{nDof-1}}][subcellIndex[0]][n3][m3] *
+                        {{codeNamespace}}::fineGridProjector1d[subcellIndex[2]][m3*{{nDofPad}}+n3] *
 {% endif %}
-                        {{codeNamespace}}::fineGridProjector1d[{{nDof-1}}][subcellIndex[1]][n2][m2] *
-                        {{codeNamespace}}::fineGridProjector1d[{{nDof-1}}][subcellIndex[2]][n1][m1];
+                        {{codeNamespace}}::fineGridProjector1d[subcellIndex[0]][m2*{{nDofPad}}+n2] *
+                        {{codeNamespace}}::fineGridProjector1d[subcellIndex[1]][m1*{{nDofPad}}+n1];
               }
             }
           }
@@ -102,10 +102,10 @@ void singleLevelVolumeUnknownsRestriction(double* coarse, const double* fine, co
               for (int n1 = 0; n1<{{nDof}}; n1++) {  
                 coarse[((m3*{{nDof}}+m2)*{{nDof}}+m1)*dataSize+d] +=
                     fine[((m3*{{nDof}}+m2)*{{nDof}}+m1)*dataSize+d]
-                    * {{codeNamespace}}::fineGridProjector1d[{{nDof-1}}][subcellIndex[0]][m1][n1]
-                    * {{codeNamespace}}::fineGridProjector1d[{{nDof-1}}][subcellIndex[1]][m2][n2]
+                    * {{codeNamespace}}::fineGridProjector1d_T[subcellIndex[0]][m1*{{nDofPad}}+n1]
+                    * {{codeNamespace}}::fineGridProjector1d_T[subcellIndex[1]][m2*{{nDofPad}}+n2]
 {% if nDim==3 %}
-                    * {{codeNamespace}}::fineGridProjector1d[{{nDof-1}}][subcellIndex[2]][m3][n3]
+                    * {{codeNamespace}}::fineGridProjector1d_T[subcellIndex[2]][m3*{{nDofPad}}+n3]
 {% endif %}
                     * {{codeNamespace}}::weights3[(n3*{{nDof}}+n2)*{{nDof}}+n1]
                     / {{codeNamespace}}::weights3[(m3*{{nDof}}+m2)*{{nDof}}+m1]

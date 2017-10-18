@@ -14,15 +14,7 @@
 #
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
-#
-#
-# @section DESCRIPTION
-#
-# ExaHyPE's private little close-to-assembly code generation backend. Here
-# we generate everything libxsmm cannot offer.
-#
-# To be extended...
-#
+
 
 import Backend
 
@@ -209,7 +201,7 @@ def assembleStiffnessMatrix(xGPN, wGPN, N):
        xGPN:
           Gauss-Legendre nodes (N nodes).
        wGPN:
-          N Gauss-Legendre weights  (N weights).
+          Gauss-Legendre weights  (N weights).
        N:
           Number of nodal basis functions (=order+1).
     Returns:
@@ -237,7 +229,7 @@ def assembleK1(Kxi, xGPN, N):
           The (reference) element stiffness matrix for a approximation of 
           order N.
        xGPN:
-          Number of nodal basis functions (=order+1).
+          Gauss-Legendre nodes (N nodes).
        N:
           Order of approximation corresponding to N+1 nodal basis functions.
     Returns:
@@ -302,7 +294,37 @@ def assembleDiscreteDerivativeOperator(MM, Kxi):
     return dudx    
     
 
-   
+def assembleFineGridProjector1d(xGPN, j, N):
+    """
+    Transforms the degrees of freedom located on a coarse grid edge
+    nodes to degrees of freedoms located on nodes of a fine grid edge.
+    The difference in levels is 1.
+    
+    Let us denote by P the 1d fine grid projector (=1d equidistantGridProjector). The fine grid DoF 
+    are computed according to:
+    
+    u^{fine;j}_i =  sum_{m} P^{j}_im u^{coarse}_m
+    
+    Args:
+       xGPN:
+          Gauss-Legendre nodes (N nodes).
+       j:
+          Index of one the three subintervals: 0,1, or 2.
+       N:
+          Number of nodal basis functions (=order+1).
+    Returns:
+       equidistantGridProjector:
+          The corresponding degrees of freedom located at nodes of an equidistant grid over (0,1).
+    """
+    fineGridProjector1d = [[0 for _ in range(N)] for _ in range(N)]
+    
+    for i in range(0, N): # Eq. basis
+        phi_i, _ = BaseFunc1d((xGPN[i]+j)/3.0, xGPN, N)
+        for m in range(0, N): # DG basis
+            fineGridProjector1d[m][i] = phi_i[m]
+    return fineGridProjector1d    
+  
+  
 #TODO JMG remove legacy others
 
 #****************************************
@@ -604,18 +626,3 @@ def generateScatter(i_nVar: int, i_nVectors: int, i_chunkSize: int):
 
     l_sourceFile.write('}')
     l_sourceFile.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

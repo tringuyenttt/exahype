@@ -30,7 +30,8 @@ extern double *dudx;
 extern double *dudx_T;
 extern double *FLCoeff;
 extern double *FRCoeff;
-extern double **** fineGridProjector1d;
+extern double ** fineGridProjector1d;
+extern double ** fineGridProjector1d_T;
 
 {% for namespaceName in codeNamespaceList %}
 }
