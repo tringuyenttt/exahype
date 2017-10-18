@@ -22,13 +22,13 @@ exahype-project GRMHD
   exahype-path const               = ./ExaHyPE
   output-directory const           = ./ApplicationExamples/GRMHD/GRMHD_cpp
   architecture const               = noarch
-  log-file                         = whatever.log
+  log-file                         = logs/whatever.log
 
   computational-domain
     dimension const                = 3
-    width                          = 1.0, 1.0, 1.0
+    width                          = 20.0, 20.0, 20.0
     offset                         = 0.0, 0.0, 0.0
-    end-time                       = 2.0
+    end-time                       = 10000.0
   end computational-domain
   
   shared-memory
@@ -56,8 +56,8 @@ exahype-project GRMHD
 
   solver Limiting-ADER-DG GRMHDSolver
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1
-    order const                    = 4
-    maximum-mesh-size              = 0.3333333339
+    order const                    = 6
+    maximum-mesh-size              = 6.66666669
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear

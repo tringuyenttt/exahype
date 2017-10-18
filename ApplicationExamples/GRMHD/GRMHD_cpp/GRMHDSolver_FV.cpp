@@ -26,7 +26,7 @@ void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,
 	if(tarch::la::equals(t,0.0)) {
 		InitialData(x,t,Q);
 	} else {
-		constexpr bool floorAtmosphere = true;
+		constexpr bool floorAtmosphere = false;
 		if(floorAtmosphere) {
 			// Try to treat the atmosphere
 			SVEC::GRMHD::Shadow qout(Q);
@@ -131,33 +131,7 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
 	// InitialData(x, t, stateOut);
 	
 	// NEUTRON STAR reflective + outflow BC:
-	NVARS(i) stateOut[i] = stateIn[i];
-	switch(faceIndex) {
-		case 0:
-		case 2:
-		case 4: {
-			// reflective BC:
-			SVEC::GRMHD::Shadow Q(stateOut);
-			
-			// vectors: flip sign
-			Q.Si.lo(d) *= -1;
-			Q.Bmag.up(d) *= -1;
-			
-			// Note: ADM BC should never be used anywhere as
-			// ADM variables are parameters in this setup anyway!
-			
-			Q.beta.up(d) *= -1;
-			// Symmetric Tensors: flip sign of off-diagonal
-			DFOR(i) if(i != d) Q.gam.lo(i,d) *= -1;
-			
-			break;
-		}
-		case 1:
-		case 3:
-		case 5:
-			// outflow BC
-			break;
-	}
+	setNeutronStarBoundaryConditions(faceIndex, d, stateIn, stateOut);
 }
 
 void GRMHD::GRMHDSolver_FV::algebraicSource(const double* const Q,double* S) {

@@ -17,7 +17,6 @@
  */
 #include "tarch/logging/Log.h"
 
-
 namespace GRMHD{
   class GRMHDSolver_ADERDG;
 }
@@ -37,7 +36,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      * \param[in] cmdlineargs the command line arguments.
      */
     void init(std::vector<std::string>& cmdlineargs);
-    
+
     /**
      * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
      *
@@ -50,8 +49,8 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
      *                         as C array (already allocated).
      */
-    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) override;
-    
+    void adjustPointSolution(const double* const x,const double t,const double dt,double* Q) final override;
+
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
      *
@@ -60,7 +59,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) override;
+    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -81,7 +80,7 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -150,6 +149,14 @@ class GRMHD::GRMHDSolver_ADERDG : public GRMHD::AbstractGRMHDSolver_ADERDG {
      *
      **/
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
+
+    // Limiting driver functions
+    bool isPhysicallyAdmissible(
+      const double* const solution,
+      const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
+      const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
+      const double t, const double dt) const override;
+    void mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const override;
 
 };
 

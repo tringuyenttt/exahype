@@ -9,6 +9,38 @@ inline void enableNanCatcher() {
 	feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 }
 
+// intermediate place
+inline void setNeutronStarBoundaryConditions(const int faceIndex, const int d, const double* const stateIn, double* const stateOut) {
+	// NEUTRON STAR reflective + outflow BC:
+	NVARS(i) stateOut[i] = stateIn[i];
+	switch(faceIndex) {
+		case 0:
+		case 2:
+		case 4: {
+			// reflective BC:
+			SVEC::GRMHD::Shadow Q(stateOut);
+			
+			// vectors: flip sign
+			Q.Si.lo(d) *= -1;
+			Q.Bmag.up(d) *= -1;
+			
+			// Note: ADM BC should never be used anywhere as
+			// ADM variables are parameters in this setup anyway!
+			
+			Q.beta.up(d) *= -1;
+			// Symmetric Tensors: flip sign of off-diagonal
+			DFOR(i) if(i != d) Q.gam.lo(i,d) *= -1;
+			
+			break;
+		}
+		case 1:
+		case 3:
+		case 5:
+			// outflow BC
+			break;
+	}
+}
+
 inline void zeroHelpers(double* Q) {
 	// debugging variables
 	GRMHD::AbstractGRMHDSolver_ADERDG::Variables var(Q);

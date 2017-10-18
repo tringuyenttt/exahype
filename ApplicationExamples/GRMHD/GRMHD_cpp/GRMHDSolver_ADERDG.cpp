@@ -30,8 +30,37 @@ void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) { //
 	
 	// Initialize initial data
 	InitialDataCode::getInstance();
-	
 }
+
+void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const {
+	// ensure numberOfObservables == 2
+	observables[0] = Q[0]; // conserved density
+	observables[1] = Q[4]; // conserved tau
+	
+	// Question: Shall we make a C2P here and map the RMD and pressure?
+	// we should also check the velocities for superluminal!
+}
+
+// Limiting criteria
+bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
+	const double* const solution,
+	const double* const observablesMin, const double* const observablesMax,const int numberOfObservables,
+	const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
+	const double t, const double dt) const {
+	
+	// first, check the observablesMin whether they are useful:
+	// rho>0, vel^i<1, etc.
+
+	// here, we need to do at each point in the patch:
+		
+	// 1. A C2P. If it fails, return false => this is stupid, we already did a C2P at the mapping step.
+	// 2. The DMP, we could impose it ourselves here.
+		
+	// Do something different
+	return true;
+
+}
+
 
 void GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   if (tarch::la::equals(t,0.0)) {
@@ -43,9 +72,8 @@ void GRMHD::GRMHDSolver_ADERDG::eigenvalues(const double* const Q,const int d,do
 	// Provide NVARS eigenvalues
 	//PDE::eigenvalues(Q, d, lambda);
 	
-	// Just set all eigenvalues to zero.
-	vec::shadow<nVar> Lambda(lambda);
-	Lambda = 1.0;
+	// Just set all eigenvalues to one.
+	NVARS(i) lambda[i] = 1.0;
 }
 
 
@@ -89,7 +117,7 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 	*/
 	
 	// employ time-integrated exact BC for AlfenWave.
-
+	/*
 	double Qgp[nVar], Fs[nDim][nVar], *F[nDim];
 	for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 	// zeroise stateOut, fluxOut
@@ -110,10 +138,20 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 			fluxOut[m] += weight * Fs[d][m];
 		}
 	}
+	*/
 	
+	// Neutron star Reflective + Outflow BC
+	setNeutronStarBoundaryConditions(faceIndex, d, stateIn, stateOut);
+	
+	double Fs[nDim][nVar], *F[nDim];
+	for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
+	F[d] = fluxOut;
+	flux(stateOut, F);
+
 	//NVARS(i) printf("stateOut[%d]=%e\n", i, stateOut[i]);
 	//NVARS(i) printf("fluxOut[%d]=%e\n", i, fluxOut[i]);
 	//std::abort();
+
 }
 
 
@@ -133,9 +171,7 @@ void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S)
 }
 
 void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ, double* BgradQ) {
-	//PDE::NCP ncp(BgradQ);
-	
-	// debugging: set BgradQ to zero:
+	// debugging: set BgradQ initially to zero:
 	NVARS(i) BgradQ[i] = 0;
 	
 	// as we only have DIMENSIONS == 2 but TDIM == 3, construct a zero gradient
