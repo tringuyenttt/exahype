@@ -261,9 +261,7 @@ private:
    * the next finer level have all been initialised with
    * type Descendant.
    *
-   * TODO(Dominic): More docu.
-   *
-   * \return true if a fine grid cell can be erased.
+   * \return True if a fine grid cell can be erased.
    */
   void startOrFinishCollectiveRefinementOperations(
       CellDescription& fineGridCellDescription);
@@ -283,7 +281,7 @@ private:
    *
    * \note This operations is not thread-safe
    */
-  bool eraseCellDescriptionIfNecessary(
+  void eraseCellDescriptionIfNecessary(
       const int cellDescriptionsIndex,
       const int fineGridCellElement,
       const tarch::la::Vector<DIMENSIONS,int>& fineGridPositionOfCell,

@@ -88,8 +88,11 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
 
   /**
    * Mark this Vertex for erasing.
+   *
+   * Must be called only once with
+   * initialise=true.
    */
-  void markForErasing();
+  void markForErasing(bool initialise=false);
 
   /**
    * Veto erasing for this vertex.
@@ -99,7 +102,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   /**
    * \return True if the vertex can be erased.
    */
-  bool getCanBeErased() const;
+  bool isMarkedForErasing() const;
 
   /**
    * Loop over all neighbouring cells and merge
