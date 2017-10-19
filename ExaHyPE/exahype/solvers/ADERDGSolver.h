@@ -73,6 +73,11 @@ public:
    * a cell. Note that there should be at least layer
    * of width 2 between the status for erasing (0)
    * and the one for augmentation && refining (>=3).
+   *
+   * TODO(Dominic):
+   * I have too look a little further into how
+   * Peano erases to explain the above experimentally
+   * found values better.
    */
   static int MinimumAugmentationStatusForRefining;
 
@@ -650,7 +655,16 @@ public:
    * Push a new cell description to the back
    * of the heap vector at \p cellDescriptionsIndex.
    *
-   * \param TODO docu
+   * !!! Augmentation status
+   *
+   * For the grid setup, it is important that the
+   * previous augmentation status is initialised for new cell
+   * descriptions as MaximumAugmentationStatus.
+   * This prevents erasing of vertices around newly introduced
+   * cell descriptions of type Cell.
+   *
+   * Note that this is the previous augmentation status.
+   * It does not spread.
    */
   static void addNewCellDescription(
       const int cellDescriptionsIndex,
