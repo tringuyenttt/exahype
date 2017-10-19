@@ -35,20 +35,15 @@ void {{codeNamespace}}::freeDGMatrices() {
   _mm_free(Kxi);
   _mm_free(Kxi_T);
   
-  // copied from generic DGMatrices.cpp
-  const int MAX_ORDER=9;
-  for (int ii = 0; ii < MAX_ORDER + 1; ii++) {
-    for (int jj = 0; jj < ii + 1; jj++) {
-      delete [] fineGridProjector1d[ii][0][jj];
-      delete [] fineGridProjector1d[ii][1][jj];
-      delete [] fineGridProjector1d[ii][2][jj];
-    }
-    delete [] fineGridProjector1d[ii][0];
-    delete [] fineGridProjector1d[ii][1];
-    delete [] fineGridProjector1d[ii][2];
-    delete [] fineGridProjector1d[ii];
-  }
+  _mm_free(fineGridProjector1d[0]);
+  _mm_free(fineGridProjector1d[1]);
+  _mm_free(fineGridProjector1d[2]);
   delete [] fineGridProjector1d;
+  
+  _mm_free(fineGridProjector1d_T[0]);
+  _mm_free(fineGridProjector1d_T[1]);
+  _mm_free(fineGridProjector1d_T[2]);
+  delete [] fineGridProjector1d_T;
 }
 
 
