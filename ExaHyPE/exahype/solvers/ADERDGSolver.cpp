@@ -70,8 +70,9 @@ tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADE
 int exahype::solvers::ADERDGSolver::MaximumHelperStatus                          = 2;
 int exahype::solvers::ADERDGSolver::MinimumHelperStatusForAllocatingBoundaryData = 1;
 // augmentation status
-int exahype::solvers::ADERDGSolver::MaximumAugmentationStatus                = 3;
-int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForAugmentation = 1;
+// On-the fly erasing seems to work with those values
+int exahype::solvers::ADERDGSolver::MaximumAugmentationStatus                = 4;
+int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForAugmentation = 3;
 
 void exahype::solvers::ADERDGSolver::addNewCellDescription(
   const int cellDescriptionsIndex,
@@ -1562,6 +1563,16 @@ bool exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
               fineGridPositionOfCell,
               coarseGridCellDescription);
     }
+
+    bool eraseFineGridVertices =
+        (fineGridCellDescription.getType()==CellDescription::Type::Cell ||
+         fineGridCellDescription.getType()==CellDescription::Type::Descendant)
+        &&
+        fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
+        &&
+        fineGridCellDescription.getIsAugmented()
+        &&
+        fineGridCellDescription.getAugmentationStatus()==0;
   }
 
   return false;

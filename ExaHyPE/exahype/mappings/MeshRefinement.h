@@ -77,6 +77,18 @@ private:
       bool                                          isCalledByCreationalEvent
   ) const;
 
+
+  /**
+   * Erase fine grid vertices as long as it does not
+   * harm the regularity at the boundary.
+   *
+   * This means to enforce that all uniform grids populated
+   * by at least one solver and all the levels above have no hanging nodes.
+   */
+  void eraseVerticesButPreserveRegularityOnCoarserGrids(
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
+
 public:
 
   static bool IsInitialMeshRefinement;
