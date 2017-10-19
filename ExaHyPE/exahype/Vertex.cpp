@@ -47,18 +47,6 @@ exahype::Vertex::getCellDescriptionsIndex() const {
   return _vertexData.getCellDescriptionsIndex();
 }
 
-void exahype::Vertex::markForErasing(bool initialise) {
-  _vertexData.setMarkedForErasing(initialise && true);
-}
-
-void exahype::Vertex::vetoErasing() {
-  _vertexData.setMarkedForErasing(false);
-}
-
-bool exahype::Vertex::isMarkedForErasing() const {
-  return _vertexData.getMarkedForErasing();
-}
-
 void exahype::Vertex::mergeOnlyMetadata(
     const exahype::records::State::AlgorithmSection& section) {
   assertion(!isHangingNode());

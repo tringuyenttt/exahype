@@ -87,24 +87,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   tarch::la::Vector<TWO_POWER_D, int> getCellDescriptionsIndex() const;
 
   /**
-   * Mark this Vertex for erasing.
-   *
-   * Must be called only once with
-   * initialise=true.
-   */
-  void markForErasing(bool initialise=false);
-
-  /**
-   * Veto erasing for this vertex.
-   */
-  void vetoErasing();
-
-  /**
-   * \return True if the vertex can be erased.
-   */
-  bool isMarkedForErasing() const;
-
-  /**
    * Loop over all neighbouring cells and merge
    * the metadata of cell descriptions in neighbouring
    * cells which are owned by the same solver.
