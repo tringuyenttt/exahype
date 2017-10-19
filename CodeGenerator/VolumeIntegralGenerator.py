@@ -41,7 +41,7 @@ class VolumeIntegralGenerator:
 
     def generateCode(self):
         if(self.m_context['isLinear']):
-            pass
+            TemplatingUtils.renderAsFile('volumeIntegralLinear_cpp.template', self.m_filename, self.m_context)
         else:
             # initialize context
             gemmName = 'gemm_'+str(self.m_context['nVar'])+'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])
