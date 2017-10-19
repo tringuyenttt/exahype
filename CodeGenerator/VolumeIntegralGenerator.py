@@ -47,11 +47,7 @@ class VolumeIntegralGenerator:
             gemmName = 'gemm_'+str(self.m_context['nVar'])+'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])
             self.m_context['gemm_x'] = gemmName+'_lduh_x'
             self.m_context['gemm_y'] = gemmName+'_lduh_y'
-            self.m_context['gemm_z'] = gemmName+'_lduh_z'
-            self.m_context['lFhi_padY'] = Backend.getSizeWithPadding(self.m_context['nVar']) \
-                             * self.m_context['nDof']**self.m_context['nDim']
-            self.m_context['lFhi_padZ'] = 2 * Backend.getSizeWithPadding(self.m_context['nVar']) \
-                             * self.m_context['nDof']**self.m_context['nDim']                 
+            self.m_context['gemm_z'] = gemmName+'_lduh_z'             
             self.m_context['i_seq'] = range(0,self.m_context['nDof'])
             self.m_context['j_seq'] = range(0,self.m_context['nDof']) if (self.m_context['nDim'] >= 3) else [0]
             

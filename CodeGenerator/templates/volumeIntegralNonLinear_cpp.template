@@ -56,16 +56,16 @@ void {{codeNamespace}}::volumeIntegral(
 #ifdef USE_IPO
   #pragma forceinline
 #endif
-  {{gemm_x}}(&lFhi[{{(j*nDof+i) * nVarPad * nDof}}],&s_m[0],&lduh[{{(j*nDof+i) * nVar * nDof}}]);
+  {{gemm_x}}(&lFhi[{{(j*nDof+i) * nVarPad * nDof + 0 * self.m_context['nVarPad'] * self.m_context['nDof']**self.m_context['nDim']}}],&s_m[0],&lduh[{{(j*nDof+i) * nVar * nDof}}]);
 #ifdef USE_IPO
   #pragma forceinline
 #endif
-  {{gemm_y}}(&lFhi[{{(j*nDof+i) * nVarPad * nDof + lFhi_padY}}],&s_m[0],&lduh[{{(j*nDof*nDof+i) * nVar}}]);
+  {{gemm_y}}(&lFhi[{{(j*nDof+i) * nVarPad * nDof + 1 * self.m_context['nVarPad'] * self.m_context['nDof']**self.m_context['nDim']}}],&s_m[0],&lduh[{{(j*nDof*nDof+i) * nVar}}]);
 {% if nDim == 3 %} 
 #ifdef USE_IPO
   #pragma forceinline
 #endif
-  {{gemm_z}}(&lFhi[{{(j*nDof+i) * nVarPad * nDof + lFhi_padZ}}],&s_m[0],&lduh[{{(j*nDof+i) * nVar}}]);
+  {{gemm_z}}(&lFhi[{{(j*nDof+i) * nVarPad * nDof + 2 * self.m_context['nVarPad'] * self.m_context['nDof']**self.m_context['nDim']}}],&s_m[0],&lduh[{{(j*nDof+i) * nVar}}]);
 {% endif %} 
 {% else %}
   //x 
@@ -73,7 +73,7 @@ void {{codeNamespace}}::volumeIntegral(
     for(int k=0; k<{{nDof}}; k++) {
       #pragma simd
       for(int n=0; n<{{nVar}}; n++) {
-        lduh[{{(j*nDof+i) * nVar * nDof}}+l*{{nVar}}+n] += lFhi[{{(j*nDof+i) * nVarPad * nDof}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
+        lduh[{{(j*nDof+i) * nVar * nDof}}+l*{{nVar}}+n] += lFhi[{{(j*nDof+i) * nVarPad * nDof + 0 * self.m_context['nVarPad'] * self.m_context['nDof']**self.m_context['nDim']}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
       }
     }
   }
@@ -83,7 +83,7 @@ void {{codeNamespace}}::volumeIntegral(
     for(int k=0; k<{{nDof}}; k++) {
       #pragma simd
       for(int n=0; n<{{nVar}}; n++) {
-        lduh[{{(j*nDof*nDof+i) * nVar}}+l*{{nVar*nDof}}+n]+= lFhi[{{(j*nDof+i) * nVarPad * nDof + lFhi_padY}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
+        lduh[{{(j*nDof*nDof+i) * nVar}}+l*{{nVar*nDof}}+n]+= lFhi[{{(j*nDof+i) * nVarPad * nDof + 1 * self.m_context['nVarPad'] * self.m_context['nDof']**self.m_context['nDim']}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
       }
     }
   }
@@ -94,7 +94,7 @@ void {{codeNamespace}}::volumeIntegral(
     for(int k=0; k<{{nDof}}; k++) {
       #pragma simd
       for(int n=0; n<{{nVar}}; n++) {
-        lduh[{{(j*nDof+i) * nVar}}+l*{{nVar*nDof**2}}+n] += lFhi[{{(j*nDof+i) * nVarPad * nDof + lFhi_padZ}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
+        lduh[{{(j*nDof+i) * nVar}}+l*{{nVar*nDof**2}}+n] += lFhi[{{(j*nDof+i) * nVarPad * nDof + 2 * self.m_context['nVarPad'] * self.m_context['nDof']**self.m_context['nDim']}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
       }
     }
   }
