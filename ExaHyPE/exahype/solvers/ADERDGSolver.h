@@ -62,12 +62,19 @@ public:
    */
   static int MaximumAugmentationStatus;
   /**
-   * The minimum helper status a cell description
+   * The minimum augmentation status a cell description
    * of type Cell must have for it to refine
    * and add child cells of type Descendant to
    * the grid.
    */
   static int MinimumAugmentationStatusForAugmentation;
+  /**
+   * The minimum augmentation status for refining
+   * a cell. Note that there should be at least layer
+   * of width 2 between the status for erasing (0)
+   * and the one for augmentation && refining (>=3).
+   */
+  static int MinimumAugmentationStatusForRefining;
 
   /**
    * Rank-local heap that stores ADERDGCellDescription instances.
