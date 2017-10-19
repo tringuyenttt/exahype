@@ -32,35 +32,46 @@ namespace exahype {
  * todo
  */
 class exahype::plotters::ADERDG2LegendreCSV: public exahype::plotters::Plotter::Device {
- private:
-  int           _fileCounter;
-  const bool    _isBinary;
-  const bool    _plotCells;
-  std::string   _filename;
-  int           _order;
-  int           _solverUnknowns;
-  int           _writtenUnknowns;
-  std::string   _select;
-
-
-  std::ofstream ofs;
-
  public:
+  bool oneFilePerTimestep;
+  bool allUnknownsInOneFile;
+  bool writeCSVHeader; ///< write CSV header lines
+  bool writeCommentHeader; ///< write comment header line
+  bool writeDebugLines; ///< write comments about debugging information
+  bool writeTimeColumn; ///< write a timestep for every row. Useful setting is writeTimeColumn=!oneFilePerTimestep
+
+  std::string   comment; ///< Introducing string like "#" or "//" before a commentline
+  std::string   seperator; ///< CSV seperator character, like "\t" or "," or ";"
+  std::string   endl; ///< end of line, "\n" or "\r\n" if you prefer
+  int           precision; ///< The digit precision to write numbers out, ie. the number of digits
+
+  int           fileCounter; ///< Counting the output files
+  std::string   basicFilename; ///< basic filename
+  std::string   appendix; ///< filename appendix like ".csv" or ".txt"
+  std::ofstream ofs; ///< currently open stream
+  
+  int           order;
+  int           solverUnknowns;
+  int           writtenUnknowns;
+  
+  char **writtenQuantitiesNames;
+
   static std::string getIdentifier();
   ADERDG2LegendreCSV(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing);
-  ADERDG2LegendreCSV(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, bool isBinary, bool plotCells);
   virtual ~ADERDG2LegendreCSV();
-
-  virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
+  void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select) override;
 
   void plotPatch(const int cellDescriptionsIndex, const int element) override;
-
   void plotPatch(
       const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
       const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
       double timeStamp);
-
-  virtual void startPlotting( double time );
-  virtual void finishPlotting();
+  void startPlotting( double time ) override;
+  void finishPlotting() override;
+  
+  void openNewFile();
+  void writeHeader();
+  void writeDebug(const std::string& str);
+  void writeRow(const double* const mappedUnknowns, const double* const coordinates, const double timeStamp);
 };
 #endif
