@@ -23,7 +23,8 @@ double* {{codeNamespace}}::dudx;
 double* {{codeNamespace}}::dudx_T;
 double* {{codeNamespace}}::FLCoeff;
 double* {{codeNamespace}}::FRCoeff;
-double**** {{codeNamespace}}::fineGridProjector1d;
+double** {{codeNamespace}}::fineGridProjector1d;
+double** {{codeNamespace}}::fineGridProjector1d_T;
 
 
 void {{codeNamespace}}::freeDGMatrices() {
@@ -114,3 +115,4 @@ void {{codeNamespace}}::initDGMatrices() {
   fineGridProjector1d_T[2][{{i}}] = {{"{:.12e}".format(fineGridProjector1d_T_2[i])}};
 {% endfor %}
 
+}
