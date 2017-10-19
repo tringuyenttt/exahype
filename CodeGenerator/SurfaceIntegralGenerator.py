@@ -40,10 +40,7 @@ class SurfaceIntegralGenerator:
 
     def generateCode(self):
         self.m_context['bndFaceSize'] = self.m_context['nVarPad'] * self.m_context['nDof'] * self.m_context['nDof3D']  
-        if(self.m_context['isLinear']):
-           pass
-        else:
-            TemplatingUtils.renderAsFile('surfaceIntegralNonLinear_cpp.template', self.m_filename, self.m_context)
+            TemplatingUtils.renderAsFile('surfaceIntegral_cpp.template', self.m_filename, self.m_context)
 
 
 
