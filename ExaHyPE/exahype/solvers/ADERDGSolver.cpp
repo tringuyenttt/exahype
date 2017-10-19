@@ -103,7 +103,10 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
 
   newCellDescription.setIsAugmented(false);
   newCellDescription.setAugmentationStatus(0);
-  newCellDescription.setPreviousAugmentationStatus(MaximumAugmentationStatus);
+  newCellDescription.setPreviousAugmentationStatus(0);
+  if (cellType==CellDescription::Type::Cell) {
+    newCellDescription.setPreviousAugmentationStatus(MaximumAugmentationStatus);
+  }
   newCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
   newCellDescription.setHelperStatus(0);
   newCellDescription.setFacewiseHelperStatus(0); // implicit conversion

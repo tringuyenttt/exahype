@@ -268,25 +268,6 @@ void exahype::mappings::MeshRefinement::touchVertexFirstTime(
 
   fineGridVertex.mergeOnlyMetadata(_localState.getAlgorithmSection());
 
-  // mark for erasing
-  bool erase =
-      tarch::la::allSmallerEquals(
-          fineGridH,exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers());
-  fineGridVertex.markForErasing(erase);
-
-  // veto coarse grid erasing
-  bool validCellDescriptionsIndexFound = false;
-  dfor2(k)
-    validCellDescriptionsIndexFound |=
-        fineGridVertex.getCellDescriptionsIndex()[kScalar] > -1;
-  enddforx
-
-  if (validCellDescriptionsIndexFound) {
-    dfor2(k)
-       coarseGridVertices[ coarseGridVerticesEnumerator(k) ].vetoErasing();
-    enddforx
-  }
-
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
 
@@ -406,6 +387,8 @@ void exahype::mappings::MeshRefinement::enterCell(
       if (
           fineGridVertices[ fineGridVerticesEnumerator(v) ].getRefinementControl()==
           exahype::Vertex::Records::RefinementControl::Unrefined
+          &&
+          !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode()
       ) {
         fineGridVertices[ fineGridVerticesEnumerator(v) ].refine();
       }
@@ -431,8 +414,13 @@ void exahype::mappings::MeshRefinement::eraseVerticesButPreserveRegularityOnCoar
       &&
       !fineGridVertices[fineGridVerticesEnumerator(k)].isHangingNode();
 
-      if (hasToRefineToPreserveRegularityAlongBoundary==false) {
-        fineGridVertices[fineGridVerticesEnumerator(k)].erase();
+      if (
+          hasToRefineToPreserveRegularityAlongBoundary==false
+          &&
+          fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl() ==
+              Vertex::Records::RefinementControl::Refined
+      ) {
+        fineGridVertices[ fineGridVerticesEnumerator(k) ].erase();
       }
   enddforx
 }

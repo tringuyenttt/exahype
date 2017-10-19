@@ -636,10 +636,6 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
     plotMeshSetupInfo(repository,meshSetupIterations);
-
-    std::cout << "repository.getState().continueToConstructGrid()=" <<  repository.getState().continueToConstructGrid() << std::endl;
-    std::cout << "exahype::solvers::Solver::oneSolverHasNotAttainedStableState()="<< exahype::solvers::Solver::oneSolverHasNotAttainedStableState() << std::endl;
-
     meshUpdate = true;
   }
 
@@ -647,7 +643,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   logInfo("createGrid()", "more status spreading.");
   int extraIterations =
       std::max (
-          4, // two extra iteration to spread the helper and augmentation status, one to allocate memory
+          5, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
           exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell());
   while (
       extraIterations > 0
