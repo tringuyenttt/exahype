@@ -236,8 +236,13 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
          true, //   bool useMultithreading                  = true,
          0, //   int  grainSizeOfUserDefinedRegions      = 0,
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
-         true, //  bool pipelineDescendProcessing          = false,
-         true,  //   bool pipelineAscendProcessing           = false,
+         #ifdef SharedOMP // Pipelining does not pay off for OpenMP (yet)
+         false, //  bool pipelineDescendProcessing          = false,
+         false,  //   bool pipelineAscendProcessing           = false,
+         #else
+         true, //  bool pipelineDescendProcessing          = true,
+         true, //   bool pipelineAscendProcessing           = true,
+         #endif
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
          1, //   int  smallestProblemSizeForEnterLeaveCell = tarch::la::aPowI(DIMENSIONS,9/2),

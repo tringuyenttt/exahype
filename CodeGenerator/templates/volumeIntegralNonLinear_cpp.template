@@ -49,23 +49,23 @@ void {{codeNamespace}}::volumeIntegral(
 {% for j in j_seq %} {# if nDim == 2 then j_seq == [0] #}
 {% for i in i_seq %}
   #pragma vector aligned
-  for(int it=0;it<{{nDof*nDofPad}};it++) 
+  for(int it=0; it<{{nDof*nDofPad}}; it++) 
     s_m[it] = weights2[{{i+j*nDof}}] * inverseDx[0] * Kxi_T[it];
 
 {% if useLibxsmm %}
 #ifdef USE_IPO
   #pragma forceinline
 #endif
-  {{gemm_x}}(&lFhi[{{(j*nDof+i) * nVarPad * nDof}}],&s_m[0],&lduh[{{(j*nDof+i) * nVar * nDof}}]);
+  {{gemm_x}}(&lFhi[{{(j*nDof+i)*nVarPad*nDof +0*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[{{(j*nDof+i)*nVar*nDof}}]);
 #ifdef USE_IPO
   #pragma forceinline
 #endif
-  {{gemm_y}}(&lFhi[{{(j*nDof+i) * nVarPad * nDof + lFhi_padY}}],&s_m[0],&lduh[{{(j*nDof*nDof+i) * nVar}}]);
+  {{gemm_y}}(&lFhi[{{(j*nDof+i)*nVarPad*nDof +1*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[{{(j*nDof*nDof+i)*nVar}}]);
 {% if nDim == 3 %} 
 #ifdef USE_IPO
   #pragma forceinline
 #endif
-  {{gemm_z}}(&lFhi[{{(j*nDof+i) * nVarPad * nDof + lFhi_padZ}}],&s_m[0],&lduh[{{(j*nDof+i) * nVar}}]);
+  {{gemm_z}}(&lFhi[{{(j*nDof+i)*nVarPad*nDof +2*nVarPad*(nDof**nDim)}}],&s_m[0],&lduh[{{(j*nDof+i)*nVar     }}]);
 {% endif %} 
 {% else %}
   //x 
@@ -73,7 +73,7 @@ void {{codeNamespace}}::volumeIntegral(
     for(int k=0; k<{{nDof}}; k++) {
       #pragma simd
       for(int n=0; n<{{nVar}}; n++) {
-        lduh[{{(j*nDof+i) * nVar * nDof}}+l*{{nVar}}+n] += lFhi[{{(j*nDof+i) * nVarPad * nDof}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
+        lduh[{{(j*nDof+i)*nVar*nDof}}+l*{{nVar}}+n] += lFhi[{{(j*nDof+i)*nVarPad*nDof + 0*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
       }
     }
   }
@@ -83,7 +83,7 @@ void {{codeNamespace}}::volumeIntegral(
     for(int k=0; k<{{nDof}}; k++) {
       #pragma simd
       for(int n=0; n<{{nVar}}; n++) {
-        lduh[{{(j*nDof*nDof+i) * nVar}}+l*{{nVar*nDof}}+n]+= lFhi[{{(j*nDof+i) * nVarPad * nDof + lFhi_padY}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
+        lduh[{{(j*nDof*nDof+i)*nVar}}+l*{{nVar*nDof}}+n]+= lFhi[{{(j*nDof+i)*nVarPad*nDof + 1*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
       }
     }
   }
@@ -94,7 +94,7 @@ void {{codeNamespace}}::volumeIntegral(
     for(int k=0; k<{{nDof}}; k++) {
       #pragma simd
       for(int n=0; n<{{nVar}}; n++) {
-        lduh[{{(j*nDof+i) * nVar}}+l*{{nVar*nDof**2}}+n] += lFhi[{{(j*nDof+i) * nVarPad * nDof + lFhi_padZ}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
+        lduh[{{(j*nDof+i)*nVar}}+l*{{nVar*nDof**2}}+n] += lFhi[{{(j*nDof+i)*nVarPad*nDof + 2*nVarPad*(nDof**nDim)}}+k*{{nVarPad}}+n] * s_m[{{nDof}}*l+k];
       }
     }
   }
@@ -103,16 +103,16 @@ void {{codeNamespace}}::volumeIntegral(
 {% endif %}  
 {% endfor %}
 {% endfor %}
-
 {% if useSourceOrNCP %}
   // source
-  for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
+  for (int ijk=0; ijk<{{nDof**nDim}}; ijk++) {
     // Fortran: lduh(:,k,j,i) += w * lShi(:,k,j,i)
     #pragma simd
-    for (int n = 0; n < {{nVar}}; n++) {
-      lduh[n+{{nVar}}*ijk] += weights3[ijk] * lShi[n+{{nVarPad}}*ijk];
+    for (int n=0; n<{{nVar}}; n++) {
+      lduh[ijk*{{nVar}}+n] += weights3[ijk] * lShi[ijk*{{nVarPad}}+n];
     }
   }
+  
 {% endif %}
 }
 

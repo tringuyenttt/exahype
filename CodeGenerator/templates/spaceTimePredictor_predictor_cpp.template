@@ -38,51 +38,51 @@ void {{codeNamespace}}::predictorNonlinear(
 {% endif %}
 #endif  
 
-  std::memset(lQhi, 0, {{(nDof**nDim)*nDataPad}} * sizeof(double));
+  std::memset(lQhi, 0, {{(nDof**nDim)*nDataPad    }} * sizeof(double));
   std::memset(lFhi, 0, {{nDim*(nDof**nDim)*nVarPad}} * sizeof(double));
 {% if useSourceOrNCP %}
-  std::memset(lShi, 0, {{(nDof**nDim)*nVarPad}} * sizeof(double));
+  std::memset(lShi, 0, {{(nDof**nDim)*nVarPad     }} * sizeof(double));
 {% endif %}
 
-  for (int i = 0; i < {{nDof3D}}; i++) {
-    for (int j = 0; j < {{nDof}}; j++) {
-      for (int k = 0; k < {{nDof}}; k++) {
+  for (int z=0; z<{{nDof3D}}; z++) {
+    for (int y=0; y<{{nDof}}; y++) {
+      for (int x=0; x<{{nDof}}; x++) {
         
         // Matrix-Vector Products
-        for (int m = 0; m < {{nDof}}; m++) {
+        for (int m=0; m<{{nDof}}; m++) {
           #pragma simd
-          for (int n = 0; n < {{nDataPad}}; n++) {
-            // Fortran: lQhi(:,k,j,i) = lQi(:,:,k,j,i) * wGPN(:)
-            lQhi[n+{{nDataPad}}*(k+{{nDof}}*(j+{{nDof}}*i))] += weights1[m] *
-                lQi[n+{{nDataPad}}*(m+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*i)))];
+          for (int n=0; n<{{nDataPad}}; n++) {
+            // Fortran: lQhi(:,x,y,z) = lQi(:,:,x,y,z) * wGPN(:)
+            lQhi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nDataPad}}+n] += weights1[m] *
+                lQi[(((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nDof}}+m)*{{nDataPad}}+n];
           }
           #pragma simd
-          for (int n = 0; n < {{nVarPad}}; n++) {
-            // Fortran: lFhi_x(:,k,j,i) = lFh(:,1,k,j,i,:) * wGPN(:)
-            lFhi[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*i))] += weights1[m] *
-                lFi[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*(i+{{nDof3D}}*m)))];
+          for (int n=0; n<{{nVarPad}}; n++) {
+            // Fortran: lFhi_x(:,x,y,z) = lFh(:,1,x,y,z,:) * wGPN(:)
+            lFhi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*nVarPad*(nDof**nDim)}}] += weights1[m] *
+                lFi[(((m*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*(nDof**nDim)*nDof*nVarPad}}];
           }  
           #pragma simd
-          for (int n = 0; n < {{nVarPad}}; n++) {
-            // Fortran: lFhi_y(:,j,k,i) = lFh(:,2,:k,j,i,:) * wGPN(:)
-            lFhi[n+{{nVarPad}}*(j+{{nDof}}*(k+{{nDof}}*i))+{{1*nVarPad*(nDof**nDim)}}] += weights1[m] *
-                lFi[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*(i+{{nDof3D}}*m)))+{{1*(nDof**nDim)*nDof*nVarPad}}];
+          for (int n=0; n<{{nVarPad}}; n++) {
+            // Fortran: lFhi_y(:,y,x,z) = lFh(:,2,:x,y,z,:) * wGPN(:)
+            lFhi[((z*{{nDof}}+x)*{{nDof}}+y)*{{nVarPad}}+n+{{1*nVarPad*(nDof**nDim)}}] += weights1[m] *
+                lFi[(((m*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{1*(nDof**nDim)*nDof*nVarPad}}];
           }  
 {% if nDim == 3%}
           #pragma simd
-          for (int n = 0; n < {{nVarPad}}; n++) {
-            // Fortran: lFhi_z(:,i,k,j) = lFh(:,3,k,j,i,:) * wGPN(:)
-            lFhi[n+{{nVarPad}}*(i+{{nDof}}*(k+{{nDof}}*j))+{{2*nVarPad*(nDof**nDim)}}] += weights1[m] *
-                lFi[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*(i+{{nDof3D}}*m)))+{{2*(nDof**nDim)*nDof*nVarPad}}];
+          for (int n=0; n<{{nVarPad}}; n++) {
+            // Fortran: lFhi_z(:,z,x,y) = lFh(:,3,x,y,z,:) * wGPN(:)
+            lFhi[((y*{{nDof}}+x)*{{nDof}}+z)*{{nVarPad}}+n+{{2*nVarPad*(nDof**nDim)}}] += weights1[m] *
+                lFi[(((m*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{2*(nDof**nDim)*nDof*nVarPad}}];
           }
 {% endif %}
             
 {% if useSourceOrNCP %}
           #pragma simd
-          for (int n = 0; n < {{nVarPad}}; n++) {
-            // Fortran: lFhi_S(:,k,j,i) = lSh(:,k,j,i,:) * wGPN(:)
-            lShi[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*i))] += weights1[m] *
-              lSi[n+{{nVarPad}}*(k+{{nDof}}*(j+{{nDof}}*(i+{{nDof3D}}*m)))];
+          for (int n=0; n<{{nVarPad}}; n++) {
+            // Fortran: lFhi_S(:,x,y,z) = lSh(:,x,y,z,:) * wGPN(:)
+            lShi[((z*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n] += weights1[m] *
+              lSi[(((m*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n];
           }
 {% endif %}
         }
