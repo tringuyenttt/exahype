@@ -31,11 +31,11 @@ namespace {{namespaceName}} {
   constexpr bool isLinear()                  {return {{isLinearCText}};}
 
 {% if isLinear %}  
-  constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**nDim)*(1+nDof)}};} // == lQh size
-  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(2*nDim+1)}};} // == lFh size
+  constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**nDim)*(1+nDof)}};} // == lQi size
+  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(2*nDim+1)}};} // == lFi size
 {% else %}
-  constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**(nDim+1))}};} // == lQh size
-  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == lFh size
+  constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**(nDim+1))}};} // == lQi size
+  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == lFi size
 {% if useNCP %}
   constexpr int getTempSpaceTimeFluxUnknowns1Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == gradQ size
 {% else %}

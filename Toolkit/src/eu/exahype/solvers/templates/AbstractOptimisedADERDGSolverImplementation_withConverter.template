@@ -335,7 +335,7 @@ void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFin
 {%- endif %}
   {{optNamespace}}::faceUnknownsProlongation( lQhbndFine, lFhbndFine, lQhbndCoarse, lFhbndCoarse, coarseGridLevel, fineGridLevel, subfaceIndex);
 {%- if enableProfiler %}
-  _profiler->start("false");
+  _profiler->start("faceUnknownsProlongation");
 {%- endif %}
 }
 
