@@ -12,28 +12,24 @@
 
 #include "AbstractMyElastodynamicsSolver.h"
 
-
 /**
  * We use Peano's logging
  */
 #include "tarch/logging/Log.h"
-
-
-
-
+#include "tarch/la/Vector.h"
 
 namespace Elastodynamics{
   class MyElastodynamicsSolver;
 }
 
-class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyElastodynamicsSolver {
+class Elastodynamics::MyElastodynamicsSolver : public Elastodynamics::AbstractMyElastodynamicsSolver {
   private:
     /**
      * Log device
      */
     static tarch::logging::Log _log;
   public:
-    MyElastodynamicsSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+    MyElastodynamicsSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
 
     /**
      * Initialise the solver.
@@ -41,44 +37,13 @@ class Elastodynamics::MyElastodynamicsSolver: public Elastodynamics::AbstractMyE
      * \param[in] cmdlineargs the command line arguments.
      */
     void init(std::vector<std::string>& cmdlineargs);
-    
+
     /**
-     * Check if we need to adjust the conserved variables and parameters (together: Q) in a cell
-     * within the time interval [t,t+dt].
-     *
-     * \note Use this function and ::adjustSolution to set initial conditions.
-     *
-n     * \param[in]    centre    The centre of the cell.
-     * \param[in]    dx        The extent of the cell.
-     * \param[in]    t         the start of the time interval.
-     * \param[in]    dt        the width of the time interval.
-     * \return true if the solution has to be adjusted.
+     * Patchwise adjust
+     * @TODO LR : Document
      */
-    AdjustSolutionValue useAdjustSolution(const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) const override;
-    
-    /**
-     * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
-     *
-     * \note Use this function and ::useAdjustSolution to set initial conditions.
-     *
-     * \param[in]    x         the physical coordinate on the face.
-     * \param[in]    w         (deprecated) the quadrature weight corresponding to the quadrature point w.
-     * \param[in]    t         the start of the time interval.
-     * \param[in]    dt        the width of the time interval.
-     * \param[inout] Q         the conserved variables (and parameters) associated with a quadrature point
-     *                         as C array (already allocated).
-     */
-    void adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) override;
-    
-    /**
-     * Compute the flux tensor.
-     *
-     * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
-     *                 as C array (already allocated).
-     * \param[inout] F the fluxes at that point as C array (already allocated).
-     */
-    virtual void flux(const double* const Q,double** F);
-    
+    void adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
+
     /**
      * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
      *
@@ -87,7 +52,7 @@ n     * \param[in]    centre    The centre of the cell.
      * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
      * \param[inout] lambda the eigenvalues as C array (already allocated).
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda);
+    void eigenvalues(const double* const Q,const int d,double* lambda) final override;
     
     /**
      * Impose boundary conditions at a point on a boundary face
@@ -108,7 +73,7 @@ n     * \param[in]    centre    The centre of the cell.
      * \param[inout] FOut      the normal fluxes at point x from outside of the domain
      *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut);
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double * const fluxIn,const double* const stateIn,double *fluxOut,double* stateOut) final override;
     
     /**
      * Evaluate the refinement criterion within a cell.
@@ -125,23 +90,60 @@ n     * \param[in]    centre    The centre of the cell.
      * \return One of exahype::solvers::Solver::RefinementControl::{Erase,Keep,Refine}.
      */
     exahype::solvers::Solver::RefinementControl refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& centre,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) override;
+    
+    //PDE
 
-    virtual void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ);
+    /**
+     * Compute the flux tensor.
+     *
+     * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
+     *                 as C array (already allocated).
+     * \param[inout] F the fluxes at that point as C array (already allocated).
+     */
+    void flux(const double* const Q,double** F) final override;
+
+
+    /**
+     * Compute the nonconservative term $B(Q) \nabla Q$.
+     * 
+     * This function shall return a vector BgradQ which holds the result
+     * of the full term. To do so, it gets the vector Q and the matrix
+     * gradQ which holds the derivative of Q in each spatial direction.
+     * Currently, the gradQ is a continous storage and users can use the
+     * kernels::idx2 class in order to compute the positions inside gradQ.
+     *
+     * @TODO: Check if the following is still right:
+     * 
+     * !!! Warning: BgradQ is a vector of size NumberOfVariables if you
+     * use the ADER-DG kernels for nonlinear PDEs. If you use
+     * the kernels for linear PDEs, it is a tensor with dimensions
+     * Dim x NumberOfVariables.
+     * 
+     * \param[in]   Q   the vector of unknowns at the given position
+     * \param[in]   gradQ   the gradients of the vector of unknowns,
+     *                  stored in a linearized array.
+     * \param[inout]  The vector BgradQ (extends nVar), already allocated. 
+     *
+     **/
+    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) final override;
+
+    /**
+     * Compute a pointSource contribution.
+     * 
+     * @TODO: Document me, please.
+    **/
+    void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) final override;
+
+    /**
+     * @TODO LR : document
+     */
+    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
+
+
 
     virtual void coefficientMatrix(const double* const Q,const int d,double* Bn);
-    virtual void pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n);
-
-    virtual bool useCoefficientMatrix() const {return true;}
-    virtual bool useNonConservativeProduct() const {return true;}    
-    virtual bool useConservativeFlux() const {return true;}    
-    virtual int usePointSource()       const {return 0;}
-    virtual bool useSource()       const {return false;}
-    virtual bool useMaterialParameterMatrix()       const {return true;};
     
-    void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) override; 
-
-    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace,int faceIndex) override;
-
+    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
 
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
 
@@ -151,14 +153,6 @@ n     * \param[in]    centre    The centre of the cell.
     void riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
     void riemannSolver_BCn(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
 
-
-
-    void adjustPatchSolution(
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double t,
-      const double dt,
-      double* luh);
 };
 
 #endif // __MyElastodynamicsSolver_CLASS_HEADER__

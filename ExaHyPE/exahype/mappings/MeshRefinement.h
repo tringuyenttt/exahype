@@ -77,6 +77,18 @@ private:
       bool                                          isCalledByCreationalEvent
   ) const;
 
+
+  /**
+   * Erase fine grid vertices as long as it does not
+   * harm the regularity at the boundary.
+   *
+   * This means to enforce that all uniform grids populated
+   * by at least one solver and all the levels above have no hanging nodes.
+   */
+  void eraseVerticesButPreserveRegularityOnCoarserGrids(
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
+
 public:
 
   static bool IsInitialMeshRefinement;
@@ -202,29 +214,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * This method has two goals:
-   *
-   * Enforce regularity of the grid along the boundary, i.e. refine
-   * boundary vertices if the belong to a cell with refined inside
-   * vertices.
-   *
-   * Further erase a fine grid vertex if both, the
-   * coarse grid vertices and the respective fine grid vertex, can be
-   * erased.
-   *
-   * Both goals interact. The interaction is realised with a veto mechanism.
-   *
-   * \note [Concurrency] Since this method is accessing the adjacent vertices
-   * of a cell, we need to make sure that no vertices belonging to the same cell are
-   * accessed at the same.
-   */
-  static void eraseVerticesIfPossibleAndEnforeRegularityAtBoundary(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator);
-
-  /**
    * Loop over the solver and update the solver state.
    * If all of the solvers hosted by the cell requested erasing,
    * erase the fine grid cell.
@@ -245,6 +234,8 @@ public:
 
   /**
    * TODO(Tobias): Add docu.
+   *
+   * TODO(Dominic): Update docu.
    */
   void touchVertexLastTime(
       exahype::Vertex& fineGridVertex,

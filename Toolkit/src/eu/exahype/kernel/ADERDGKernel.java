@@ -41,6 +41,7 @@ public class ADERDGKernel {
 
   public static final String NO_TIME_AVG_OPTION_ID       = "notimeavg";
   public static final String PATCHWISE_ADJUST_OPTION_ID  = "patchwiseadjust";
+  public static final String CONVERTER_OPTION_ID         = "converter"; //for debug only, not in guidebook
   
   private Set<String> type;
   private Map<String, Integer> terms;
@@ -146,6 +147,10 @@ public class ADERDGKernel {
   
   public boolean patchwiseAdjust() {
     return optimisation.contains(PATCHWISE_ADJUST_OPTION_ID);
+  }
+  
+  public boolean useConverterDebug() {
+    return optimisation.contains(CONVERTER_OPTION_ID);
   }
   
   public int getNumberOfPointSources() {

@@ -20,18 +20,13 @@ void Elastodynamics::MyElastodynamicsSolver::init(std::vector<std::string>& cmdl
   // @todo Please implement/augment if required
 }
 
-exahype::solvers::ADERDGSolver::AdjustSolutionValue Elastodynamics::MyElastodynamicsSolver::useAdjustSolution(const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,const double t,const double dt) const {
-  // @todo Please implement/augment if required
-  //  return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PointWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
-    return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PatchWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
-}
+void Elastodynamics::MyElastodynamicsSolver::adjustSolution(
+      double *luh,
+      const tarch::la::Vector<DIMENSIONS,double>& center,
+      const tarch::la::Vector<DIMENSIONS,double>& dx,
+      double t,
+      double dt) {
 
-void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double t,
-      const double dt,
-      double* luh) {
   if ( !tarch::la::equals(t,0.0) ) return;
 
   constexpr int basisSize = MyElastodynamicsSolver::Order+1;
@@ -41,8 +36,8 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
   kernels::idx2 id_xy(basisSize,basisSize);
 
 
-  int n = cellCentre[0] > 0.5 ? 1 : 0 ;
-  //int n = cellCentre[0] > fault(cellCenter[1]) ? 1 : 0 ;
+  int n = center[0] > 0.5 ? 1 : 0 ;
+  //int n = center[0] > fault(cellCenter[1]) ? 1 : 0 ;
 
 //  int ne_x = std::round(1/dx[0]*pow((1.0/3.0),getMaximumuAdaptiveLevel()));
  // int ne_y = std::round(1/dx[1]*pow((1.0/3.0),getMaximumuAdaptiveLevel()));
@@ -59,8 +54,8 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
   double blockWidth_x;
   double blockWidth_y=1.0;
   
-  double offset_x=cellCentre[0]-0.5*dx[0];
-  double offset_y=cellCentre[1]-0.5*dx[1];
+  double offset_x=center[0]-0.5*dx[0];
+  double offset_y=center[1]-0.5*dx[1];
 
   double width_x=dx[0];
   double width_y=dx[1];   
@@ -193,28 +188,28 @@ void Elastodynamics::MyElastodynamicsSolver::adjustPatchSolution(
 }
 
 
-void Elastodynamics::MyElastodynamicsSolver::adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) {
-  // Dimensions             = 2
-  // Number of variables    = 15 + #parameters
+// void Elastodynamics::MyElastodynamicsSolver::adjustPointSolution(const double* const x,const double w,const double t,const double dt,double* Q) {
+//   // Dimensions             = 2
+//   // Number of variables    = 15 + #parameters
   
-  // @todo Please implement/augment if required
-  // State variables:
-  // Q[ 0] = 0.0;
-  // Q[ 1] = 0.0;
-  // Q[ 2] = 0.0;
-  // Q[ 3] = 0.0;
-  // Q[ 4] = 0.0;  // Material parameters:
-  // Q[ 5] = 0.0;
-  // Q[ 6] = 0.0;
-  // Q[ 7] = 0.0;
-  // Q[ 8] = 0.0;
-  // Q[ 9] = 0.0;
-  // Q[10] = 0.0;
-  // Q[11] = 0.0;
-  // Q[12] = 0.0;
-  // Q[13] = 0.0;
-  // Q[14] = 0.0;
-}
+//   // @todo Please implement/augment if required
+//   // State variables:
+//   // Q[ 0] = 0.0;
+//   // Q[ 1] = 0.0;
+//   // Q[ 2] = 0.0;
+//   // Q[ 3] = 0.0;
+//   // Q[ 4] = 0.0;  // Material parameters:
+//   // Q[ 5] = 0.0;
+//   // Q[ 6] = 0.0;
+//   // Q[ 7] = 0.0;
+//   // Q[ 8] = 0.0;
+//   // Q[ 9] = 0.0;
+//   // Q[10] = 0.0;
+//   // Q[11] = 0.0;
+//   // Q[12] = 0.0;
+//   // Q[13] = 0.0;
+//   // Q[14] = 0.0;
+// }
 
 void Elastodynamics::MyElastodynamicsSolver::eigenvalues(const double* const Q,const int d,double* lambda) {
   // Dimensions             = 2
@@ -534,6 +529,9 @@ void Elastodynamics::MyElastodynamicsSolver::boundaryValues(const double* const 
 
 exahype::solvers::Solver::RefinementControl Elastodynamics::MyElastodynamicsSolver::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
 
+
+  return exahype::solvers::Solver::RefinementControl::Keep;
+
   if (
     center(0)<=0.5+2.0*dx(0)
     and
@@ -638,7 +636,7 @@ void Elastodynamics::MyElastodynamicsSolver::coefficientMatrix(const double* con
 }
 
 
-void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
+void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) {
 
   constexpr int numberOfVariables  = MyElastodynamicsSolver::NumberOfVariables;
   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
@@ -778,8 +776,8 @@ void Elastodynamics::MyElastodynamicsSolver::riemannSolver(double* FL,double* FR
     // impedance must be greater than zero !
     //    if (zs_p <= 0.0 || zs_m <= 0.0 || zp_p <= 0.0 || zp_m <= 0.0){
     if (zp_m <= 0.0 || zp_p <= 0.0 ){      
-      std::cout<<zp_m<<' '<<zp_p<<'\n';
-      std::cout<<' p-wave impedance must be greater than zero ! '<<'\n';
+      std::cout<<zp_m<<" "<<zp_p<<"\n";
+      std::cout<<" p-wave impedance must be greater than zero ! "<<"\n";
       std::exit(-1);
     }
 

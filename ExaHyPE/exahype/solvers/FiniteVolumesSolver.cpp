@@ -530,9 +530,10 @@ bool exahype::solvers::FiniteVolumesSolver::updateStateInLeaveCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const int solverNumber) {
-  // do nothing
+  const int fineGridCellElement =
+      tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
 
-  return false;
+  return fineGridCellElement!=exahype::solvers::Solver::NotFound;
 }
 
 void exahype::solvers::FiniteVolumesSolver::finaliseStateUpdates(

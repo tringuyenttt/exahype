@@ -70,8 +70,10 @@ tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADE
 int exahype::solvers::ADERDGSolver::MaximumHelperStatus                          = 2;
 int exahype::solvers::ADERDGSolver::MinimumHelperStatusForAllocatingBoundaryData = 1;
 // augmentation status
-int exahype::solvers::ADERDGSolver::MaximumAugmentationStatus                = 2;
-int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForAugmentation = 1;
+// On-the fly erasing seems to work with those values
+int exahype::solvers::ADERDGSolver::MaximumAugmentationStatus                = 4;
+int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForAugmentation = 3;
+int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForRefining     = 3;
 
 void exahype::solvers::ADERDGSolver::addNewCellDescription(
   const int cellDescriptionsIndex,
@@ -101,6 +103,10 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
 
   newCellDescription.setIsAugmented(false);
   newCellDescription.setAugmentationStatus(0);
+  newCellDescription.setPreviousAugmentationStatus(0);
+  if (cellType==CellDescription::Type::Cell) {
+    newCellDescription.setPreviousAugmentationStatus(MaximumAugmentationStatus);
+  }
   newCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
   newCellDescription.setHelperStatus(0);
   newCellDescription.setFacewiseHelperStatus(0); // implicit conversion
@@ -1202,13 +1208,16 @@ bool exahype::solvers::ADERDGSolver::markForAugmentation(
     switch (fineGridCellDescription.getType()) {
     case CellDescription::Type::Cell:
     case CellDescription::Type::Descendant:
-      if (fineGridCellDescription.getAugmentationStatus()==0) {
+      if (fineGridCellDescription.getAugmentationStatus()<MinimumAugmentationStatusForAugmentation) {
         fineGridCellDescription.setRefinementEvent(CellDescription::DeaugmentingChildrenRequestedTriggered);
       }
-      if (!fineGridCellDescription.getIsAugmented() &&
-          fineGridCellDescription.getAugmentationStatus()>0) {
-        fineGridCellDescription.setRefinementEvent(CellDescription::AugmentingRequested);
-        refineFineGridCell = true;
+      if (!fineGridCellDescription.getIsAugmented()) {
+        if (fineGridCellDescription.getAugmentationStatus()>=MinimumAugmentationStatusForAugmentation) {
+          fineGridCellDescription.setRefinementEvent(CellDescription::AugmentingRequested);
+          refineFineGridCell = true;
+        } else if (fineGridCellDescription.getAugmentationStatus()>=MinimumAugmentationStatusForRefining) {
+          refineFineGridCell = true;
+        }
       }
       break;
     default:
@@ -1262,7 +1271,9 @@ void exahype::solvers::ADERDGSolver::vetoErasingOrDeaugmentingChildrenRequest(
     ) {
       switch (coarseGridCellDescription.getRefinementEvent()) {
       case CellDescription::DeaugmentingChildrenRequested:
-        assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Descendant,coarseGridCellDescription.toString());
+        assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
+                   coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
+                   coarseGridCellDescription.toString());
         coarseGridCellDescription.setRefinementEvent(CellDescription::None);
         break;
       case CellDescription::ErasingChildrenRequested:
@@ -1510,13 +1521,13 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
   if (element!=exahype::solvers::Solver::NotFound) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
 
-      const tarch::la::Vector<TWO_POWER_D_TIMES_TWO_POWER_D,int>&
-        indicesAdjacentToFineGridVertices =
-            VertexOperations::readCellDescriptionsIndex(
-                fineGridVerticesEnumerator,fineGridVertices);
+    const tarch::la::Vector<TWO_POWER_D_TIMES_TWO_POWER_D,int>&
+      indicesAdjacentToFineGridVertices =
+          VertexOperations::readCellDescriptionsIndex(
+              fineGridVerticesEnumerator,fineGridVertices);
 
-      return (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
-              && multiscalelinkedcell::adjacencyInformationIsConsistent(indicesAdjacentToFineGridVertices));
+    return cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
+       && multiscalelinkedcell::adjacencyInformationIsConsistent(indicesAdjacentToFineGridVertices);
   }
 
   return true;
@@ -1553,14 +1564,26 @@ bool exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
           coarseGridCellDescription.getSolverNumber(),
                      fineGridCellDescription.toString());
 
-      return eraseCellDescriptionIfNecessary(
+      eraseCellDescriptionIfNecessary(
               fineGridCell.getCellDescriptionsIndex(),
               fineGridCellElement,
               fineGridPositionOfCell,
               coarseGridCellDescription);
     }
 
-    return false;
+    bool eraseFineGridVertices =
+        (fineGridCellDescription.getType()==CellDescription::Type::Cell ||
+         fineGridCellDescription.getType()==CellDescription::Type::Descendant)
+        &&
+        fineGridCellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
+        &&
+        !fineGridCellDescription.getIsAugmented()
+        &&
+        fineGridCellDescription.getAugmentationStatus()==0
+        &&
+        fineGridCellDescription.getPreviousAugmentationStatus()==0;
+
+    return eraseFineGridVertices;
   }
 
   return false;
@@ -1638,7 +1661,7 @@ void exahype::solvers::ADERDGSolver::startOrFinishCollectiveRefinementOperations
   }
 }
 
-bool exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
+void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
     const int cellDescriptionsIndex,
     const int fineGridCellElement,
     const tarch::la::Vector<DIMENSIONS,int>& fineGridPositionOfCell,
@@ -1664,8 +1687,6 @@ bool exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
 
     getCellDescriptions(cellDescriptionsIndex).erase(
         getCellDescriptions(cellDescriptionsIndex).begin()+fineGridCellElement);
-
-    return true;
   } else if (coarseGridCellDescription.getRefinementEvent()==CellDescription::ChangeChildrenToDescendants) {
     CellDescription& fineGridCellDescription = getCellDescription(
         cellDescriptionsIndex,fineGridCellElement);
@@ -1684,8 +1705,6 @@ bool exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
     fineGridCellDescription.setHelperStatus(0);
     fineGridCellDescription.setFacewiseHelperStatus(0); // implicit conversion
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
-
-    return false;
   } else if (coarseGridCellDescription.getRefinementEvent()==CellDescription::DeaugmentingChildren) {
     CellDescription& fineGridCellDescription = getCellDescription(
           cellDescriptionsIndex,fineGridCellElement);
@@ -1697,10 +1716,7 @@ bool exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
 
     getCellDescriptions(cellDescriptionsIndex).erase(
         getCellDescriptions(cellDescriptionsIndex).begin()+fineGridCellElement);
-    return true;
   }
-
-  return false;
 }
 
 void exahype::solvers::ADERDGSolver::restrictVolumeData(
@@ -1780,6 +1796,7 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
   if (element!=exahype::solvers::Solver::NotFound) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
 
+    cellDescription.setPreviousAugmentationStatus(cellDescription.getAugmentationStatus());
     cellDescription.setNewlyCreated(false);
   }
 }

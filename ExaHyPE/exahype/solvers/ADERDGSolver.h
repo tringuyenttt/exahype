@@ -62,12 +62,24 @@ public:
    */
   static int MaximumAugmentationStatus;
   /**
-   * The minimum helper status a cell description
+   * The minimum augmentation status a cell description
    * of type Cell must have for it to refine
    * and add child cells of type Descendant to
    * the grid.
    */
   static int MinimumAugmentationStatusForAugmentation;
+  /**
+   * The minimum augmentation status for refining
+   * a cell. Note that there should be at least layer
+   * of width 2 between the status for erasing (0)
+   * and the one for augmentation && refining (>=3).
+   *
+   * TODO(Dominic):
+   * I have too look a little further into how
+   * Peano erases to explain the above experimentally
+   * found values better.
+   */
+  static int MinimumAugmentationStatusForRefining;
 
   /**
    * Rank-local heap that stores ADERDGCellDescription instances.
@@ -261,9 +273,7 @@ private:
    * the next finer level have all been initialised with
    * type Descendant.
    *
-   * TODO(Dominic): More docu.
-   *
-   * \return true if a fine grid cell can be erased.
+   * \return True if a fine grid cell can be erased.
    */
   void startOrFinishCollectiveRefinementOperations(
       CellDescription& fineGridCellDescription);
@@ -283,7 +293,7 @@ private:
    *
    * \note This operations is not thread-safe
    */
-  bool eraseCellDescriptionIfNecessary(
+  void eraseCellDescriptionIfNecessary(
       const int cellDescriptionsIndex,
       const int fineGridCellElement,
       const tarch::la::Vector<DIMENSIONS,int>& fineGridPositionOfCell,
@@ -645,7 +655,16 @@ public:
    * Push a new cell description to the back
    * of the heap vector at \p cellDescriptionsIndex.
    *
-   * \param TODO docu
+   * !!! Augmentation status
+   *
+   * For the grid setup, it is important that the
+   * previous augmentation status is initialised for new cell
+   * descriptions as MaximumAugmentationStatus.
+   * This prevents erasing of vertices around newly introduced
+   * cell descriptions of type Cell.
+   *
+   * Note that this is the previous augmentation status.
+   * It does not spread.
    */
   static void addNewCellDescription(
       const int cellDescriptionsIndex,

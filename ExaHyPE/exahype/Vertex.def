@@ -6,5 +6,4 @@ Constant: TWO_POWER_D;
 
 class exahype::dastgen::Vertex {
   persistent int CellDescriptionsIndex[TWO_POWER_D];
-  persistent bool markedForErasing;
 };

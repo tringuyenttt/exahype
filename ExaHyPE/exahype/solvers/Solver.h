@@ -1156,18 +1156,11 @@ class exahype::solvers::Solver {
    * Refinement routine that should be used for
    * collective children-parent operations.
    *
-   * Returns true if the grid cell associated with
-   * the cell description can be erased due to
-   * an erasing/deaugmenting process that was finished
-   * for the cell description or if there is simply
-   * no cell description allocated for this solver.
-   * Returns false otherwise.
-   *
-   * \note We use this at the moment only
-   * for refinement events. We can consider later
-   * on to merge the time stepping functionality
-   * (solution update, predictor comp.) into
-   * this hook.
+   * \return true if the vertices around a
+   * parent cell can be erased after this
+   * parent cell has finished an erasing
+   * event. This is a single event.
+   * Returns false in all other scenarios.
    */
   virtual bool updateStateInLeaveCell(
       exahype::Cell& fineGridCell,
