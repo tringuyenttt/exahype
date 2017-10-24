@@ -19,27 +19,28 @@ import eu.exahype.io.IOUtils;
 public class OptimisedADERDG implements Solver {
   //Internal states
   //--------------- 
-  private String _solverName;
-  private Context context;
+  private String         solverName;
+  private Context        context;
   private TemplateEngine templateEngine;
   
-  private boolean _isValid; //if false the solverFactory will return null
-
+  private boolean        useConverterDebug;
+  
   public OptimisedADERDG(String projectName, String solverName, int dimensions, int numberOfVariables, int numberOfParameters, Set<String> namingSchemeNames,
       int order,String microarchitecture, boolean enableProfiler, boolean enableDeepProfiler, boolean hasConstants, ADERDGKernel kernel) 
       throws IOException, IllegalArgumentException {    
     
-    _solverName         = solverName;
+    this.solverName                 = solverName;
+    this.useConverterDebug          = kernel.useConverterDebug();
     
-    final boolean isLinear           = kernel.isLinear();
-    final boolean useFlux            = kernel.useFlux();
-    final boolean useSource          = kernel.useSource();
-    final boolean useNCP             = kernel.useNCP();
-    final boolean usePointSource     = kernel.usePointSource();
-    final boolean useMaterialParam   = kernel.useMaterialParameterMatrix();
-    final boolean noTimeAveraging    = kernel.noTimeAveraging();
-    final boolean patchwiseAdjust    = kernel.patchwiseAdjust();
-    final int numberOfPointSources   = kernel.getNumberOfPointSources();
+    final boolean isLinear          = kernel.isLinear();
+    final boolean useFlux           = kernel.useFlux();
+    final boolean useSource         = kernel.useSource();
+    final boolean useNCP            = kernel.useNCP();
+    final boolean usePointSource    = kernel.usePointSource();
+    final boolean useMaterialParam  = kernel.useMaterialParameterMatrix();
+    final boolean noTimeAveraging   = kernel.noTimeAveraging();
+    final boolean patchwiseAdjust   = kernel.patchwiseAdjust();
+    final int numberOfPointSources  = kernel.getNumberOfPointSources();
     
     //generate the optimised kernel, can throw IOException
     final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, isLinear, dimensions,
@@ -96,7 +97,7 @@ public class OptimisedADERDG implements Solver {
     
   @Override
   public String getSolverName() {
-    return _solverName;
+    return solverName;
   }
   
   private String getAbstractSolverName() {
@@ -129,7 +130,13 @@ public class OptimisedADERDG implements Solver {
   
   @Override
   public void writeAbstractImplementation(java.io.BufferedWriter writer) throws java.io.IOException, IllegalArgumentException {
-    final String template = IOUtils.convertRessourceContentToString("eu/exahype/solvers/templates/AbstractOptimisedADERDGSolverImplementation.template"); 
+    
+    final String template = IOUtils.convertRessourceContentToString(
+        (useConverterDebug ? 
+            "eu/exahype/solvers/templates/AbstractOptimisedADERDGSolverImplementation_withConverter.template" 
+          : "eu/exahype/solvers/templates/AbstractOptimisedADERDGSolverImplementation.template"
+        )
+      ); 
     writer.write(templateEngine.render(template, context));
   }
   
