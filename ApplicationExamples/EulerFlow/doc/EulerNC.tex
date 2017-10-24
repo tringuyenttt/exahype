@@ -148,7 +148,8 @@ Since the Engine gives us only the derivatives of the state variables, i.e. $\na
 \partial_i \rho^{-1} &= - (\partial_i \rho) / \rho^2
 \\
 \partial_i p &= (\gamma-1) \left( \partial_i E
- - \frac{\sum_a S_a \partial_i S^a}{2 \rho} \right)
+ - \left( \partial_i \rho^{-1} \vec S^2 \right)
+ - \frac{\sum_a S_a \partial_i S^a}{\rho} \right)
 \end{align}
 Summing up, with equations \eqref{BgradQ} and \eqref{helpers}, we
 can implement the nonconservative product for the $i$th state

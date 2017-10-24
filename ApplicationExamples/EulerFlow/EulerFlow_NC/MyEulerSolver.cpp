@@ -112,10 +112,10 @@ void Euler::MyEulerSolver::nonConservativeProduct(const double* const Q,const do
 
   for(int m=0; m<NumberOfVariables; m++) BgradQ[m] = 0;
   
-  // pressure
-  double press=0;
-  for(int j=0; j<3; j++) press += Q[S+j]*Q[S+j];
-  press = (GAMMA-1)*(Q[E] - press/(2*Q[E]));
+  // pressure, square of momentum
+  double SS=0;
+  for(int j=0; j<3; j++) SS += Q[S+j]*Q[S+j];
+  double press = (GAMMA-1)*(Q[E] - SS/(2*Q[rho]));
 
   // sum up the derivative of each flux in each direction
   for(int i=0; i<DIMENSIONS; i++) {
@@ -126,9 +126,9 @@ void Euler::MyEulerSolver::nonConservativeProduct(const double* const Q,const do
 	  double gradi_invrho = -gradi[rho] / (Q[rho]*Q[rho]); 
 	  
 	  // gradient of pressure (\partial_i press)
-	  double gradi_press=0;
-	  for(int j=0; j<3; j++) gradi_press += 2*gradi[S+j]*Q[S+j];
-	  gradi_press = (GAMMA-1) * (gradi[E] - press/(2*Q[rho]));
+	  double SgS=0;
+	  for(int j=0; j<3; j++) SgS += 2*gradi[S+j]*Q[S+j];
+	  double gradi_press = (GAMMA-1) * (gradi[E] - gradi_invrho*SS - SgS/(2*Q[rho]));
 	  
 	  BgradQ[rho] += gradi[S+i];
 	  for(int j=0; j<3; j++) BgradQ[S+j] +=
