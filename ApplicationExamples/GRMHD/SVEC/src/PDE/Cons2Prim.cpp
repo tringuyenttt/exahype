@@ -58,6 +58,10 @@ void GRMHD::Cons2Prim::copyFullStateVector() {
 // small helper
 bool isEnvSet(const char* str) { return std::getenv(str); }
 
+void GRMHD::Cons2Prim::report_c2p(const char* const context) {
+	printf("%s: C2P Failure at x=[%f,%f,%f]\n", context, Q[19],Q[20],Q[21]);
+}
+
 void GRMHD::Cons2Prim::perform() {
 	// Experiment: Checking whether atmo values are suitable for flooring.
 	constexpr double p_floor   = atmo_press; // 1.0e-5;
@@ -92,8 +96,11 @@ void GRMHD::Cons2Prim::perform() {
 			
 			std::abort();
 		} else {
-			if(!isEnvSet("EXAHYPE_SILENT_C2P"))
-				printf("C2P Failure at x=[%f,%f,%f]\n", Q[19],Q[20],Q[21]);
+			// Silently do nothing.
+			// use report() to print something.
+			
+			// if(!isEnvSet("EXAHYPE_SILENT_C2P"))
+			//	printf("C2P Failure at x=[%f,%f,%f]\n", Q[19],Q[20],Q[21]);
 		}
 		
 		// this is (probably!) the atmosphere treatment:

@@ -510,6 +510,9 @@ namespace SVEC {
 				
 			bool	failed; ///< Stores whether the C2P failed or not
 			
+			/// Reports about failed c2p. Pass your calling context as string.
+			void report_c2p(const char* const context);
+			
 			/// Prepares the Conserved B_i, S^i as well as the quantities neccessary to compute
 			/// The energy momentum tensor.
 			void prepare();
