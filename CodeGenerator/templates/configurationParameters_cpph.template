@@ -20,6 +20,9 @@ namespace {{namespaceName}} {
   
   constexpr int getNumberOfParameter()       {return {{nPar}};}
   
+  constexpr int getNumberOfData()            {return {{nData}};}
+  constexpr int getNumberOfDataPadded()      {return {{nDataPad}};}
+  
   constexpr int getBasisSize()               {return {{nDof}};}
   constexpr int getBasisSizePadded()         {return {{nDofPad}};}
   
@@ -28,7 +31,8 @@ namespace {{namespaceName}} {
   constexpr bool isLinear()                  {return {{isLinearCText}};}
 
 {% if isLinear %}  
-  //TODO JMG initialize correct size for linear case
+  constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**nDim)*(1+nDof)}};} // == lQh size
+  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(2*nDim+1)}};} // == lFh size
 {% else %}
   constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**(nDim+1))}};} // == lQh size
   constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == lFh size
