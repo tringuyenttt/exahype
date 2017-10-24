@@ -36,11 +36,11 @@ namespace {{namespaceName}} {
 {% else %}
   constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**(nDim+1))}};} // == lQi size
   constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == lFi size
+{% endif %}
 {% if useNCP %}
   constexpr int getTempSpaceTimeFluxUnknowns1Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == gradQ size
 {% else %}
   constexpr int getTempSpaceTimeFluxUnknowns1Size() {return -1;} // == gradQ size, unused because !useNCP so -1 to not allocate
-{% endif %}
 {% endif %}
 {% if noTimeAveraging %}
   constexpr int getTempUnknownsSize()               {return -1;} // == lQhi size, unused because noTimeAveraging so -1 to not allocate

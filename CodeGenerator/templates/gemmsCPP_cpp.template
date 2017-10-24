@@ -21,7 +21,7 @@
 {% if isLinear %}
 {% else %}
 #include "{{pathToOptKernel}}/asm_picard.c"
-{% endif %}
 
 //volume integral gemms
 #include "{{pathToOptKernel}}/asm_volumeIntegral.c"
+{% endif %}
