@@ -89,10 +89,6 @@ public class OptimisedADERDG implements Solver {
     context.put("range_0_nDim"      , IntStream.range(0, dimensions)                          .boxed().collect(Collectors.toList()));
     context.put("range_0_nVar"      , IntStream.range(0, numberOfVariables)                   .boxed().collect(Collectors.toList()));
     context.put("range_0_nVarParam" , IntStream.range(0, numberOfVariables+numberOfParameters).boxed().collect(Collectors.toList()));
-    
-    //TODO JMG: linear kernels unsupported for now
-    if(isLinear) 
-      throw new IllegalArgumentException("Linear kernels not supported yet");
   }
     
   @Override
