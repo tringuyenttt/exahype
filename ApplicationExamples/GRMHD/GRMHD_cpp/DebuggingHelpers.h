@@ -9,6 +9,21 @@ inline void enableNanCatcher() {
 	feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 }
 
+// overwrite ADM variables in order to avoid diffusion.
+// to be used in the adjustSolution function
+inline void overwriteADM(const double* const x,const double t, double* Q) {
+	constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
+
+	double QDummy[nVar];
+	InitialData(x,t,QDummy);
+	// Copy ADM variables
+	std::copy_n(
+		QDummy+SVEC::ADMBase::AbsoluteIndices::offset,
+		SVEC::ADMBase::size, 
+		Q     +SVEC::ADMBase::AbsoluteIndices::offset
+	);
+}
+
 inline void resetNumericalDiffusionOnADM(double* const flux) {
   // reset the numerical diffusion for a flux in some direction.
   // This sets all fluxes for ADM and helper variables to zero.

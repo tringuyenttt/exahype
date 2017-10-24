@@ -41,17 +41,13 @@ void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,
 			}
 		}
 		
-		constexpr bool overwriteADMalways = false;
+		// Doing this in the FV limiter is probably not a bad idea at all, as
+		// initial data might have been broken apart already in the ADER polynomial
+		// and then after projection,
+		// i.e. we might limit around the NS core
+		constexpr bool overwriteADMalways = true;
 		if(overwriteADMalways) {
-			// overwrite ADM variables in order to avoid diffusion and so on
-			double QDummy[nVar];
-			InitialData(x,t,QDummy);
-			// Copy ADM variables
-			std::copy_n(
-				QDummy+SVEC::ADMBase::AbsoluteIndices::offset,
-				SVEC::ADMBase::size, 
-				Q     +SVEC::ADMBase::AbsoluteIndices::offset
-			);
+			overwriteADM(x,t,Q);
 		}
 	}
 }

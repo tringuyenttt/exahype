@@ -26,7 +26,7 @@ constexpr int nDim = DIMENSIONS;
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG" );
 
 void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) { // ,  exahype::Parser::ParserView constants) {
-	feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
+	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
 	// Initialize initial data
 	InitialDataCode::getInstance();
@@ -96,6 +96,11 @@ bool GRMHD::GRMHDSolver_ADERDG::isPhysicallyAdmissible(
 void GRMHD::GRMHDSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   if (tarch::la::equals(t,0.0)) {
     InitialData(x,t,Q);
+  } else {
+	constexpr bool overwriteADMalways = true;
+	if(overwriteADMalways) {
+		overwriteADM(x,t,Q);
+	}
   }
 }
 
@@ -185,10 +190,23 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 
 }
 
-
+//#include "kernels/aderdg/generic/c/computeGradients.cpph"
 exahype::solvers::Solver::RefinementControl GRMHD::GRMHDSolver_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
-  // @todo Please implement/augment if required
-  return exahype::solvers::Solver::RefinementControl::Keep;
+	/*
+	// TODO: Continue here.
+	// Compute the gradient of the Density
+	using namespace kernels::aderdg::generic::c;
+	typedef GRMHD::AbstractGRMHDSolver_ADERDG self;
+	double gradDens[basisSizeD(self::Order+1)*DIMENSIONS];
+	cpmstexpr int positiondens = 0;
+	computeGradQi<self>(gradDens, luh, positiondens, dx);
+	
+	// Apply the Loehner scheme criterion
+	// cf. kernels/aderdg/generic/c/loehnerScheme.cpph for prelimiinary work
+	*/
+
+	// @todo Please implement/augment if required
+	return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 void GRMHD::GRMHDSolver_ADERDG::algebraicSource(const double* const Q,double* S) {
