@@ -28,6 +28,8 @@
 
 // global Parameters for Euler::MyEulerSolver.
 
+///// This is a nonconservative version of the EulerSolver written by SvenK
+///// for JM at 2017-10-24.
 
 void Euler::MyEulerSolver::init(std::vector<std::string>& cmdlineargs) {
   // This guy usually should go into the header but it does not make sense to
@@ -69,21 +71,75 @@ void Euler::MyEulerSolver::init(std::vector<std::string>& cmdlineargs) {
 }
 
 void Euler::MyEulerSolver::flux(const double* const Q, double** F) {
-  ReadOnlyVariables vars(Q);
-  Fluxes f(F);
+  // THERE ARE NO FLUXES in this formulation,
+  // ALL IS DONE VIA NCP.
+  // This should not even be called.
+  // TODO@JM: Fix the toolkit that it does NOT call the fluxes.
 
-  tarch::la::Matrix<3,3,double> I;
-  I = 1, 0, 0,
-      0, 1, 0,
-      0, 0, 1;
+  for(int i=0; i<DIMENSIONS; i++) for(int j=0; j<NumberOfVariables; j++) F[i][j] = 0.0;
+//  std::abort();
+}
 
-  const double GAMMA = 1.4;
-  const double irho = 1./vars.rho();
-  const double p = (GAMMA-1) * (vars.E() - 0.5 * irho * vars.j()*vars.j() );
+// Kronecker delta
+constexpr double delta(int i, int j) {
+	return (i==j) ? 1 : 0;
+}
 
-  f.rho ( vars.j()                                 );
-  f.j   ( irho * outerDot(vars.j(),vars.j()) + p*I );
-  f.E   ( irho * (vars.E() + p) * vars.j()         );
+void Euler::MyEulerSolver::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ){
+  // This is a nonconservative verison of the Euler equations.
+  // We just implement:
+  //
+  //  BgradQ = grad * F(Q) = dF[0]/dx + dF[1]/dy + dF[2]/dz
+  //
+  // We can do that because we now the fluxes analytically.
+  //
+
+	/*
+  #if DIMENSIONS == 3
+  ReadOnlyVariables grad[3]={gradQ+0, gradQ+1*NumberOfVariables, gradQ+2*NumberOfVariables};
+  #elif DIMENSIONS == 2
+  ReadOnlyVariables grad[2]={gradQ+0, gradQ+1*NumberOfVariables};
+  #endif
+  */
+  #if DIMENSIONS == 3
+  const double *grad[3]={gradQ+0, gradQ+1*NumberOfVariables, gradQ+2*NumberOfVariables};
+  #elif DIMENSIONS == 2
+  const double *grad[2]={gradQ+0, gradQ+1*NumberOfVariables};
+  #endif
+  // variable positions:
+  constexpr int rho=0,S=1,E=4;
+  constexpr double GAMMA = 1.4;
+
+  for(int m=0; m<NumberOfVariables; m++) BgradQ[m] = 0;
+  
+  // pressure
+  double press=0;
+  for(int j=0; j<3; j++) press += Q[S+j]*Q[S+j];
+  press = (GAMMA-1)*(Q[E] - press/(2*Q[E]));
+
+  // sum up the derivative of each flux in each direction
+  for(int i=0; i<DIMENSIONS; i++) {
+	  // compute \frac{\partial F_d}{\partial x_d} and sum up.
+	  const double* gradi = grad[i];
+	  
+	  // \partial_i (1/rho)
+	  double gradi_invrho = -gradi[rho] / (Q[rho]*Q[rho]); 
+	  
+	  // gradient of pressure (\partial_i press)
+	  double gradi_press=0;
+	  for(int j=0; j<3; j++) gradi_press += 2*gradi[S+j]*Q[S+j];
+	  gradi_press = (GAMMA-1) * (gradi[E] - press/(2*Q[rho]));
+	  
+	  BgradQ[rho] += gradi[S+i];
+	  for(int j=0; j<3; j++) BgradQ[S+j] +=
+		 gradi_invrho *     Q[S+i] *     Q[S+j]
+		+ 1./Q[rho]   * gradi[S+i] *     Q[S+j]
+		+ 1./Q[rho]   *     Q[S+i] * gradi[S+j]
+		+ gradi_press * delta(i,j);
+	  BgradQ[E] += 
+		(gradi_invrho * Q[S+i] + gradi[S+i]/Q[rho])*(Q[E]+press)
+		+ Q[S+i]/Q[rho] * (gradi[E] + gradi_press);
+  }
 }
 
 void Euler::MyEulerSolver::eigenvalues(const double* const Q,
