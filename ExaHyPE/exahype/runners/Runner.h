@@ -358,6 +358,10 @@ class exahype::runners::Runner {
       const tarch::la::Vector<DIMENSIONS, double>& domainSize,
       const double meshSize) const;
 
+
+  void postProcessTimeStepInSharedMemoryEnvironment(
+    const exahype::repositories::Repository&   repository
+  );
  public:
   explicit Runner(Parser& parser);
   virtual ~Runner();

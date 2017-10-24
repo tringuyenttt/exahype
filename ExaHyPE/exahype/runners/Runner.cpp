@@ -188,29 +188,32 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   // @todo Missing
   else {
     logError("initDistributedMemoryConfiguration()", "only MPI static load balancing supported so far. ");
+    _parser.invalidate();
   }
 
-  tarch::parallel::NodePool::getInstance().restart();
+  if ( _parser.isValid() ) {
+    tarch::parallel::NodePool::getInstance().restart();
 
-  tarch::parallel::Node::getInstance().setDeadlockTimeOut(_parser.getMPITimeOut());
-  tarch::parallel::Node::getInstance().setTimeOutWarning(_parser.getMPITimeOut()/2);
-  logInfo("initDistributedMemoryConfiguration()", "use MPI time out of " << _parser.getMPITimeOut() << " (warn after half the timeout span)");
+    tarch::parallel::Node::getInstance().setDeadlockTimeOut(_parser.getMPITimeOut());
+    tarch::parallel::Node::getInstance().setTimeOutWarning(_parser.getMPITimeOut()/2);
+    logInfo("initDistributedMemoryConfiguration()", "use MPI time out of " << _parser.getMPITimeOut() << " (warn after half the timeout span)");
 
-  const int bufferSize = _parser.getMPIBufferSize();
-  peano::parallel::SendReceiveBufferPool::getInstance().setBufferSize(bufferSize);
-  peano::parallel::JoinDataBufferPool::getInstance().setBufferSize(bufferSize);
-  logInfo("initDistributedMemoryConfiguration()", "use MPI buffer size of " << bufferSize);
+    const int bufferSize = _parser.getMPIBufferSize();
+    peano::parallel::SendReceiveBufferPool::getInstance().setBufferSize(bufferSize);
+    peano::parallel::JoinDataBufferPool::getInstance().setBufferSize(bufferSize);
+    logInfo("initDistributedMemoryConfiguration()", "use MPI buffer size of " << bufferSize);
 
-  if ( _parser.getSkipReductionInBatchedTimeSteps() ) {
-    logInfo("initDistributedMemoryConfiguration()", "allow ranks to skip reduction" );
-    exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = true;
+    if ( _parser.getSkipReductionInBatchedTimeSteps() ) {
+      logInfo("initDistributedMemoryConfiguration()", "allow ranks to skip reduction" );
+      exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = true;
+    }
+    else {
+      logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
+      exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = false;
+    }
+
+    tarch::parallel::NodePool::getInstance().waitForAllNodesToBecomeIdle();
   }
-  else {
-    logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
-    exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = false;
-  }
-
-  tarch::parallel::NodePool::getInstance().waitForAllNodesToBecomeIdle();
   #endif
 }
 
@@ -528,10 +531,15 @@ int exahype::runners::Runner::run() {
     auto* repository = createRepository();
     // must come after repository creation
     initSolvers();
-    initDistributedMemoryConfiguration();
-    initSharedMemoryConfiguration();
-    initDataCompression();
-    initHPCEnvironment();
+
+    if ( _parser.isValid() )
+      initDistributedMemoryConfiguration();
+    if ( _parser.isValid() )
+      initSharedMemoryConfiguration();
+    if ( _parser.isValid() )
+      initDataCompression();
+    if ( _parser.isValid() )
+      initHPCEnvironment();
 
     exahype::mappings::MeshRefinement::IsInitialMeshRefinement=true;
     #ifdef Parallel
@@ -539,17 +547,21 @@ int exahype::runners::Runner::run() {
     exahype::mappings::LimiterStatusSpreading::IsFirstIteration = false;
     #endif
 
-    if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
-      result = runAsMaster(*repository);
+    if ( _parser.isValid() ) {
+      if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
+        result = runAsMaster(*repository);
+      }
+      #ifdef Parallel
+      else {
+        result = runAsWorker(*repository);
+      }
+      #endif
     }
-    #ifdef Parallel
-    else {
-      result = runAsWorker(*repository);
-    }
-    #endif
 
-    shutdownSharedMemoryConfiguration();
-    shutdownDistributedMemoryConfiguration();
+    if ( _parser.isValid() )
+      shutdownSharedMemoryConfiguration();
+    if ( _parser.isValid() )
+      shutdownDistributedMemoryConfiguration();
 
     delete repository;
   }
@@ -742,13 +754,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
         runOneTimeStepWithThreeSeparateAlgorithmicSteps(repository, plot);
       }
 
-      #if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis) && !defined(Parallel)
-      if (sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize::hasLearnedSinceLastQuery()) {
-        static int dumpCounter = -1;
-        dumpCounter++;
-        peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics( _parser.getMulticorePropertiesFile() + "-dump-" + std::to_string(dumpCounter) );
-      }
-      #endif
+      postProcessTimeStepInSharedMemoryEnvironment(repository);
 
       logDebug("runAsMaster(...)", "state=" << repository.getState().toString());
     }
@@ -768,6 +774,21 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
   return 0;
 }
+
+
+void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
+  const exahype::repositories::Repository&   repository
+) {
+  #if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis) && !defined(Parallel)
+  if (sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize::hasLearnedSinceLastQuery()) {
+    static int dumpCounter = -1;
+    dumpCounter++;
+    peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics( _parser.getMulticorePropertiesFile() + "-dump-" + std::to_string(dumpCounter) );
+  }
+  #endif
+
+}
+
 
 void exahype::runners::Runner::updateStatistics() {
   _meshRefinements      += (!exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation() &&
