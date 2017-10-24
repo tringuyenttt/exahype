@@ -98,7 +98,7 @@ if(useGeneric) {
   
   
 {%- if  isLinear %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSource}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt, pointForceSources);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt, pointForceSources);
 {%- else %}
   kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt);
 {%- endif %}
@@ -401,8 +401,9 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 }
 
 
+
 void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempPointForceSources) {
-{%- if usePointSource %}
+{%- if usePointSources %}
 {%- if enableProfiler %}
   _profiler->start("deltaDistribution");
 {%- endif %}

@@ -49,7 +49,7 @@ namespace {{namespaceName}} {
   constexpr int getTempUnknownsSize()               {return {{nDataPad*(nDof**nDim)}};}  // == lQhi size
   constexpr int getTempFluxUnknownsSize()           {return {{nVarPad*(nDof**nDim)*(nDim+1)}};} // == lFhi size
 {% endif %}
-{% if usePointSource %}
+{% if usePointSources %}
   constexpr int getTempPointForceSourcesSize()      {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} //same size as lFh
 {% else%}
   constexpr int getTempPointForceSourcesSize()      {return -1;} //unused, not allocated

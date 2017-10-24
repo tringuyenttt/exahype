@@ -36,7 +36,7 @@ public class OptimisedADERDG implements Solver {
     final boolean useFlux           = kernel.useFlux();
     final boolean useSource         = kernel.useSource();
     final boolean useNCP            = kernel.useNCP();
-    final boolean usePointSource    = kernel.usePointSource();
+    final boolean usePointSources   = kernel.usePointSources();
     final boolean useMaterialParam  = kernel.useMaterialParameterMatrix();
     final boolean noTimeAveraging   = kernel.noTimeAveraging();
     final boolean patchwiseAdjust   = kernel.patchwiseAdjust();
@@ -44,7 +44,7 @@ public class OptimisedADERDG implements Solver {
     
     //generate the optimised kernel, can throw IOException
     final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, isLinear, dimensions,
-        microarchitecture, enableDeepProfiler, useFlux, useSource, useNCP, noTimeAveraging);
+        microarchitecture, enableDeepProfiler, useFlux, useSource, useNCP, usePointSources, noTimeAveraging);
     final String optNamespace = CodeGeneratorHelper.getInstance().getNamespace(projectName, solverName);
     
     templateEngine = new TemplateEngine();
@@ -72,7 +72,7 @@ public class OptimisedADERDG implements Solver {
     context.put("useFlux"           , useFlux);
     context.put("useSource"         , useSource);
     context.put("useNCP"            , useNCP);
-    context.put("usePointSource"    , usePointSource);
+    context.put("usePointSources"   , usePointSources);
     context.put("useMaterialParam"  , useMaterialParam);
     context.put("noTimeAveraging"   , noTimeAveraging);
     context.put("patchwiseAdjust"   , patchwiseAdjust);

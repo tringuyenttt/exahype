@@ -34,7 +34,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     static constexpr int NumberOfParameters = {{numberOfParameters}};
     static constexpr int Order              = {{order}};
     static constexpr double CFL             = 0.9;
-    {%- if usePointSource %}
+    {%- if usePointSources %}
     static constexpr int NumberOfPointSources = {{numberOfPointSources}};
     {%- endif %}
     
@@ -144,7 +144,7 @@ class {{project}}::{{abstractSolver}}: public exahype::solvers::ADERDGSolver, pu
     int getTempUnknownsSize()          const {return -1;} //lQhi not required
     int getTempFluxUnknownsSize()      const {return -1;} //lFhi not required
     {%- endif %}
-    {%- if !usePointSource %}
+    {%- if !usePointSources %}
     int getTempPointForceSourcesSize() const {return -1;} //pointSource not required
     {%- endif %}
     {%- if !useNCP %}
