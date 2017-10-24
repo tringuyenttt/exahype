@@ -34,10 +34,10 @@ void {{codeNamespace}}::volumeIntegral(double* restrict lduh,
         for (int n = 0; n < {{nVar}}; n++) {
             lduh[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVar}}+n] -= weights3[(z*{{nDof3D}}+y)*{{nDof}}+x] * 
                 (
-                    lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*self.m_context['nVarPad']*self.m_context['nDof']**self.m_context['nDim']}}] //x
-                  + lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{1*self.m_context['nVarPad']*self.m_context['nDof']**self.m_context['nDim']}}] //y, ignore the fact that coordinate are switched
+                    lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*nVarPad*nDof**nDim}}] //x
+                  + lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{1*nVarPad*nDof**nDim}}] //y, ignore the fact that coordinate are switched
 {% if nDim==3 %}
-                  + lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{2*self.m_context['nVarPad']*self.m_context['nDof']**self.m_context['nDim']}}] //z, ignore the fact that coordinate are switched
+                  + lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{2*nVarPad*nDof**nDim}}] //z, ignore the fact that coordinate are switched
 {% endif %}
 {% if useSource %}
                   + lShi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] // source
