@@ -112,14 +112,16 @@ The Codegenerator may use padding when producing architecture specific code, it 
 Using the C index order convention with index in italic being absent in dim 2
 
 
-| Array | Generic | Optimised | Note |
-| ----- | ------- | --------- | ---- | 
-| luh | _nDof_, nDof, nDof, nData | _nDof_, nDof, nDof, nData | unchanged for compatibility purpose|
-| lQhbnd | 2*nDim, _nDof_, nDof, **nData** | 2*nDim, _nDof_, nDof, **nDataPad** | 2*nDim face on the square/cube |
-| lFhbnd | 2*nDim, _nDof_, nDof, **nVar** | 2*nDim, _nDof_, nDof, **nVarPad** | 2*nDim face on the square/cube |
-| lQhi (tempUnknowns) | _nDof_, nDof, nDof, **nData** | _nDof_, nDof, nDof, **nDataPad** | |
-| lFhi (tempFluxUnknowns) | nDim+1, _nDof_, nDof, nDof, **nVar** | nDim+1, _nDof_, nDof, nDof, **nVarPad** | lFhi has nDim+1 blocks == each directions + source |
-| LQi (tempSpaceTimeUnknowns[0]) | _nDof_, nDof, nDof, nDof, **nData** | _nDof_, nDof, nDof, nDof, **nDataPad** | nonlinear case |
-| LFi (tempSpaceTimeFluxUnknowns[0]) | _nDof_, nDof, nDof, nDof, nDim+1, **nVar** | nDim+1, _nDof_, nDof, nDof, nDof, **nVarPad** | nonlinear case, +1 for source. Move dimension coordinate to mimick lFhi blocks |
-| rhs (tempSpaceTimeUnknowns[1]) | _nDof_, nDof, nDof, nDof, **nData** | _nDof_, nDof, nDof, nDof, **nDataPad** | nonlinear case |
-| gradQ (tempSpaceTimeFluxUnknowns[1]) | _nDof_, nDof, nDof, nDof, nDim, **nVar** | _nDof_, nDof, nDof, nDof, nDim, **nVarPad** | Not used if no NCP |
+| Array | tempArray Name | Generic | Optimised | Note |
+| ----- | -------------- | ------- | --------- | ---- | 
+| luh | | _nDof_, nDof, nDof, nData | _nDof_, nDof, nDof, nData | unchanged for compatibility purpose|
+| lQhbnd | PEANO data | 2*nDim, _nDof_, nDof, **nData** | 2*nDim, _nDof_, nDof, **nDataPad** | 2*nDim face on the square/cube |
+| lFhbnd | PEANO data | 2*nDim, _nDof_, nDof, **nVar** | 2*nDim, _nDof_, nDof, **nVarPad** | 2*nDim face on the square/cube |
+| lQhi | tempUnknowns | _nDof_, nDof, nDof, **nData** | _nDof_, nDof, nDof, **nDataPad** | |
+| lFhi | tempFluxUnknowns | nDim+1, _nDof_, nDof, nDof, **nVar** | nDim+1, _nDof_, nDof, nDof, **nVarPad** | lFhi has nDim+1 blocks == each directions + source |
+| LQi **NL** | tempSpaceTimeUnknowns[0]  | nDof, _nDof_, nDof, nDof, **nData** | _nDof_, nDof, nDof, nDof, **nDataPad** | nonlinear case |
+| LQi **Lin** | tempSpaceTimeUnknowns[0] | nDof+1, _nDof_, nDof, nDof, **nData** | nDof+1, _nDof_, nDof, nDof, **nDataPad** | linear case |
+| LFi **NL** | tempSpaceTimeFluxUnknowns[0]  | nDof, _nDof_, nDof, nDof, nDim+1, **nVar** | nDim+1, nDof, _nDof_, nDof, nDof, **nVarPad** | nonlinear case, +1 for source. Move dimension coordinate to mimick lFhi blocks |
+| LFi **Lin** | tempSpaceTimeFluxUnknowns[0] | 2*nDim+1, nDof, _nDof_, nDof, nDof, **nVar** | 2*nDim+1, nDof, _nDof_, nDof, nDof, **nVarPad** | linear case, +1 for source. |
+| rhs | tempSpaceTimeUnknowns[1] | _nDof_, nDof, nDof, nDof, **nData** | _nDof_, nDof, nDof, nDof, **nDataPad** | nonlinear case |
+| gradQ | tempSpaceTimeFluxUnknowns[1] | _nDof_, nDof, nDof, nDof, nDim, **nVar** | _nDof_, nDof, nDof, nDof, nDim, **nVarPad** | Not used if no NCP |
