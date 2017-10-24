@@ -186,6 +186,21 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
 {%- endif %}
 
 
+void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double* tempPointForceSources) {
+{%- if usePointSources %}
+{%- if enableProfiler %}
+  _profiler->start("deltaDistribution");
+{%- endif %}
+  //TODO JMG
+  //kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx,getNodesPerCoordinateAxis(), tempPointForceSources);
+{%- if enableProfiler %}
+  _profiler->stop("deltaDistribution");
+{%- endif %}
+{%- else %}
+  //Point sources aren't defined, this method should be empty
+{%- endif %}
+}
+
 
 void {{project}}::{{abstractSolver}}::faceUnknownsProlongation(double* lQhbndFine,double* lFhbndFine,const double* lQhbndCoarse,const double* lFhbndCoarse,const int coarseGridLevel,const int fineGridLevel,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex) {
 {%- if enableProfiler %}
@@ -239,22 +254,6 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 	// verbosily fail even without assertions turned on
 	puts(msg);
 	abort();
-}
-
-
-void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const double dt, const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx, double** tempPointForceSources) {
-{%- if usePointSources %}
-{%- if enableProfiler %}
-  _profiler->start("deltaDistribution");
-{%- endif %}
-  //TODO JMG
-  //kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx, getNumberOfVariables(),getNumberOfParameters(),getNodesPerCoordinateAxis(), tempPointForceSources);
-{%- if enableProfiler %}
-  _profiler->stop("deltaDistribution");
-{%- endif %}
-{%- else %}
-  //Point sources aren't defined, this method should be empty
-{%- endif %}
 }
 
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
