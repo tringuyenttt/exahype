@@ -587,6 +587,16 @@ class exahype::solvers::Solver {
   static int getCoarsestMeshLevelOfAllSolvers();
 
   /**
+   * Returns the finest level which holds a uniform
+   * base grid of a solver.
+   *
+   * \note It is very important that initSolvers
+   * has been called on all solvers before this
+   * method is used.
+   */
+  static int getFinestUniformMeshLevelOfAllSolvers();
+
+  /**
    * Run over all solvers and identify the maximum depth of adaptive
    * refinement employed.
    *
