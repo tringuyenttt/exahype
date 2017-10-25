@@ -809,7 +809,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     double** tempSpaceTimeFluxUnknowns,
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
-    double*  tempPointForceSources
+    double** tempPointForceSources
 ) {
   SolverPatch& cellDescription =
         _solver->getCellDescription(cellDescriptionsIndex,element);

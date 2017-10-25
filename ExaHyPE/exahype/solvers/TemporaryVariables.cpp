@@ -69,7 +69,7 @@ void exahype::solvers::initialiseTemporaryVariables(exahype::solvers::Prediction
   temporaryVariables._tempSpaceTimeFluxUnknowns = new double**[numberOfSolvers]; // == lFi, gradQ
   temporaryVariables._tempUnknowns              = new double* [numberOfSolvers]; // == lQhi
   temporaryVariables._tempFluxUnknowns          = new double* [numberOfSolvers]; // == lFhi
-  temporaryVariables._tempPointForceSources     = new double* [numberOfSolvers];
+  temporaryVariables._tempPointForceSources     = new double**[numberOfSolvers]; // == PSi, forceVectorSourceN 
 
   exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
 
@@ -109,8 +109,11 @@ void exahype::solvers::initialiseTemporaryVariables(exahype::solvers::Prediction
       temporaryVariables._tempFluxUnknowns[solverNumber] = allocateArray( temporaryVariables._dataHeapIndices,
                                                                           aderdgSolver->getTempFluxUnknownsSize() );
       //
-      temporaryVariables._tempPointForceSources[solverNumber] = allocateArray( temporaryVariables._dataHeapIndices,
-                                                                               aderdgSolver->getTempPointForceSourcesSize() );
+      temporaryVariables._tempPointForceSources[solverNumber] = new double*[2];
+      temporaryVariables._tempPointForceSources[solverNumber][0] = allocateArray( temporaryVariables._dataHeapIndices,
+                                                                               aderdgSolver->getTempPointForceSourcesSize() ); //PSi     
+      temporaryVariables._tempPointForceSources[solverNumber][1] = allocateArray( temporaryVariables._dataHeapIndices,
+                                                                               aderdgSolver->getTempPointForceSourcesSize() ); //forceVectorSourceN
     } else {
       temporaryVariables._tempSpaceTimeUnknowns    [solverNumber] = nullptr;
       temporaryVariables._tempSpaceTimeFluxUnknowns[solverNumber] = nullptr;
@@ -166,6 +169,10 @@ void exahype::solvers::deleteTemporaryVariables(exahype::solvers::PredictionTemp
           //
           temporaryVariables._tempFluxUnknowns[solverNumber] = nullptr;
           //
+           for (int i=0; i<2; ++i) {
+            temporaryVariables._tempPointForceSources[solverNumber][i] = nullptr;
+          }
+          delete[] temporaryVariables._tempPointForceSources[solverNumber];
           temporaryVariables._tempPointForceSources[solverNumber] = nullptr;
       }
     }

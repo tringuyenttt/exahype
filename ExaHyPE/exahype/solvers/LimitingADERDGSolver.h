@@ -861,7 +861,7 @@ public:
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
       double*  tempFluxUnknowns,
-      double*  tempPointForceSources) final override;
+      double** tempPointForceSources) final override;
 
   /**
    * This method assumes the ADERDG solver's cell-local limiter status has

@@ -970,7 +970,7 @@ public:
   virtual int getTempSpaceTimeFluxUnknowns1Size() const {return getSpaceTimeFluxUnknownsPerCell();}
   virtual int getTempUnknownsSize()               const {return getDataPerCell();} // TODO function should be renamed
   virtual int getTempFluxUnknownsSize()           const {return getFluxUnknownsPerCell();}
-  virtual int getTempPointForceSourcesSize()      const {return getSpaceTimeFluxUnknownsPerCell();}
+  virtual int getTempPointForceSourcesSize()      const {return (_nodesPerCoordinateAxis+1)*getUnknownsPerCell();}
   virtual int getBndFaceSize()                    const {return getDataPerFace();} // TODO function should be renamed
   virtual int getBndTotalSize()                   const {return getDataPerCellBoundary();} // TODO function should be renamed
   virtual int getBndFluxSize()                    const {return getUnknownsPerFace();} // TODO function should be renamed
@@ -1141,7 +1141,7 @@ public:
     const double dt, 
     const tarch::la::Vector<DIMENSIONS,double>& center,
     const tarch::la::Vector<DIMENSIONS,double>& dx, 
-    double* tempPointForceSources) = 0;
+    double** tempPointForceSources) = 0;
 
   /**
    * @defgroup AMR Solver routines for adaptive mesh refinement
@@ -1544,7 +1544,7 @@ public:
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
       double*  tempFluxUnknowns,
-      double*  tempPointForceSources);
+      double**  tempPointForceSources);
 
   void validateNoNansInADERDGSolver(
       const CellDescription& cellDescription,
@@ -1669,7 +1669,7 @@ public:
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
       double*  tempFluxUnknowns,
-      double*  tempPointForceSources) final override;
+      double** tempPointForceSources) final override;
 
   /**
    * Computes the surface integral contributions to the

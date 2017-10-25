@@ -110,7 +110,7 @@ public:
   double** _tempFluxUnknowns = nullptr;
 
   //TODO KD describe what it is
-  double** _tempPointForceSources = nullptr;
+  double*** _tempPointForceSources = nullptr;
 };
 
 struct exahype::solvers::MergingTemporaryVariables {

@@ -1886,7 +1886,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     double** tempSpaceTimeFluxUnknowns,
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
-    double*  tempPointForceSources
+    double**  tempPointForceSources
 ) {
   CellDescription& cellDescription =
       getCellDescription(cellDescriptionsIndex,element);
@@ -1913,7 +1913,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     double** tempSpaceTimeFluxUnknowns,
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
-    double*  tempPointForceSources) {
+    double**  tempPointForceSources) {
   if (cellDescription.getType()==CellDescription::Type::Cell) {
     validateNoNansInADERDGSolver(cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [pre]");
 
@@ -1979,7 +1979,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         luh,
         &inverseDx[0], //TODO JMG use cellDescription.getInverseSize() when implemented
         cellDescription.getPredictorTimeStepSize(),
-        tempPointForceSources);
+        tempPointForceSources[0]);
     
     volumeIntegral(
         lduh,
@@ -1997,7 +1997,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         luh,
         cellDescription.getSize(),
         cellDescription.getPredictorTimeStepSize(),
-        tempPointForceSources);
+        tempPointForceSources[0]);
     
     volumeIntegral(
         lduh,

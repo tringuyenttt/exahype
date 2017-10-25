@@ -626,7 +626,7 @@ public:
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
       double*  tempFluxUnknowns,
-      double*  tempPointForceSources) final override;
+      double** tempPointForceSources) final override;
 
   void updateSolution(
       const int cellDescriptionsIndex,

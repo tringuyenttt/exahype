@@ -41,7 +41,7 @@ void kernels::aderdg::generic::c::deltaDistribution(
     const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     const int basisSize,
-    double* pointForceSources //memory space for forceVector
+    double** pointForceSources //memory space for forceVector
 ) {
   //TODO KD
   double x0[DIMENSIONS];
@@ -54,11 +54,11 @@ void kernels::aderdg::generic::c::deltaDistribution(
 
   //maybe reset tempStateSizedVector to 0 with std::memset
 
-  //idx4 idx_pointForceSources(basisSize + 1, basisSize, basisSize,
+  //idx4 idx_PSi(basisSize + 1, basisSize, basisSize,
   //           numberOfVariables);
   //loop over all quadrature point
   //do your stuff to get ready to get the value for one quadrature pointer
-  //solver.pointSource(x, t, dt, &pointForceSources[idx_pointForceSources(0,ndof1,ndof2,0)], &x0);
+  //solver.pointSource(x, t, dt, &pointForceSources[idx_PSi(0,ndof1,ndof2,0)], &x0);
   //apply the result for this quadrature point
 
 
@@ -66,13 +66,11 @@ void kernels::aderdg::generic::c::deltaDistribution(
 
   //maybe reset tempStateSizedVector to 0 with std::memset
 
-  idx4 idx_pointForceSources(basisSize + 1, basisSize, basisSize,
-                             numberOfVariables);
-  idx4 idx_forceVectorSourceN(basisSize + 1, basisSize, basisSize,
-			      numberOfVariables);
+  idx4 idx_PSi(               basisSize + 1, basisSize, basisSize, numberOfVariables);
+  idx4 idx_forceVectorSourceN(basisSize + 1, basisSize, basisSize, numberOfVariables);
   
-  double* PSi                = pointForceSources;
-  double* forceVectorSourceN = pointForceSources+idx_pointForceSources(basisSize, basisSize-1, basisSize-1, numberOfVariables-1) + 1;
+  double* PSi                = pointForceSources[0];
+  double* forceVectorSourceN = pointForceSources[1];
 
   std::fill_n(PSi,(basisSize + 1) * basisSize * basisSize * numberOfVariables,0);
 
@@ -139,7 +137,7 @@ void kernels::aderdg::generic::c::deltaDistribution(
             double value = kernels::basisFunctions[order][i](xRef(1)) *
 	      kernels::basisFunctions[order][j](xRef(0))*
 	      forceVectorSourceN[idx_forceVectorSourceN(n,i,j,unknown)];	      
-	    //                pointForceSources[idx_pointForceSources(n,i,j,unknown)];
+	    //                pointForceSources[idx_PSi(n,i,j,unknown)];
 
 #if defined(_GLL)
 	    double weight_1 = kernels::gaussLobattoWeights[order][i];
@@ -153,7 +151,7 @@ void kernels::aderdg::generic::c::deltaDistribution(
             value /= ((weight_1)*dx[1]*
                 (weight_2)*dx[0]);
 
-            PSi[idx_pointForceSources(n,i,j,unknown)] += value;
+            PSi[idx_PSi(n,i,j,unknown)] += value;
 
 
 
@@ -166,7 +164,7 @@ void kernels::aderdg::generic::c::deltaDistribution(
           for (int unknown = 0; unknown < numberOfVariables /*numberOfParameters*/;
               unknown++) {
 
-            PSi[idx_pointForceSources(n,i,j,unknown)] += 0.0;
+            PSi[idx_PSi(n,i,j,unknown)] += 0.0;
 
           } //end unknown
         }//endif else

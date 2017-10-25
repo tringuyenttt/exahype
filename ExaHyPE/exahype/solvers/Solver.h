@@ -1357,7 +1357,7 @@ class exahype::solvers::Solver {
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
       double*  tempFluxUnknowns,
-      double*  tempPointForceSources) = 0;
+      double**  tempPointForceSources) = 0;
 
   /**
    * Update the solution of a cell description.

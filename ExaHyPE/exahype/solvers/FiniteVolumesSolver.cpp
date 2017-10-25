@@ -659,7 +659,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::FiniteVolumesSolver::fu
     double** tempSpaceTimeFluxUnknowns,
     double*  tempUnknowns,
     double*  tempFluxUnknowns,
-    double*  tempPointForceSources) {
+    double** tempPointForceSources) {
   updateSolution(cellDescriptionsIndex,element);
 
   UpdateResult result;
