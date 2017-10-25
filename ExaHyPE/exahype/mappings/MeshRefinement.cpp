@@ -148,30 +148,23 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   #endif
 }
 
-void exahype::mappings::MeshRefinement::refineVertexIfNecessary(
-  exahype::Vertex&                              fineGridVertex,
-  const tarch::la::Vector<DIMENSIONS, double>&  fineGridH,
-  int                                           fineGridLevel,
-  bool                                          isCalledByCreationalEvent
-) const {
-  bool refine =
-      tarch::la::oneGreater(
-          fineGridH,exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers());
-
+void exahype::mappings::MeshRefinement::refineSafely(
+    exahype::Vertex&                              fineGridVertex,
+    const tarch::la::Vector<DIMENSIONS, double>&  fineGridH,
+    int                                           fineGridLevel,
+    bool                                          isCalledByCreationalEvent) const {
   if (
-    refine
-    &&
-    fineGridVertex.getRefinementControl()==Vertex::Records::Unrefined
-  ) {
+      fineGridVertex.getRefinementControl()==Vertex::Records::Unrefined
+    ) {
     switch ( _localState.mayRefine(isCalledByCreationalEvent,fineGridLevel) ) {
-      case State::RefinementAnswer::DontRefineYet:
-        break;
-      case State::RefinementAnswer::Refine:
-        fineGridVertex.refine();
-        break;
-      case State::RefinementAnswer::EnforceRefinement:
-        fineGridVertex.enforceRefine();
-        break;
+    case State::RefinementAnswer::DontRefineYet:
+      break;
+    case State::RefinementAnswer::Refine:
+      fineGridVertex.refine();
+      break;
+    case State::RefinementAnswer::EnforceRefinement:
+      fineGridVertex.enforceRefine();
+      break;
     }
   }
 }
@@ -185,7 +178,12 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
-  refineVertexIfNecessary(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
+  if (
+      tarch::la::oneGreater(fineGridH,
+          exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers())
+  ) {
+    refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
+  }
 }
 
 
@@ -202,7 +200,12 @@ void exahype::mappings::MeshRefinement::createBoundaryVertex(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  refineVertexIfNecessary(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
+  if (
+      tarch::la::oneGreater(fineGridH,
+          exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers())
+  ) {
+    refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
+  }
 
   logTraceOutWith1Argument("createBoundaryVertex(...)", fineGridVertex);
 }
@@ -220,7 +223,12 @@ void exahype::mappings::MeshRefinement::createInnerVertex(
                            fineGridH, coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  refineVertexIfNecessary(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
+  if (
+      tarch::la::oneGreater(fineGridH,
+          exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers())
+  ) {
+    refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
+  }
 
   logTraceOutWith1Argument("createInnerVertex(...)", fineGridVertex);
 }
@@ -271,6 +279,36 @@ void exahype::mappings::MeshRefinement::touchVertexFirstTime(
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
 
+void exahype::mappings::MeshRefinement::ensureRegularityOnCoarserGrids(
+    exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
+  if (
+      tarch::la::oneGreater(
+          fineGridVerticesEnumerator.getCellSize(),
+          exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers()) // ensure boundary regularity
+  ) {
+    dfor2(v)
+      bool hasToRefineForRegularity =
+          !fineGridVertices[fineGridVerticesEnumerator(v)].isHangingNode()
+          #ifdef Parallel
+          &&
+          !fineGridVertices[fineGridVerticesEnumerator(v)].isRemote( _localState, true, false)
+          #endif
+          &&
+          fineGridVertices[ fineGridVerticesEnumerator(v) ].getRefinementControl()==
+              Vertex::Records::RefinementControl::Unrefined;
+
+      if (hasToRefineForRegularity) {
+        refineSafely(
+           fineGridVertices[fineGridVerticesEnumerator(v)],
+           fineGridVerticesEnumerator.getCellSize(),
+           fineGridVerticesEnumerator.getLevel(),
+           false);
+      }
+    enddforx
+  }
+}
+
 void exahype::mappings::MeshRefinement::enterCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -307,8 +345,8 @@ void exahype::mappings::MeshRefinement::enterCell(
                     fineGridCell.getCellDescriptionsIndex(),element);
             oneSolverRequestsRefinement |=
                 limitingADERDGSolver->
-                  evaluateLimiterStatusRefinementCriterion(
-                        fineGridCell.getCellDescriptionsIndex(),element);
+                evaluateLimiterStatusRefinementCriterion(
+                    fineGridCell.getCellDescriptionsIndex(),element);
           }
         }
       }
@@ -330,7 +368,6 @@ void exahype::mappings::MeshRefinement::enterCell(
               fineGridPositionOfCell,
               IsInitialMeshRefinement,
               solverNumber);
-
 
       exahype::solvers::Solver::UpdateStateInEnterCellResult result =
           solver->updateStateInEnterCell(
@@ -376,24 +413,25 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   // Refine all adjacent vertices if necessary and possible.
   //    if (refineFineGridCell && _state.refineInitialGridInTouchVertexLastTime()) {
-  if (
-      oneSolverRequestsRefinement
-      ||
-      tarch::la::oneGreater(
-          fineGridVerticesEnumerator.getCellSize(),
-          exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers()) // ensure boundary regularity
-  ) {
+  if (oneSolverRequestsRefinement) {
     dfor2(v)
       if (
           fineGridVertices[ fineGridVerticesEnumerator(v) ].getRefinementControl()==
           exahype::Vertex::Records::RefinementControl::Unrefined
           &&
-          !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode()
+          !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode() // TODO(Dominic): Should not be necessary
       ) {
-        fineGridVertices[ fineGridVerticesEnumerator(v) ].refine();
+        refineSafely(
+            fineGridVertices[ fineGridVerticesEnumerator(v) ],
+            fineGridVerticesEnumerator.getCellSize(),
+            fineGridVerticesEnumerator.getLevel(),
+            false);
       }
     enddforx
   }
+
+  // Ensure regularity on coarser grids
+  ensureRegularityOnCoarserGrids(fineGridVertices,fineGridVerticesEnumerator);
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -401,26 +439,24 @@ void exahype::mappings::MeshRefinement::enterCell(
 void exahype::mappings::MeshRefinement::eraseVerticesButPreserveRegularityOnCoarserGrids(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
-  dfor2(k)
-      bool hasToRefineToPreserveRegularityAlongBoundary =
+  dfor2(v)
+      bool hasToRefineForRegularity =
       tarch::la::oneGreater(
           fineGridVerticesEnumerator.getCellSize(),exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers())
-//      &&
-//      fineGridVertices[fineGridVerticesEnumerator(k)].isBoundary()
       #ifdef Parallel
       &&
-      !fineGridVertices[fineGridVerticesEnumerator(k)].isRemote( _localState, true, false)
+      !fineGridVertices[ fineGridVerticesEnumerator(v) ].isRemote( _localState, true, false)
       #endif
       &&
-      !fineGridVertices[fineGridVerticesEnumerator(k)].isHangingNode();
+      !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode();
 
       if (
-          hasToRefineToPreserveRegularityAlongBoundary==false
+          hasToRefineForRegularity==false
           &&
-          fineGridVertices[ fineGridVerticesEnumerator(k) ].getRefinementControl() ==
+          fineGridVertices[ fineGridVerticesEnumerator(v) ].getRefinementControl() ==
               Vertex::Records::RefinementControl::Refined
       ) {
-        fineGridVertices[ fineGridVerticesEnumerator(k) ].erase();
+        fineGridVertices[ fineGridVerticesEnumerator(v) ].erase();
       }
   enddforx
 }

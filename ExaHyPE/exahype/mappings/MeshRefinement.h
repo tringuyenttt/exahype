@@ -70,13 +70,27 @@ private:
   /**
    * TODO(Tobias): Add docu.
    */
-  void refineVertexIfNecessary(
+  void refineSafely(
       exahype::Vertex&                              fineGridVertex,
       const tarch::la::Vector<DIMENSIONS, double>&  fineGridH,
       int                                           fineGridLevel,
-      bool                                          isCalledByCreationalEvent
-  ) const;
+      bool                                          isCalledByCreationalEvent) const;
 
+
+  /**
+   * Enforce that all uniform grids populated
+   * by at least one solver and all the levels above have no hanging nodes.
+   *
+   * TODO(Dominic): Evaluate impact of this method.
+   * TODO(Dominic): We might need boundary refinement to
+   * get rid of hanging nodes on the boundary. However
+   * this should not be a problem in ExaHyPE since
+   * we always refine cellwisely when we perform adaptive
+   * refinement.
+   */
+  void ensureRegularityOnCoarserGrids(
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
 
   /**
    * Erase fine grid vertices as long as it does not
@@ -175,7 +189,8 @@ public:
   /**
    * Loop over the solver and update the solver state.
    * If at least one of the solvers requested refinement,
-   * refine the fine grid cell hosting the solvers.
+   * try to refine the fine grid cell hosting the solvers
+   * or postpone this operation to the next iteration.
    *
    * Further update the gridUpdateRequested flag
    * of each solver.
