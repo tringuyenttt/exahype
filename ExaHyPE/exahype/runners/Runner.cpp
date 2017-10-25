@@ -712,7 +712,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     } else {
       repository.switchToPrediction();
     }
-    repository.iterate();
+    repository.iterate(1,false);
     logInfo("runAsMaster(...)","plotted initial solution (if specified) and computed first predictor");
 
     printTimeStepInfo(-1,repository);
