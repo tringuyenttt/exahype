@@ -353,7 +353,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
         for(int k=0; k<{{nDof}}; k++) {
           #pragma simd
           for(int n=0; n<{{nVar}};n++) {
-            new_lQi_slice[l*{{nVarPad}}+n] += s_m[l*{{nDof}}+k] * rhs[{{nVarPad}}*ijk+k*{{nDof*nDof*nVarPad}}+n];
+            new_lQi_slice[l*{{nVarPad}}+n] += s_m[l*{{nDof}}+k] * rhs[{{nVarPad}}*ijk+k*{{(nDof**nDim)*nVarPad}}+n];
           }
         }
       }
