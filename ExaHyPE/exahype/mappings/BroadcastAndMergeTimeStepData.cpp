@@ -100,16 +100,14 @@ void exahype::mappings::BroadcastAndMergeTimeStepData::beginIteration(
   #endif
 
   #ifdef Parallel
-  if (_localState.getMergeMode()!=exahype::records::State::MergeMode::MergeNothing) {
-    exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
-    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
-    DataHeap::getInstance().finishedToSendSynchronousData();
-    MetadataHeap::getInstance().finishedToSendSynchronousData();
-    MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty();
+  assertion(_localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData);
+  exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
+  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
+  DataHeap::getInstance().finishedToSendSynchronousData();
+  MetadataHeap::getInstance().finishedToSendSynchronousData();
 
-    if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
-        exit(-1);
-    }
+  if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
+    exit(-1);
   }
   #endif
 

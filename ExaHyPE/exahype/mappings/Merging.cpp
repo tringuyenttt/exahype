@@ -124,12 +124,17 @@ void exahype::mappings::Merging::beginIteration(
   #endif
 
   #ifdef Parallel
-  if (_localState.getMergeMode()!=exahype::records::State::MergeMode::MergeNothing) {
+  if (
+      // No synchronous communication for MergeNothing and DropFaceData
+      _localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
+      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData ||
+      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData ||
+      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData
+  ) {
     exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
     exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
     DataHeap::getInstance().finishedToSendSynchronousData();
     MetadataHeap::getInstance().finishedToSendSynchronousData();
-    MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty();
 
     if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
         exit(-1);
