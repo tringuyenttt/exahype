@@ -14,7 +14,7 @@
 #include <cstring>
  
 #include "{{pathToOptKernel}}/Kernels.h"
-#include "{{pathToOptKernel}}/GaussLegendreQuadrature.h"
+#include "{{pathToOptKernel}}/Quadrature.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 //#include "kernels/aderdg/optimised/asm_extrapolatedPredictor.c"
  

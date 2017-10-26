@@ -43,7 +43,4 @@ class AdjustSolutionGenerator:
 
 
     def generateCode(self):
-        self.m_context['order'] = self.m_context['nDof']-1
-        self.m_context['nDimPad'] = Backend.getSizeWithPadding(self.m_context['nDim'])
-        
         TemplatingUtils.renderAsFile('adjustPointSolution_cpp.template', self.m_filename_point, self.m_context)

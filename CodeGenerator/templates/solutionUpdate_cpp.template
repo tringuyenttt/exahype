@@ -14,7 +14,7 @@
 // update the elements 
 
 #include "{{pathToOptKernel}}/Kernels.h"
-#include "{{pathToOptKernel}}/GaussLegendreQuadrature.h"
+#include "{{pathToOptKernel}}/Quadrature.h"
 
 void {{codeNamespace}}::solutionUpdate( 
   double* restrict luh, 

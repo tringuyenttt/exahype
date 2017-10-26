@@ -16,7 +16,7 @@
 #include <algorithm>
 
 #include "{{pathToOptKernel}}/Kernels.h"
-#include "{{pathToOptKernel}}/GaussLegendreQuadrature.h"
+#include "{{pathToOptKernel}}/Quadrature.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 
 #include "{{solverHeader}}"
@@ -46,10 +46,10 @@ void {{codeNamespace}}::boundaryConditions(
   
   for (int jj = 0; jj < {{nDof3D}}; jj++) {  // loop over dof, loop removed by compiler if 2D
 {% if nDim == 3 %}
-    x[d2] = cellCentre[d2] + cellSize[d2] * (gaussLegendreNodes[{{nDof-1}}][jj] - 0.5);
+    x[d2] = cellCentre[d2] + cellSize[d2] * (nodes[jj] - 0.5);
 {% endif %}
     for (int ii = 0; ii < {{nDof}}; ii++) {  // loop over dof
-      x[d1] = cellCentre[d1] + cellSize[d1] * (gaussLegendreNodes[{{nDof-1}}][ii] - 0.5); 
+      x[d1] = cellCentre[d1] + cellSize[d1] * (nodes[ii] - 0.5); 
 #ifdef USE_IPO
     #pragma forceinline recursive
 #endif
