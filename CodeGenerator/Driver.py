@@ -116,6 +116,7 @@ config = {
            "pathToOutputDirectory" : os.path.join(os.path.dirname(__file__),pathFromHereToExaHyPERoot,l_commandLineArguments.pathToApplication,l_commandLineArguments.pathToOptKernel),
            "architecture"          : l_commandLineArguments.architecture,
            "pathToLibxsmmGemmGenerator"  : os.path.join(os.path.dirname(__file__),pathToLibxsmmGemmGenerator),
+           "quadratureType"        : "Gauss-Legendre", #TODO JMG other type as argument
            "useLibxsmm"            : True
           }
 
