@@ -13,7 +13,7 @@
 exahype-project Euler
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./Benchmarks/hamilton/Euler_FV
+  output-directory const           = ./Benchmarks/supermuc/Euler_FV
   architecture const               = hsw
   log-file                         = mylogfile.log
 
