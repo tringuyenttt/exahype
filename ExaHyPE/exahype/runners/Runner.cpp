@@ -1107,7 +1107,7 @@ void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
    * 4. Compute the cell-local time step sizes
    */
   repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::TimeStepping);
-  repository.getState().switchToADERDGTimeStepContext();
+  repository.getState().switchToFusedTimeStepContext();
 
   if (numberOfStepsToRun==0) {
     repository.switchToPlotAndFusedTimeStep();
@@ -1137,7 +1137,7 @@ void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
     logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
     repository.getState().setAlgorithmSection(exahype::records::State::PredictionRerunAllSend);
     repository.getState().switchToPredictionRerunContext();
-    repository.switchToPrediction();
+    repository.switchToPredictionRerun();
     repository.iterate(1,false);
   }
 

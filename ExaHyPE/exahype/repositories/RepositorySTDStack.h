@@ -21,6 +21,7 @@
  #include "exahype/adapters/FinaliseMeshRefinementAndReinitialisation.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
  #include "exahype/adapters/PlotAndFusedTimeStep.h" 
+ #include "exahype/adapters/PredictionRerun.h" 
  #include "exahype/adapters/LimiterStatusSpreading.h" 
  #include "exahype/adapters/LocalRecomputationAndTimeStepSizeComputation.h" 
  #include "exahype/adapters/GlobalRollback.h" 
@@ -58,6 +59,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FinaliseMeshRefinementAndReinitialisation> _gridWithFinaliseMeshRefinementAndReinitialisation;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FusedTimeStep> _gridWithFusedTimeStep;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PlotAndFusedTimeStep> _gridWithPlotAndFusedTimeStep;
+    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PredictionRerun> _gridWithPredictionRerun;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::LimiterStatusSpreading> _gridWithLimiterStatusSpreading;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::LocalRecomputationAndTimeStepSizeComputation> _gridWithLocalRecomputationAndTimeStepSizeComputation;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::GlobalRollback> _gridWithGlobalRollback;
@@ -74,6 +76,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureFinaliseMeshRefinementAndReinitialisationCPUTime;
     tarch::timing::Measurement _measureFusedTimeStepCPUTime;
     tarch::timing::Measurement _measurePlotAndFusedTimeStepCPUTime;
+    tarch::timing::Measurement _measurePredictionRerunCPUTime;
     tarch::timing::Measurement _measureLimiterStatusSpreadingCPUTime;
     tarch::timing::Measurement _measureLocalRecomputationAndTimeStepSizeComputationCPUTime;
     tarch::timing::Measurement _measureGlobalRollbackCPUTime;
@@ -87,6 +90,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     tarch::timing::Measurement _measureFinaliseMeshRefinementAndReinitialisationCalendarTime;
     tarch::timing::Measurement _measureFusedTimeStepCalendarTime;
     tarch::timing::Measurement _measurePlotAndFusedTimeStepCalendarTime;
+    tarch::timing::Measurement _measurePredictionRerunCalendarTime;
     tarch::timing::Measurement _measureLimiterStatusSpreadingCalendarTime;
     tarch::timing::Measurement _measureLocalRecomputationAndTimeStepSizeComputationCalendarTime;
     tarch::timing::Measurement _measureGlobalRollbackCalendarTime;
@@ -138,6 +142,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual void switchToFinaliseMeshRefinementAndReinitialisation();    
     virtual void switchToFusedTimeStep();    
     virtual void switchToPlotAndFusedTimeStep();    
+    virtual void switchToPredictionRerun();    
     virtual void switchToLimiterStatusSpreading();    
     virtual void switchToLocalRecomputationAndTimeStepSizeComputation();    
     virtual void switchToGlobalRollback();    
@@ -151,6 +156,7 @@ class exahype::repositories::RepositorySTDStack: public exahype::repositories::R
     virtual bool isActiveAdapterFinaliseMeshRefinementAndReinitialisation() const;
     virtual bool isActiveAdapterFusedTimeStep() const;
     virtual bool isActiveAdapterPlotAndFusedTimeStep() const;
+    virtual bool isActiveAdapterPredictionRerun() const;
     virtual bool isActiveAdapterLimiterStatusSpreading() const;
     virtual bool isActiveAdapterLocalRecomputationAndTimeStepSizeComputation() const;
     virtual bool isActiveAdapterGlobalRollback() const;

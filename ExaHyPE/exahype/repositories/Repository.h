@@ -74,6 +74,7 @@ class exahype::repositories::Repository {
     virtual void switchToFinaliseMeshRefinementAndReinitialisation() = 0;    
     virtual void switchToFusedTimeStep() = 0;    
     virtual void switchToPlotAndFusedTimeStep() = 0;    
+    virtual void switchToPredictionRerun() = 0;    
     virtual void switchToLimiterStatusSpreading() = 0;    
     virtual void switchToLocalRecomputationAndTimeStepSizeComputation() = 0;    
     virtual void switchToGlobalRollback() = 0;    
@@ -87,6 +88,7 @@ class exahype::repositories::Repository {
     virtual bool isActiveAdapterFinaliseMeshRefinementAndReinitialisation() const = 0;
     virtual bool isActiveAdapterFusedTimeStep() const = 0;
     virtual bool isActiveAdapterPlotAndFusedTimeStep() const = 0;
+    virtual bool isActiveAdapterPredictionRerun() const = 0;
     virtual bool isActiveAdapterLimiterStatusSpreading() const = 0;
     virtual bool isActiveAdapterLocalRecomputationAndTimeStepSizeComputation() const = 0;
     virtual bool isActiveAdapterGlobalRollback() const = 0;

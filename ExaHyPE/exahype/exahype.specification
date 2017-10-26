@@ -127,6 +127,13 @@ adapter:
   // merge-with-user-defined-mapping: AugmentedAMRTreePlot2d 
   merge-with-user-defined-mapping: SolutionUpdate
   merge-with-user-defined-mapping: Sending
+  
+adapter:
+  name: PredictionRerun
+  merge-with-user-defined-mapping: PreProcessing 
+  merge-with-user-defined-mapping: Merging        // Has to drop the previously sent out face data 
+  merge-with-user-defined-mapping: Prediction     // DEC: after predictor we can start the face data exchange
+  merge-with-user-defined-mapping: Sending        // send only face data; post-processing done directly
 
 // Additional adapters for limiter status spreading and recomputation
 adapter:
@@ -161,7 +168,7 @@ adapter:
 adapter:
   name: Prediction
   merge-with-user-defined-mapping: PreProcessing 
-  merge-with-user-defined-mapping: BroadcastAndMergeTimeStepData 
+  merge-with-user-defined-mapping: BroadcastAndMergeTimeStepData // In contrast to the rerun adapter, this one does not need to drop face data
   merge-with-user-defined-mapping: Prediction     // DEC: after predictor we can start the face data exchange
   merge-with-user-defined-mapping: Sending        // send only face data; post-processing done directly
 
