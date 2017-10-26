@@ -15,7 +15,7 @@
 
 # PREAMBLE
 project=Euler_FV
-patchSize=3
+patchSize=19
 skipReductionInBatchedTimeSteps=on
 batchFactor=0.8
 io=no-output # or output
@@ -74,7 +74,7 @@ do
       
       sed -i -r 's,sharedMem=None,sharedMem='$sharedMem',' $newScript
       sed -i 's,'$project'-no-output-regular-0,'$prefix',g' $newScript
-      sed -i 's,p3,p'$order',g' $newScript
+      sed -i 's,p3,p'$patchSize',g' $newScript
 
       sed -i 's,nodes=1,nodes='$nodes',' $newScript
       sed -i 's,tasksPerNode=1,tasksPerNode='$tasksPerNode',' $newScript
