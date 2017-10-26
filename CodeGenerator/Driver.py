@@ -93,7 +93,8 @@ l_parser.add_argument("--useSource",
 l_parser.add_argument("--usePointSources",
                       type=int,
                       default=-1,
-                      help="enable N point sources terms")
+                      metavar='nPointSources',
+                      help="enable nPointSources point sources")
 l_parser.add_argument("--noTimeAveraging",
                       action="store_true",
                       help="disable time averaging in the spacetimepredictor (less memory usage, more computation)")
