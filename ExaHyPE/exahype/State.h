@@ -166,7 +166,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
 
   void switchToPredictionAndFusedTimeSteppingInitialisationContext();
 
-  void switchToADERDGTimeStepContext();
+  void switchToFusedTimeStepContext();
 
   /**
    * In a serial version, running the predictor is the same for optimistic time

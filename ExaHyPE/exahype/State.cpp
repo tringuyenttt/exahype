@@ -171,7 +171,7 @@ exahype::records::State::AlgorithmSection exahype::State::getAlgorithmSection() 
    _stateData.setSendMode (records::State::SendMode::SendFaceData);
  }
 
- void exahype::State::switchToADERDGTimeStepContext() {
+ void exahype::State::switchToFusedTimeStepContext() {
    if (EnableMasterWorkerCommunication) {
      if (EnableNeighbourCommunication) {
        _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData);
