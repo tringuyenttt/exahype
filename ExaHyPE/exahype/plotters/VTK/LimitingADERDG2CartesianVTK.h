@@ -17,6 +17,7 @@
 #include "exahype/plotters/Plotter.h"
 
 #include "tarch/plotter/griddata/blockstructured/PatchWriterUnstructured.h"
+#include "tarch/plotter/griddata/VTUTimeSeriesWriter.h"
 
 namespace exahype {
   namespace plotters {
@@ -27,6 +28,11 @@ namespace exahype {
     class LimitingADERDG2CartesianCellsVTKAscii;
     class LimitingADERDG2CartesianCellsVTKBinary;
 
+    class LimitingADERDG2CartesianVerticesVTUAscii;
+    class LimitingADERDG2CartesianVerticesVTUBinary;
+    class LimitingADERDG2CartesianCellsVTUAscii;
+    class LimitingADERDG2CartesianCellsVTUBinary;
+
     class Slicer; // external forward decl, #include exahype/plotters/slicing/Slicer.h
   }
 }
@@ -35,34 +41,52 @@ namespace exahype {
  * Common VTK class. Usually not used directly but through one of the subclasses.
  */
 class exahype::plotters::LimitingADERDG2CartesianVTK: public exahype::plotters::Plotter::Device {
+protected:
+   enum class PlotterType {
+     BinaryVTK,
+     ASCIIVTK,
+     BinaryVTU,
+     ASCIIVTU
+   };
 private:
-  int           _fileCounter;
-  const bool    _isBinary;
-  const bool    _plotCells;
-  std::string   _filename;
-  int           _order;
-  int           _solverUnknowns;
-  int           _writtenUnknowns;
+  int           _fileCounter     = -1;
+  const PlotterType _plotterType = PlotterType::BinaryVTU;
+  const bool    _plotCells       = false;
+  std::string   _filename        = "";
+  int           _order           = -1;
+  int           _solverUnknowns  = -1;
+  int           _writtenUnknowns = -1;
+  std::string   _select          = "";
   /**
    * The ghost layer width the finite volumes patch is using.
    */
-  const int     _ghostLayerWidth;
-  std::string   _select;
+  const int     _ghostLayerWidth    = -1;
+
+  exahype::plotters::Slicer *slicer = nullptr;
 
   static tarch::logging::Log _log;
 
-  exahype::plotters::Slicer *slicer;
+  /**
+   * To memorise the time argument from startPlotter(). We need it when we close the plotter for the time series.
+   */
+  double _time = 0;
 
-  tarch::plotter::griddata::blockstructured::PatchWriter::SinglePatchWriter* _gridWriter;
-  tarch::plotter::griddata::blockstructured::PatchWriterUnstructured*        _patchWriter;
-  tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexDataWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellDataWriter;
-  tarch::plotter::griddata::Writer::VertexDataWriter*                        _timeStampVertexDataWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter*                          _timeStampCellDataWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellLimiterStatusWriter;
-  tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexLimiterStatusWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellPreviousLimiterStatusWriter;
-  tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexPreviousLimiterStatusWriter;
+  /**
+   * Is obviously only used if we use vtu instead of the vtk legacy format.
+   */
+  tarch::plotter::griddata::VTUTimeSeriesWriter _timeSeriesWriter;
+
+  tarch::plotter::griddata::blockstructured::PatchWriter::SinglePatchWriter* _gridWriter  = nullptr;
+  tarch::plotter::griddata::blockstructured::PatchWriterUnstructured*        _patchWriter = nullptr;
+
+  tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexDataWriter = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellDataWriter   = nullptr;
+  tarch::plotter::griddata::Writer::VertexDataWriter*                        _timeStampVertexDataWriter = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter*                          _timeStampCellDataWriter   = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellLimiterStatusWriter   = nullptr;
+  tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexLimiterStatusWriter         = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter*                          _cellPreviousLimiterStatusWriter   = nullptr;
+  tarch::plotter::griddata::Writer::VertexDataWriter*                        _vertexPreviousLimiterStatusWriter = nullptr;
 
   void writeTimeStampDataToADERDGPatch( double timeStamp, int vertexIndex );
 
@@ -86,8 +110,12 @@ private:
       const int previousLimiterStatusAsInt
   );
 public:
-  LimitingADERDG2CartesianVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
-                              const int ghostLayerWidth,const bool isBinary, const bool plotCells);
+  LimitingADERDG2CartesianVTK(
+      exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
+      const int ghostLayerWidth,
+      PlotterType plotterType,
+      bool plotCells);
+
   virtual ~LimitingADERDG2CartesianVTK();
 
   virtual void init(const std::string& filename, int orderPlusOne, int solverUnknowns, int writtenUnknowns, const std::string& select);
@@ -116,35 +144,58 @@ public:
   void finishPlotting() override;
 };
 
+// VTK subclasses
 class exahype::plotters::LimitingADERDG2CartesianVerticesVTKAscii: public exahype::plotters::LimitingADERDG2CartesianVTK {
   public:
     static std::string getIdentifier();
     LimitingADERDG2CartesianVerticesVTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
                                              const int ghostLayerWidth);
 };
-
-
 class exahype::plotters::LimitingADERDG2CartesianVerticesVTKBinary: public exahype::plotters::LimitingADERDG2CartesianVTK {
   public:
     static std::string getIdentifier();
     LimitingADERDG2CartesianVerticesVTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
                                               const int ghostLayerWidth);
 };
-
-
 class exahype::plotters::LimitingADERDG2CartesianCellsVTKAscii: public exahype::plotters::LimitingADERDG2CartesianVTK {
   public:
     static std::string getIdentifier();
     LimitingADERDG2CartesianCellsVTKAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
                                           const int ghostLayerWidth);
 };
-
-
 class exahype::plotters::LimitingADERDG2CartesianCellsVTKBinary: public exahype::plotters::LimitingADERDG2CartesianVTK {
   public:
     static std::string getIdentifier();
     LimitingADERDG2CartesianCellsVTKBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
                                            const int ghostLayerWidth);
+};
+
+// VTU subclasses
+class exahype::plotters::LimitingADERDG2CartesianVerticesVTUAscii: public exahype::plotters::LimitingADERDG2CartesianVTK {
+  public:
+    static std::string getIdentifier();
+    LimitingADERDG2CartesianVerticesVTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,const int ghostLayerWidth);
+};
+
+
+class exahype::plotters::LimitingADERDG2CartesianVerticesVTUBinary: public exahype::plotters::LimitingADERDG2CartesianVTK {
+  public:
+    static std::string getIdentifier();
+    LimitingADERDG2CartesianVerticesVTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,const int ghostLayerWidth);
+};
+
+
+class exahype::plotters::LimitingADERDG2CartesianCellsVTUAscii: public exahype::plotters::LimitingADERDG2CartesianVTK {
+  public:
+    static std::string getIdentifier();
+    LimitingADERDG2CartesianCellsVTUAscii(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,const int ghostLayerWidth);
+};
+
+
+class exahype::plotters::LimitingADERDG2CartesianCellsVTUBinary: public exahype::plotters::LimitingADERDG2CartesianVTK {
+  public:
+    static std::string getIdentifier();
+    LimitingADERDG2CartesianCellsVTUBinary(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,const int ghostLayerWidth);
 };
 
 #endif // _EXAHYPE_PLOTTERS_LIMITING_ADERDG_2_CARTESIAN_VTK_H_

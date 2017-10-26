@@ -120,18 +120,9 @@ exahype::plotters::ADERDG2CartesianCellsVTUBinary::ADERDG2CartesianCellsVTUBinar
 
 exahype::plotters::ADERDG2CartesianVTK::ADERDG2CartesianVTK(exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing, PlotterType plotterType, bool plotCells):
   Device(postProcessing),
-  _fileCounter(-1),
   _plotterType(plotterType),
-  _plotCells(plotCells),
-  _order(-1),
-  _solverUnknowns(-1),
-  _writtenUnknowns(-1),
-  _vertexDataWriter(nullptr),
-  _cellDataWriter(nullptr),
-  _vertexTimeStampDataWriter(nullptr),
-  _cellTimeStampDataWriter(nullptr),
-  _gridWriter(nullptr),
-  _patchWriter(nullptr) {
+  _plotCells(plotCells)
+{
 }
 
 
@@ -222,8 +213,7 @@ void exahype::plotters::ADERDG2CartesianVTK::finishPlotting() {
     if (_cellTimeStampDataWriter!=nullptr)   _cellTimeStampDataWriter->close();
 
     std::ostringstream snapshotFileName;
-    snapshotFileName << _filename
-                     << "-" << _fileCounter;
+    snapshotFileName << _filename << "-" << _fileCounter;
 
     switch (_plotterType) {
       case PlotterType::BinaryVTK:
@@ -247,19 +237,19 @@ void exahype::plotters::ADERDG2CartesianVTK::finishPlotting() {
     }
   }
 
-  if (_vertexDataWriter!=nullptr)     delete _vertexDataWriter;
-  if (_cellDataWriter!=nullptr)       delete _cellDataWriter;
-  if (_vertexTimeStampDataWriter!=nullptr)  delete _vertexTimeStampDataWriter;
-  if (_cellTimeStampDataWriter!=nullptr)    delete _cellTimeStampDataWriter;
-  if (_gridWriter!=nullptr)           delete _gridWriter;
-  if (_patchWriter!=nullptr)          delete _patchWriter;
+  if (_vertexDataWriter!=nullptr)          delete _vertexDataWriter;
+  if (_cellDataWriter!=nullptr)            delete _cellDataWriter;
+  if (_vertexTimeStampDataWriter!=nullptr) delete _vertexTimeStampDataWriter;
+  if (_cellTimeStampDataWriter!=nullptr)   delete _cellTimeStampDataWriter;
+  if (_gridWriter!=nullptr)                delete _gridWriter;
+  if (_patchWriter!=nullptr)               delete _patchWriter;
 
-  _vertexDataWriter    = nullptr;
-  _cellDataWriter      = nullptr;
-  _patchWriter         = nullptr;
+  _vertexDataWriter          = nullptr;
+  _cellDataWriter            = nullptr;
+  _patchWriter               = nullptr;
   _vertexTimeStampDataWriter = nullptr;
   _cellTimeStampDataWriter   = nullptr;
-  _gridWriter          = nullptr;
+  _gridWriter                = nullptr;
 }
 
 

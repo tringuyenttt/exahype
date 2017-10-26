@@ -49,14 +49,14 @@ class exahype::plotters::ADERDG2CartesianVTK: public exahype::plotters::Plotter:
      ASCIIVTU
    };
  private:
-  int           _fileCounter;
-  const PlotterType _plotterType;
-  const bool    _plotCells;
-  std::string   _filename;
-  int           _order;
-  int           _solverUnknowns;
-  int           _writtenUnknowns;
-  std::string   _select;
+  int           _fileCounter     = -1;
+  const PlotterType _plotterType = PlotterType::BinaryVTU;
+  const bool    _plotCells       = false;
+  std::string   _filename        = "";
+  int           _order           = -1;
+  int           _solverUnknowns  = -1;
+  int           _writtenUnknowns = -1;
+  std::string   _select          = "";
 
   /**
    * Is obviously only used if we use vtu instead of the vtk legacy format.
@@ -66,19 +66,19 @@ class exahype::plotters::ADERDG2CartesianVTK: public exahype::plotters::Plotter:
   /**
    * To memorise the time argument from startPlotter(). We need it when we close the plotter for the time series.
    */
-  double _time;
+  double _time = 0;
 
+  exahype::plotters::Slicer *slicer = nullptr;
 
-  exahype::plotters::Slicer *slicer;
   static tarch::logging::Log _log;
 
-  tarch::plotter::griddata::Writer::VertexDataWriter*  _vertexDataWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter*    _cellDataWriter;
-  tarch::plotter::griddata::Writer::VertexDataWriter*  _vertexTimeStampDataWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter*    _cellTimeStampDataWriter;
+  tarch::plotter::griddata::Writer::VertexDataWriter*  _vertexDataWriter = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter*    _cellDataWriter   = nullptr;
+  tarch::plotter::griddata::Writer::VertexDataWriter*  _vertexTimeStampDataWriter = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter*    _cellTimeStampDataWriter   = nullptr;
 
-  tarch::plotter::griddata::blockstructured::PatchWriter::SinglePatchWriter* _gridWriter;
-  tarch::plotter::griddata::blockstructured::PatchWriterUnstructured*        _patchWriter;
+  tarch::plotter::griddata::blockstructured::PatchWriter::SinglePatchWriter* _gridWriter  = nullptr;
+  tarch::plotter::griddata::blockstructured::PatchWriterUnstructured*        _patchWriter = nullptr;
 
   void writeTimeStampDataToPatch( double timeStamp, int vertexIndex, int cellIndex );
 

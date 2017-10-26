@@ -24,7 +24,8 @@
 
 #include "tarch/plotter/griddata/unstructured/vtk/VTKTextFileWriter.h"
 #include "tarch/plotter/griddata/unstructured/vtk/VTKBinaryFileWriter.h"
-
+#include "tarch/plotter/griddata/unstructured/vtk/VTUTextFileWriter.h"
+#include "tarch/plotter/griddata/unstructured/vtk/VTUBinaryFileWriter.h"
 
 #include "kernels/DGBasisFunctions.h"
 
@@ -32,52 +33,78 @@
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 
+// VTK subclasses
 std::string exahype::plotters::LimitingADERDG2CartesianVerticesVTKAscii::getIdentifier() {
   return "vtk::Cartesian::vertices::limited::ascii";
 }
-
-
 exahype::plotters::LimitingADERDG2CartesianVerticesVTKAscii::LimitingADERDG2CartesianVerticesVTKAscii(
     exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
     const int ghostLayerWidth):
-  LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,false,false) {
+  LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,PlotterType::ASCIIVTK,false) {
 }
-
 
 std::string exahype::plotters::LimitingADERDG2CartesianVerticesVTKBinary::getIdentifier() {
   return "vtk::Cartesian::vertices::limited::binary";
 }
-
-
 exahype::plotters::LimitingADERDG2CartesianVerticesVTKBinary::LimitingADERDG2CartesianVerticesVTKBinary(
     exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
     const int ghostLayerWidth):
-    LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,true,false) {
+    LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,PlotterType::BinaryVTK,false) {
 }
-
-
 
 std::string exahype::plotters::LimitingADERDG2CartesianCellsVTKAscii::getIdentifier() {
   return "vtk::Cartesian::cells::limited::ascii";
 }
-
-
 exahype::plotters::LimitingADERDG2CartesianCellsVTKAscii::LimitingADERDG2CartesianCellsVTKAscii(
     exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
     const int ghostLayerWidth):
-    LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,false,true) {
+    LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,PlotterType::ASCIIVTK,true) {
 }
-
 
 std::string exahype::plotters::LimitingADERDG2CartesianCellsVTKBinary::getIdentifier() {
  return "vtk::Cartesian::cells::limited::binary";
 }
-
-
 exahype::plotters::LimitingADERDG2CartesianCellsVTKBinary::LimitingADERDG2CartesianCellsVTKBinary(
     exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
     const int ghostLayerWidth):
-    LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,true,true) {
+    LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,PlotterType::BinaryVTK,true) {
+}
+
+// VTU subclasses
+std::string exahype::plotters::LimitingADERDG2CartesianVerticesVTUAscii::getIdentifier() {
+  return "vtu::Cartesian::vertices::limited::ascii";
+}
+exahype::plotters::LimitingADERDG2CartesianVerticesVTUAscii::LimitingADERDG2CartesianVerticesVTUAscii(
+    exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
+    const int ghostLayerWidth):
+    LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,PlotterType::ASCIIVTU,false) {
+}
+
+std::string exahype::plotters::LimitingADERDG2CartesianVerticesVTUBinary::getIdentifier() {
+  return "vtu::Cartesian::vertices::limited::binary";
+}
+exahype::plotters::LimitingADERDG2CartesianVerticesVTUBinary::LimitingADERDG2CartesianVerticesVTUBinary(
+    exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
+    const int ghostLayerWidth):
+    LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,PlotterType::BinaryVTU,false) {
+}
+
+std::string exahype::plotters::LimitingADERDG2CartesianCellsVTUAscii::getIdentifier() {
+  return "vtu::Cartesian::cells::limited::ascii";
+}
+exahype::plotters::LimitingADERDG2CartesianCellsVTUAscii::LimitingADERDG2CartesianCellsVTUAscii(
+    exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
+    const int ghostLayerWidth):
+    LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,PlotterType::ASCIIVTU,true) {
+}
+
+std::string exahype::plotters::LimitingADERDG2CartesianCellsVTUBinary::getIdentifier() {
+ return "vtu::Cartesian::cells::limited::binary";
+}
+exahype::plotters::LimitingADERDG2CartesianCellsVTUBinary::LimitingADERDG2CartesianCellsVTUBinary(
+    exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
+    const int ghostLayerWidth):
+    LimitingADERDG2CartesianVTK(postProcessing,ghostLayerWidth,PlotterType::BinaryVTU,true) {
 }
 
 tarch::logging::Log exahype::plotters::LimitingADERDG2CartesianVTK::_log("exahype::plotters::LimitingADERDG2CartesianVTK");
@@ -85,26 +112,13 @@ tarch::logging::Log exahype::plotters::LimitingADERDG2CartesianVTK::_log("exahyp
 exahype::plotters::LimitingADERDG2CartesianVTK::LimitingADERDG2CartesianVTK(
     exahype::plotters::Plotter::UserOnTheFlyPostProcessing* postProcessing,
     const int ghostLayerWidth,
-    const bool isBinary, const bool plotCells)
+    PlotterType plotterType,
+    const bool plotCells)
   :
   Device(postProcessing),
-  _fileCounter(-1),
-  _isBinary(isBinary),
+  _plotterType(plotterType),
   _plotCells(plotCells),
-  _order(-1),
-  _solverUnknowns(-1),
-  _writtenUnknowns(-1),
-  _ghostLayerWidth(ghostLayerWidth),
-  _gridWriter(nullptr),
-  _patchWriter(nullptr),
-  _vertexDataWriter(nullptr),
-  _cellDataWriter(nullptr),
-  _timeStampVertexDataWriter(nullptr),
-  _timeStampCellDataWriter(nullptr),
-  _cellLimiterStatusWriter(nullptr),
-  _vertexLimiterStatusWriter(nullptr),
-  _cellPreviousLimiterStatusWriter(nullptr),
-  _vertexPreviousLimiterStatusWriter(nullptr)
+  _ghostLayerWidth(ghostLayerWidth)
 {}
 
 
@@ -136,15 +150,27 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::startPlotting( double time 
   assertion( _patchWriter==nullptr );
 
   if (_writtenUnknowns>0) {
-    if (_isBinary) {
+    switch (_plotterType) {
+    case PlotterType::BinaryVTK:
       _patchWriter =
-        new tarch::plotter::griddata::blockstructured::PatchWriterUnstructured(
-          new tarch::plotter::griddata::unstructured::vtk::VTKBinaryFileWriter());
-    }
-    else {
+          new tarch::plotter::griddata::blockstructured::PatchWriterUnstructured(
+              new tarch::plotter::griddata::unstructured::vtk::VTKBinaryFileWriter());
+      break;
+    case PlotterType::ASCIIVTK:
       _patchWriter =
-        new tarch::plotter::griddata::blockstructured::PatchWriterUnstructured(
-          new tarch::plotter::griddata::unstructured::vtk::VTKTextFileWriter());
+          new tarch::plotter::griddata::blockstructured::PatchWriterUnstructured(
+              new tarch::plotter::griddata::unstructured::vtk::VTKTextFileWriter());
+      break;
+    case PlotterType::BinaryVTU:
+      _patchWriter =
+          new tarch::plotter::griddata::blockstructured::PatchWriterUnstructured(
+              new tarch::plotter::griddata::unstructured::vtk::VTUBinaryFileWriter());
+      break;
+    case PlotterType::ASCIIVTU:
+      _patchWriter =
+          new tarch::plotter::griddata::blockstructured::PatchWriterUnstructured(
+              new tarch::plotter::griddata::unstructured::vtk::VTUTextFileWriter());
+      break;
     }
 
     _gridWriter                  = _patchWriter->createSinglePatchWriter();
@@ -177,6 +203,8 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::startPlotting( double time 
   }
 
   _postProcessing->startPlotting( time );
+
+  _time = time;
 }
 
 
@@ -199,8 +227,22 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::finishPlotting() {
     _timeStampVertexDataWriter->close();
 
     std::ostringstream snapshotFileName;
-    snapshotFileName << _filename
-                     << "-" << _fileCounter;
+    snapshotFileName << _filename << "-" << _fileCounter;
+
+    switch (_plotterType) {
+      case PlotterType::BinaryVTK:
+        break;
+      case PlotterType::ASCIIVTK:
+        break;
+      case PlotterType::BinaryVTU:
+        _timeSeriesWriter.addSnapshot( snapshotFileName.str(), _time);
+        _timeSeriesWriter.writeFile(_filename);
+        break;
+      case PlotterType::ASCIIVTU:
+        _timeSeriesWriter.addSnapshot( snapshotFileName.str(), _time);
+        _timeSeriesWriter.writeFile(_filename);
+        break;
+    }
 
     const bool hasBeenSuccessful =
       _patchWriter->writeToFile(snapshotFileName.str());
@@ -209,16 +251,16 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::finishPlotting() {
     }
   }
 
-  if (_vertexDataWriter!=nullptr)          delete _vertexDataWriter;
-  if (_cellDataWriter!=nullptr)            delete _cellDataWriter;
-  if (_timeStampVertexDataWriter!=nullptr) delete _timeStampVertexDataWriter;
-  if (_timeStampCellDataWriter!=nullptr)   delete _timeStampCellDataWriter;
-  if (_cellLimiterStatusWriter!=nullptr)   delete _cellLimiterStatusWriter;
-  if (_vertexLimiterStatusWriter!=nullptr) delete _vertexLimiterStatusWriter;
+  if (_vertexDataWriter!=nullptr)                  delete _vertexDataWriter;
+  if (_cellDataWriter!=nullptr)                    delete _cellDataWriter;
+  if (_timeStampVertexDataWriter!=nullptr)         delete _timeStampVertexDataWriter;
+  if (_timeStampCellDataWriter!=nullptr)           delete _timeStampCellDataWriter;
+  if (_cellLimiterStatusWriter!=nullptr)           delete _cellLimiterStatusWriter;
+  if (_vertexLimiterStatusWriter!=nullptr)         delete _vertexLimiterStatusWriter;
   if (_cellPreviousLimiterStatusWriter!=nullptr)   delete _cellPreviousLimiterStatusWriter;
   if (_vertexPreviousLimiterStatusWriter!=nullptr) delete _vertexPreviousLimiterStatusWriter;
-  if (_gridWriter!=nullptr)                delete _gridWriter;
-  if (_patchWriter!=nullptr)               delete _patchWriter;
+  if (_gridWriter!=nullptr)                        delete _gridWriter;
+  if (_patchWriter!=nullptr)                       delete _patchWriter;
 
   _vertexDataWriter                  = nullptr;
   _cellDataWriter                    = nullptr;
@@ -229,7 +271,7 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::finishPlotting() {
   _vertexLimiterStatusWriter         = nullptr;
   _cellPreviousLimiterStatusWriter   = nullptr;
   _vertexPreviousLimiterStatusWriter = nullptr;
-  _gridWriter                = nullptr;
+  _gridWriter                        = nullptr;
 }
 
 
