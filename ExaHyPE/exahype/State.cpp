@@ -132,12 +132,7 @@ exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEven
     return RefinementAnswer::DontRefineYet;
   }
   #else
-  if (isCreationalEvent) {
-    return RefinementAnswer::Refine;
-  }
-  else {
-    return RefinementAnswer::DontRefineYet;
-  }
+  return RefinementAnswer::Refine;
   #endif
 }
 
