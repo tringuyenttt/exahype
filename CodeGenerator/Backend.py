@@ -45,6 +45,7 @@ import BoundaryConditionsGenerator
 import ConverterGenerator
 import GemmsCPPGenerator
 import AMRRoutinesGenerator
+import DeltaDistributionGenerator
 
 g_runtimes               = {}
 g_config                 = {}
@@ -163,6 +164,10 @@ def generateComputeKernels():
     amrRoutinesGenerator = AMRRoutinesGenerator.AMRRoutinesGenerator(generateContext(g_config))
     amrRoutinesGenerator.generateCode()
     g_runtimes['amrRoutinesGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
+    deltaDistributionGenerator = DeltaDistributionGenerator.DeltaDistributionGenerator(generateContext(g_config))
+    deltaDistributionGenerator.generateCode()
+    g_runtimes['deltaDistributionGenerator'] = time.perf_counter() - start
 
 
 def executeLibxsmmGenerator(i_commandLineParameters):

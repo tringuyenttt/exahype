@@ -96,9 +96,16 @@ if(useGeneric) {
   {{optNamespace}}::converter::Qhbnd_optimised2generic(lQhbnd, Qbnd);
   {{optNamespace}}::converter::Fhbnd_optimised2generic(lFhbnd, Fbnd);
   
+{%- if usePointSources %}
+  double* pointForceSources_g = new double[{{optNamespace}}::converter::getPSiGenArraySize()];
+  {{optNamespace}}::converter::PSi_optimised2generic(pointForceSources,pointForceSources_g);
+{%- else %}
+  double* pointForceSources_g = nullptr;
+{%- endif %}
+  
   
 {%- if  isLinear %}
-  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt, pointForceSources);
+  kernels::aderdg::generic::c::spaceTimePredictorLinear<{{usePointSources}}, {{useSource}}, {{useFlux}}, {{useNCP}}, {{useMaterialParam}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt, pointForceSources_g);
 {%- else %}
   kernels::aderdg::generic::c::spaceTimePredictorNonlinear<{{useSource}}, {{useFlux}}, {{useNCP}}, {{noTimeAveraging}}, {{solver}}>(*static_cast<{{solver}}*>(this), Qbnd, Fbnd, tempSpaceTimeUnknowns, tempSpaceTimeFluxUnknowns, lQhi, lFhi, luh, &dx[0], dt);
 {%- endif %}
@@ -112,6 +119,9 @@ if(useGeneric) {
   delete[] lFhi;
   delete[] Qbnd;
   delete[] Fbnd;
+{%- if usePointSources %}
+  delete[] pointForceSources_g;
+{%- endif %}
     
     
 } else {
@@ -337,7 +347,6 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double *luh,const tarch::la
   _profiler->start("solutionAdjustment");
 {%- endif %}
   {{optNamespace}}::adjustPointSolution(*static_cast<{{solver}}*>(this), luh, center, dx, t, dt );
-
 {%- if enableProfiler %}
   _profiler->stop("solutionAdjustment");
 {%- endif %}
@@ -350,8 +359,22 @@ void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const dou
 {%- if enableProfiler %}
   _profiler->start("deltaDistribution");
 {%- endif %}
-  //TODO JMG
-  kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx,getNodesPerCoordinateAxis(), tempPointForceSources);
+  constexpr bool useGeneric = true;
+  
+  if(useGeneric) {
+    double** tmp = new double*[2];
+    tmp[0] = new double[{{optNamespace}}::converter::getPSiGenArraySize()];
+    tmp[1] = new double[{{optNamespace}}::converter::getPSiGenArraySize()];
+    kernels::aderdg::generic::c::deltaDistribution<{{solver}}>(*static_cast<{{solver}}*>(this), t, dt, center, dx,getNodesPerCoordinateAxis(), tmp);
+    
+    {{optNamespace}}::converter::PSi_generic2optimised(tmp[0],tempPointForceSources[0]);
+    
+    delete[] tmp[0];
+    delete[] tmp[1];
+    delete[] tmp;
+  } else {
+    {{optNamespace}}::deltaDistribution(*static_cast<{{solver}}*>(this), t, dt, center, dx, tempPointForceSources);
+  }
 {%- if enableProfiler %}
   _profiler->stop("deltaDistribution");
 {%- endif %}

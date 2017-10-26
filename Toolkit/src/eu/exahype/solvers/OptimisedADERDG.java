@@ -44,7 +44,7 @@ public class OptimisedADERDG implements Solver {
     
     //generate the optimised kernel, can throw IOException
     final String optKernelPath = CodeGeneratorHelper.getInstance().invokeCodeGenerator(projectName, solverName, numberOfVariables, numberOfParameters, order, isLinear, dimensions,
-        microarchitecture, enableDeepProfiler, useFlux, useSource, useNCP, usePointSources, noTimeAveraging);
+        microarchitecture, enableDeepProfiler, useFlux, useSource, useNCP, numberOfPointSources, noTimeAveraging);
     final String optNamespace = CodeGeneratorHelper.getInstance().getNamespace(projectName, solverName);
     
     templateEngine = new TemplateEngine();
