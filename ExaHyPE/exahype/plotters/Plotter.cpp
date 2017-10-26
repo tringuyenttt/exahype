@@ -420,6 +420,7 @@ exahype::plotters::Plotter::Plotter(
        * This is actually some kind of switch expression though switches do
        * not work for strings, so we map it onto an if-then-else cascade.
        */
+      // VTK
       if (equalsIgnoreCase(_identifier, LimitingADERDG2CartesianVerticesVTKAscii::getIdentifier())) {
         _device = new LimitingADERDG2CartesianVerticesVTKAscii(
             postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
@@ -440,7 +441,29 @@ exahype::plotters::Plotter::Plotter(
             postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
                 solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
       }
+      // VTU
+      if (equalsIgnoreCase(_identifier, LimitingADERDG2CartesianVerticesVTUAscii::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianVerticesVTUAscii(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_identifier, LimitingADERDG2CartesianVerticesVTUBinary::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianVerticesVTUBinary(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_identifier, LimitingADERDG2CartesianCellsVTUAscii::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianCellsVTUAscii(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_identifier, LimitingADERDG2CartesianCellsVTUBinary::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianCellsVTUBinary(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
 
+      // plot only the FV subcells
       if (equalsIgnoreCase( _identifier, LimitingADERDGSubcells2CartesianCellsVTKAscii::getIdentifier() )) {
         _device = new LimitingADERDGSubcells2CartesianCellsVTKAscii(
             postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
