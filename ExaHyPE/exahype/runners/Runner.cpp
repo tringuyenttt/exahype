@@ -787,6 +787,13 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
   }
   #endif
 
+  #if  defined(SharedTBBInvade)
+  logInfo(
+    "postProcessTimeStepInSharedMemoryEnvironment(Repository)",
+    "number of active threads: " <<
+    tarch::multicore::Core::getInstance().getNumberOfThreads()
+  );
+  #endif
 }
 
 
