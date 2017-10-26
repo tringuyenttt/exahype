@@ -277,7 +277,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
   _profiler->start("riemannSolver");
 {%- endif %}
 
-constexpr bool useGeneric = true;
+constexpr bool useGeneric = false;
   
 if(useGeneric) {
   
