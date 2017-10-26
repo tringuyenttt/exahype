@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <cstring>
 #include "{{pathToOptKernel}}/Kernels.h"
-#include "{{pathToOptKernel}}/GaussLegendreQuadrature.h"
+#include "{{pathToOptKernel}}/Quadrature.h"
 
 void {{codeNamespace}}::predictorNonlinear(
         const double* restrict const lQi, 

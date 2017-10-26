@@ -15,7 +15,7 @@
 
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
-#include "{{pathToOptKernel}}/GaussLegendreQuadrature.h"
+#include "{{pathToOptKernel}}/Quadrature.h"
 
 
 // Helper template functions

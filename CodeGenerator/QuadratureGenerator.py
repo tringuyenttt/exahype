@@ -22,11 +22,11 @@ import TemplatingUtils
 import Utils #matrix operation and build functions
 
 
-class WeightsGenerator:
+class QuadratureGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filenameRoot = "GaussLegendreQuadrature"
+    m_filenameRoot = "Quadrature"
     
     # quadrature nodes and weights mapped onto [0,1]
     m_wGPN       = []
@@ -38,6 +38,7 @@ class WeightsGenerator:
         
 
     def generateCode(self):
+        self.m_context['quadratureType'] = 'Gauss-Legendre'
         l_weightsVector      = Utils.vectorPad(self.m_wGPN, self.m_context['nDofPad'] - self.m_context['nDof'])
         self.m_context['weights1'] = l_weightsVector
         self.m_context['w1Size'] = len(self.m_context['weights1'])
@@ -74,19 +75,12 @@ class WeightsGenerator:
         else:
             print("WeightsGenerator.__generateWeightsCombinations(): nDim not supported")
 
-        
-        self.m_context['maxOrder'] = 9 #inclusive
-        self.m_context['GL_seq'] = range(1,self.m_context['maxOrder']+2)
-        self.m_context['wGPN'] = [[] for _ in range(self.m_context['maxOrder']+2)]
-        self.m_context['xGPN'] = [[] for _ in range(self.m_context['maxOrder']+2)]
-        self.m_context['GPN_seq'] = [[] for _ in range(self.m_context['maxOrder']+2)]
-        for i in self.m_context['GL_seq']:
-            self.m_context['wGPN'][i], self.m_context['xGPN'][i] = Utils.getGaussLegendre(i)
-            self.m_context['GPN_seq'][i] = range(i)
+        self.m_context['wGPN'], self.m_context['xGPN'] = Utils.getGaussLegendre(self.m_context['nDof'])
+        self.m_context['GPN_seq'] = range(self.m_context['nDof'])
         
         #generate files 
-        TemplatingUtils.renderAsFile('GaussLegendreQuadrature_h.template',   self.m_filenameRoot+'.h',   self.m_context)
-        TemplatingUtils.renderAsFile('GaussLegendreQuadrature_cpp.template', self.m_filenameRoot+'.cpp', self.m_context)
+        TemplatingUtils.renderAsFile('Quadrature_h.template',   self.m_filenameRoot+'.h',   self.m_context)
+        TemplatingUtils.renderAsFile('Quadrature_cpp.template', self.m_filenameRoot+'.cpp', self.m_context)
 
         
 

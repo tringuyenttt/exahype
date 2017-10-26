@@ -37,7 +37,7 @@ import RiemannGenerator
 import SolutionUpdateGenerator
 import AdjustSolutionGenerator
 import StableTimeStepSizeGenerator
-import WeightsGenerator
+import QuadratureGenerator
 import DGMatrixGenerator
 import ConfigurationParametersGenerator
 import BoundaryConditionsGenerator
@@ -117,8 +117,8 @@ def generateComputeKernels():
     adjustSolutionGenerator.generateCode()
     stableTimeStepSizeGenerator = StableTimeStepSizeGenerator.StableTimeStepSizeGenerator(generateContext(g_config))
     stableTimeStepSizeGenerator.generateCode()
-    weightsGenerator = WeightsGenerator.WeightsGenerator(generateContext(g_config))
-    weightsGenerator.generateCode()
+    quadratureGenerator = QuadratureGenerator.QuadratureGenerator(generateContext(g_config))
+    quadratureGenerator.generateCode()
     dgMatrixGenerator = DGMatrixGenerator.DGMatrixGenerator(generateContext(g_config))
     dgMatrixGenerator.generateCode()
     gemmsCPPGenerator = GemmsCPPGenerator.GemmsCPPGenerator(generateContext(g_config))

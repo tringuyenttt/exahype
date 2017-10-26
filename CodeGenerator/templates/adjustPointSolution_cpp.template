@@ -12,7 +12,7 @@
  **/ #}
 
 #include "{{pathToOptKernel}}/Kernels.h"
-#include "{{pathToOptKernel}}/GaussLegendreQuadrature.h"
+#include "{{pathToOptKernel}}/Quadrature.h"
 
 #include "{{solverHeader}}"
 
@@ -24,14 +24,14 @@ void {{codeNamespace}}::adjustPointSolution(
   const double t,
   const double dt
 ) {
-  double x[{{nDimPad}}];
+  double x[{{nDim}}];
   int pos = 0;
 
 {% if nDim == 2 %} 
   for(int j=0;j<{{nDof}};j++) {
-    x[1] = center[1] + dx[1] * (gaussLegendreNodes[{{order}}][j] - 0.5);
+    x[1] = center[1] + dx[1] * (nodes[j] - 0.5);
     for(int i=0;i<{{nDof}};i++) {
-      x[0] = center[0] + dx[0] * (gaussLegendreNodes[{{order}}][i] - 0.5);
+      x[0] = center[0] + dx[0] * (nodes[i] - 0.5);
 
       solver.{{solverName}}::adjustPointSolution(x, t, dt, &luh[pos*{{nData}}]);
       pos++;
@@ -40,11 +40,11 @@ void {{codeNamespace}}::adjustPointSolution(
 {% endif %}
 {% if nDim == 3 %} 
   for(int k=0;k<{{nDof}};k++) {
-    x[2] = center[2] + dx[2] * (gaussLegendreNodes[{{order}}][k] - 0.5);
+    x[2] = center[2] + dx[2] * (nodes[k] - 0.5);
     for(int j=0;j<{{nDof}};j++) {
-      x[1] = center[1] + dx[1] * (gaussLegendreNodes[{{order}}][j] - 0.5);
+      x[1] = center[1] + dx[1] * (nodes[j] - 0.5);
       for(int i=0;i<{{nDof}};i++) {
-        x[0] = center[0] + dx[0] * (gaussLegendreNodes[{{order}}][i] - 0.5);
+        x[0] = center[0] + dx[0] * (nodes[i] - 0.5);
 
         solver.{{solverName}}::adjustPointSolution(x, t, dt, &luh[pos*{{nData}}]);
         pos++;

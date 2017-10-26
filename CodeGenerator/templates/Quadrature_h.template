@@ -11,21 +11,22 @@
  * For the full license text, see LICENSE.txt
  **/ #}
 
-#ifndef _EXAHYPE_{{guardNamespace}}_WEIGHTS_H_
-#define _EXAHYPE_{{guardNamespace}}_WEIGHTS_H_
+#ifndef _EXAHYPE_{{guardNamespace}}_QUADRATURE_H_
+#define _EXAHYPE_{{guardNamespace}}_QUADRATURE_H_
 
 
 #include <set>
+
+// Use {{quadratureType}} quadrature
 
 {% for namespaceName in codeNamespaceList %}
 namespace {{namespaceName}} {
 {% endfor %}
 
-void initGaussLegendreNodesAndWeights(const std::set<int>& orders);
-void freeGaussLegendreNodesAndWeights(const std::set<int>& orders);
+void initQuadratureNodesAndWeights(const std::set<int>& orders);
+void freeQuadratureNodesAndWeights(const std::set<int>& orders);
 
-extern double **gaussLegendreNodes;
-extern double **gaussLegendreWeights;
+extern double *nodes;
 extern double *weights1;
 extern double *weights2;
 extern double *weights3;
@@ -33,4 +34,4 @@ extern double *weights3;
 {% for namespaceName in codeNamespaceList %}
 }
 {% endfor %}
-#endif /* _EXAHYPE_{{guardNamespace}}_WEIGHTS_H_ */
+#endif /* _EXAHYPE_{{guardNamespace}}_QUADRATURE_H_ */

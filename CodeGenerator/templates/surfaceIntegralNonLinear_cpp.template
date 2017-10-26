@@ -16,7 +16,7 @@
 #include <cstring>
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
-#include "{{pathToOptKernel}}/GaussLegendreQuadrature.h"
+#include "{{pathToOptKernel}}/Quadrature.h"
 
 
 void {{codeNamespace}}::surfaceIntegral( 

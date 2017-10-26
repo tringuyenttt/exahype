@@ -108,7 +108,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       _writer.write("#include \"kernels/DGBasisFunctions.h\"\n");
       _writer.write("#include \"buildinfo.h\"\n\n");
       for(String subPath : CodeGeneratorHelper.getInstance().getIncludePaths()) {
-        _writer.write("#include \""+subPath+"/GaussLegendreQuadrature.h\"\n");
+        _writer.write("#include \""+subPath+"/Quadrature.h\"\n");
         _writer.write("#include \""+subPath+"/DGMatrices.h\"\n");
       }       
 
@@ -382,7 +382,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
           "  kernels::initDGMatrices(orders);\n" +
           "  kernels::initBasisFunctions(orders);\n");
       for(String namespace : CodeGeneratorHelper.getInstance().getNamespaces()) {
-        _methodBodyWriter.write("  "+namespace+"::initGaussLegendreNodesAndWeights(orders);\n");
+        _methodBodyWriter.write("  "+namespace+"::initQuadratureNodesAndWeights(orders);\n");
         _methodBodyWriter.write("  "+namespace+"::initDGMatrices();\n");
       }
       _methodBodyWriter.write("}\n"); // close initSolvers(...)
@@ -400,7 +400,7 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
           "  kernels::freeDGMatrices(orders);\n"+
           "  kernels::freeBasisFunctions(orders);\n");
       for(String namespace : CodeGeneratorHelper.getInstance().getNamespaces()) {
-        _methodBodyWriter.write("  "+namespace+"::freeGaussLegendreNodesAndWeights(orders);\n");
+        _methodBodyWriter.write("  "+namespace+"::freeQuadratureNodesAndWeights(orders);\n");
         _methodBodyWriter.write("  "+namespace+"::freeDGMatrices();\n");
       }    
       _methodBodyWriter.write(
