@@ -17,6 +17,8 @@
 
 #include "tarch/compiler/CompilerSpecificSettings.h"
 
+#include "peano/performanceanalysis/ScorePMacros.h"
+
 #if !defined(CompilerICC)
 #include "peano/grid/Grid.cpph"
 #endif
@@ -229,6 +231,8 @@ void exahype::repositories::RepositoryArrayStack::iterate(int numberOfIterations
   peano::datatraversal::autotuning::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
   #endif
   
+  SCOREP_USER_REGION( "exahype::repositories::RepositoryArrayStack::iterate::" + _repositoryState.toString( _repositoryState.getAction() ), SCOREP_USER_REGION_TYPE_LOOP )
+
   for (int i=0; i<numberOfIterations; i++) {
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
