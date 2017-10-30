@@ -188,8 +188,10 @@ const exahype::State& exahype::repositories::RepositorySTDStack::getState() cons
 
 
 void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, bool exchangeBoundaryVertices) {
-  tarch::timing::Watch watch( "exahype::repositories::RepositorySTDStack", "iterate(bool)", false);
+  SCOREP_USER_REGION( (std::string("exahype::repositories::RepositorySTDStack::iterate() - ") + _repositoryState.toString( _repositoryState.getAction() )).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
 
+  tarch::timing::Watch watch( "exahype::repositories::RepositorySTDStack", "iterate(bool)", false);
+  
   #ifdef Parallel
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
     _repositoryState.setNumberOfIterations(numberOfIterations);
@@ -223,9 +225,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   #else
   peano::datatraversal::autotuning::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
   #endif
-
-  SCOREP_USER_REGION( "exahype::repositories::RepositorySTDStack::iterate::" + _repositoryState.toString( _repositoryState.getAction() ), SCOREP_USER_REGION_TYPE_LOOP )
-
+  
   for (int i=0; i<numberOfIterations; i++) {
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;

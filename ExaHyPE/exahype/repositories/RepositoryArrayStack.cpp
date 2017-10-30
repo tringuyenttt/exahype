@@ -195,6 +195,8 @@ const exahype::State& exahype::repositories::RepositoryArrayStack::getState() co
 
    
 void exahype::repositories::RepositoryArrayStack::iterate(int numberOfIterations, bool exchangeBoundaryVertices) {
+  SCOREP_USER_REGION( (std::string("exahype::repositories::RepositoryArrayStack::iterate() - ") + _repositoryState.toString( _repositoryState.getAction() )).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
+
   tarch::timing::Watch watch( "exahype::repositories::RepositoryArrayStack", "iterate(bool)", false);
   
   #ifdef Parallel
@@ -231,8 +233,6 @@ void exahype::repositories::RepositoryArrayStack::iterate(int numberOfIterations
   peano::datatraversal::autotuning::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
   #endif
   
-  SCOREP_USER_REGION( "exahype::repositories::RepositoryArrayStack::iterate::" + _repositoryState.toString( _repositoryState.getAction() ), SCOREP_USER_REGION_TYPE_LOOP )
-
   for (int i=0; i<numberOfIterations; i++) {
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;

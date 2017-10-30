@@ -65,6 +65,8 @@
 
 #include "tarch/multicore/MulticoreDefinitions.h"
 
+#include "peano/performanceanalysis/SpeedupLaws.h"
+
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
@@ -788,11 +790,27 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
   #endif
 
   #if  defined(SharedTBBInvade)
-  logInfo(
-    "postProcessTimeStepInSharedMemoryEnvironment(Repository)",
-    "number of active threads: " <<
-    tarch::multicore::Core::getInstance().getNumberOfThreads()
+  static tarch::timing::Watch invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
+  static SHMInvade*                               concurrencyLevel = nullptr;
+  static peano::performanceanalysis::SpeedupLaws  amdahlsLaw;
+
+  invasionWatch.stopTimer();
+
+  amdahlsLaw.addMeasurement(
+    // returns   return _invadeRoot.get_num_active_threads();
+    tarch::multicore::Core::getInstance().getNumberOfThreads(),
+    invasionWatch.getCalendarTime()
   );
+  amdahlsLaw.relaxAmdahlsLaw();
+
+  if (concurrencyLevel != nullptr) {
+    delete concurrencyLevel;
+    concurrencyLevel = nullptr;
+  }
+
+  concurrencyLevel = new SHMInvade(2 + (rand() % static_cast<int>(8)));
+
+  invasionWatch.startTimer();
   #endif
 }
 
