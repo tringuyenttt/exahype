@@ -113,6 +113,8 @@ exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEven
     _stateData.getMaxRefinementLevelAllowed()<=-2
     &&
     isCreationalEvent
+    &&
+    !isInvolvedInJoinOrFork() // A Peano assertion was triggered
   ) {
     return RefinementAnswer::EnforceRefinement;
   }
