@@ -192,7 +192,7 @@ int exahype::main(int argc, char** argv) {
   std::string progname = argv[0];
 
   if (argc < 2) {
-    logError("main()", "Usage: " << progname << " config-file [additional args passed to Solver...]");
+    logError("main()", "Usage: " << progname << " --help");
     return -1;
   }
 
@@ -202,6 +202,7 @@ int exahype::main(int argc, char** argv) {
 
   bool showHelp    = firstarg == "-h" || firstarg == "--help";
   bool showVersion = firstarg == "-v" || firstarg == "--version";
+  bool runTests    = firstarg == "-t" || firstarg == "--tests";
 
   if(showHelp) {
     help(progname);
@@ -211,6 +212,32 @@ int exahype::main(int argc, char** argv) {
   if(showVersion) {
     std::cout << version(progname);
     return EXIT_SUCCESS;
+  }
+
+  if (runTests) {
+    //
+    //   Run tests
+    // =============
+    // Our unit tests do cover the generic ADER-DG kernels. The generic kernels do
+    // parallelise. As a consequence, they connect to the autotuning feature.
+    // Autotuning however is not set up yet, so this will fail. We therefore
+    // disable the unit tests in shared memory mode.
+    //
+
+    //#if (defined(Debug) || defined(Asserts)) && !defined(SharedMemoryParallelisation)
+    //if(! std::getenv("EXAHYPE_SKIP_TESTS")) { // cf issue #74
+    tarch::tests::TestCaseRegistry::getInstance().getTestCaseCollection().run();
+    int testExitCode = tarch::tests::TestCaseRegistry::getInstance()
+                           .getTestCaseCollection()
+                           .getNumberOfErrors();
+
+    if (testExitCode != 0) {
+      logError("main()", "unit tests failed. Quit.");
+      return -2;
+    }
+    else {
+      return EXIT_SUCCESS;
+    }
   }
 
   exahype::Parser parser;
@@ -226,17 +253,6 @@ int exahype::main(int argc, char** argv) {
   // =====================================
   //
   kernels::initSolvers(parser, cmdlineargs);
-
-  /*
-  // We had this before to show the real solver registration, ie. like
-  //    exahype::solvers::RegisteredSolvers->toString(ostream);
-  // This needs kernels::initSolvers(parser...) to be called.
-  if (onlyShowVersion) {
-    version();
-    kernels::finalise();
-    return 0;
-  }
-  */
 
   //
   //   Configure the logging
@@ -290,31 +306,6 @@ int exahype::main(int argc, char** argv) {
                                                              "exahype", false));
   }
 
-//
-//   Run tests
-// =============
-// Our unit tests do cover the generic ADER-DG kernels. The generic kernels do
-// parallelise. As a consequence, they connect to the autotuning feature.
-// Autotuning however is not set up yet, so this will fail. We therefore
-// disable the unit tests in shared memory mode.
-//
-#if (defined(Debug) || defined(Asserts)) && !defined(SharedMemoryParallelisation)
-if(! std::getenv("EXAHYPE_SKIP_TESTS")) { // cf issue #74
-  tarch::tests::TestCaseRegistry::getInstance().getTestCaseCollection().run();
-  int testExitCode = tarch::tests::TestCaseRegistry::getInstance()
-                         .getTestCaseCollection()
-                         .getNumberOfErrors();
-
-  if (testExitCode != 0) {
-    logError("main()", "unit tests failed. Quit.");
-    return -2;
-  }
-} else {
-  logInfo("main()", "Skipping tests as EXAHYPE_SKIP_TESTS is set."
-     "We do so because tests are broken in the moment and nobody repairs them."); //  TODO(Sven,Dominic,JM): Fix tests.
-} // end if getenv(EXAHYPE_SKIP_TESTS)
-#endif
-
   exahype::runners::Runner runner(parser);
   int programExitCode = runner.run();
 
@@ -349,8 +340,9 @@ void exahype::help(const std::string& programname) {
   std::cout << "\n";
   std::cout << "   Other possible parameters:\n";
   std::cout << "\n";
-  std::cout << "    --help     Show this help message\n";
-  std::cout << "    --version  Show version and other hard coded information\n";
+  std::cout << "    --help | -h    Show this help message\n";
+  std::cout << "    --version | -v Show version and other hard coded information\n";
+  std::cout << "    --tests | -t   Run the unit tests\n";
   std::cout << "\n";
 }
 
