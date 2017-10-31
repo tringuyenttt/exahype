@@ -217,6 +217,8 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
     peano::parallel::loadbalancing::Oracle::getInstance().activateLoadBalancing(false);
   }
 
+  assertion1(_repositoryState.getAction()>=0,_repositoryState.toString());
+
   peano::datatraversal::autotuning::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
 
   peano::parallel::loadbalancing::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
@@ -359,6 +361,7 @@ exahype::repositories::RepositorySTDStack::ContinueCommand exahype::repositories
     assertion( masterNode != -1 );
 
     _repositoryState.receive( masterNode, peano::parallel::SendReceiveBufferPool::getInstance().getIterationManagementTag(), true, ReceiveIterationControlMessagesBlocking );
+    assertion1(_repositoryState.getAction()>=0,_repositoryState.toString());
 
     result = Continue;
     if (_repositoryState.getAction()==exahype::records::RepositoryState::Terminate) {
