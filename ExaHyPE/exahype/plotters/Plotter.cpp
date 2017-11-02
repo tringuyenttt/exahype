@@ -336,7 +336,25 @@ exahype::plotters::Plotter::Plotter(
       if (equalsIgnoreCase(_identifier, ADERDG2CartesianVerticesPeanoFileFormatAscii::getIdentifier())) {
         _device = new ADERDG2CartesianVerticesPeanoFileFormatAscii(postProcessing);
       }
+      if (equalsIgnoreCase(_identifier, ADERDG2CartesianCellsPeanoFileFormatHDF5::getIdentifier())) {
+        _device = new ADERDG2CartesianCellsPeanoFileFormatHDF5(postProcessing);
+      }
+      if (equalsIgnoreCase(_identifier, ADERDG2CartesianVerticesPeanoFileFormatHDF5::getIdentifier())) {
+        _device = new ADERDG2CartesianVerticesPeanoFileFormatHDF5(postProcessing);
+      }
 
+      if (equalsIgnoreCase(_identifier, ADERDG2LegendreCellsPeanoFileFormatAscii::getIdentifier())) {
+        _device = new ADERDG2LegendreCellsPeanoFileFormatAscii(postProcessing);
+      }
+      if (equalsIgnoreCase(_identifier, ADERDG2LegendreVerticesPeanoFileFormatAscii::getIdentifier())) {
+        _device = new ADERDG2LegendreVerticesPeanoFileFormatAscii(postProcessing);
+      }
+      if (equalsIgnoreCase(_identifier, ADERDG2LegendreCellsPeanoFileFormatHDF5::getIdentifier())) {
+        _device = new ADERDG2LegendreCellsPeanoFileFormatHDF5(postProcessing);
+      }
+      if (equalsIgnoreCase(_identifier, ADERDG2LegendreVerticesPeanoFileFormatHDF5::getIdentifier())) {
+        _device = new ADERDG2LegendreVerticesPeanoFileFormatHDF5(postProcessing);
+      }
       if (equalsIgnoreCase(_identifier, ADERDG2CartesianVerticesVTKAscii::getIdentifier())) {
         _device = new ADERDG2CartesianVerticesVTKAscii(postProcessing);
       }
