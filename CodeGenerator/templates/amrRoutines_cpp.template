@@ -64,7 +64,7 @@ void {{codeNamespace}}::faceUnknownsProlongation(
   // Per iteration, the digits corresponding to the current significances then determine
   // the subintervals for the single level prolongation.
   for (int l = 1; l < levelDelta+1; ++l) {
-    const int significance = (levelDelta-l)*(levelDelta-l)*(levelDelta-l);
+    const int significance = tarch::la::aPowI(levelDelta-l,3);
     subfaceIndexCurrent_0 = subfaceIndexPrevious_0 % significance;
     subintervalIndex_0    = (subfaceIndexPrevious_0 - subfaceIndexCurrent_0)/significance;
     assertion(subintervalIndex_0 < 3);
@@ -374,7 +374,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
   // Per iteration, the digits corresponding to the current significances then determine
   // the subintervals for the single level prolongation.
   for (int l = 1; l < levelDelta+1; ++l) {
-    const int significance = (levelDelta-l)*(levelDelta-l)*(levelDelta-l);
+    const int significance = tarch::la::aPowI(levelDelta-l,3);
     subcellIndexCurrent_0 = subcellIndexPrevious_0 % significance;
     subintervalIndex_0    = (subcellIndexPrevious_0 - subcellIndexCurrent_0)/significance;
     assertion(subintervalIndex_0 < 3);
