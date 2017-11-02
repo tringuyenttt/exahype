@@ -790,25 +790,25 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
   #endif
 
   #if  defined(SharedTBBInvade)
-  static tarch::timing::Watch invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
-  static SHMInvade*                               concurrencyLevel = nullptr;
+  static tarch::timing::Watch                     invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
   static peano::performanceanalysis::SpeedupLaws  amdahlsLaw;
 
   invasionWatch.stopTimer();
 
+  // @todo debug
+  logInfo(
+    "postProcessTimeStepInSharedMemoryEnvironment()",
+    "p=" << tarch::multicore::Core::getInstance().getNumberOfThreads() <<
+    ",t(p)=" << invasionWatch.getCalendarTime()
+  );
+
   amdahlsLaw.addMeasurement(
-    // returns   return _invadeRoot.get_num_active_threads();
     tarch::multicore::Core::getInstance().getNumberOfThreads(),
     invasionWatch.getCalendarTime()
   );
   amdahlsLaw.relaxAmdahlsLaw();
 
-  if (concurrencyLevel != nullptr) {
-    delete concurrencyLevel;
-    concurrencyLevel = nullptr;
-  }
-
-  concurrencyLevel = new SHMInvade(2 + (rand() % static_cast<int>(8)));
+  // @todo Random set concurrency level
 
   invasionWatch.startTimer();
   #endif
