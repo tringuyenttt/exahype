@@ -795,11 +795,13 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
 
   invasionWatch.stopTimer();
 
+  int newCores = rand()%(24-2) + 1;
   // @todo debug
   logInfo(
     "postProcessTimeStepInSharedMemoryEnvironment()",
     "p=" << tarch::multicore::Core::getInstance().getNumberOfThreads() <<
-    ",t(p)=" << invasionWatch.getCalendarTime()
+    ",t(p)=" << invasionWatch.getCalendarTime() <<
+    " - try to book " << newCores << " next"
   );
 
   amdahlsLaw.addMeasurement(
@@ -809,6 +811,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
   amdahlsLaw.relaxAmdahlsLaw();
 
   // @todo Random set concurrency level
+  tarch::multicore::Core::getInstance().configure( newCores );
 
   invasionWatch.startTimer();
   #endif
