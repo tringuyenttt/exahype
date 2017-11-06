@@ -53,7 +53,9 @@ logcmd() { markup "CMD" $@; }
 highlight() { markup "HIGHLIGHT" $@; }
 logitem() { markup "ITEM" $@; } # list item
 spacing() { log; } # just some lines of spacing
-bracketexec() { log "#{BEGIN} $@"; hiddenexec $@; log "#{END} $@"; }
+beginbracket() { log "#{BEGIN} $@"; }
+endbracket() { log "#{END} $@"; }
+bracketexec() { beginbracket $@; hiddenexec $@; endbracket $@; }
 
 # composita
 verbose() { logcmd $@; bracketexec $@; } # verbose a command and execute it
@@ -68,14 +70,18 @@ spacing
 verbose $exa check
 spacing
 heading "Running the actual command"
+
 logcmd $@
 # Try to run the commands, capture also the output. If it finishes: fine.
 ulimit -c unlimited  # ulimit is bash builtin
 set -o pipefail  # needed for detecting failure in pipes
+beginbracket $@
 if 2>&1 $@ | $teelog; then
 	log "Finished successfully."
 	exit
 fi
+endbracket $@
+
 # else: Log all possible stuff
 echo "Whoopsie: Catching a failed command to $PWD/$dumplog"
 highlight "The command FAILED. " # with return value $? <= not the return value of the program. Needs Pipe inspection.
