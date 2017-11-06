@@ -238,8 +238,9 @@ void exahype::mappings::SolutionUpdate::beginIteration(
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
   if (
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
+      true // TODO(Dominic): batching
+//      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+//      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
   ) {
     _localState = solverState;
 
@@ -311,12 +312,12 @@ void exahype::mappings::SolutionUpdate::endIteration(
           solver->getMeshUpdateRequest());
     }
     // time
-    if (
+    if ( // TODO(Dominic): batching
         exahype::State::fuseADERDGPhases()
         &&
-        (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-        exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
-        &&
+//        (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+//        exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+//        &&
         tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
     ) {
       exahype::mappings::TimeStepSizeComputation::
@@ -330,8 +331,9 @@ void exahype::mappings::SolutionUpdate::endIteration(
 
     // temporary variables
     if (
-        exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-        exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch
+        true // TODO(Dominic): batching
+//        exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+//        exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch
     ) {
       deleteSolverFlags(_solverFlags);
       deleteTemporaryVariables();

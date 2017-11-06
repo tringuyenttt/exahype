@@ -45,8 +45,9 @@ bool exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = false;
 peano::CommunicationSpecification
 exahype::mappings::Sending::communicationSpecification() const {
   if (
-      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
+//      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch ||
+//      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
+      true // TODO(Dominic): batching
   ) {
     return peano::CommunicationSpecification(
         peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
@@ -313,8 +314,9 @@ void exahype::mappings::Sending::sendSolverDataToNeighbour(
 ///////////////////////////////////////
 bool exahype::mappings::Sending::reduceTimeStepData() const {
   return
-      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-          exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+//      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+//          exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+      true  // TODO(Dominic): batching
           &&
           (_localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepData ||
               _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
@@ -322,8 +324,9 @@ bool exahype::mappings::Sending::reduceTimeStepData() const {
 
 bool exahype::mappings::Sending::reduceFaceData() const {
   return
-      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-          exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+//      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+//          exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+      true // TODO(Dominic): batching
           &&
           (_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
               _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
@@ -500,7 +503,8 @@ bool exahype::mappings::Sending::prepareSendToWorker(
       }
     }
   }
-  assertion(!workerHasToSendDataToMaster || exahype::State::getBatchState()==exahype::State::BatchState::NoBatch);
+//  assertion(!workerHasToSendDataToMaster || exahype::State::getBatchState()==exahype::State::BatchState::NoBatch);
+  // TODO(Dominic): batching
 
   return
       _localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||

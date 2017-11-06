@@ -26,8 +26,9 @@
 peano::CommunicationSpecification
 exahype::mappings::Merging::communicationSpecification() const {
   if (
-      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
+      true  // TODO(Dominic): batching
+//      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch ||
+//      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
   ) {
     return peano::CommunicationSpecification(
           peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
@@ -499,8 +500,10 @@ void exahype::mappings::Merging::dropNeighbourData(
 // MASTER->WORKER
 ///////////////////////////////////////
 bool exahype::mappings::Merging::broadcastTimeStepData() const {
-  return (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-          exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
+  return
+//      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+//       exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
+      true // TODO(Dominic): batching
           &&
           (_localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData ||
           _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData ||
@@ -508,8 +511,10 @@ bool exahype::mappings::Merging::broadcastTimeStepData() const {
 }
 
 bool exahype::mappings::Merging::broadcastFaceData() const {
-  return (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-          exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
+  return
+//      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+//      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
+      true // TODO(Dominic): batching
           &&
           (_localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
           _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData);
