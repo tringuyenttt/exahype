@@ -148,6 +148,17 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int level,
       const exahype::MetadataHeap::HeapEntries& receivedMetadata);
+
+  /**
+   * Check if we need to broadcast time step data.
+   */
+  bool broadcastTimeStepData() const;
+
+  /**
+   * Check if we need to send face data from
+   * master to worker.
+   */
+  bool broadcastFaceData() const;
   #endif
 
 public:

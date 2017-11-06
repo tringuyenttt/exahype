@@ -44,10 +44,20 @@ bool exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = false;
 
 peano::CommunicationSpecification
 exahype::mappings::Sending::communicationSpecification() const {
-  return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAfterProcessingOfLocalSubtreeSendStateAfterLastTouchVertexLastTime,
-      true); // TODO(Dominic): This might be relaxed
+  if (
+      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
+  ) {
+    return peano::CommunicationSpecification(
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAfterProcessingOfLocalSubtreeSendStateAfterLastTouchVertexLastTime,
+        true);
+  } else {
+    return peano::CommunicationSpecification(
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
+        true);
+  }
 }
 
 peano::MappingSpecification
@@ -301,6 +311,24 @@ void exahype::mappings::Sending::sendSolverDataToNeighbour(
 ///////////////////////////////////////
 // WORKER->MASTER->WORKER
 ///////////////////////////////////////
+bool exahype::mappings::Sending::reduceTimeStepData() const {
+  return
+      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+          exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+          &&
+          (_localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepData ||
+              _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
+}
+
+bool exahype::mappings::Sending::reduceFaceData() const {
+  return
+      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+          exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+          &&
+          (_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
+              _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
+}
+
 void exahype::mappings::Sending::prepareSendToMaster(
     exahype::Cell& localCell, exahype::Vertex* vertices,
     const peano::grid::VertexEnumerator& verticesEnumerator,
@@ -308,8 +336,7 @@ void exahype::mappings::Sending::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if (_localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepData ||
-      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData) {
+  if ( reduceTimeStepData() ) {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->isSending(_localState.getAlgorithmSection())) {
         solver->sendDataToMaster(
@@ -320,8 +347,7 @@ void exahype::mappings::Sending::prepareSendToMaster(
     }
   }
 
-  if (_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
-      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData) {
+  if ( reduceFaceData() ) {
     if (localCell.isInside() && localCell.isInitialised()) {
       exahype::sendMasterWorkerCommunicationMetadata(
           tarch::parallel::NodePool::getInstance().getMasterRank(),
@@ -378,8 +404,7 @@ void exahype::mappings::Sending::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
-  if (_localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepData ||
-      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData) {
+  if ( reduceTimeStepData() ) {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->isSending(_localState.getAlgorithmSection())) {
         solver->mergeWithWorkerData(
@@ -390,8 +415,7 @@ void exahype::mappings::Sending::mergeWithMaster(
     }
   }
 
-  if (_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
-      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData) {
+  if ( reduceFaceData() ) {
     // TODO(Dominic): Add to docu, we only know from the worker grid cell if it is inside.
     // I encountered a problem where workerGridCell.isInside() != fineGridCell.isInside()
     if (workerGridCell.isInside() && fineGridCell.isInitialised()) {
@@ -458,9 +482,10 @@ bool exahype::mappings::Sending::prepareSendToWorker(
     int worker) {
   bool workerHasToSendDataToMaster = false;
 
-  if ((_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
-      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData)
-      && fineGridCell.isInside()) {
+  if (
+    reduceFaceData() &&
+    fineGridCell.isInside()
+  ) {
     if (fineGridCell.isInitialised()) {
       for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -475,15 +500,12 @@ bool exahype::mappings::Sending::prepareSendToWorker(
       }
     }
   }
+  assertion(!workerHasToSendDataToMaster || exahype::State::getBatchState()==exahype::State::BatchState::NoBatch);
 
-  if (!peano::parallel::loadbalancing::Oracle::getInstance().isLoadBalancingActivated()
-      &&
-      workerHasToSendDataToMaster
-      &&
-      SkipReductionInBatchedTimeSteps) {
-    return false;
-  }
-  else return true;
+  return
+      _localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
+      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepData ||
+      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData;
 }
 
 //

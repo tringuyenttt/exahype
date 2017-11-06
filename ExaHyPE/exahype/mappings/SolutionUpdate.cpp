@@ -237,25 +237,30 @@ void exahype::mappings::SolutionUpdate::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  _localState = solverState;
+  if (
+      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
+  ) {
+    _localState = solverState;
 
-  prepareLocalTimeStepVariables();
+    if (_localState.getAlgorithmSection()==exahype::records::State::TimeStepping) {
+      for (auto* solver : exahype::solvers::RegisteredSolvers) {
+        solver->setNextMeshUpdateRequest();
+        solver->setNextAttainedStableState();
 
-  initialiseTemporaryVariables();
-
-  if (_localState.getAlgorithmSection()==exahype::records::State::TimeStepping) {
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      solver->setNextMeshUpdateRequest();
-      solver->setNextAttainedStableState();
-
-      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->setNextLimiterDomainChange();
+        if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->setNextLimiterDomainChange();
+        }
       }
     }
-  }
 
-  exahype::solvers::initialiseSolverFlags(_solverFlags);
-  exahype::solvers::prepareSolverFlags(_solverFlags);
+    prepareLocalTimeStepVariables();
+
+    initialiseTemporaryVariables();
+
+    exahype::solvers::initialiseSolverFlags(_solverFlags);
+    exahype::solvers::prepareSolverFlags(_solverFlags);
+  }
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -268,43 +273,51 @@ void exahype::mappings::SolutionUpdate::endIteration(
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
+    /*
+     * Update reduced quantities (over multiple batch iterations)
+     */
     // mesh refinement events
     solver->updateNextMeshUpdateRequest(_solverFlags._meshUpdateRequest[solverNumber]);
     solver->updateNextAttainedStableState(!solver->getNextMeshUpdateRequest());
+    if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+      limitingADERDGSolver->updateNextLimiterDomainChange(_solverFlags._limiterDomainChange[solverNumber]);
+    }
+    // cell sizes (for AMR)
+    solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
+    solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
+
+
+    // time
+    assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
+    assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
+    solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
+
+
+    /*
+     * Swap the current values with the next values (in last batch iteration)
+     */
+    // mesh update events
     solver->setNextMeshUpdateRequest();
     solver->setNextAttainedStableState();
 
     if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDGSolver->updateNextLimiterDomainChange(_solverFlags._limiterDomainChange[solverNumber]);
       limitingADERDGSolver->setNextLimiterDomainChange();
       assertion(
           limitingADERDGSolver->getLimiterDomainChange()
           !=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
           solver->getMeshUpdateRequest());
     }
-
-    // cell sizes
-    solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
-    solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
-    if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-      assertion4(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
-          solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString(),
-          exahype::records::State::toString(_localState.getAlgorithmSection()));
-      assertion4(solver->getNextMaxCellSize()>0,
-          solver->getNextMaxCellSize(),_maxCellSizes[solverNumber],solver->toString(),
-          exahype::records::State::toString(_localState.getAlgorithmSection()));
-    }
-
     // time
-    assertion1(std::isfinite(_minTimeStepSizes[solverNumber]),_minTimeStepSizes[solverNumber]);
-    assertion1(_minTimeStepSizes[solverNumber]>0.0,_minTimeStepSizes[solverNumber]);
-    solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
     if (
         exahype::State::fuseADERDGPhases()
-        #ifdef Parallel
-        && tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
-        #endif
+        &&
+        (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+        exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+        &&
+        tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
     ) {
       exahype::mappings::TimeStepSizeComputation::
       reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
@@ -314,11 +327,17 @@ void exahype::mappings::SolutionUpdate::endIteration(
       exahype::mappings::TimeStepSizeComputation::
       reconstructStandardTimeSteppingData(solver);
     }
+
+    // temporary variables
+    if (
+        exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+        exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch
+    ) {
+      deleteSolverFlags(_solverFlags);
+      deleteTemporaryVariables();
+    }
   }
 
-  deleteSolverFlags(_solverFlags);
-
-  deleteTemporaryVariables();
 
   logTraceOutWith1Argument("endIteration(State)", state);
 }
