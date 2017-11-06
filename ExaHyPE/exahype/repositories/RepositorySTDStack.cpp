@@ -223,12 +223,27 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
 
   peano::parallel::loadbalancing::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
   
-  _solverState.currentlyRunsMultipleIterations(_repositoryState.getNumberOfIterations()>1);
   #else
   peano::datatraversal::autotuning::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
   #endif
   
   for (int i=0; i<numberOfIterations; i++) {
+
+    #ifdef Parallel
+    if (_repositoryState.getNumberOfIterations()==1) {
+      _solverState.currentlyRunsMultipleIterations(State::BatchState::NoBatch);
+    }
+    else if (i==0) {
+      _solverState.currentlyRunsMultipleIterations(State::BatchState::FirstIterationOfBatch);
+    }
+    else if (i==numberOfIterations-1) {
+      _solverState.currentlyRunsMultipleIterations(State::BatchState::LastIterationOfBatch);
+    }
+    else {
+      _solverState.currentlyRunsMultipleIterations(State::BatchState::IntermediateIterationOfBatch);
+    }
+    #endif
+
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementAndTimeStepSizeComputation: watch.startTimer(); _gridWithFinaliseMeshRefinementAndTimeStepSizeComputation.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementAndTimeStepSizeComputationCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementAndTimeStepSizeComputationCalendarTime.setValue( watch.getCalendarTime() ); break;
