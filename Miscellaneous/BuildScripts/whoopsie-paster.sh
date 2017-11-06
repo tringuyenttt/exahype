@@ -23,6 +23,8 @@
 # Feel free to extend for github if you feel the need to do so.
 #
 
+# TODO: Improve documentation, consolidate with ../RunScripts/whoopsie.sh and ./analyze-git.sh
+
 extendedlog="extended.log"
 
 # wipe the file
