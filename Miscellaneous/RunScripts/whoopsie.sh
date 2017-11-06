@@ -41,30 +41,36 @@ if have stdbuf; then unbuf="stdbuf -i0 -o0 -e0"; else unbuf=""; fi
 
 # Use like "something | $teelog": Dumps both into log and stdout.
 teelog="$unbuf tee -a $dumplog"
+
+# output
 hiddenexec() { $@ >> $dumplog 2>&1; } # execute something and put all output into dumplog
 log() { hiddenexec echo $@; } # log something
-logcmd() { log ">>> $@"; } # log a command
-verbose() { logcmd $@; hiddenexec $@; } # verbose a command and execute it
-log_file() { log "----[ begin of $@ ]----"; hiddenexec cat $@; log "----[ end of $@ ]----"; } # log a text file
+
+# semantics of our funny minimalistic markup language
+markup() { log "#{$1} ${@:2}"; }
+heading() { markup "HEAD" $@; }
+logcmd() { markup "CMD" $@; }
+highlight() { markup "HIGHLIGHT" $@; }
+logitem() { markup "ITEM" $@; } # list item
 spacing() { log; } # just some lines of spacing
+bracketexec() { log "#{BEGIN} $@"; hiddenexec $@; log "#{END} $@"; }
 
+# composita
+verbose() { logcmd $@; bracketexec $@; } # verbose a command and execute it
+log_file() { bracketexec cat $@; } # log a text file
 
-log "This is the ExaHyPE 'whoopsie' runtime problem catcher. I accompany"
-log "the user $(whoami) on the computer node $(hostname) at"
+heading "Welcome to the ExaHyPE whoopsie runtime problem catcher output"
+log "I accompany the user $(whoami) on the computer node $(hostname) at"
 log "time $(date) by running ExaHyPE. Running ExaHyPE is not easy."
 spacing
 log "So the user starts with an environment given by"
 spacing
 verbose $exa check
 spacing
-log "You also might to want to store coredumps:"
-verbose ulimit -c   # ulimit is bash builtin
-spacing
-log "Now try to run the command:"
-spacing
-spacing
-# Try to run the commands, capture also the output. If it finishes: fine.
+heading "Running the actual command"
 logcmd $@
+# Try to run the commands, capture also the output. If it finishes: fine.
+ulimit -c unlimited  # ulimit is bash builtin
 set -o pipefail  # needed for detecting failure in pipes
 if 2>&1 $@ | $teelog; then
 	log "Finished successfully."
@@ -72,58 +78,62 @@ if 2>&1 $@ | $teelog; then
 fi
 # else: Log all possible stuff
 echo "Whoopsie: Catching a failed command to $PWD/$dumplog"
-log ">>> The command FAILED. " # with return value $? <= not the return value of the program. Needs Pipe inspection.
+highlight "The command FAILED. " # with return value $? <= not the return value of the program. Needs Pipe inspection.
 spacing
-log "Post mortem inspection of the command '$@' by looking into each of its words:"
+log "In the following, various environmental and command-related output will be collected."
+spacing
+heading "Post mortem command inspection"
 spacing
 
 for part in $@; do
 	if [[ -e $part ]]; then
 		if [[ -x "$part" ]] && ./$part --help 2>&1 | grep -qi exahype; then
-			log "=> $part is an ExaHyPE executable. This is how it was compiled:"
-			log
+			logitem "$part is an ExaHyPE executable. This is how it was compiled:"
+			spacing
 			verbose $part --version
 		elif have file; then
 			if file $part | grep -qi ascii; then
-				log "=> $part is a text file. Here are it's contents:"
+				logitem "$part is a text file. Here are it's contents:"
 				log_file $part
 			else
-				log "=> $part is a file but I don't know what's inside. This is what I can learn about it:"
+				logitem "$part is a file but I don't know what's inside. This is what I can learn about it:"
 				verbose file $part
 			fi
 		else
-			log "=> $part is a file but I miss the Unix tool 'file' to look into it."
+			logitem "$part is a file but I miss the Unix tool 'file' to look into it."
 		fi
 	elif have which; then
 		# only check parts which don't go like "-foo" or "--foo" because which interpretes this as parameters
 		if ! [[ $part == -* ]] && which $part; then
-			log "=> $part is on the PATH. It resolves to:"
+			logitem "$part is on the PATH. It resolves to:"
 			verbose which $part
 		else
-			log "=> '$part' does not seem to be on the PATH nor it is a file. Probably a plain old parameter."
+			logitem "'$part' does not seem to be on the PATH nor it is a file. Probably a plain old parameter."
 		fi
 	else
-		log "=> '$part' is not a file and I have no tools (no 'which') to find out what it is."
+		logitem "'$part' is not a file and I have no tools (no 'which') to find out what it is."
 	fi
 done
 
 spacing
 spacing
-log "The current environment: "
+heading "The current environment: "
 spacing
 verbose env
 spacing
-log "Inspection of local changes in the installation:"
+heading "Inspection of local changes in the installation:"
 verbose $buildscripts/installation-status.sh
 
 log
 if [[ -e make.log ]]; then
-	log "I have found a make.log which probably explains how this was built:"
+	heading "I have found a make.log which probably explains how this was built:"
 	log_file make.log
 else
 	log "No make log found. Are there other log files? Let's check:"
 	verbose ls *.log
 fi
+
+log "$0 is finished."
 
 uploadWith() {
 	echo "Uploading the file ${dumplog}, please send the following link to your collaborators:"
