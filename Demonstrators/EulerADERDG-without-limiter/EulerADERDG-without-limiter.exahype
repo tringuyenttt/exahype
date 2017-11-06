@@ -42,7 +42,7 @@ exahype-project EulerADERDG
   solver ADER-DG MyEulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 5
-    maximum-mesh-size          = 1e-2    
+    maximum-mesh-size          = 5e-2    
     maximum-mesh-depth         = 2
     time-stepping              = global
     type const                 = nonlinear, Legendre
