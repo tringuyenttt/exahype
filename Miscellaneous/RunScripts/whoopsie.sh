@@ -29,7 +29,7 @@ echo -n > $dumplog
 # self documenting: if no parameter given
 if [ $# -eq 0 ]; then grep -E '^##' "$0"; exit; fi
 
-have() { which $@ 2>/dev/null >/dev/null; } # checks for installed
+have() { which $@ 2>/dev/null >/dev/null; } # checks on the path, not bash builtins
 
 runscripts="$(dirname "$0")"
 buildscripts="${runscripts}/../BuildScripts"
@@ -46,25 +46,23 @@ log() { hiddenexec echo $@; } # log something
 logcmd() { log ">>> $@"; } # log a command
 verbose() { logcmd $@; hiddenexec $@; } # verbose a command and execute it
 log_file() { log "----[ begin of $@ ]----"; hiddenexec cat $@; log "----[ end of $@ ]----"; } # log a text file
+spacing() { log; } # just some lines of spacing
 
 
 log "This is the ExaHyPE 'whoopsie' runtime problem catcher. I accompany"
 log "the user $(whoami) on the computer node $(hostname) at"
 log "time $(date) by running ExaHyPE. Running ExaHyPE is not easy."
-log
+spacing
 log "So the user starts with an environment given by"
-log
+spacing
 verbose $exa check
-log
+spacing
 log "You also might to want to store coredumps:"
-if have ulimit; then
-	verbose ulimit -c
-else
-	log "... but you don't have 'ulimit' on your path"
-fi
+verbose ulimit -c   # ulimit is bash builtin
+spacing
 log "Now try to run the command:"
-log
-log
+spacing
+spacing
 # Try to run the commands, capture also the output. If it finishes: fine.
 logcmd $@
 set -o pipefail  # needed for detecting failure in pipes
@@ -74,21 +72,13 @@ if 2>&1 $@ | $teelog; then
 fi
 # else: Log all possible stuff
 echo "Whoopsie: Catching a failed command to $PWD/$dumplog"
-log ">>> The command FAILED with return value $?"
-log
-log "That is so sad. So let's go somewhere deeper. This is my current"
-log "environment: "
-log
-verbose env
-log
-log "I now try to collect everything about the command '$@' by looking into each of its words:"
-log
+log ">>> The command FAILED. " # with return value $? <= not the return value of the program. Needs Pipe inspection.
+spacing
+log "Post mortem inspection of the command '$@' by looking into each of its words:"
+spacing
 
 for part in $@; do
-	if have which && which $part; then
-		log "=> $part is on the PATH. It resolves to:"
-		verbose which $part
-	elif [[ -e $part ]]; then
+	if [[ -e $part ]]; then
 		if [[ -x "$part" ]] && ./$part --help 2>&1 | grep -qi exahype; then
 			log "=> $part is an ExaHyPE executable. This is how it was compiled:"
 			log
@@ -104,12 +94,25 @@ for part in $@; do
 		else
 			log "=> $part is a file but I miss the Unix tool 'file' to look into it."
 		fi
+	elif have which; then
+		# only check parts which don't go like "-foo" or "--foo" because which interpretes this as parameters
+		if ! [[ $part == -* ]] && which $part; then
+			log "=> $part is on the PATH. It resolves to:"
+			verbose which $part
+		else
+			log "=> '$part' does not seem to be on the PATH nor it is a file. Probably a plain old parameter."
+		fi
 	else
-		log "=> '$part' is not a file"
+		log "=> '$part' is not a file and I have no tools (no 'which') to find out what it is."
 	fi
 done
 
-log
+spacing
+spacing
+log "The current environment: "
+spacing
+verbose env
+spacing
 log "Inspection of local changes in the installation:"
 verbose $buildscripts/installation-status.sh
 
