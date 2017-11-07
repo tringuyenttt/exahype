@@ -174,7 +174,9 @@ int exahype::Cell::countListingsOfRemoteRankAtFace(
     enddforx // a
   enddforx // v
 
-  // result must be either no connection, edge connection, or whole face connection.
+  // result corresponds either to no connection, edge connection, or whole face connection.
+  // If the bounding box scaling is turned off, there might further be only a single inside point possible
+  // in 3d. result is then 1.
   #ifdef Asserts
   std::stringstream message;
   message << std::endl;
@@ -182,8 +184,8 @@ int exahype::Cell::countListingsOfRemoteRankAtFace(
     message << "v="<<v.toString()<<": adjacentRanks="<<verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks().toString() << std::endl;
   enddforx
   #endif
-  assertion5(result==0||result==TWO_POWER_D_DIVIDED_BY_TWO/2||result==TWO_POWER_D_DIVIDED_BY_TWO,result,pos.toString(),faceIndex,tarch::parallel::Node::getInstance().getRank(),message.str());
-
+  assertion5(result==0||result==TWO_POWER_D_DIVIDED_BY_TWO/4||result==TWO_POWER_D_DIVIDED_BY_TWO/2||result==TWO_POWER_D_DIVIDED_BY_TWO,
+      result,pos.toString(),faceIndex,tarch::parallel::Node::getInstance().getRank(),message.str());
   return result;
 }
 
