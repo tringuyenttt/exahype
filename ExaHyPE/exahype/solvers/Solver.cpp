@@ -36,6 +36,8 @@ std::vector<exahype::solvers::Solver*> exahype::solvers::RegisteredSolvers;
 exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
 #endif
 
+tarch::multicore::BooleanSemaphore exahype::BackgroundThreadSemaphore;
+
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
 
 #ifdef TrackGridStatistics
@@ -115,7 +117,7 @@ void exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated() {
   bool finishedWait = false;
 
   while (!finishedWait) {
-    tarch::multicore::Lock lock(exahype::HeapSemaphore);
+    tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
     finishedWait = _NumberOfTriggeredTasks == 0;
     lock.free();
 
