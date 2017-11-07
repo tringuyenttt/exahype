@@ -141,11 +141,16 @@ void exahype::mappings::Merging::beginIteration(
 
   #ifdef Parallel
   if (
-      // No synchronous communication for MergeNothing and DropFaceData
+      // TODO(Dominic): In theory, only FirstIterationOfBatch and NoBatch should be checked. In practice, this is not working.
+      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+      &&
+      ( // No synchronous communication for MergeNothing and DropFaceData
       _localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
       _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData ||
       _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData
+      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData)
   ) {
     exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
     exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();

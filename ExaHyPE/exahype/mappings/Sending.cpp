@@ -110,7 +110,14 @@ void exahype::mappings::Sending::beginIteration(
   _localState = solverState;
 
   #ifdef Parallel
-  if (_localState.getSendMode()!=exahype::records::State::SendMode::SendNothing) {
+  if (
+      // TODO(Dominic): In theory, only LastIterationOfBatch and NoBatch should be checked. In practice, this is not working.
+      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+      &&
+      _localState.getSendMode()!=exahype::records::State::SendMode::SendNothing
+  ) {
     exahype::solvers::ADERDGSolver::Heap::getInstance().startToSendSynchronousData();
     exahype::solvers::FiniteVolumesSolver::Heap::getInstance().startToSendSynchronousData();
     exahype::MetadataHeap::getInstance().startToSendSynchronousData();
