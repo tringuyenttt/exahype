@@ -400,7 +400,6 @@ void exahype::solvers::FiniteVolumesSolver::ensureNoUnnecessaryMemoryIsAllocated
   if (DataHeap::getInstance().isValidIndex(cellDescription.getSolution())) {
     switch (cellDescription.getType()) {
       case CellDescription::Erased: {
-        waitUntilAllBackgroundTasksHaveTerminated();
         tarch::multicore::Lock lock(exahype::HeapSemaphore);
 
         assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
@@ -467,7 +466,6 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(Cel
         // Allocate volume data
         const int patchSize         = getDataPerPatch()+getGhostDataPerPatch();
 
-        waitUntilAllBackgroundTasksHaveTerminated();
         tarch::multicore::Lock lock(exahype::HeapSemaphore);
 
         cellDescription.setSolution(        DataHeap::getInstance().createData( patchSize, patchSize ));
@@ -886,7 +884,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
     const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
-  waitUntilAllBackgroundTasksHaveTerminated();
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
 
   const int receivedCellDescriptionsIndex =
@@ -1185,9 +1182,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   if (tarch::la::countEqualEntries(src,dest)!=(DIMENSIONS-1)) {
     return; // We only consider faces; no corners.
   }
-
-  waitUntilAllBackgroundTasksHaveTerminated();
-  tarch::multicore::Lock lock(exahype::HeapSemaphore);
 
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   synchroniseTimeStepping(cellDescription);

@@ -45,9 +45,8 @@ bool exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = false;
 peano::CommunicationSpecification
 exahype::mappings::Sending::communicationSpecification() const {
   if (
-//      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch ||
-//      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
-      true // TODO(Dominic): batching
+      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
   ) {
     return peano::CommunicationSpecification(
         peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
@@ -111,7 +110,14 @@ void exahype::mappings::Sending::beginIteration(
   _localState = solverState;
 
   #ifdef Parallel
-  if (_localState.getSendMode()!=exahype::records::State::SendMode::SendNothing) {
+  if (
+      // TODO(Dominic): In theory, only LastIterationOfBatch and NoBatch should be checked. In practice, this is not working.
+      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+      &&
+      _localState.getSendMode()!=exahype::records::State::SendMode::SendNothing
+  ) {
     exahype::solvers::ADERDGSolver::Heap::getInstance().startToSendSynchronousData();
     exahype::solvers::FiniteVolumesSolver::Heap::getInstance().startToSendSynchronousData();
     exahype::MetadataHeap::getInstance().startToSendSynchronousData();
@@ -314,9 +320,8 @@ void exahype::mappings::Sending::sendSolverDataToNeighbour(
 ///////////////////////////////////////
 bool exahype::mappings::Sending::reduceTimeStepData() const {
   return
-//      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-//          exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
-      true  // TODO(Dominic): batching
+      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+          exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
           &&
           (_localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepData ||
               _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
@@ -324,9 +329,8 @@ bool exahype::mappings::Sending::reduceTimeStepData() const {
 
 bool exahype::mappings::Sending::reduceFaceData() const {
   return
-//      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-//          exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
-      true // TODO(Dominic): batching
+      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+          exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
           &&
           (_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
               _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
@@ -503,8 +507,7 @@ bool exahype::mappings::Sending::prepareSendToWorker(
       }
     }
   }
-//  assertion(!workerHasToSendDataToMaster || exahype::State::getBatchState()==exahype::State::BatchState::NoBatch);
-  // TODO(Dominic): batching
+  assertion(!workerHasToSendDataToMaster || exahype::State::getBatchState()==exahype::State::BatchState::NoBatch);
 
   return
       _localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||

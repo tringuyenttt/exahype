@@ -162,22 +162,29 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   /**
    * Count the listings of remote ranks sharing a vertex
    * adjacent to the face \p faceIndex of a cell with this rank.
-   * This value is either 0, or 2^{d-1}.
+   * In case all vertices adjacent to the face are inside of the domain,
+   * this value is either 0 or 2^{d-1}.
    *
    * If we count 2^{d-1} listings, we directly know that this rank
    * shares a whole face with a remote rank.
    * If we count 0 listings, we do not have
    * a remote rank adjacent to this face.
    *
-   * <h2>MPI</h2>
    * We know from the result of this function how
    * many vertices will try to exchange neighbour information
-   * for this face.
+   * at this face.
    *
-   * <h3>Boundary vertices</h3>
-   * Boundary vertices are ignored by the counter since they are
+   * <h2>Boundary vertices</h2>
+   * Boundary vertices are ignored by the counting since they are
    * skipped in all merging and sending routines;
    * see method exahype::Vertex::hasToCommunicate.
+   * This introduces further values for
+   * the counted listings:
+   *
+   * 2^{d-2} - two vertices belong to the boundary.
+   * 2^{d-3} - (only in 3d) three vertices belong to the boundary. This might
+   *           happen in a corner of the domain if the bounding
+   *           box is not scaled.
    *
    * @developers:
    * TODO(Dominic): We currently check for uniqueness of the
