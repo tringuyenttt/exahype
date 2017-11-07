@@ -26,9 +26,8 @@
 peano::CommunicationSpecification
 exahype::mappings::Merging::communicationSpecification() const {
   if (
-      true  // TODO(Dominic): batching
-//      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch ||
-//      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
+      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
   ) {
     return peano::CommunicationSpecification(
           peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
@@ -123,16 +122,22 @@ void exahype::mappings::Merging::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  exahype::solvers::initialiseTemporaryVariables(_temporaryVariables);
+  if (
+      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
+    ) {
+    _localState = solverState;
 
-  _localState = solverState;
+    exahype::solvers::initialiseTemporaryVariables(_temporaryVariables);
 
-  #ifdef Asserts
-  logInfo("beginIteration(State)",
-      "MergeMode="<<exahype::records::State::toString(_localState.getMergeMode())<<
-      ", SendMode="<<exahype::records::State::toString(_localState.getSendMode())<<
-      ", AlgorithmSection="<<exahype::records::State::toString(_localState.getAlgorithmSection()));
-  #endif
+    #ifdef Asserts
+    logInfo("beginIteration(State)",
+            "MergeMode="<<exahype::records::State::toString(_localState.getMergeMode())<<
+            ", SendMode="<<exahype::records::State::toString(_localState.getSendMode())<<
+            ", AlgorithmSection="<<exahype::records::State::toString(_localState.getAlgorithmSection()));
+    #endif
+  }
+
 
   #ifdef Parallel
   if (
@@ -166,7 +171,12 @@ void exahype::mappings::Merging::endIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("endIteration(State)", solverState);
 
-  exahype::solvers::deleteTemporaryVariables(_temporaryVariables);
+  if (
+    exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+    exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch
+  ) {
+    exahype::solvers::deleteTemporaryVariables(_temporaryVariables);
+  }
 
   #if defined(Debug) // TODO(Dominic): Use logDebug if it works with filters
   logDebug("endIteration(state)","interiorFaceSolves: " << _interiorFaceMerges);
@@ -500,10 +510,8 @@ void exahype::mappings::Merging::dropNeighbourData(
 // MASTER->WORKER
 ///////////////////////////////////////
 bool exahype::mappings::Merging::broadcastTimeStepData() const {
-  return
-//      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-//       exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
-      true // TODO(Dominic): batching
+  return (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+          exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
           &&
           (_localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData ||
           _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData ||
@@ -511,10 +519,8 @@ bool exahype::mappings::Merging::broadcastTimeStepData() const {
 }
 
 bool exahype::mappings::Merging::broadcastFaceData() const {
-  return
-//      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-//      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
-      true // TODO(Dominic): batching
+  return (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+          exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
           &&
           (_localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
           _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData);
