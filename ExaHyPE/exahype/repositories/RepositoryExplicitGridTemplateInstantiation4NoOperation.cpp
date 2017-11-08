@@ -14,7 +14,6 @@
 #include "peano/stacks/VertexSTDStack.h"
 
  #include "exahype/adapters/MeshRefinement.h" 
- #include "exahype/adapters/MeshRefinementAndPlotGrid.h" 
  #include "exahype/adapters/FinaliseMeshRefinementAndTimeStepSizeComputation.h" 
  #include "exahype/adapters/FinaliseMeshRefinementAndReinitialisation.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
@@ -27,12 +26,13 @@
  #include "exahype/adapters/SolutionUpdate.h" 
  #include "exahype/adapters/Prediction.h" 
  #include "exahype/adapters/PredictionAndPlot.h" 
+ #include "exahype/adapters/NoOperation.h" 
 
 
 namespace peano {
   namespace grid {
-    template class Grid<exahype::Vertex,exahype::Cell,exahype::State, peano::stacks::VertexArrayStack<exahype::Vertex> ,peano::stacks::CellArrayStack<exahype::Cell> ,exahype::adapters::FusedTimeStep>;
-    template class Grid<exahype::Vertex,exahype::Cell,exahype::State, peano::stacks::VertexSTDStack<  exahype::Vertex> ,peano::stacks::CellSTDStack<  exahype::Cell> ,exahype::adapters::FusedTimeStep>;
+    template class Grid<exahype::Vertex,exahype::Cell,exahype::State, peano::stacks::VertexArrayStack<exahype::Vertex> ,peano::stacks::CellArrayStack<exahype::Cell> ,exahype::adapters::NoOperation>;
+    template class Grid<exahype::Vertex,exahype::Cell,exahype::State, peano::stacks::VertexSTDStack<  exahype::Vertex> ,peano::stacks::CellSTDStack<  exahype::Cell> ,exahype::adapters::NoOperation>;
   }
 }
 

@@ -38,6 +38,7 @@ std::string exahype::records::RepositoryState::toString(const Action& param) {
       case Terminate: return "Terminate";
       case RunOnAllNodes: return "RunOnAllNodes";
       case UseAdapterMeshRefinement: return "UseAdapterMeshRefinement";
+      case UseAdapterMeshRefinementAndPlotGrid: return "UseAdapterMeshRefinementAndPlotGrid";
       case UseAdapterFinaliseMeshRefinementAndTimeStepSizeComputation: return "UseAdapterFinaliseMeshRefinementAndTimeStepSizeComputation";
       case UseAdapterFinaliseMeshRefinementAndReinitialisation: return "UseAdapterFinaliseMeshRefinementAndReinitialisation";
       case UseAdapterFusedTimeStep: return "UseAdapterFusedTimeStep";
@@ -56,7 +57,7 @@ std::string exahype::records::RepositoryState::toString(const Action& param) {
 }
 
 std::string exahype::records::RepositoryState::getActionMapping() {
-   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterMeshRefinement=4,UseAdapterFinaliseMeshRefinementAndTimeStepSizeComputation=5,UseAdapterFinaliseMeshRefinementAndReinitialisation=6,UseAdapterFusedTimeStep=7,UseAdapterPlotAndFusedTimeStep=8,UseAdapterPredictionRerun=9,UseAdapterLimiterStatusSpreading=10,UseAdapterLocalRecomputationAndTimeStepSizeComputation=11,UseAdapterGlobalRollback=12,UseAdapterNeighbourDataMerging=13,UseAdapterSolutionUpdate=14,UseAdapterPrediction=15,UseAdapterPredictionAndPlot=16,NumberOfAdapters=17)";
+   return "Action(WriteCheckpoint=0,ReadCheckpoint=1,Terminate=2,RunOnAllNodes=3,UseAdapterMeshRefinement=4,UseAdapterMeshRefinementAndPlotGrid=5,UseAdapterFinaliseMeshRefinementAndTimeStepSizeComputation=6,UseAdapterFinaliseMeshRefinementAndReinitialisation=7,UseAdapterFusedTimeStep=8,UseAdapterPlotAndFusedTimeStep=9,UseAdapterPredictionRerun=10,UseAdapterLimiterStatusSpreading=11,UseAdapterLocalRecomputationAndTimeStepSizeComputation=12,UseAdapterGlobalRollback=13,UseAdapterNeighbourDataMerging=14,UseAdapterSolutionUpdate=15,UseAdapterPrediction=16,UseAdapterPredictionAndPlot=17,NumberOfAdapters=18)";
 }
 
 
