@@ -141,10 +141,8 @@ void exahype::mappings::Merging::beginIteration(
 
   #ifdef Parallel
   if (
-      // TODO(Dominic): In theory, only FirstIterationOfBatch and NoBatch should be checked. In practice, this is not working.
       (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
       &&
       ( // No synchronous communication for MergeNothing and DropFaceData
       _localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
@@ -182,6 +180,27 @@ void exahype::mappings::Merging::endIteration(
   ) {
     exahype::solvers::deleteTemporaryVariables(_temporaryVariables);
   }
+
+  #ifdef Parallel
+  if (
+      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
+      &&
+      ( // No synchronous communication for MergeNothing and DropFaceData
+      _localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
+      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData ||
+      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData ||
+      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData)
+  ) {
+    exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
+    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
+    DataHeap::getInstance().finishedToSendSynchronousData();
+    MetadataHeap::getInstance().finishedToSendSynchronousData();
+
+    if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
+        exit(-1);
+    }
+  }
+  #endif
 
   #if defined(Debug) // TODO(Dominic): Use logDebug if it works with filters
   logDebug("endIteration(state)","interiorFaceSolves: " << _interiorFaceMerges);
