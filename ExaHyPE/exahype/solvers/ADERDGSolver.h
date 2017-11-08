@@ -1101,7 +1101,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, 
       double>& cellSize, 
       const double dt,
-      double* pointForceSources) = 0;
+      double** tempPointForceSources) = 0;
 
   /**
    * \brief Returns a stable time step size.

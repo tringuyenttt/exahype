@@ -382,7 +382,7 @@ void ElasticityKernelTest::testSpaceTimePredictorLinear() {
       lQbnd, lFbnd,
       tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,
       tempUnknowns,tempFluxUnknowns,
-      luh, dx, dt, tempSpaceTimeUnknowns[1]);
+      luh, dx, dt, nullptr);
 
   for (int i = 0; i < DIMENSIONS; i++) {
     for (int j = 0; j < basisSize; j++) {

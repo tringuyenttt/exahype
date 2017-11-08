@@ -1970,7 +1970,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         luh,
         &inverseDx[0], //TODO JMG use cellDescription.getInverseSize() when implemented
         cellDescription.getPredictorTimeStepSize(),
-        tempPointForceSources[0]);
+        tempPointForceSources);
     
     volumeIntegral(
         lduh,
@@ -1988,7 +1988,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         luh,
         cellDescription.getSize(),
         cellDescription.getPredictorTimeStepSize(),
-        tempPointForceSources[0]);
+        tempPointForceSources);
     
     volumeIntegral(
         lduh,
