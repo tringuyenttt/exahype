@@ -808,16 +808,6 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
   // get data from the other guys
   int myIndexWithinSharedUserData;
   int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
-  // @todo Debug
-  logInfo(
-    "postProcessTimeStepInSharedMemoryEnvironment()",
-    "currently have " << tarch::multicore::Core::getInstance().getNumberOfThreads() << " threads" );
-  logInfo(
-    "postProcessTimeStepInSharedMemoryEnvironment()",
-    "seems as if there were " << ranksOnThisNode << " at the moment" );
-  logInfo(
-    "postProcessTimeStepInSharedMemoryEnvironment()",
-    "this rank is the " << myIndexWithinSharedUserData << "th rank on the node" );
 
   std::vector<double>  t1;
   std::vector<double>  f;
@@ -851,11 +841,9 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
     SHMInvadeRoot::get_max_available_cores() );
   logInfo(
     "postProcessTimeStepInSharedMemoryEnvironment()",
-    "should use " << optimalNumberOfThreads << " threads" );
+    "try to use " << optimalNumberOfThreads << " threads" );
 
-
-  // @todo Random set concurrency level
-  tarch::multicore::Core::getInstance().configure( 2 );
+  tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
   invasionWatch.startTimer();
   #endif
 }
