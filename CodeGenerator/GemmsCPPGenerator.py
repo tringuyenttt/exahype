@@ -32,7 +32,7 @@ class GemmsCPPGenerator:
         
 
     def generateCode(self):
-        self.m_context['gemm_a_b_c']  = 'gemm_'+str(self.m_context['nVar'])+'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])
+        self.m_context['gemm_prefix']  = 'gemm'
         
         TemplatingUtils.renderAsFile('gemmsCPP_h.template',   self.m_filenameRoot+'.h',   self.m_context)
         TemplatingUtils.renderAsFile('gemmsCPP_cpp.template', self.m_filenameRoot+'.cpp', self.m_context)
