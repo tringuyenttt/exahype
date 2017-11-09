@@ -77,7 +77,7 @@ void spaceTimePredictorLinear(SolverType& solver,
     std::fill_n(gradQ, basisSize4 * DIMENSIONS * numberOfVariables, 0.);
   }
 
-  idx4 idx_luh(basisSize, basisSize, basisSize,numberOfData);
+  idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
   
   // local tmp array
   double fluxDerivative[basisSize*numberOfVariables];
@@ -127,17 +127,6 @@ void spaceTimePredictorLinear(SolverType& solver,
 
     // copy the source vector at the quadrature nodes  into the temporary array PSderivatives (remove 0th time derivative)
     std::copy_n(PSi+idx_PSi(1,0,0,0,0), basisSize3 * basisSize * numberOfVariables, PSderivatives);
-    // for (int n = 1; n <  basisSize+1; n++) {
-      // for (int j = 0; j < basisSize; j++) {
-        // for (int k = 0; k < basisSize; k++) {
-          // for (int l = 0; l < basisSize; l++) {
-            // for (int m = 0; m < numberOfVariables; m++) { //skip parameters
-              // PSderivatives[idx_PSderivatives(n-1, j, k, l, m)] = PSi[idx_PSi(n, j, k, l, m)];
-            // }
-          // }
-        // }
-      // }
-    // }
 
     // Add point source to the first time derivative
     for (int j = 0; j < basisSize; j++) {
@@ -183,17 +172,6 @@ void spaceTimePredictorLinear(SolverType& solver,
 
       // store (t+1)-th derivative in PSderivatives
       std::copy_n(tmp_PSderivatives, basisSize3 * basisSize * numberOfVariables, PSderivatives); 
-      // for(int t = 0; t < basisSize; t ++ ){
-        // for (int j = 0; j < basisSize; j++) {
-          // for (int k = 0; k < basisSize; k++) {
-            // for (int l = 0; l < basisSize; l++) {
-              // for (int n = 0; n < numberOfVariables; n++) { //skip parameters
-                // PSderivatives[idx_PSderivatives(t, j, k, l, n)] = tmp_PSderivatives[idx_PSderivatives(t, j, k, l, n)];
-              // } //n
-            // } //l
-          // } //k
-        // } //j
-      // } // t
       
     } // i
     std::fill_n(lFi,basisSize4*(DIMENSIONS+1)*numberOfVariables, 0.); // zero out sources;
@@ -223,7 +201,7 @@ void spaceTimePredictorLinear(SolverType& solver,
             for (int m = 0; m < numberOfVariables; m++) {
               for (int n = 0; n < basisSize; n++) {
                 fluxDerivative[idx_fluxDerivative(l,m)] += lFi[idx_lFi(i, j, k, n, 0, m)]*
-                kernels::dudx[order][l][n] * 1.0 / dx[0] ;
+                kernels::dudx[order][l][n] / dx[0] ;
                 
               }
             }
@@ -244,7 +222,7 @@ void spaceTimePredictorLinear(SolverType& solver,
             for (int m = 0; m < numberOfVariables; m++) {
               for (int n = 0; n < basisSize; n++) {
                 fluxDerivative[idx_fluxDerivative(l,m)] += lFi[idx_lFi(i, j, n, k, 1, m)]*
-                kernels::dudx[order][l][n] * 1.0 / dx[1] ;
+                kernels::dudx[order][l][n] / dx[1] ;
                 
               }
             }
@@ -265,7 +243,7 @@ void spaceTimePredictorLinear(SolverType& solver,
             for (int m = 0; m < numberOfVariables; m++) {
               for (int n = 0; n < basisSize; n++) {
                 fluxDerivative[idx_fluxDerivative(l,m)] += lFi[idx_lFi(i, n, j, k, 2, m)]*
-                kernels::dudx[order][l][n] * 1.0 / dx[2] ; 
+                kernels::dudx[order][l][n] / dx[2] ; 
               }
             }
           }
@@ -367,12 +345,12 @@ void spaceTimePredictorLinear(SolverType& solver,
         for (int l = 0; l < basisSize; l++) {
           // lQi(:,l,k,j,i+1) -= SUM(lFi(:,1:nDim,l,k,j,i), dim=2)
           for (int m = 0; m < DIMENSIONS; m++) {
-            for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
+            for (int n = 0; n < numberOfVariables; n++) { // Skip parameters
               lQi[idx_lQi(i + 1, j, k, l, n)] -= lFi[idx_lFi(i, j, k, l, m, n)];
             }
           }
           if(useSource){
-            for (int n = 0; n < numberOfVariables/* skip parameters */; n++) {
+            for (int n = 0; n < numberOfVariables; n++) { // Skip parameters
               lQi[idx_lQi(i + 1, j, k, l, n)] -= lFi[idx_lFi(i, j, k, l, sourceIndex, n)];
             }
           }
@@ -408,15 +386,6 @@ void spaceTimePredictorLinear(SolverType& solver,
   // Immediately compute the time-averaged space-time polynomials
   // Fortran: lQhi(:,:,:,:) = lQi(:,:,:,:,1)
   std::copy_n(lQi, basisSize3 * numberOfData, lQhi); 
-  // for (int i = 0; i < basisSize; i++) {
-    // for (int j = 0; j < basisSize; j++) {
-      // for (int k = 0; k < basisSize; k++) {
-        // for (int l = 0; l <numberOfData; l++) {
-          // lQhi[idx_lQhi(i, j, k, l)] = lQi[idx_lQi(0, i, j, k, l)];
-        // }
-      // }
-    // }
-  // }
 
   double dtavFac = 0.5 * dt;
   for (int i = 1; i < basisSize; i++) {
