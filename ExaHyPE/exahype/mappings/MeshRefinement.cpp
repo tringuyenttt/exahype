@@ -329,7 +329,7 @@ void exahype::mappings::MeshRefinement::enterCell(
       bool adjustSolution = exahype::mappings::MeshRefinement::IsFirstIteration;
 
       // Update limiter status and allocate limiter patch if necessary
-      // Further evalute the limiter status based refinement criterion
+      // Further evaluate the limiter status based refinement criterion
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
         const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
@@ -383,8 +383,7 @@ void exahype::mappings::MeshRefinement::enterCell(
       oneSolverRequestsRefinement |= result._refinementRequested;
       adjustSolution     |= result._newComputeCellAllocated;
 
-      // Synchronise time stepping and adjust the solution
-      // if necessary
+      // Synchronise time stepping and adjust the solution if required
       if (fineGridCell.isInitialised()) {
         const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
@@ -410,9 +409,7 @@ void exahype::mappings::MeshRefinement::enterCell(
     }
   }
 
-
   // Refine all adjacent vertices if necessary and possible.
-  //    if (refineFineGridCell && _state.refineInitialGridInTouchVertexLastTime()) {
   if (oneSolverRequestsRefinement) {
     dfor2(v)
       if (

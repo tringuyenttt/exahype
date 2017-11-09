@@ -373,22 +373,31 @@ bool exahype::solvers::LimitingADERDGSolver::markForRefinementBasedOnLimiterStat
 //        evaluateDiscreteMaximumPrincipleRefinementCriterion(
 //            fineGridCell.getCellDescriptionsIndex(),solverElement); // TODO(Dominic): Reenable
 
-    if (refineFineGridCell) {
+    if (
+        refineFineGridCell
+        &&
+        (solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::None ||
+         solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::DeaugmentingChildrenRequested ||
+         solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::AugmentingRequested)
+    ) {
       solverPatch.setRefinementEvent(SolverPatch::RefinementEvent::RefiningRequested);
-      return true;
     }
 
-    if (solverPatch.getLimiterStatus()<
-        computeMinimumLimiterStatusForRefinement(solverPatch.getLevel())) {
+    if (solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::RefiningRequested) {
+      return true;
+    } else if (solverPatch.getLimiterStatus()<computeMinimumLimiterStatusForRefinement(solverPatch.getLevel())) {
       return _solver->markForRefinement(
               fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
               coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
               fineGridPositionOfCell,
               initialGrid,
               solverNumber);
+    } else {
+      return false;
     }
+  } else {
+    return false;
   }
-  return false;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::updateLimiterStatusDuringLimiterStatusSpreading(
@@ -558,88 +567,81 @@ int exahype::solvers::LimitingADERDGSolver::computeMinimumLimiterStatusForRefine
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateLimiterStatusRefinementCriterion(
     const int cellDescriptionsIndex,const int solverElement) const {
-  if (solverElement!=exahype::solvers::Solver::NotFound) {
-    SolverPatch& solverPatch =
-        ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-    if (
-        solverPatch.getType()==SolverPatch::Type::Cell
-        &&
-        solverPatch.getLevel() < getMaximumAdaptiveMeshLevel()
-        &&
-        (solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::None ||
-         solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::DeaugmentingChildrenRequested ||
-         solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::AugmentingRequested)
-    ) {
-      return solverPatch.getLimiterStatus() >=
-                computeMinimumLimiterStatusForRefinement(solverPatch.getLevel());
-    }
-  }
-  return false;
+  assertion(solverElement!=exahype::solvers::Solver::NotFound);
+  SolverPatch& solverPatch =
+      ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+  return
+      solverPatch.getType()==SolverPatch::Type::Cell
+      &&
+      solverPatch.getLevel() < getMaximumAdaptiveMeshLevel()
+      &&
+      solverPatch.getLimiterStatus() >=
+      computeMinimumLimiterStatusForRefinement(solverPatch.getLevel());
 }
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleRefinementCriterion(
     const int cellDescriptionsIndex,
     const int solverElement) const {
-  if (solverElement!=exahype::solvers::Solver::NotFound) {
-    SolverPatch& solverPatch =
-        ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-    const int numberOfObservables = _solver->getDMPObservables();
-    if (solverPatch.getType()==SolverPatch::Type::Cell
-        &&
-        numberOfObservables > 0
-    ) {
-      double* observablesMin = DataHeap::getInstance().getData(
-          solverPatch.getSolutionMin()).data();
-      double* observablesMax = DataHeap::getInstance().getData(
-          solverPatch.getSolutionMax()).data();
-
-      bool discreteMaximumPrincipleSatisfied = true;
-      if (
-          solverPatch.getLevel() < getMaximumAdaptiveMeshLevel()
-          &&
-          (solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::None ||
-         solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::DeaugmentingChildrenRequested ||
-         solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::AugmentingRequested)
-      ) {
-        const double* localMinPerObservable    = observablesMin+0;
-        const double* localMaxPerObservable    = observablesMin+0;
-        const double* boundaryMinPerObservable = observablesMin+numberOfObservables;
-        const double* boundaryMaxPerObservable = observablesMax+numberOfObservables;
-
-        const double differenceScaling   = _DMPDifferenceScaling;
-        const double relaxationParameter = _DMPMaximumRelaxationParameter * 0.1; // TODO(Dominic): Should be a parameter in the spec file (optional)
-
-        for(int v = 0; v < numberOfObservables; v++) {
-          double boundaryMin = boundaryMinPerObservable[v];
-          double boundaryMax = boundaryMaxPerObservable[v];
-          double scaledDifference = (boundaryMax - boundaryMin) * differenceScaling;
-
-          assertion5(tarch::la::greaterEquals(scaledDifference,0.0),scaledDifference,boundaryMin,boundaryMax,localMinPerObservable[v],localMaxPerObservable[v]);
-          scaledDifference = std::max( scaledDifference, relaxationParameter );
-
-          if((localMinPerObservable[v] < (boundaryMin - scaledDifference)) ||
-              (localMaxPerObservable[v] > (boundaryMax + scaledDifference))) {
-            discreteMaximumPrincipleSatisfied=false;
-          }
-        }
-
-        return false; // TODO(Dominic): Reenable
-//        return !discreteMaximumPrincipleSatisfied;
-      }
-
-      // copy local min and max onto boundary
-      //  TODO(Dominic):
-      // 2. Copy the result on the other faces as well
-      for (int i=1; i<DIMENSIONS_TIMES_TWO; ++i) {
-        std::copy_n(
-            observablesMin,numberOfObservables, // past-the-end element
-            observablesMin+i*numberOfObservables);
-        std::copy_n(
-            observablesMax,numberOfObservables, // past-the-end element
-            observablesMax+i*numberOfObservables);
-      }
-    }
-  }
+//  if (solverElement!=exahype::solvers::Solver::NotFound) {
+//    SolverPatch& solverPatch =
+//        ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+//    const int numberOfObservables = _solver->getDMPObservables();
+//    if (solverPatch.getType()==SolverPatch::Type::Cell
+//        &&
+//        numberOfObservables > 0
+//    ) {
+//      double* observablesMin = DataHeap::getInstance().getData(
+//          solverPatch.getSolutionMin()).data();
+//      double* observablesMax = DataHeap::getInstance().getData(
+//          solverPatch.getSolutionMax()).data();
+//
+//      bool discreteMaximumPrincipleSatisfied = true;
+//      if (
+//          solverPatch.getLevel() < getMaximumAdaptiveMeshLevel()
+//          &&
+//          (solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::None ||
+//         solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::DeaugmentingChildrenRequested ||
+//         solverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::AugmentingRequested)
+//      ) {
+//        const double* localMinPerObservable    = observablesMin+0;
+//        const double* localMaxPerObservable    = observablesMin+0;
+//        const double* boundaryMinPerObservable = observablesMin+numberOfObservables;
+//        const double* boundaryMaxPerObservable = observablesMax+numberOfObservables;
+//
+//        const double differenceScaling   = _DMPDifferenceScaling;
+//        const double relaxationParameter = _DMPMaximumRelaxationParameter * 0.1; // TODO(Dominic): Should be a parameter in the spec file (optional)
+//
+//        for(int v = 0; v < numberOfObservables; v++) {
+//          double boundaryMin = boundaryMinPerObservable[v];
+//          double boundaryMax = boundaryMaxPerObservable[v];
+//          double scaledDifference = (boundaryMax - boundaryMin) * differenceScaling;
+//
+//          assertion5(tarch::la::greaterEquals(scaledDifference,0.0),scaledDifference,boundaryMin,boundaryMax,localMinPerObservable[v],localMaxPerObservable[v]);
+//          scaledDifference = std::max( scaledDifference, relaxationParameter );
+//
+//          if((localMinPerObservable[v] < (boundaryMin - scaledDifference)) ||
+//              (localMaxPerObservable[v] > (boundaryMax + scaledDifference))) {
+//            discreteMaximumPrincipleSatisfied=false;
+//          }
+//        }
+//
+//        return false; // TODO(Dominic): Reenable
+////        return !discreteMaximumPrincipleSatisfied;
+//      }
+//
+//      // copy local min and max onto boundary
+//      //  TODO(Dominic):
+//      // 2. Copy the result on the other faces as well
+//      for (int i=1; i<DIMENSIONS_TIMES_TWO; ++i) {
+//        std::copy_n(
+//            observablesMin,numberOfObservables, // past-the-end element
+//            observablesMin+i*numberOfObservables);
+//        std::copy_n(
+//            observablesMax,numberOfObservables, // past-the-end element
+//            observablesMax+i*numberOfObservables);
+//      }
+//    }
+//  }
   return false;
 }
 
@@ -650,8 +652,9 @@ exahype::solvers::LimitingADERDGSolver::evaluateRefinementCriterionAfterSolution
   bool refinementRequested =
       evaluateLimiterStatusRefinementCriterion(cellDescriptionsIndex,element);
 
-  refinementRequested |=
-      evaluateDiscreteMaximumPrincipleRefinementCriterion(cellDescriptionsIndex,element);
+  // TODO(Dominic):
+//  refinementRequested |=
+//      evaluateDiscreteMaximumPrincipleRefinementCriterion(cellDescriptionsIndex,element);
 
   // If no refinement was requested, evaluate the user's refinement criterion
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
