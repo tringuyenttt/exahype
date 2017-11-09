@@ -15,7 +15,7 @@ int exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::_snapshotC
 
 
 peano::CommunicationSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::communicationSpecification() const {
-  return peano::CommunicationSpecification::getPessimisticSpecification();
+  return peano::CommunicationSpecification::getPessimisticSpecification(true);
 }
 
 
