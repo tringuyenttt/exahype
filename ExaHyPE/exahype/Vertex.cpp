@@ -265,7 +265,7 @@ bool exahype::Vertex::hasToCommunicate(
   if (!isInside()) {
     return false;
   }
-  if (tarch::la::allGreater(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers())) {
+  if (tarch::la::oneGreater(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers())) {
     return  false;
   }
   return true;
@@ -279,10 +279,15 @@ bool exahype::Vertex::hasToSendMetadata(
   const int destScalar = peano::utils::dLinearisedWithoutLookup(dest,2);
   const tarch::la::Vector<TWO_POWER_D,int> adjacentRanks = getAdjacentRanks();
 
-  return tarch::la::countEqualEntries(dest, src) == (DIMENSIONS-1) &&
-         adjacentRanks(destScalar)   == toRank &&
+  return adjacentRanks(destScalar)   == toRank
+         &&
+         adjacentRanks(destScalar)   != tarch::parallel::Node::getGlobalMasterRank() &&
+         adjacentRanks(srcScalar)    != tarch::parallel::Node::getGlobalMasterRank()
+         &&
          (adjacentRanks(srcScalar)   == tarch::parallel::Node::getInstance().getRank() ||
-         State::isForkTriggeredForRank(adjacentRanks(srcScalar)));
+         State::isForkTriggeredForRank(adjacentRanks(srcScalar)))
+         &&
+         tarch::la::countEqualEntries(dest, src) == (DIMENSIONS-1);
 }
 
 void exahype::Vertex::sendOnlyMetadataToNeighbour(
@@ -320,10 +325,16 @@ bool exahype::Vertex::hasToReceiveMetadata(
   const int destScalar = peano::utils::dLinearisedWithoutLookup(dest,2);
   const tarch::la::Vector<TWO_POWER_D,int> adjacentRanks = getAdjacentRanks();
 
-  return tarch::la::countEqualEntries(dest, src) == (DIMENSIONS-1) &&
-      adjacentRanks(srcScalar)    == fromRank &&
+  return
+      adjacentRanks(srcScalar)    == fromRank
+      &&
+      adjacentRanks(srcScalar)    != tarch::parallel::Node::getGlobalMasterRank() &&
+      adjacentRanks(destScalar)   != tarch::parallel::Node::getGlobalMasterRank()
+      &&
       (adjacentRanks(destScalar)  == tarch::parallel::Node::getInstance().getRank() ||
-       State::isForkingRank(adjacentRanks(destScalar)));
+      State::isForkingRank(adjacentRanks(destScalar)))
+      &&
+      tarch::la::countEqualEntries(dest, src) == (DIMENSIONS-1);
 }
 
 void exahype::Vertex::mergeOnlyWithNeighbourMetadata(
