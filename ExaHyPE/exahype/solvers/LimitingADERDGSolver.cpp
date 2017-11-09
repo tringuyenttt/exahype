@@ -224,43 +224,40 @@ bool exahype::solvers::LimitingADERDGSolver::isSending(
   return isSending;
 }
 
-bool exahype::solvers::LimitingADERDGSolver::isComputing(
+bool exahype::solvers::LimitingADERDGSolver::isUsingSharedMappings(
     const exahype::records::State::AlgorithmSection& section) const {
-  bool isComputing = false;
+  bool isUsingSharedMappings = false;
 
   switch (section) {
     case exahype::records::State::AlgorithmSection::TimeStepping:
-      isComputing = true;
+      isUsingSharedMappings = true;
       break;
     case exahype::records::State::AlgorithmSection::LimiterStatusSpreading:
-      isComputing |= getMeshUpdateRequest();
-      isComputing |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
-      isComputing |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinement:
-      isComputing = getMeshUpdateRequest();
+      isUsingSharedMappings |= getMeshUpdateRequest();
+      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
+      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
       break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-      isComputing |= getMeshUpdateRequest();
-      isComputing |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
+      isUsingSharedMappings |= getMeshUpdateRequest();
+      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
       break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputation:
-      isComputing |= getMeshUpdateRequest();
-      isComputing |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
+      isUsingSharedMappings |= getMeshUpdateRequest();
+      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
       break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isComputing |= getMeshUpdateRequest();
-      isComputing |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
-      isComputing |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-      break;
-    case exahype::records::State::AlgorithmSection::LocalRecomputationAllSend:
-      isComputing = getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
+      isUsingSharedMappings |= getMeshUpdateRequest();
+      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
+      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
       break;
     case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isComputing = _solver->getStabilityConditionWasViolated();
+      isUsingSharedMappings = _solver->getStabilityConditionWasViolated();
+      break;
+    default:
+      break;
   }
 
-  return isComputing;
+  return isUsingSharedMappings;
 }
 
 void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(

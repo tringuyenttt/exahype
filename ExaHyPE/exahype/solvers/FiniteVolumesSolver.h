@@ -468,7 +468,7 @@ public:
 
   bool isSending(const exahype::records::State::AlgorithmSection& section) const override;
 
-  bool isComputing(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isUsingSharedMappings(const exahype::records::State::AlgorithmSection& section) const override;
 
   void synchroniseTimeStepping(
           const int cellDescriptionsIndex,
