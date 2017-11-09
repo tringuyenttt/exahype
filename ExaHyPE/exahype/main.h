@@ -4,7 +4,10 @@
 #include <string>
 
 namespace exahype {
-	void pingPongTest();
+        /**
+         * Simple ping pong test. Returns 0 if everything is ok.
+         */
+	int pingPongTest();
 
 	/**
 	 * Dump Version information and similiar information about compile time constants

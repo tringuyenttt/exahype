@@ -40,8 +40,9 @@ tarch::logging::Log _log("");
  * The ping pong test has to be triggered by main very very early. There should
  * be no other message in the MPI subsystem.
  */
-void exahype::pingPongTest() {
-  #if defined(Asserts) && defined(Parallel)
+int exahype::pingPongTest() {
+  bool correct = true;
+  #if defined(Parallel)
   logInfo( "run()", "start ping pong test .... if test fails, please retranslate with -DnoPackedRecords" );
   exahype::Vertex::initDatatype();
   exahype::Vertex sendVertex[5];
@@ -75,16 +76,21 @@ void exahype::pingPongTest() {
       assertion1( receivedVertex.getLevel()==4, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(0)==2.0, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(1)==2.0, receivedVertex.toString() );
+      correct &=  receivedVertex.getLevel()==4 && receivedVertex.getX()(0)==2.0 && receivedVertex.getX()(1)==2.0;
       #ifdef Dim3
       assertion1( receivedVertex.getX()(2)==2.0, receivedVertex.toString() );
+      correct &=  receivedVertex.getX()(2)==2.0;
       #endif
+
 
       receivedVertex.receive(0,100,true,-1);
       assertion1( receivedVertex.getLevel()==4, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(0)==2.0, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(1)==2.0, receivedVertex.toString() );
+      correct &=  receivedVertex.getLevel()==4 && receivedVertex.getX()(0)==2.0 && receivedVertex.getX()(1)==2.0;
       #ifdef Dim3
       assertion1( receivedVertex.getX()(2)==2.0, receivedVertex.toString() );
+      correct &=  receivedVertex.getX()(2)==2.0;
       #endif
 
       exahype::Vertex receivedVertices[5];
@@ -93,22 +99,28 @@ void exahype::pingPongTest() {
       assertion3( receivedVertices[0].getLevel()==4,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[0].getX()(0)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[0].getX()(1)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertex.getLevel()==4 && receivedVertex.getX()(0)==2.0 && receivedVertex.getX()(1)==2.0;
       #ifdef Dim3
       assertion3( receivedVertices[0].getX()(2)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertex.getX()(2)==2.0;
       #endif
 
       assertion3( receivedVertices[1].getLevel()==5,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[1].getX()(0)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[1].getX()(1)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertex.getLevel()==5 && receivedVertex.getX()(0)==3.0 && receivedVertex.getX()(1)==3.0;
       #ifdef Dim3
       assertion3( receivedVertices[1].getX()(2)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertex.getX()(2)==3.0;
       #endif
 
       assertion3( receivedVertices[2].getLevel()==6,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[2].getX()(0)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[2].getX()(1)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertex.getLevel()==6 && receivedVertex.getX()(0)==4.0 && receivedVertex.getX()(1)==4.0;
       #ifdef Dim3
       assertion3( receivedVertices[2].getX()(2)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertex.getX()(2)==4.0;
       #endif
     }
     MPI_Barrier( tarch::parallel::Node::getInstance().getCommunicator() );
@@ -121,22 +133,28 @@ void exahype::pingPongTest() {
       assertion3( heapVertices[0].getLevel()==4,  heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[0].getX()(0)==2.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[0].getX()(1)==2.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[0].getLevel()==4 && heapVertices[0].getX()(0)==2.0 && heapVertices[0].getX()(1)==2.0;
       #ifdef Dim3
       assertion3( heapVertices[0].getX()(2)==2.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[0].getX()(2)==2.0;
       #endif
 
       assertion3( heapVertices[1].getLevel()==5,  heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[1].getX()(0)==3.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[1].getX()(1)==3.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[1].getLevel()==5 && heapVertices[1].getX()(0)==3.0 && heapVertices[1].getX()(1)==3.0;
       #ifdef Dim3
       assertion3( heapVertices[1].getX()(2)==3.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[1].getX()(2)==3.0;
       #endif
 
       assertion3( heapVertices[2].getLevel()==6,  heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[2].getX()(0)==4.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[2].getX()(1)==4.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[2].getLevel()==6 && heapVertices[2].getX()(0)==4.0 && heapVertices[2].getX()(1)==4.0;
       #ifdef Dim3
       assertion3( heapVertices[2].getX()(2)==4.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[2].getX()(2)==4.0;
       #endif
     }
     if (tarch::parallel::Node::getInstance().getRank()==1) {
@@ -152,6 +170,8 @@ void exahype::pingPongTest() {
 
   logInfo( "run()", " ping pong test ok" );
   #endif
+
+  return correct ? EXIT_SUCCESS : -1;
 }
 
 
@@ -183,8 +203,6 @@ int exahype::main(int argc, char** argv) {
     return sharedMemorySetup;
   }
 
-  pingPongTest();
-
   //
   //   Parse config file
   // =====================
@@ -203,6 +221,11 @@ int exahype::main(int argc, char** argv) {
   bool showHelp    = firstarg == "-h" || firstarg == "--help";
   bool showVersion = firstarg == "-v" || firstarg == "--version";
   bool runTests    = firstarg == "-t" || firstarg == "--tests";
+  bool runPingPong = firstarg == "-p" || firstarg == "--pingpong";
+
+  if (runPingPong) {
+    return pingPongTest();
+  }
 
   if(showHelp) {
     help(progname);
