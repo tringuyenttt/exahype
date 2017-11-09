@@ -95,16 +95,29 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * neighbourMergePerformed flags, do never
    * use it in combination with the Merging mapping.
    */
-  void mergeOnlyMetadata(const exahype::records::State::AlgorithmSection& section);
+  void mergeOnlyNeighboursMetadata(const exahype::records::State::AlgorithmSection& section);
 
   /**
    * Checks if the cell descriptions at the indices corresponding
    * to \p pos1 and \p pos2 need to be merged with each other.
    *
-   * TODO(Dominic): The idea is to store purely geometry based information
-   * (offset,size,riemannSolvePerfomed,..) on a separate heap.
-   * That's why I have not merged the loops in this method
-   * into the solvers. I need to discuss this with Tobias.
+   * Therefore, we check if
+   *
+   * - the cell descriptions are valid and different and
+   * - no merge has yet been performed at the given face
+   *   on both cell descriptions.
+   *
+   * <h2>MPI</h2>
+   *
+   * During the mesh refinement iterations in a MPI-context, we have further
+   * observed that the adjacency information might not be up-to-date / are mixed up
+   * on a newly introduced rank after a fork was performed.
+   *
+   * We then further check if
+   *
+   *  - the geometry information of the two cell descriptions clarifies
+   *    that they are neighbours.
+   *    We compare the barycentres for this purpose.
    */
   bool hasToMergeNeighbours(
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
