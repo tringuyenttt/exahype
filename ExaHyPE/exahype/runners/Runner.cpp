@@ -793,26 +793,57 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
   static tarch::timing::Watch                     invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
   static peano::performanceanalysis::SpeedupLaws  amdahlsLaw;
 
+  // adopt my local performance model
   invasionWatch.stopTimer();
-
-  int newCores = rand()%(24-2) + 1;
-  // @todo debug
-  logInfo(
-    "postProcessTimeStepInSharedMemoryEnvironment()",
-    "p=" << tarch::multicore::Core::getInstance().getNumberOfThreads() <<
-    ",t(p)=" << invasionWatch.getCalendarTime() <<
-    " - try to book " << newCores << " next"
-  );
-
   amdahlsLaw.addMeasurement(
     tarch::multicore::Core::getInstance().getNumberOfThreads(),
     invasionWatch.getCalendarTime()
   );
-  amdahlsLaw.relaxAmdahlsLaw();
+  amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
 
-  // @todo Random set concurrency level
-  tarch::multicore::Core::getInstance().configure( newCores );
+  // share local performance model with other ranks running on same node
+  double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
+  SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
 
+  // get data from the other guys
+  int myIndexWithinSharedUserData;
+  int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
+
+  std::vector<double>  t1;
+  std::vector<double>  f;
+  std::vector<double>  s;
+  for (int k=0; k<ranksOnThisNode; k++) {
+    t1.push_back( SHMController::getSingleton()->getSharedUserData<double>(k,0) );
+    f.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,1) );
+    s.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,2) );
+  }
+
+  assertionNumericalEquals6(
+    t1[myIndexWithinSharedUserData], amdahlsLaw.getSerialTime(),
+    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
+    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
+  );
+  assertionNumericalEquals6(
+    f[myIndexWithinSharedUserData],  amdahlsLaw.getSerialCodeFraction(),
+    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
+    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
+  );
+  assertionNumericalEquals6(
+    s[myIndexWithinSharedUserData],  amdahlsLaw.getStartupCostPerThread(),
+    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
+    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
+  );
+
+  // ask for an optimal number of cores for local rank
+  int optimalNumberOfThreads = peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
+    myIndexWithinSharedUserData,
+    t1,f,s,
+    SHMInvadeRoot::get_max_available_cores() );
+  logInfo(
+    "postProcessTimeStepInSharedMemoryEnvironment()",
+    "try to use " << optimalNumberOfThreads << " threads" );
+
+  tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
   invasionWatch.startTimer();
   #endif
 }

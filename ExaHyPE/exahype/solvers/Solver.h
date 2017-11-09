@@ -117,6 +117,11 @@ namespace exahype {
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
+  extern tarch::multicore::BooleanSemaphore BackgroundThreadSemaphore;
+
+  /**
+   * A semaphore for serialising heap access.
+   */
   extern tarch::multicore::BooleanSemaphore HeapSemaphore;
 
 #ifdef Parallel

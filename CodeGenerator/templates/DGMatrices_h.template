@@ -20,6 +20,8 @@
 namespace {{namespaceName}} {
 {% endfor %}
 
+static volatile double doNotOptimizeAway = 0; //used to make sure that tmp coefficient array used with gemms are not optimized away by the compiler
+
 void initDGMatrices();
 void freeDGMatrices();
 

@@ -17,6 +17,10 @@
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
 
+{% if useLibxsmm %}
+#include "{{pathToOptKernel}}/gemmsCPP.h"
+{% endif %}
+
 
 void {{codeNamespace}}::faceUnknownsProlongation(
     double* lQhbndFine,
@@ -29,8 +33,11 @@ void {{codeNamespace}}::faceUnknownsProlongation(
 ) {
   const int levelDelta = fineGridLevel - coarseGridLevel;
 
-  double lQhbndFineTemp[{{nDof*nDof3D*nDataPad}}];
-  double lFhbndFineTemp[{{nDof*nDof3D*nVarPad }}];
+  double lQhbndFineTemp[{{nDof*nDof3D*nDataPad}}] __attribute__((aligned(ALIGNMENT)));
+  double lFhbndFineTemp[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
+{% if nDim == 3 %} 
+  double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+{% endif %}
 
   double * pointerQhbnd1 = 0;
   double * pointerFhbnd1 = 0;
@@ -80,6 +87,66 @@ void {{codeNamespace}}::faceUnknownsProlongation(
 
     // Apply the single level prolongation operator.
     // Use the coarse level unknowns as input in the first iteration.
+{% if useLibxsmm %}
+    if (l==1) {
+{% if nDim==2 %}
+#ifdef USE_IPO
+    #pragma forceinline
+#endif
+    {{gemm_face_Q}}(&lQhbndCoarse[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerQhbnd1[0]);
+#ifdef USE_IPO
+    #pragma forceinline
+#endif
+    {{gemm_face_F}}(&lFhbndCoarse[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerFhbnd1[0]);
+{% else %}
+    for(int m2=0; m2<{{nDof}}; m2++) {
+      for(int n2=0; n2<{{nDof}}; n2++) {
+        #pragma vector aligned
+        for(int it=0; it<{{nDof*nDofPad}}; it++) {
+          coeff[it] = {{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
+        }
+#ifdef USE_IPO
+        #pragma forceinline
+#endif
+        {{gemm_face_Q}}(&lQhbndCoarse[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+        {{gemm_face_F}}(&lFhbndCoarse[n2*{{nDof*nDataPad}}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nDataPad}}]);
+      }
+    }
+{% endif %}
+    } else { // l!= 1
+{% if nDim==2 %}
+#ifdef USE_IPO
+    #pragma forceinline
+#endif
+    {{gemm_face_Q}}(&pointerQhbnd2[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerQhbnd1[0]);
+#ifdef USE_IPO
+    #pragma forceinline
+#endif
+    {{gemm_face_F}}(&pointerFhbnd2[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerFhbnd1[0]);
+{% else %}
+    for(int m2=0; m2<{{nDof}}; m2++) {
+      for(int n2=0; n2<{{nDof}}; n2++) {
+        #pragma vector aligned
+        for(int it=0; it<{{nDof*nDofPad}}; it++) {
+          coeff[it] = {{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
+        }
+#ifdef USE_IPO
+        #pragma forceinline
+#endif
+        {{gemm_face_Q}}(&pointerQhbnd2[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+        {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nDataPad}}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nDataPad}}]);
+      }
+    }
+{% endif %}      
+    }
+  
+{% else%}
     if (l==1) {
       // singleLevelFaceUnknownsProlongation<{{nDataPad}}>(pointerQhbnd1, lQhbndCoarse, subintervalIndex);
       for (int m2=0; m2<{{nDof3D}}; m2++) {
@@ -149,9 +216,9 @@ void {{codeNamespace}}::faceUnknownsProlongation(
             }
           }
         }
-      }
-      
+      }     
     }
+{% endif %} {# useLibxsmm #}
 
     // Prepare next iteration.
     subfaceIndexPrevious_0 = subfaceIndexCurrent_0;
