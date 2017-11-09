@@ -388,10 +388,10 @@ void exahype::mappings::MeshRefinement::enterCell(
       if (fineGridCell.isInitialised()) {
         const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
-          solver->zeroTimeStepSizes(fineGridCell.getCellDescriptionsIndex(),element);
-          solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(),element);
-
           if (adjustSolution) {
+            solver->zeroTimeStepSizes(fineGridCell.getCellDescriptionsIndex(),element);
+            solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(),element);
+
             solver->adjustSolution(
                 fineGridCell.getCellDescriptionsIndex(),
                 element);
