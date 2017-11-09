@@ -3045,7 +3045,7 @@ void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
   Heap::getInstance().receiveData(
       receivedCellDescriptionsIndex,fromRank,x,level,messageType);
 
-  logInfo("mergeCellDescriptionsWithRemoteData(...)","received " <<
+  logDebug("mergeCellDescriptionsWithRemoteData(...)","received " <<
           Heap::getInstance().getData(receivedCellDescriptionsIndex).size() <<
           " cell descriptions for cell ("
           "centre="<< x.toString() <<
