@@ -995,7 +995,7 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if (fineGridCellElement==exahype::solvers::Solver::NotFound &&
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
-      tarch::la::allGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())) {
+      tarch::la::oneGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())) {
     logDebug("updateStateInEnterCell(...)","Add new uniform grid cell with offset "<<fineGridVerticesEnumerator.getVertexPosition() <<
             " at level "<<fineGridVerticesEnumerator.getLevel());
 
@@ -3045,7 +3045,7 @@ void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
   Heap::getInstance().receiveData(
       receivedCellDescriptionsIndex,fromRank,x,level,messageType);
 
-  logDebug("mergeCellDescriptionsWithRemoteData(...)","received " <<
+  logInfo("mergeCellDescriptionsWithRemoteData(...)","received " <<
           Heap::getInstance().getData(receivedCellDescriptionsIndex).size() <<
           " cell descriptions for cell ("
           "centre="<< x.toString() <<
