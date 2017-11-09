@@ -403,6 +403,9 @@ bool exahype::solvers::LimitingADERDGSolver::updateLimiterStatusDuringLimiterSta
   }
   solverPatch.setFacewiseLimiterStatus(0);
   deallocateLimiterPatchOnHelperCell(cellDescriptionsIndex,solverElement);
+  if (solverPatch.getPreviousLimiterStatus()==0) { // We might throw away old valuable information if we do not perform this check TODO(Dominic): Add to docu
+    ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(cellDescriptionsIndex,solverElement);
+  }
   return ensureRequiredLimiterPatchIsAllocated(cellDescriptionsIndex,solverElement);
 }
 
@@ -1201,9 +1204,9 @@ void exahype::solvers::LimitingADERDGSolver::ensureNoUnrequiredLimiterPatchIsAll
     const int solverElement) const {
   assertion(solverElement!=exahype::solvers::Solver::NotFound);
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+
   const int limiterElement =
       tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
-
   if (limiterElement!=exahype::solvers::Solver::NotFound
       && solverPatch.getLimiterStatus()==0) {
     deallocateLimiterPatch(cellDescriptionsIndex,solverElement);

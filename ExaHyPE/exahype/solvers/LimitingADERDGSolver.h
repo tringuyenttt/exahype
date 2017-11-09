@@ -260,11 +260,14 @@ private:
   /**
    * Deallocates the limiter patch for solver patches
    * that of type Cell and flagged with limiter status
-   * Ok.
+   * Ok (0).
    *
    * \note This operation should never be performed during the mesh refinement
-   * iterations since then a limiter patch holding a valid FV solution
-   * might be removed in one of the first iteration but is
+   * iterations if it is not ensured that the previous limiter status
+   * is Ok (0).
+   *
+   * Otherwise, a limiter patch holding a valid FV solution
+   * might be removed in one of the first iterations but is
    * then required after the limiter status spreading has converged to
    * perform a troubled cell recomputation.
    */
@@ -735,11 +738,14 @@ public:
    * on the finest level of the grid which have
    * a limiter status greater than 0.
    *
-   * Dellocate the limiter patch on helper cells.
-   *
-   * \note !!! Do not deallocate any limiter patches on compute cells
-   * during the limiter status spreading. They might be still necessary
-   * for a global recomputation.
+   * Deallocate the limiter patch on helper cells.
+   * Deallocate the limiter patch also on compute cells if
+   * both, the current and previous, limiter status flags
+   * are equalling Ok (0).
+   * Otherwise, the limiter patch is kept since
+   * it might turn out that it is still required in
+   * one of the next limiter status spreading or
+   * mesh refinement iterations.
    *
    * \note We overwrite the facewise limiter status values with the new value
    * in order to use the updateLimiterStatusAfterSetInitialConditions function
