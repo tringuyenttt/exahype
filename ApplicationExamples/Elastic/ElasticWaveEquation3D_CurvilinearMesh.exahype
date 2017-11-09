@@ -22,7 +22,7 @@ exahype-project  ElasticWaveEquation3D
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./ApplicationExamples/ElasticWaveEquation3D_CurvilinearMesh
+  output-directory const  = ./ApplicationExamples/Elastic/ElasticWaveEquation3D_CurvilinearMesh
   architecture const      = noarch
   log-file                = mylogfile.log
 
@@ -59,7 +59,7 @@ exahype-project  ElasticWaveEquation3D
     plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 25
       time            = 0.0
-      repeat          = 0.01
+      repeat          = 0.0001
       output          = ./conserved
       //select          = x:0.0,y:0.0
     end plot

@@ -2,8 +2,8 @@
 
 #include "ElasticWaveEquation_Variables.h"
 
-#include "../../ExaHyPE/kernels/KernelUtils.h"
-#include "../../ExaHyPE/kernels/DGMatrices.h"
+#include "../../../ExaHyPE/kernels/KernelUtils.h"
+#include "../../../ExaHyPE/kernels/DGMatrices.h"
 
 #include "CurvilinearTransformation.h"
 
@@ -19,15 +19,10 @@ void ElasticWaveEquation3D::ElasticWaveEquation::init(std::vector<std::string>& 
 //   return tarch::la::equals(t,0.0) ? exahype::solvers::ADERDGSolver::AdjustSolutionValue::PatchWisely : exahype::solvers::ADERDGSolver::AdjustSolutionValue::No;
 // }
 
+void ElasticWaveEquation3D::ElasticWaveEquation::adjustSolution(double *luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt){
 
-
-void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& dx,
-      const double t,
-      const double dt,
-      double* luh) {
-
+  if(t != 0.0) return;
+  
   constexpr int basisSize = ElasticWaveEquation::Order+1;
   int num_nodes = basisSize;
   int numberOfData=ElasticWaveEquation::NumberOfParameters+ElasticWaveEquation::NumberOfVariables;
@@ -51,7 +46,7 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
  
   int ne_x = std::round(1/dx[0]); //number of elements in x direction
   int ne_y = std::round(1/dx[1]); //number of elements in y direction
-  int ne_z = std::round(1/dx[2]); //number of elements in z direction		    
+  int ne_z = std::round(1/dx[2]); //number of elements in z direction        
 
   nx = ne_x *(num_nodes-1) + 1; //global number of nodes in x direction considering collocation
   ny = ne_y *(num_nodes-1) + 1; //global number of nodes in y direction
@@ -62,9 +57,9 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
   double block_width_y=1.0;
   double block_width_z=1.0;
 
-  double offset_x=cellCentre[0]-0.5*dx[0];
-  double offset_y=cellCentre[1]-0.5*dx[1];
-  double offset_z=cellCentre[2]-0.5*dx[2];
+  double offset_x=center[0]-0.5*dx[0];
+  double offset_y=center[1]-0.5*dx[1];
+  double offset_z=center[2]-0.5*dx[2];
 
   double fault_position = 0.7;
   int n = offset_x >  fault_position ? 1 : 0 ; //1: Water Column 0: Solid  
@@ -129,37 +124,37 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
   
   
   // getBoundaryCurves3D( num_nodes,
-  // 		       offset_x,  offset_y,  offset_z,
-  // 		       width_x,  width_y ,  width_z ,
-  // 		       left_bnd_x,  left_bnd_y,  left_bnd_z,
-  // 		       right_bnd_x,  right_bnd_y,  right_bnd_z,
-  // 		       bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
-  // 		       top_bnd_x,  top_bnd_y,  top_bnd_z,
-  // 		       front_bnd_x,  front_bnd_y,  front_bnd_z,
-  // 		       back_bnd_x,  back_bnd_y,  back_bnd_z);
+  //            offset_x,  offset_y,  offset_z,
+  //            width_x,  width_y ,  width_z ,
+  //            left_bnd_x,  left_bnd_y,  left_bnd_z,
+  //            right_bnd_x,  right_bnd_y,  right_bnd_z,
+  //            bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
+  //            top_bnd_x,  top_bnd_y,  top_bnd_z,
+  //            front_bnd_x,  front_bnd_y,  front_bnd_z,
+  //            back_bnd_x,  back_bnd_y,  back_bnd_z);
 
   
 
   
   // getBoundaryCurves3D_fixedTopFace_forBlock( num_nodes,
-  // 					     nx,ny,nz,n	,	     
-  // 					     block_width_x,  block_width_y ,  block_width_z ,
-  // 					     left_bnd_x,  left_bnd_y,  left_bnd_z,
-  // 					     right_bnd_x,  right_bnd_y,  right_bnd_z,
-  // 					     bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
-  // 					     top_bnd_x,  top_bnd_y,  top_bnd_z,
-  // 					     front_bnd_x,  front_bnd_y,  front_bnd_z,
-  // 					     back_bnd_x,  back_bnd_y,  back_bnd_z);
+  //                nx,ny,nz,n  ,       
+  //                block_width_x,  block_width_y ,  block_width_z ,
+  //                left_bnd_x,  left_bnd_y,  left_bnd_z,
+  //                right_bnd_x,  right_bnd_y,  right_bnd_z,
+  //                bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
+  //                top_bnd_x,  top_bnd_y,  top_bnd_z,
+  //                front_bnd_x,  front_bnd_y,  front_bnd_z,
+  //                back_bnd_x,  back_bnd_y,  back_bnd_z);
 
   getBoundaryCurves3D_cutOffTopography_withFault( num_nodes,
-						  nx,ny,nz,n,fault_position,	     
-						  block_width_x,  block_width_y ,  block_width_z ,
-						  left_bnd_x,  left_bnd_y,  left_bnd_z,
-						  right_bnd_x,  right_bnd_y,  right_bnd_z,
-						  bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
-						  top_bnd_x,  top_bnd_y,  top_bnd_z,
-						  front_bnd_x,  front_bnd_y,  front_bnd_z,
-						  back_bnd_x,  back_bnd_y,  back_bnd_z);
+              nx,ny,nz,n,fault_position,       
+              block_width_x,  block_width_y ,  block_width_z ,
+              left_bnd_x,  left_bnd_y,  left_bnd_z,
+              right_bnd_x,  right_bnd_y,  right_bnd_z,
+              bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
+              top_bnd_x,  top_bnd_y,  top_bnd_z,
+              front_bnd_x,  front_bnd_y,  front_bnd_z,
+              back_bnd_x,  back_bnd_y,  back_bnd_z);
 
 
 
@@ -286,58 +281,58 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
   //   {
   //     k_m =  (offset_z/width_z);
   //   }
-	
+  
   int i_p = i_m + num_nodes;
   int j_p = j_m + num_nodes;
   int k_p = k_m + num_nodes;   
 
   
   transFiniteInterpolation3D( nx,  ny,  nz,
-  			      k_m,  k_p ,
-  			      j_m,  j_p ,
-  			      i_m,  i_p ,
-  			      num_nodes,
-			      width_x,width_y,width_z,
-  			      left_bnd_x,
-  			      right_bnd_x,
-  			      bottom_bnd_x,
-  			      top_bnd_x,
-  			      front_bnd_x,
-  			      back_bnd_x,
-  			      curvilinear_x
-  			      );
+              k_m,  k_p ,
+              j_m,  j_p ,
+              i_m,  i_p ,
+              num_nodes,
+            width_x,width_y,width_z,
+              left_bnd_x,
+              right_bnd_x,
+              bottom_bnd_x,
+              top_bnd_x,
+              front_bnd_x,
+              back_bnd_x,
+              curvilinear_x
+              );
 
   transFiniteInterpolation3D( nx,  ny,  nz,
-  			      k_m,  k_p ,
-  			      j_m,  j_p ,
-  			      i_m,  i_p ,
-  			      num_nodes,
-			      width_x,width_y,width_z,
-  			      left_bnd_y,
-  			      right_bnd_y,
-  			      bottom_bnd_y,
-  			      top_bnd_y,
-  			      front_bnd_y,
-  			      back_bnd_y,
-  			      curvilinear_y
-  			      );
+              k_m,  k_p ,
+              j_m,  j_p ,
+              i_m,  i_p ,
+              num_nodes,
+            width_x,width_y,width_z,
+              left_bnd_y,
+              right_bnd_y,
+              bottom_bnd_y,
+              top_bnd_y,
+              front_bnd_y,
+              back_bnd_y,
+              curvilinear_y
+              );
 
   //  double right_bnd_z_block = right_bnd_z[k_m:k_p]
   
   transFiniteInterpolation3D( nx,  ny,  nz,
-  			      k_m,  k_p ,
-  			      j_m,  j_p ,
-  			      i_m,  i_p ,
-  			      num_nodes,
-			      width_x,width_y,width_z,			      
-  			      left_bnd_z,
-  			      right_bnd_z,
-  			      bottom_bnd_z,
-  			      top_bnd_z,
-  			      front_bnd_z,
-  			      back_bnd_z,
-  			      curvilinear_z
-  			      );
+              k_m,  k_p ,
+              j_m,  j_p ,
+              i_m,  i_p ,
+              num_nodes,
+            width_x,width_y,width_z,            
+              left_bnd_z,
+              right_bnd_z,
+              bottom_bnd_z,
+              top_bnd_z,
+              front_bnd_z,
+              back_bnd_z,
+              curvilinear_z
+              );
 
   
   double* gl_vals_x = new double[num_nodes*num_nodes*num_nodes];
@@ -360,14 +355,14 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
 
   
   metricDerivativesAndJacobian3D(num_nodes,
-  				 curvilinear_x,  curvilinear_y,  curvilinear_z,
-  				 gl_vals_x,  gl_vals_y,  gl_vals_z,
-  				 q_x,  q_y,  q_z,
-  				 r_x,  r_y,  r_z,
-  				 s_x,  s_y,  s_z,				  
-  				 jacobian,
-  				 width_x,  width_y,  width_z
-  				 );
+           curvilinear_x,  curvilinear_y,  curvilinear_z,
+           gl_vals_x,  gl_vals_y,  gl_vals_z,
+           q_x,  q_y,  q_z,
+           r_x,  r_y,  r_z,
+           s_x,  s_y,  s_z,          
+           jacobian,
+           width_x,  width_y,  width_z
+           );
 
 
   for (int k=0; k< num_nodes; k++){
@@ -375,79 +370,79 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustPatchSolution(
       for (int i=0; i< num_nodes; i++){
 
 
-	
-	double x= gl_vals_x[id_3(k,j,i)];
-	double y= gl_vals_y[id_3(k,j,i)];
-	double z= gl_vals_z[id_3(k,j,i)];
+  
+  double x= gl_vals_x[id_3(k,j,i)];
+  double y= gl_vals_y[id_3(k,j,i)];
+  double z= gl_vals_z[id_3(k,j,i)];
 
-	if(n == 0){	
-	  luh[id_4(k,j,i,0)]  = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
-	  luh[id_4(k,j,i,1)]  = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
-	  luh[id_4(k,j,i,2)]  = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
-	}else{
-	  luh[id_4(k,j,i,0)]  = 0;
-	  luh[id_4(k,j,i,1)]  = 0;
-	  luh[id_4(k,j,i,2)]  = 0;
-	}
-	// //Velocity
-	// luh[id_4(k,j,i,0)]  = 0;
-	// luh[id_4(k,j,i,1)]  = 0;
-	// luh[id_4(k,j,i,2)]  = 0;
-
-
-	// stress
-	luh[id_4(k,j,i,3)]  = 0;
-	luh[id_4(k,j,i,4)]  = 0;
-	luh[id_4(k,j,i,5)]  = 0;	
-	// luh[id_4(k,j,i,3)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
-	// luh[id_4(k,j,i,4)]  = luh[id_4(k,j,i,3)];
-	// luh[id_4(k,j,i,5)]  = luh[id_4(k,j,i,3)];	
+  if(n == 0){  
+    luh[id_4(k,j,i,0)]  = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+    luh[id_4(k,j,i,1)]  = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+    luh[id_4(k,j,i,2)]  = std::exp(-10*((x-0.25)*(x-0.25)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+  }else{
+    luh[id_4(k,j,i,0)]  = 0;
+    luh[id_4(k,j,i,1)]  = 0;
+    luh[id_4(k,j,i,2)]  = 0;
+  }
+  // //Velocity
+  // luh[id_4(k,j,i,0)]  = 0;
+  // luh[id_4(k,j,i,1)]  = 0;
+  // luh[id_4(k,j,i,2)]  = 0;
 
 
-	
-	luh[id_4(k,j,i,6)]  = 0;
-	luh[id_4(k,j,i,7)]  = 0;
-	luh[id_4(k,j,i,8)]  = 0;
+  // stress
+  luh[id_4(k,j,i,3)]  = 0;
+  luh[id_4(k,j,i,4)]  = 0;
+  luh[id_4(k,j,i,5)]  = 0;  
+  // luh[id_4(k,j,i,3)]  = std::exp(-((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5)+(z-0.5)*(z-0.5))/0.01);
+  // luh[id_4(k,j,i,4)]  = luh[id_4(k,j,i,3)];
+  // luh[id_4(k,j,i,5)]  = luh[id_4(k,j,i,3)];  
 
 
-	
-	
-	if(n == 0){
-	  // elastic solid:
-	  luh[id_4(k,j,i,9)]   = 2.7;   //rho
-	  luh[id_4(k,j,i,10)]  = 3.343; //c(1)
-	  luh[id_4(k,j,i,11)]  = 6.0; //c(2)
-	}else{
-	  // water column
-	  // luh[id_4(k,j,i,9)]   = 1.0;   //rho
-	  // luh[id_4(k,j,i,10)]  = 0.0; //c(1)
-	  // luh[id_4(k,j,i,11)]  = 1.484; //c(2)
+  
+  luh[id_4(k,j,i,6)]  = 0;
+  luh[id_4(k,j,i,7)]  = 0;
+  luh[id_4(k,j,i,8)]  = 0;
 
-	  luh[id_4(k,j,i,9)]   = 2.7;   //rho
-	  luh[id_4(k,j,i,10)]  = 0; //c(1)
-	  luh[id_4(k,j,i,11)]  = 6.0; //c(2)
 
-	}
+  
+  
+  if(n == 0){
+    // elastic solid:
+    luh[id_4(k,j,i,9)]   = 2.7;   //rho
+    luh[id_4(k,j,i,10)]  = 3.343; //c(1)
+    luh[id_4(k,j,i,11)]  = 6.0; //c(2)
+  }else{
+    // water column
+    // luh[id_4(k,j,i,9)]   = 1.0;   //rho
+    // luh[id_4(k,j,i,10)]  = 0.0; //c(1)
+    // luh[id_4(k,j,i,11)]  = 1.484; //c(2)
 
-	
-	  
-	luh[id_4(k,j,i,12)]  = jacobian[id_3(k,j,i)];
+    luh[id_4(k,j,i,9)]   = 2.7;   //rho
+    luh[id_4(k,j,i,10)]  = 3.343; //c(1)
+    luh[id_4(k,j,i,11)]  = 6.0; //c(2)
 
-	luh[id_4(k,j,i,13)]  = q_x[id_3(k,j,i)];
-	luh[id_4(k,j,i,14)]  = q_y[id_3(k,j,i)];
-	luh[id_4(k,j,i,15)]  = q_z[id_3(k,j,i)];
-	  
-	luh[id_4(k,j,i,16)] = r_x[id_3(k,j,i)];
-	luh[id_4(k,j,i,17)] = r_y[id_3(k,j,i)];
-	luh[id_4(k,j,i,18)] = r_z[id_3(k,j,i)];
-	  
-	luh[id_4(k,j,i,19)] = s_x[id_3(k,j,i)];
-	luh[id_4(k,j,i,20)] = s_y[id_3(k,j,i)];
-	luh[id_4(k,j,i,21)] = s_z[id_3(k,j,i)];
-	  
-	luh[id_4(k,j,i,22)] = gl_vals_x[id_3(k,j,i)];
-	luh[id_4(k,j,i,23)] = gl_vals_y[id_3(k,j,i)];
-	luh[id_4(k,j,i,24)] = gl_vals_z[id_3(k,j,i)];
+  }
+
+  
+    
+  luh[id_4(k,j,i,12)]  = jacobian[id_3(k,j,i)];
+
+  luh[id_4(k,j,i,13)]  = q_x[id_3(k,j,i)];
+  luh[id_4(k,j,i,14)]  = q_y[id_3(k,j,i)];
+  luh[id_4(k,j,i,15)]  = q_z[id_3(k,j,i)];
+    
+  luh[id_4(k,j,i,16)] = r_x[id_3(k,j,i)];
+  luh[id_4(k,j,i,17)] = r_y[id_3(k,j,i)];
+  luh[id_4(k,j,i,18)] = r_z[id_3(k,j,i)];
+    
+  luh[id_4(k,j,i,19)] = s_x[id_3(k,j,i)];
+  luh[id_4(k,j,i,20)] = s_y[id_3(k,j,i)];
+  luh[id_4(k,j,i,21)] = s_z[id_3(k,j,i)];
+    
+  luh[id_4(k,j,i,22)] = gl_vals_x[id_3(k,j,i)];
+  luh[id_4(k,j,i,23)] = gl_vals_y[id_3(k,j,i)];
+  luh[id_4(k,j,i,24)] = gl_vals_z[id_3(k,j,i)];
 
       }
     }
@@ -656,7 +651,7 @@ void ElasticWaveEquation3D::ElasticWaveEquation::coefficientMatrix(const double*
     for (int j =0; j< 4 ; j++){
       B1[i][j]=0;
       B2[i][j]=0;
-      B3[i][j]=0;	
+      B3[i][j]=0;  
     }
   }
 
@@ -679,15 +674,24 @@ void ElasticWaveEquation3D::ElasticWaveEquation::coefficientMatrix(const double*
 
 
 void ElasticWaveEquation3D::ElasticWaveEquation::algebraicSource(const double* const Q,double* S) {
-  S[0] = 10*Q[0];
-  S[1] = 10*Q[1];
-  S[2] = 10*Q[2];
-  S[3] = 10*Q[3];
-  S[4] = 10*Q[0];
-  S[5] = 10*Q[1];
-  S[6] = 10*Q[2];
-  S[7] = 10*Q[3];
-  S[8] = 10*Q[2];
+  // S[0] = 10*Q[0];
+  // S[1] = 10*Q[1];
+  // S[2] = 10*Q[2];
+  // S[3] = 10*Q[3];
+  // S[4] = 10*Q[0];
+  // S[5] = 10*Q[1];
+  // S[6] = 10*Q[2];
+  // S[7] = 10*Q[3];
+  // S[8] = 10*Q[2];
+  S[0] = 0.0;
+  S[1] = 0.0;
+  S[2] = 0.0;
+  S[3] = 0.0;
+  S[4] = 0.0;
+  S[5] = 0.0;
+  S[6] = 0.0;
+  S[7] = 0.0;
+  S[8] = 0.0;
 }
 
 
@@ -695,9 +699,9 @@ void ElasticWaveEquation3D::ElasticWaveEquation::pointSource(const double* const
 
   double pi = 3.14159265359;
   double sigma = 0.1149;
-  double t0 = 0.7;
+  double t0 = 0.1;
   double f = 0.0;
-  double M0 = 1000.0;
+  double M0 = 0.0;
 
   if(n == 0){
     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
@@ -830,6 +834,213 @@ void ElasticWaveEquation3D::ElasticWaveEquation::multiplyMaterialParameterMatrix
 }
 
 
+// void ElasticWaveEquation3D::ElasticWaveEquation::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
+
+//   constexpr int numberOfVariables  = ElasticWaveEquation::NumberOfVariables;
+//   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
+//   constexpr int numberOfParameters = ElasticWaveEquation::NumberOfParameters;
+//   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
+//   constexpr int basisSize          = ElasticWaveEquation::Order+1;
+//   constexpr int order              = basisSize - 1; 
+
+//   //changed for dynamic rupture
+//   kernels::idx3 idx_QLR(basisSize,basisSize,numberOfData);
+//   kernels::idx3 idx_FLR(basisSize,basisSize,numberOfVariables);
+
+
+//   double n[3]={0,0,0};
+
+//   n[normalNonZeroIndex]=1;
+
+//   double n_p[3]={0,0,0};
+//   double n_m[3]={0,0,0};
+
+//   double m_p[3]={0,0,0};
+//   double m_m[3]={0,0,0};
+
+//   double l_p[3]={0,0,0};  
+//   double l_m[3]={0,0,0};
+
+//   //std::cout<<isBoundaryFace<<std::endl;
+
+
+//   double norm_p_qr;
+//   double norm_m_qr;
+  
+//   double FLn, FLm, FLl; 
+//   double FRn,FRm,FRl;
+//   double FL_n,FL_m,FL_l;
+//   double FR_n,FR_m,FR_l;
+//   double FLx,FLy,FLz ;
+//   double FRx,FRy,FRz ;
+//   double FL_x,FL_y,FL_z;
+//   double FR_x,FR_y,FR_z;
+  
+
+
+//   //std::cout<<isBoundaryFace<<std::endl;
+//   for (int i = 0; i < basisSize; i++) {
+//     for (int j = 0; j < basisSize; j++) {
+//       //implemeneted for dynamic rupture
+
+
+//       double rho_p=QR[idx_QLR(i,j,9)];
+//       double c_s_p=QR[idx_QLR(i,j,10)];
+//       double c_p_p=QR[idx_QLR(i,j,11)];
+      
+
+//       double mu_p=c_s_p*c_s_p*rho_p;
+//       double lam_p = rho_p*c_p_p*c_p_p-2*mu_p;      
+
+
+//       double rho_m=QL[idx_QLR(i,j,9)];
+      
+//       double c_s_m=QL[idx_QLR(i,j,10)];
+//       double c_p_m=QL[idx_QLR(i,j,11)];
+
+//       double mu_m=c_s_m*c_s_m*rho_m;
+//       double lam_m = rho_m*c_p_m*c_p_m-2*mu_m;      
+
+//       get_normals(normalNonZeroIndex, norm_p_qr, n_p, QR + idx_QLR(i,j,0));
+//       get_normals(normalNonZeroIndex, norm_m_qr, n_m, QL + idx_QLR(i,j,0));    
+      
+
+//       double Tx_m,Ty_m,Tz_m;
+//       double Tx_p,Ty_p,Tz_p;
+      
+//       double vx_m,vy_m,vz_m;
+//       double vx_p,vy_p,vz_p;
+      
+//       extract_tractions_and_particle_velocity(n_p,QR+idx_QLR(i,j,0),Tx_p,Ty_p,Tz_p,vx_p,vy_p,vz_p );
+//       extract_tractions_and_particle_velocity(n_m,QL+idx_QLR(i,j,0),Tx_m,Ty_m,Tz_m,vx_m,vy_m,vz_m ); 
+      
+//       localBasis(n_p, m_p, l_p, 3);
+//       localBasis(n_m, m_m, l_m, 3);
+
+//       double Tn_m,Tm_m,Tl_m;
+//       double vn_m,vm_m,vl_m;
+//       double Tn_p,Tm_p,Tl_p;
+//       double vn_p,vm_p,vl_p;
+
+//       // rotate fields into l, m, n basis
+//       rotate_into_orthogonal_basis(n_m,m_m,l_m,Tx_m,Ty_m,Tz_m,Tn_m,Tm_m,Tl_m);
+//       rotate_into_orthogonal_basis(n_m,m_m,l_m,vx_m,vy_m,vz_m,vn_m,vm_m,vl_m);
+//       rotate_into_orthogonal_basis(n_p,m_p,l_p,Tx_p,Ty_p,Tz_p,Tn_p,Tm_p,Tl_p);
+//       rotate_into_orthogonal_basis(n_p,m_p,l_p,vx_p,vy_p,vz_p,vn_p,vm_p,vl_p);      
+      
+  
+//     // extract local s-wave and p-wave impedances
+//       double zs_p=rho_p*c_s_p;
+//       double zs_m=rho_m*c_s_m;
+      
+//       double zp_p=rho_p*c_p_p;
+//       double zp_m=rho_m*c_p_m;
+      
+//     // impedance must be greater than zero !
+//     if (zp_p <= 0.0 || zp_m <= 0.0){
+//       std::cout<<zs_p<<" "<<zs_m<<" "<<zp_p<<" "<<zp_m<<"\n";
+//       std::cout<<" Impedance must be greater than zero ! "<< std::endl;
+//       std::exit(-1);
+//     }
+
+//     // generate interface data preserving the amplitude of the outgoing charactertritics
+//     // and satisfying interface conditions exactly.
+    
+//     double vn_hat_p,vm_hat_p,vl_hat_p;    
+//     double vn_hat_m,vm_hat_m,vl_hat_m;    
+//     double Tn_hat_p,Tm_hat_p,Tl_hat_p;    
+//     double Tn_hat_m,Tm_hat_m,Tl_hat_m;    
+
+
+//     if (isBoundaryFace) {
+//       double r= faceIndex==1 ? 1 : 0;
+//       riemannSolver_boundary(faceIndex,r,vn_m,vm_m,vl_m,Tn_m,Tm_m,Tl_m,zp_m,zs_m,vn_hat_m,vm_hat_m,vl_hat_m,Tn_hat_m,Tm_hat_m,Tl_hat_m);
+//       riemannSolver_boundary(faceIndex,r,vn_p,vm_p,vl_p,Tn_p,Tm_p,Tl_p,zp_p,zs_p,vn_hat_p,vm_hat_p,vl_hat_p,Tn_hat_p,Tm_hat_p,Tl_hat_p);      
+
+//     }else {
+//       riemannSolver_Nodal(vn_p,vn_m, Tn_p, Tn_m, zp_p , zp_m, vn_hat_p , vn_hat_m, Tn_hat_p, Tn_hat_m);
+//       riemannSolver_Nodal(vm_p,vm_m, Tm_p, Tm_m, zs_p , zs_m, vm_hat_p , vm_hat_m, Tm_hat_p, Tm_hat_m);
+//       riemannSolver_Nodal(vl_p,vl_m, Tl_p, Tl_m, zs_p , zs_m, vl_hat_p , vl_hat_m, Tl_hat_p, Tl_hat_m);
+
+//     }
+
+//     // generate fluctuations in the local basis coordinates: n, m
+//     generate_fluctuations_left(zp_m,Tn_m,Tn_hat_m,vn_m,vn_hat_m,FLn);
+//     generate_fluctuations_left(zs_m,Tm_m,Tm_hat_m,vm_m,vm_hat_m,FLm);
+//     generate_fluctuations_left(zs_m,Tl_m,Tl_hat_m,vl_m,vl_hat_m,FLl);
+
+//     generate_fluctuations_right(zp_p,Tn_p,Tn_hat_p,vn_p,vn_hat_p,FRn);
+//     generate_fluctuations_right(zs_p,Tm_p,Tm_hat_p,vm_p,vm_hat_p,FRm);
+//     generate_fluctuations_right(zs_p,Tl_p,Tl_hat_p,vl_p,vl_hat_p,FRl);
+
+
+    
+//     FL_n = FLn/zp_m;
+//     FL_m=0;
+//     FL_l=0;
+    
+//     if(zs_m > 0){
+//     FL_m = FLm/zs_m;
+//     FL_l = FLl/zs_m;
+//      }
+
+    
+//     FR_n = FRn/zp_p;
+//     FR_m=0;
+//     FR_l=0;
+//     if(zs_p > 0){    
+//     FR_m = FRm/zs_p;
+//     FR_l = FRl/zs_p;
+//     }
+
+    
+//     // rotate back to the physical coordinates x, y, z
+//     rotate_into_physical_basis(n_m,m_m,l_m,FLn,FLm,FLl,FLx,FLy,FLz);
+//     rotate_into_physical_basis(n_p,m_p,l_p,FRn,FRm,FRl,FRx,FRy,FRz);
+//     rotate_into_physical_basis(n_m,m_m,l_m,FL_n,FL_m,FL_l,FL_x,FL_y,FL_z);
+//     rotate_into_physical_basis(n_p,m_p,l_p,FR_n,FR_m,FR_l,FR_x,FR_y,FR_z);
+     
+//     // construct flux fluctuation vectors obeying the eigen structure of the PDE
+//     // and choose physically motivated penalties such that we can prove
+//     // numerical stability.
+
+//     FR[idx_FLR(i,j, 0)] = norm_p_qr/rho_p*FRx;
+//     FL[idx_FLR(i,j, 0)] = norm_m_qr/rho_m*FLx;
+    
+//     FR[idx_FLR(i,j, 1)] = norm_p_qr/rho_p*FRy;
+//     FL[idx_FLR(i,j, 1)] = norm_m_qr/rho_m*FLy;
+
+//     FR[idx_FLR(i,j, 2)] = norm_p_qr/rho_p*FRz;
+//     FL[idx_FLR(i,j, 2)] = norm_m_qr/rho_m*FLz;
+    
+
+//     FL[idx_FLR(i,j, 3)] = norm_m_qr*((2*mu_m+lam_m)*n_m[0]*FL_x+lam_m*n_m[1]*FL_y+lam_m*n_m[2]*FL_z);
+//     FL[idx_FLR(i,j, 4)] = norm_m_qr*((2*mu_m+lam_m)*n_m[1]*FL_y+lam_m*n_m[0]*FL_x+lam_m*n_m[2]*FL_z);
+//     FL[idx_FLR(i,j, 5)] = norm_m_qr*((2*mu_m+lam_m)*n_m[2]*FL_z+lam_m*n_m[0]*FL_x+lam_m*n_m[1]*FL_y);
+
+//     FR[idx_FLR(i,j, 3)] = -norm_p_qr*((2*mu_p+lam_p)*n_p[0]*FR_x+lam_p*n_p[1]*FR_y+lam_p*n_p[2]*FR_z);
+//     FR[idx_FLR(i,j, 4)] = -norm_p_qr*((2*mu_p+lam_p)*n_p[1]*FR_y+lam_p*n_p[0]*FR_x+lam_p*n_p[2]*FR_z);
+//     FR[idx_FLR(i,j, 5)] = -norm_p_qr*((2*mu_p+lam_p)*n_p[2]*FR_z+lam_p*n_p[0]*FR_x+lam_p*n_p[1]*FR_y);
+    
+//     FL[idx_FLR(i,j, 6)] =  norm_m_qr*mu_m*(n_m[1]*FL_x + n_m[0]*FL_y);
+//     FL[idx_FLR(i,j, 7)] =  norm_m_qr*mu_m*(n_m[2]*FL_x + n_m[0]*FL_z);
+//     FL[idx_FLR(i,j, 8)] =  norm_m_qr*mu_m*(n_m[2]*FL_y + n_m[1]*FL_z);
+
+//     FR[idx_FLR(i,j, 6)] = -norm_p_qr*mu_p*(n_p[1]*FR_x + n_p[0]*FR_y);
+//     FR[idx_FLR(i,j, 7)] = -norm_p_qr*mu_p*(n_p[2]*FR_x + n_p[0]*FR_z);
+//     FR[idx_FLR(i,j, 8)] = -norm_p_qr*mu_p*(n_p[2]*FR_y + n_p[1]*FR_z);
+    
+//     // double x = QR[idx_QLR(i,j,22)];
+//     // // std::cout<< pow(x-0.5,2)<< std::endl;
+    
+//     // if (pow(x-0.5,2) < 1e-5) {
+//     //   std::cout<<"x: "<< x<< n_m[0]-n_p[0] << " " << n_m[1]-n_p[1] << " " << n_m[2]-n_p[2] << std::endl;
+//     //   }
+//     }    
+//   }
+
+// }
+
 void ElasticWaveEquation3D::ElasticWaveEquation::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
 
   constexpr int numberOfVariables  = ElasticWaveEquation::NumberOfVariables;
@@ -837,585 +1048,377 @@ void ElasticWaveEquation3D::ElasticWaveEquation::riemannSolver(double* FL,double
   constexpr int numberOfParameters = ElasticWaveEquation::NumberOfParameters;
   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
   constexpr int basisSize          = ElasticWaveEquation::Order+1;
-  constexpr int order              = basisSize - 1; 
+  constexpr int order              = basisSize - 1;
+  
+  kernels::idx3 idx_QLR(basisSize, basisSize,numberOfData);
 
-  //changed for dynamic rupture
-  kernels::idx3 idx_QLR(basisSize,basisSize,numberOfData);
-  kernels::idx3 idx_FLR(basisSize,basisSize,numberOfVariables);
-
+  kernels::idx3 idx_FLR(basisSize, basisSize,NumberOfVariables);
 
   double n[3]={0,0,0};
-
   n[normalNonZeroIndex]=1;
-
-  double n_p[3]={0,0,0};
-  double n_m[3]={0,0,0};
-
-  double m_p[3]={0,0,0};
-  double m_m[3]={0,0,0};
-
-  double l_p[3]={0,0,0};  
-  double l_m[3]={0,0,0};
-
-  //std::cout<<isBoundaryFace<<std::endl;
-
-
-  double norm_p_qr;
-  double norm_m_qr;
   
-  double FLn, FLm, FLl; 
-  double FRn,FRm,FRl;
-  double FL_n,FL_m,FL_l;
-  double FR_n,FR_m,FR_l;
-  double FLx,FLy,FLz ;
-  double FRx,FRy,FRz ;
-  double FL_x,FL_y,FL_z;
-  double FR_x,FR_y,FR_z;
-  
-
-
-  //std::cout<<isBoundaryFace<<std::endl;
   for (int i = 0; i < basisSize; i++) {
-    for (int j = 0; j < basisSize; j++) {
-      //implemeneted for dynamic rupture
-
-
-      double rho_p=QR[idx_QLR(i,j,9)];
-      double c_s_p=QR[idx_QLR(i,j,10)];
-      double c_p_p=QR[idx_QLR(i,j,11)];
+    for (int j = 0; j < basisSize; j++) {    
+      double qm_x=QL[idx_QLR(i,j,13)];
+      double qm_y=QL[idx_QLR(i,j,14)];
+      double qm_z=QL[idx_QLR(i,j,15)];    
+      double rm_x=QL[idx_QLR(i,j,16)];
+      double rm_y=QL[idx_QLR(i,j,17)];
+      double rm_z=QL[idx_QLR(i,j,18)];
+      double sm_x=QL[idx_QLR(i,j,19)];
+      double sm_y=QL[idx_QLR(i,j,20)];
+      double sm_z=QL[idx_QLR(i,j,21)];
       
-
-      double mu_p=c_s_p*c_s_p*rho_p;
-      double lam_p = rho_p*c_p_p*c_p_p-2*mu_p;      
-
-
-      double rho_m=QL[idx_QLR(i,j,9)];
+      double qp_x=QR[idx_QLR(i,j,13)];
+      double qp_y=QR[idx_QLR(i,j,14)];
+      double qp_z=QR[idx_QLR(i,j,15)];    
+      double rp_x=QR[idx_QLR(i,j,16)];
+      double rp_y=QR[idx_QLR(i,j,17)];
+      double rp_z=QR[idx_QLR(i,j,18)];
+      double sp_x=QR[idx_QLR(i,j,19)];
+      double sp_y=QR[idx_QLR(i,j,20)];
+      double sp_z=QR[idx_QLR(i,j,21)];
       
-      double c_s_m=QL[idx_QLR(i,j,10)];
-      double c_p_m=QL[idx_QLR(i,j,11)];
-
-      double mu_m=c_s_m*c_s_m*rho_m;
-      double lam_m = rho_m*c_p_m*c_p_m-2*mu_m;      
-
-      get_normals(normalNonZeroIndex, norm_p_qr, n_p, QR + idx_QLR(i,j,0));
-      get_normals(normalNonZeroIndex, norm_m_qr, n_m, QL + idx_QLR(i,j,0));    
       
-
-      double Tx_m,Ty_m,Tz_m;
-      double Tx_p,Ty_p,Tz_p;
+      double n_p[3]={0,0,0};
+      double n_m[3]={0,0,0};
       
-      double vx_m,vy_m,vz_m;
-      double vx_p,vy_p,vz_p;
+      double m_p[3]={0,0,0};
+      double m_m[3]={0,0,0};
       
-      extract_tractions_and_particle_velocity(n_p,QR+idx_QLR(i,j,0),Tx_p,Ty_p,Tz_p,vx_p,vy_p,vz_p );
-      extract_tractions_and_particle_velocity(n_m,QL+idx_QLR(i,j,0),Tx_m,Ty_m,Tz_m,vx_m,vy_m,vz_m ); 
+      double l_p[3]={0,0,0};
+      double l_m[3]={0,0,0};
       
-      localBasis(n_p, m_p, l_p, 3);
-      localBasis(n_m, m_m, l_m, 3);
-
-      double Tn_m,Tm_m,Tl_m;
-      double vn_m,vm_m,vl_m;
-      double Tn_p,Tm_p,Tl_p;
-      double vn_p,vm_p,vl_p;
-
-      // rotate fields into l, m, n basis
-      rotate_into_orthogonal_basis(n_m,m_m,l_m,Tx_m,Ty_m,Tz_m,Tn_m,Tm_m,Tl_m);
-      rotate_into_orthogonal_basis(n_m,m_m,l_m,vx_m,vy_m,vz_m,vn_m,vm_m,vl_m);
-      rotate_into_orthogonal_basis(n_p,m_p,l_p,Tx_p,Ty_p,Tz_p,Tn_p,Tm_p,Tl_p);
-      rotate_into_orthogonal_basis(n_p,m_p,l_p,vx_p,vy_p,vz_p,vn_p,vm_p,vl_p);      
       
+      double norm_p_qr;
+      double norm_m_qr;
+      
+      if (normalNonZeroIndex == 0){
+  	norm_m_qr = std::sqrt(qm_x*qm_x + qm_y*qm_y + qm_z*qm_z);
+	n_m[0] = qm_x/norm_m_qr;
+	n_m[1] = qm_y/norm_m_qr;
+	n_m[2] = qm_z/norm_m_qr;  
 	
-    // extract local s-wave and p-wave impedances
-      double zs_p=rho_p*c_s_p;
-      double zs_m=rho_m*c_s_m;
+	norm_p_qr = std::sqrt(qp_x*qp_x + qp_y*qp_y  + qp_z*qp_z );
+	n_p[0] = qp_x/norm_p_qr;
+	n_p[1] = qp_y/norm_p_qr;
+	n_p[2] = qp_z/norm_p_qr;  
+      }
       
-      double zp_p=rho_p*c_p_p;
-      double zp_m=rho_m*c_p_m;
+      if (normalNonZeroIndex == 1){
+  
+  norm_m_qr = std::sqrt(rm_x*rm_x + rm_y*rm_y + rm_z*rm_z);
+  n_m[0] = rm_x/norm_m_qr;
+  n_m[1] = rm_y/norm_m_qr;
+  n_m[2] = rm_z/norm_m_qr;  
+  
+  norm_p_qr = std::sqrt(rp_x*rp_x + rp_y*rp_y  + rp_z*rp_z);
+  n_p[0] = rp_x/norm_p_qr;
+  n_p[1] = rp_y/norm_p_qr;
+  n_p[2] = rp_z/norm_p_qr;  
+      }
       
-    // impedance must be greater than zero !
-    if (zp_p <= 0.0 || zp_m <= 0.0){
-      std::cout<<zs_p<<" "<<zs_m<<" "<<zp_p<<" "<<zp_m<<"\n";
-      std::cout<<" Impedance must be greater than zero ! "<< std::endl;
-      std::exit(-1);
-    }
+      if (normalNonZeroIndex == 2){
+  
+  norm_m_qr = std::sqrt(sm_x*sm_x + sm_y*sm_y + sm_z*sm_z);
+  n_m[0] = sm_x/norm_m_qr;
+  n_m[1] = sm_y/norm_m_qr;
+  n_m[2] = sm_z/norm_m_qr;  
+  
+  norm_p_qr = std::sqrt(sp_x*sp_x + sp_y*sp_y  + sp_z*sp_z);
+  n_p[0] = sp_x/norm_p_qr;
+  n_p[1] = sp_y/norm_p_qr;
+  n_p[2] = sp_z/norm_p_qr;  
+      }
+      
 
-    // generate interface data preserving the amplitude of the outgoing charactertritics
-    // and satisfying interface conditions exactly.
+      
+      double rho_m  = QL[idx_QLR(i,j,9)];   // km/s
+      double cs_m   = QL[idx_QLR(i,j,10)];   // km/s
+      double cp_m   = QL[idx_QLR(i,j,11)];   // km/s
+      
+      double rho_p  = QR[idx_QLR(i,j,9)];   // km/s
+      double cs_p   = QR[idx_QLR(i,j,10)];   // km/s
+      double cp_p   = QR[idx_QLR(i,j,11)];   // km/s
+      
+      
+      
+      double mu_m = rho_m*cs_m*cs_m;
+      double lam_m = rho_m*cp_m*cp_m - 2*mu_m;
+      
+      double mu_p = rho_p*cs_p*cs_p;
+      double lam_p = rho_p*cp_p*cp_p - 2*mu_p;
+      
+      
+      // extract tractions and particle velocities
+      double sigma_m_xx =  QL[idx_QLR(i,j,3)];
+      double sigma_m_yy =  QL[idx_QLR(i,j,4)];
+      double sigma_m_zz =  QL[idx_QLR(i,j,5)];
+      double sigma_m_xy =  QL[idx_QLR(i,j,6)];
+      double sigma_m_xz =  QL[idx_QLR(i,j,7)];
+      double sigma_m_yz =  QL[idx_QLR(i,j,8)];
+      
+      double sigma_p_xx =  QR[idx_QLR(i,j,3)];
+      double sigma_p_yy =  QR[idx_QLR(i,j,4)];
+      double sigma_p_zz =  QR[idx_QLR(i,j,5)];
+      double sigma_p_xy =  QR[idx_QLR(i,j,6)];
+      double sigma_p_xz =  QR[idx_QLR(i,j,7)];
+      double sigma_p_yz =  QR[idx_QLR(i,j,8)];    
+      
+      
+      double Tx_m = n_m[0]*sigma_m_xx + n_m[1]*sigma_m_xy + n_m[2]*sigma_m_xz;
+      double Ty_m = n_m[0]*sigma_m_xy + n_m[1]*sigma_m_yy + n_m[2]*sigma_m_yz;
+      double Tz_m = n_m[0]*sigma_m_xz + n_m[1]*sigma_m_yz + n_m[2]*sigma_m_zz;
+      
+      double Tx_p = n_p[0]*sigma_p_xx + n_p[1]*sigma_p_xy + n_p[2]*sigma_p_xz;
+      double Ty_p = n_p[0]*sigma_p_xy + n_p[1]*sigma_p_yy + n_p[2]*sigma_p_yz;
+      double Tz_p = n_p[0]*sigma_p_xz + n_p[1]*sigma_p_yz + n_p[2]*sigma_p_zz;
+      
+      
+      double vx_m = QL[idx_QLR(i,j,0)];
+      double vy_m = QL[idx_QLR(i,j,1)];
+      double vz_m = QL[idx_QLR(i,j,2)];    
+
+      double vx_p = QR[idx_QLR(i,j,0)];
+      double vy_p = QR[idx_QLR(i,j,1)];
+      double vz_p = QR[idx_QLR(i,j,2)];    
+      
+      localBasis(n_m, m_m, l_m,3);
+      localBasis(n_p, m_p, l_p,3);
+      
+      // rotate tractions and particle velocities into orthogonal coordinates: n, m
+      double Tn_m= Tx_m*n_m[0] + Ty_m*n_m[1] + Tz_m*n_m[2];
+      double Tm_m= Tx_m*m_m[0] + Ty_m*m_m[1] + Tz_m*m_m[2];
+      double Tl_m= Tx_m*l_m[0] + Ty_m*l_m[1] + Tz_m*l_m[2];
+      
+      double Tn_p= Tx_p*n_p[0] + Ty_p*n_p[1] + Tz_p*n_p[2];
+      double Tm_p= Tx_p*m_p[0] + Ty_p*m_p[1] + Tz_p*m_p[2];
+      double Tl_p= Tx_p*l_p[0] + Ty_p*l_p[1] + Tz_p*l_p[2];
+      
+      double vn_m= vx_m*n_m[0] + vy_m*n_m[1] + vz_m*n_m[2];
+      double vm_m= vx_m*m_m[0] + vy_m*m_m[1] + vz_m*m_m[2];
+      double vl_m= vx_m*l_m[0] + vy_m*l_m[1] + vz_m*l_m[2];
+      
+      double vn_p= vx_p*n_p[0] + vy_p*n_p[1] + vz_p*n_p[2];
+      double vm_p= vx_p*m_p[0] + vy_p*m_p[1] + vz_p*m_p[2];
+      double vl_p= vx_p*l_p[0] + vy_p*l_p[1] + vz_p*l_p[2];    
+      
+      // extract local s-wave and p-wave impedances
+      double zs_p=rho_p*cs_p;
+      double zs_m=rho_m*cs_m;
+      
+      double zp_p=rho_p*cp_p;
+      double zp_m=rho_m*cp_m;
+      
+      // // impedance must be greater than zero !
+      // if (zs_p <= 0.0 || zs_m <= 0.0 || zp_p <= 0.0 || zp_m <= 0.0){
+      //   std::cout<<zs_p<<' '<<zs_m<<' '<<zp_p<<' '<<zp_m<<'\n';
+      //   std::cout<<' Impedance must be greater than zero ! '<<'\n';
+      //   std::exit(-1);
+      // }
+      
+      
+      // generate interface data preserving the amplitude of the outgoing charactertritics
+      // and satisfying interface conditions exactly.
+      double vn_hat_p=0;
+      double vm_hat_p=0;
+      double vl_hat_p=0;    
+      
+      double vn_hat_m=0;
+      double vm_hat_m=0;
+      double vl_hat_m=0;    
+      
+      double Tn_hat_p=0;
+      double Tm_hat_p=0;
+      double Tl_hat_p=0;    
+      
+      double Tn_hat_m=0;
+      double Tm_hat_m=0;
+      double Tl_hat_m=0;
+      
+      // data is generated by solving a local Riemann problem and contraining the solutions against
+      // physical interface conditions
+      
+      
+      if (isBoundaryFace) {
+  if (faceIndex == 0) {
     
-    double vn_hat_p,vm_hat_p,vl_hat_p;    
-    double vn_hat_m,vm_hat_m,vl_hat_m;    
-    double Tn_hat_p,Tm_hat_p,Tl_hat_p;    
-    double Tn_hat_m,Tm_hat_m,Tl_hat_m;    
-
-
-    if (isBoundaryFace) {
-      double r= faceIndex==1 ? 1 : 0;
-      riemannSolver_boundary(faceIndex,r,vn_m,vm_m,vl_m,Tn_m,Tm_m,Tl_m,zp_m,zs_m,vn_hat_m,vm_hat_m,vl_hat_m,Tn_hat_m,Tm_hat_m,Tl_hat_m);
-      riemannSolver_boundary(faceIndex,r,vn_p,vm_p,vl_p,Tn_p,Tm_p,Tl_p,zp_p,zs_p,vn_hat_p,vm_hat_p,vl_hat_p,Tn_hat_p,Tm_hat_p,Tl_hat_p);      
-
-    }else {
-      riemannSolver_Nodal(vn_p,vn_m, Tn_p, Tn_m, zp_p , zp_m, vn_hat_p , vn_hat_m, Tn_hat_p, Tn_hat_m);
-      riemannSolver_Nodal(vm_p,vm_m, Tm_p, Tm_m, zs_p , zs_m, vm_hat_p , vm_hat_m, Tm_hat_p, Tm_hat_m);
-      riemannSolver_Nodal(vl_p,vl_m, Tl_p, Tl_m, zs_p , zs_m, vl_hat_p , vl_hat_m, Tl_hat_p, Tl_hat_m);
-
-    }
-
-    // generate fluctuations in the local basis coordinates: n, m
-    generate_fluctuations_left(zp_m,Tn_m,Tn_hat_m,vn_m,vn_hat_m,FLn);
-    generate_fluctuations_left(zs_m,Tm_m,Tm_hat_m,vm_m,vm_hat_m,FLm);
-    generate_fluctuations_left(zs_m,Tl_m,Tl_hat_m,vl_m,vl_hat_m,FLl);
-
-    generate_fluctuations_right(zp_p,Tn_p,Tn_hat_p,vn_p,vn_hat_p,FRn);
-    generate_fluctuations_right(zs_p,Tm_p,Tm_hat_p,vm_p,vm_hat_p,FRm);
-    generate_fluctuations_right(zs_p,Tl_p,Tl_hat_p,vl_p,vl_hat_p,FRl);
-
-
+    double r = 0.;
     
-    FL_n = FLn/zp_m;
-    FL_m=0;
-    FL_l=0;
+    riemannSolver_BC0(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
+    riemannSolver_BC0(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
+    riemannSolver_BC0(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);
     
-    if(zs_m > 0){
-    FL_m = FLm/zs_m;
-    FL_l = FLl/zs_m;
-     }
-
     
-    FR_n = FRn/zp_p;
-    FR_m=0;
-    FR_l=0;
+    riemannSolver_BC0(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
+    riemannSolver_BC0(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
+    riemannSolver_BC0(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);  
+  }
+  
+  
+  if (faceIndex == 1) {
+    double r = 0.;
+    
+    riemannSolver_BCn(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
+    riemannSolver_BCn(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
+    riemannSolver_BCn(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);
+    
+    riemannSolver_BCn(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
+    riemannSolver_BCn(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
+    riemannSolver_BCn(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);  
+  }
+  
+  
+  if (faceIndex == 2) {
+    double r = 1.;
+    
+    riemannSolver_BC0(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
+    riemannSolver_BC0(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
+    riemannSolver_BC0(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);  
+    
+    riemannSolver_BC0(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
+    riemannSolver_BC0(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
+    riemannSolver_BC0(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);  
+    
+    
+  }
+  
+  if (faceIndex == 3) {
+    
+    double r = 0.;
+    
+    riemannSolver_BCn(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
+    riemannSolver_BCn(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
+    riemannSolver_BCn(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);  
+    
+    riemannSolver_BCn(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
+    riemannSolver_BCn(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
+    riemannSolver_BCn(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);  
+    
+  }
+  
+        
+  if (faceIndex == 4) {
+    double r = 0.;
+    
+    riemannSolver_BC0(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
+    riemannSolver_BC0(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
+    riemannSolver_BC0(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);  
+    
+    riemannSolver_BC0(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
+    riemannSolver_BC0(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
+    riemannSolver_BC0(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);  
+    
+    
+  }
+  
+  if (faceIndex == 5) {
+    
+    double r = 0.;
+    
+    riemannSolver_BCn(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
+    riemannSolver_BCn(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
+    riemannSolver_BCn(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);  
+    
+    riemannSolver_BCn(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
+    riemannSolver_BCn(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
+    riemannSolver_BCn(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);  
+    
+  }
+  
+      }
+      else {
+  
+  riemannSolver_Nodal(vn_p,vn_m, Tn_p,Tn_m, zp_p , zp_m, vn_hat_p , vn_hat_m, Tn_hat_p, Tn_hat_m);
+  riemannSolver_Nodal(vm_p,vm_m, Tm_p,Tm_m, zs_p , zs_m, vm_hat_p , vm_hat_m, Tm_hat_p, Tm_hat_m);
+  riemannSolver_Nodal(vl_p,vl_m, Tl_p,Tl_m, zs_p , zs_m, vl_hat_p , vl_hat_m, Tl_hat_p, Tl_hat_m);
+      }
+      
+      //std::cout<< n[0]- n_p[0] << "  " <<  n[1]- n_p[1] << std::endl;
+      // std::cout<< n[0]- n_m[0] << "  " <<  n[1]- n_m[1] << std::endl;
+      
+      // std::cout << std::endl;
+      
+      // generate fluctuations in the local basis coordinates: n, m
+      double FLn = 0.5*(zp_m*(vn_m-vn_hat_m) + (Tn_m-Tn_hat_m));
+      double FLm = 0.5*(zs_m*(vm_m-vm_hat_m) + (Tm_m-Tm_hat_m));
+      double FLl = 0.5*(zs_m*(vl_m-vl_hat_m) + (Tl_m-Tl_hat_m));    
+      
+      double FRn = 0.5*(zp_p*(vn_p-vn_hat_p) - (Tn_p-Tn_hat_p));
+      double FRm = 0.5*(zs_p*(vm_p-vm_hat_p) - (Tm_p-Tm_hat_p));
+      double FRl = 0.5*(zs_p*(vl_p-vl_hat_p) - (Tl_p-Tl_hat_p));    
+      
+      
+      double FL_n = 0.5/zp_m*(zp_m*(vn_m-vn_hat_m) + (Tn_m-Tn_hat_m));
+      double FL_m=0;
+      double FL_l=0;
+      
+      if(zs_m > 0){
+  FL_m = 0.5/zs_m*(zs_m*(vm_m-vm_hat_m) + (Tm_m-Tm_hat_m));
+  FL_l = 0.5/zs_m*(zs_m*(vl_m-vl_hat_m) + (Tl_m-Tl_hat_m));    
+      }
+      
+      
+      double FR_n = 0.5/zp_p*(zp_p*(vn_p-vn_hat_p) - (Tn_p-Tn_hat_p));
+      double FR_m=0;
+    double FR_l=0;
+    
     if(zs_p > 0){    
-    FR_m = FRm/zs_p;
-    FR_l = FRl/zs_p;
+      FR_m = 0.5/zs_p*(zs_p*(vm_p-vm_hat_p) - (Tm_p-Tm_hat_p));
+      FR_l = 0.5/zs_p*(zs_p*(vl_p-vl_hat_p) - (Tl_p-Tl_hat_p));
     }
 
-    
-    // rotate back to the physical coordinates x, y, z
-    rotate_into_physical_basis(n_m,m_m,l_m,FLn,FLm,FLl,FLx,FLy,FLz);
-    rotate_into_physical_basis(n_p,m_p,l_p,FRn,FRm,FRl,FRx,FRy,FRz);
-    rotate_into_physical_basis(n_m,m_m,l_m,FL_n,FL_m,FL_l,FL_x,FL_y,FL_z);
-    rotate_into_physical_basis(n_p,m_p,l_p,FR_n,FR_m,FR_l,FR_x,FR_y,FR_z);
+    // rotate back to the physical coordinates x, y
+    double FLx = n_m[0]*FLn + m_m[0]*FLm + l_m[0]*FLl;
+    double FLy = n_m[1]*FLn + m_m[1]*FLm + l_m[1]*FLl;
+    double FLz = n_m[2]*FLn + m_m[2]*FLm + l_m[2]*FLl;    
+
+    double FRx = n_p[0]*FRn + m_p[0]*FRm + l_p[0]*FRl;
+    double FRy = n_p[1]*FRn + m_p[1]*FRm + l_p[1]*FRl;
+    double FRz = n_p[2]*FRn + m_p[2]*FRm + l_p[2]*FRl;
+
+    double FL_x = n_m[0]*FL_n + m_m[0]*FL_m + l_m[0]*FL_l;
+    double FL_y = n_m[1]*FL_n + m_m[1]*FL_m + l_m[1]*FL_l;
+    double FL_z = n_m[2]*FL_n + m_m[2]*FL_m + l_m[2]*FL_l;
+
+    double FR_x = n_p[0]*FR_n + m_p[0]*FR_m + l_p[0]*FR_l;
+    double FR_y = n_p[1]*FR_n + m_p[1]*FR_m + l_p[1]*FR_l;
+    double FR_z = n_p[2]*FR_n + m_p[2]*FR_m + l_p[2]*FR_l;
      
     // construct flux fluctuation vectors obeying the eigen structure of the PDE
     // and choose physically motivated penalties such that we can prove
     // numerical stability.
 
-    FR[idx_FLR(i,j, 0)] = norm_p_qr/rho_p*FRx;
-    FL[idx_FLR(i,j, 0)] = norm_m_qr/rho_m*FLx;
     
+    FR[idx_FLR(i,j, 0)] = norm_p_qr/rho_p*FRx;
     FR[idx_FLR(i,j, 1)] = norm_p_qr/rho_p*FRy;
-    FL[idx_FLR(i,j, 1)] = norm_m_qr/rho_m*FLy;
-
     FR[idx_FLR(i,j, 2)] = norm_p_qr/rho_p*FRz;
+    
+    FL[idx_FLR(i,j, 0)] = norm_m_qr/rho_m*FLx;    
+    FL[idx_FLR(i,j, 1)] = norm_m_qr/rho_m*FLy;    
     FL[idx_FLR(i,j, 2)] = norm_m_qr/rho_m*FLz;
     
 
     FL[idx_FLR(i,j, 3)] = norm_m_qr*((2*mu_m+lam_m)*n_m[0]*FL_x+lam_m*n_m[1]*FL_y+lam_m*n_m[2]*FL_z);
     FL[idx_FLR(i,j, 4)] = norm_m_qr*((2*mu_m+lam_m)*n_m[1]*FL_y+lam_m*n_m[0]*FL_x+lam_m*n_m[2]*FL_z);
     FL[idx_FLR(i,j, 5)] = norm_m_qr*((2*mu_m+lam_m)*n_m[2]*FL_z+lam_m*n_m[0]*FL_x+lam_m*n_m[1]*FL_y);
-
+    
     FR[idx_FLR(i,j, 3)] = -norm_p_qr*((2*mu_p+lam_p)*n_p[0]*FR_x+lam_p*n_p[1]*FR_y+lam_p*n_p[2]*FR_z);
     FR[idx_FLR(i,j, 4)] = -norm_p_qr*((2*mu_p+lam_p)*n_p[1]*FR_y+lam_p*n_p[0]*FR_x+lam_p*n_p[2]*FR_z);
     FR[idx_FLR(i,j, 5)] = -norm_p_qr*((2*mu_p+lam_p)*n_p[2]*FR_z+lam_p*n_p[0]*FR_x+lam_p*n_p[1]*FR_y);
+
     
     FL[idx_FLR(i,j, 6)] =  norm_m_qr*mu_m*(n_m[1]*FL_x + n_m[0]*FL_y);
     FL[idx_FLR(i,j, 7)] =  norm_m_qr*mu_m*(n_m[2]*FL_x + n_m[0]*FL_z);
     FL[idx_FLR(i,j, 8)] =  norm_m_qr*mu_m*(n_m[2]*FL_y + n_m[1]*FL_z);
-
+    
     FR[idx_FLR(i,j, 6)] = -norm_p_qr*mu_p*(n_p[1]*FR_x + n_p[0]*FR_y);
     FR[idx_FLR(i,j, 7)] = -norm_p_qr*mu_p*(n_p[2]*FR_x + n_p[0]*FR_z);
-    FR[idx_FLR(i,j, 8)] = -norm_p_qr*mu_p*(n_p[2]*FR_y + n_p[1]*FR_z);
-    
-    // double x = QR[idx_QLR(i,j,22)];
-    // // std::cout<< pow(x-0.5,2)<< std::endl;
-    
-    // if (pow(x-0.5,2) < 1e-5) {
-    //   std::cout<<"x: "<< x<< n_m[0]-n_p[0] << " " << n_m[1]-n_p[1] << " " << n_m[2]-n_p[2] << std::endl;
-    //   }
-    }    
+    FR[idx_FLR(i,j, 8)] = -norm_p_qr*mu_p*(n_p[2]*FR_y + n_p[1]*FR_z);        
   }
-
+  }
+  
 }
-
-// void ElasticWaveEquation3D::ElasticWaveEquation::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,double* tempFaceUnknownsArray,double** tempStateSizedVectors,double** tempStateSizedSquareMatrices,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex){
-
-//   constexpr int numberOfVariables  = ElasticWaveEquation::NumberOfVariables;
-//   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
-//   constexpr int numberOfParameters = ElasticWaveEquation::NumberOfParameters;
-//   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
-//   constexpr int basisSize          = ElasticWaveEquation::Order+1;
-//   constexpr int order              = basisSize - 1;
-  
-//   kernels::idx3 idx_QLR(basisSize, basisSize,numberOfData);
-
-//   kernels::idx3 idx_FLR(basisSize, basisSize,NumberOfVariables);
-
-//   double n[3]={0,0,0};
-//   n[normalNonZeroIndex]=1;
-  
-//   for (int i = 0; i < basisSize; i++) {
-//     for (int j = 0; j < basisSize; j++) {    
-//       double qm_x=QL[idx_QLR(i,j,13)];
-//       double qm_y=QL[idx_QLR(i,j,14)];
-//       double qm_z=QL[idx_QLR(i,j,15)];    
-//       double rm_x=QL[idx_QLR(i,j,16)];
-//       double rm_y=QL[idx_QLR(i,j,17)];
-//       double rm_z=QL[idx_QLR(i,j,18)];
-//       double sm_x=QL[idx_QLR(i,j,19)];
-//       double sm_y=QL[idx_QLR(i,j,20)];
-//       double sm_z=QL[idx_QLR(i,j,21)];
-      
-//       double qp_x=QR[idx_QLR(i,j,13)];
-//       double qp_y=QR[idx_QLR(i,j,14)];
-//       double qp_z=QR[idx_QLR(i,j,15)];    
-//       double rp_x=QR[idx_QLR(i,j,16)];
-//       double rp_y=QR[idx_QLR(i,j,17)];
-//       double rp_z=QR[idx_QLR(i,j,18)];
-//       double sp_x=QR[idx_QLR(i,j,19)];
-//       double sp_y=QR[idx_QLR(i,j,20)];
-//       double sp_z=QR[idx_QLR(i,j,21)];
-      
-      
-//       double n_p[3]={0,0,0};
-//       double n_m[3]={0,0,0};
-      
-//       double m_p[3]={0,0,0};
-//       double m_m[3]={0,0,0};
-      
-//       double l_p[3]={0,0,0};
-//       double l_m[3]={0,0,0};
-      
-      
-//       double norm_p_qr;
-//       double norm_m_qr;
-      
-//       if (normalNonZeroIndex == 0){
-	
-// 	norm_m_qr = std::sqrt(qm_x*qm_x + qm_y*qm_y + qm_z*qm_z);
-// 	n_m[0] = qm_x/norm_m_qr;
-// 	n_m[1] = qm_y/norm_m_qr;
-// 	n_m[2] = qm_z/norm_m_qr;	
-	
-// 	norm_p_qr = std::sqrt(qp_x*qp_x + qp_y*qp_y  + qp_z*qp_z );
-// 	n_p[0] = qp_x/norm_p_qr;
-// 	n_p[1] = qp_y/norm_p_qr;
-// 	n_p[2] = qp_z/norm_p_qr;	
-//       }
-      
-//       if (normalNonZeroIndex == 1){
-	
-// 	norm_m_qr = std::sqrt(rm_x*rm_x + rm_y*rm_y + rm_z*rm_z);
-// 	n_m[0] = rm_x/norm_m_qr;
-// 	n_m[1] = rm_y/norm_m_qr;
-// 	n_m[2] = rm_z/norm_m_qr;	
-	
-// 	norm_p_qr = std::sqrt(rp_x*rp_x + rp_y*rp_y  + rp_z*rp_z);
-// 	n_p[0] = rp_x/norm_p_qr;
-// 	n_p[1] = rp_y/norm_p_qr;
-// 	n_p[2] = rp_z/norm_p_qr;	
-//       }
-      
-//       if (normalNonZeroIndex == 2){
-	
-// 	norm_m_qr = std::sqrt(sm_x*sm_x + sm_y*sm_y + sm_z*sm_z);
-// 	n_m[0] = sm_x/norm_m_qr;
-// 	n_m[1] = sm_y/norm_m_qr;
-// 	n_m[2] = sm_z/norm_m_qr;	
-	
-// 	norm_p_qr = std::sqrt(sp_x*sp_x + sp_y*sp_y  + sp_z*sp_z);
-// 	n_p[0] = sp_x/norm_p_qr;
-// 	n_p[1] = sp_y/norm_p_qr;
-// 	n_p[2] = sp_z/norm_p_qr;	
-//       }
-      
-
-      
-//       double rho_m  = QL[idx_QLR(i,j,9)];   // km/s
-//       double cs_m   = QL[idx_QLR(i,j,10)];   // km/s
-//       double cp_m   = QL[idx_QLR(i,j,11)];   // km/s
-      
-//       double rho_p  = QR[idx_QLR(i,j,9)];   // km/s
-//       double cs_p   = QR[idx_QLR(i,j,10)];   // km/s
-//       double cp_p   = QR[idx_QLR(i,j,11)];   // km/s
-      
-      
-      
-//       double mu_m = rho_m*cs_m*cs_m;
-//       double lam_m = rho_m*cp_m*cp_m - 2*mu_m;
-      
-//       double mu_p = rho_p*cs_p*cs_p;
-//       double lam_p = rho_p*cp_p*cp_p - 2*mu_p;
-      
-      
-//       // extract tractions and particle velocities
-//       double sigma_m_xx =  QL[idx_QLR(i,j,3)];
-//       double sigma_m_yy =  QL[idx_QLR(i,j,4)];
-//       double sigma_m_zz =  QL[idx_QLR(i,j,5)];
-//       double sigma_m_xy =  QL[idx_QLR(i,j,6)];
-//       double sigma_m_xz =  QL[idx_QLR(i,j,7)];
-//       double sigma_m_yz =  QL[idx_QLR(i,j,8)];
-      
-//       double sigma_p_xx =  QR[idx_QLR(i,j,3)];
-//       double sigma_p_yy =  QR[idx_QLR(i,j,4)];
-//       double sigma_p_zz =  QR[idx_QLR(i,j,5)];
-//       double sigma_p_xy =  QR[idx_QLR(i,j,6)];
-//       double sigma_p_xz =  QR[idx_QLR(i,j,7)];
-//       double sigma_p_yz =  QR[idx_QLR(i,j,8)];    
-      
-      
-//       double Tx_m = n_m[0]*sigma_m_xx + n_m[1]*sigma_m_xy + n_m[2]*sigma_m_xz;
-//       double Ty_m = n_m[0]*sigma_m_xy + n_m[1]*sigma_m_yy + n_m[2]*sigma_m_yz;
-//       double Tz_m = n_m[0]*sigma_m_xz + n_m[1]*sigma_m_yz + n_m[2]*sigma_m_zz;
-      
-//       double Tx_p = n_p[0]*sigma_p_xx + n_p[1]*sigma_p_xy + n_p[2]*sigma_p_xz;
-//       double Ty_p = n_p[0]*sigma_p_xy + n_p[1]*sigma_p_yy + n_p[2]*sigma_p_yz;
-//       double Tz_p = n_p[0]*sigma_p_xz + n_p[1]*sigma_p_yz + n_p[2]*sigma_p_zz;
-      
-      
-//       double vx_m = QL[idx_QLR(i,j,0)];
-//       double vy_m = QL[idx_QLR(i,j,1)];
-//       double vz_m = QL[idx_QLR(i,j,2)];    
-
-//       double vx_p = QR[idx_QLR(i,j,0)];
-//       double vy_p = QR[idx_QLR(i,j,1)];
-//       double vz_p = QR[idx_QLR(i,j,2)];    
-      
-//       localBasis(n_m, m_m, l_m,3);
-//       localBasis(n_p, m_p, l_p,3);
-      
-//       // rotate tractions and particle velocities into orthogonal coordinates: n, m
-//       double Tn_m= Tx_m*n_m[0] + Ty_m*n_m[1] + Tz_m*n_m[2];
-//       double Tm_m= Tx_m*m_m[0] + Ty_m*m_m[1] + Tz_m*m_m[2];
-//       double Tl_m= Tx_m*l_m[0] + Ty_m*l_m[1] + Tz_m*l_m[2];
-      
-//       double Tn_p= Tx_p*n_p[0] + Ty_p*n_p[1] + Tz_p*n_p[2];
-//       double Tm_p= Tx_p*m_p[0] + Ty_p*m_p[1] + Tz_p*m_p[2];
-//       double Tl_p= Tx_p*l_p[0] + Ty_p*l_p[1] + Tz_p*l_p[2];
-      
-//       double vn_m= vx_m*n_m[0] + vy_m*n_m[1] + vz_m*n_m[2];
-//       double vm_m= vx_m*m_m[0] + vy_m*m_m[1] + vz_m*m_m[2];
-//       double vl_m= vx_m*l_m[0] + vy_m*l_m[1] + vz_m*l_m[2];
-      
-//       double vn_p= vx_p*n_p[0] + vy_p*n_p[1] + vz_p*n_p[2];
-//       double vm_p= vx_p*m_p[0] + vy_p*m_p[1] + vz_p*m_p[2];
-//       double vl_p= vx_p*l_p[0] + vy_p*l_p[1] + vz_p*l_p[2];    
-      
-//       // extract local s-wave and p-wave impedances
-//       double zs_p=rho_p*cs_p;
-//       double zs_m=rho_m*cs_m;
-      
-//       double zp_p=rho_p*cp_p;
-//       double zp_m=rho_m*cp_m;
-      
-//       // // impedance must be greater than zero !
-//       // if (zs_p <= 0.0 || zs_m <= 0.0 || zp_p <= 0.0 || zp_m <= 0.0){
-//       //   std::cout<<zs_p<<' '<<zs_m<<' '<<zp_p<<' '<<zp_m<<'\n';
-//       //   std::cout<<' Impedance must be greater than zero ! '<<'\n';
-//       //   std::exit(-1);
-//       // }
-      
-      
-//       // generate interface data preserving the amplitude of the outgoing charactertritics
-//       // and satisfying interface conditions exactly.
-//       double vn_hat_p=0;
-//       double vm_hat_p=0;
-//       double vl_hat_p=0;    
-      
-//       double vn_hat_m=0;
-//       double vm_hat_m=0;
-//       double vl_hat_m=0;    
-      
-//       double Tn_hat_p=0;
-//       double Tm_hat_p=0;
-//       double Tl_hat_p=0;    
-      
-//       double Tn_hat_m=0;
-//       double Tm_hat_m=0;
-//       double Tl_hat_m=0;
-      
-//       // data is generated by solving a local Riemann problem and contraining the solutions against
-//       // physical interface conditions
-      
-      
-//       if (isBoundaryFace) {
-// 	if (faceIndex == 0) {
-	  
-// 	  double r = 0.;
-	  
-// 	  riemannSolver_BC0(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
-// 	  riemannSolver_BC0(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
-// 	  riemannSolver_BC0(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);
-	  
-	  
-// 	  riemannSolver_BC0(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
-// 	  riemannSolver_BC0(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
-// 	  riemannSolver_BC0(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);	
-// 	}
-	
-	
-// 	if (faceIndex == 1) {
-// 	  double r = 0.;
-	  
-// 	  riemannSolver_BCn(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
-// 	  riemannSolver_BCn(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
-// 	  riemannSolver_BCn(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);
-	  
-// 	  riemannSolver_BCn(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
-// 	  riemannSolver_BCn(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
-// 	  riemannSolver_BCn(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);	
-// 	}
-	
-	
-// 	if (faceIndex == 2) {
-// 	  double r = 1.;
-	  
-// 	  riemannSolver_BC0(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
-// 	  riemannSolver_BC0(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
-// 	  riemannSolver_BC0(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);	
-	  
-// 	  riemannSolver_BC0(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
-// 	  riemannSolver_BC0(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
-// 	  riemannSolver_BC0(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);	
-	  
-	  
-// 	}
-	
-// 	if (faceIndex == 3) {
-	  
-// 	  double r = 0.;
-	  
-// 	  riemannSolver_BCn(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
-// 	  riemannSolver_BCn(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
-// 	  riemannSolver_BCn(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);	
-	  
-// 	  riemannSolver_BCn(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
-// 	  riemannSolver_BCn(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
-// 	  riemannSolver_BCn(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);	
-	  
-// 	}
-	
-        
-// 	if (faceIndex == 4) {
-// 	  double r = 0.;
-	  
-// 	  riemannSolver_BC0(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
-// 	  riemannSolver_BC0(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
-// 	  riemannSolver_BC0(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);	
-	  
-// 	  riemannSolver_BC0(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
-// 	  riemannSolver_BC0(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
-// 	  riemannSolver_BC0(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);	
-	  
-	  
-// 	}
-	
-// 	if (faceIndex == 5) {
-	  
-// 	  double r = 0.;
-	  
-// 	  riemannSolver_BCn(vn_p, Tn_p, zp_p, r, vn_hat_p, Tn_hat_p);
-// 	  riemannSolver_BCn(vm_p, Tm_p, zs_p, r, vm_hat_p, Tm_hat_p);
-// 	  riemannSolver_BCn(vl_p, Tl_p, zs_p, r, vl_hat_p, Tl_hat_p);	
-	  
-// 	  riemannSolver_BCn(vn_m, Tn_m, zp_m, r, vn_hat_m, Tn_hat_m);
-// 	  riemannSolver_BCn(vm_m, Tm_m, zs_m, r, vm_hat_m, Tm_hat_m);
-// 	  riemannSolver_BCn(vl_m, Tl_m, zs_m, r, vl_hat_m, Tl_hat_m);	
-	  
-// 	}
-	
-//       }
-//       else {
-	
-// 	riemannSolver_Nodal(vn_p,vn_m, Tn_p,Tn_m, zp_p , zp_m, vn_hat_p , vn_hat_m, Tn_hat_p, Tn_hat_m);
-// 	riemannSolver_Nodal(vm_p,vm_m, Tm_p,Tm_m, zs_p , zs_m, vm_hat_p , vm_hat_m, Tm_hat_p, Tm_hat_m);
-// 	riemannSolver_Nodal(vl_p,vl_m, Tl_p,Tl_m, zs_p , zs_m, vl_hat_p , vl_hat_m, Tl_hat_p, Tl_hat_m);
-//       }
-      
-//       //std::cout<< n[0]- n_p[0] << "  " <<  n[1]- n_p[1] << std::endl;
-//       // std::cout<< n[0]- n_m[0] << "  " <<  n[1]- n_m[1] << std::endl;
-      
-//       // std::cout << std::endl;
-      
-//       // generate fluctuations in the local basis coordinates: n, m
-//       double FLn = 0.5*(zp_m*(vn_m-vn_hat_m) + (Tn_m-Tn_hat_m));
-//       double FLm = 0.5*(zs_m*(vm_m-vm_hat_m) + (Tm_m-Tm_hat_m));
-//       double FLl = 0.5*(zs_m*(vl_m-vl_hat_m) + (Tl_m-Tl_hat_m));    
-      
-//       double FRn = 0.5*(zp_p*(vn_p-vn_hat_p) - (Tn_p-Tn_hat_p));
-//       double FRm = 0.5*(zs_p*(vm_p-vm_hat_p) - (Tm_p-Tm_hat_p));
-//       double FRl = 0.5*(zs_p*(vl_p-vl_hat_p) - (Tl_p-Tl_hat_p));    
-      
-      
-//       double FL_n = 0.5/zp_m*(zp_m*(vn_m-vn_hat_m) + (Tn_m-Tn_hat_m));
-//       double FL_m=0;
-//       double FL_l=0;
-      
-//       if(zs_m > 0){
-// 	FL_m = 0.5/zs_m*(zs_m*(vm_m-vm_hat_m) + (Tm_m-Tm_hat_m));
-// 	FL_l = 0.5/zs_m*(zs_m*(vl_m-vl_hat_m) + (Tl_m-Tl_hat_m));    
-//       }
-      
-      
-//       double FR_n = 0.5/zp_p*(zp_p*(vn_p-vn_hat_p) - (Tn_p-Tn_hat_p));
-//       double FR_m=0;
-//     double FR_l=0;
-    
-//     if(zs_p > 0){    
-//       FR_m = 0.5/zs_p*(zs_p*(vm_p-vm_hat_p) - (Tm_p-Tm_hat_p));
-//       FR_l = 0.5/zs_p*(zs_p*(vl_p-vl_hat_p) - (Tl_p-Tl_hat_p));
-//     }
-
-//     // rotate back to the physical coordinates x, y
-//     double FLx = n_m[0]*FLn + m_m[0]*FLm + l_m[0]*FLl;
-//     double FLy = n_m[1]*FLn + m_m[1]*FLm + l_m[1]*FLl;
-//     double FLz = n_m[2]*FLn + m_m[2]*FLm + l_m[2]*FLl;    
-
-//     double FRx = n_p[0]*FRn + m_p[0]*FRm + l_p[0]*FRl;
-//     double FRy = n_p[1]*FRn + m_p[1]*FRm + l_p[1]*FRl;
-//     double FRz = n_p[2]*FRn + m_p[2]*FRm + l_p[2]*FRl;
-
-//     double FL_x = n_m[0]*FL_n + m_m[0]*FL_m + l_m[0]*FL_l;
-//     double FL_y = n_m[1]*FL_n + m_m[1]*FL_m + l_m[1]*FL_l;
-//     double FL_z = n_m[2]*FL_n + m_m[2]*FL_m + l_m[2]*FL_l;
-
-//     double FR_x = n_p[0]*FR_n + m_p[0]*FR_m + l_p[0]*FR_l;
-//     double FR_y = n_p[1]*FR_n + m_p[1]*FR_m + l_p[1]*FR_l;
-//     double FR_z = n_p[2]*FR_n + m_p[2]*FR_m + l_p[2]*FR_l;
-     
-//     // construct flux fluctuation vectors obeying the eigen structure of the PDE
-//     // and choose physically motivated penalties such that we can prove
-//     // numerical stability.
-
-    
-//     FR[idx_FLR(i,j, 0)] = norm_p_qr/rho_p*FRx;
-//     FR[idx_FLR(i,j, 1)] = norm_p_qr/rho_p*FRy;
-//     FR[idx_FLR(i,j, 2)] = norm_p_qr/rho_p*FRz;
-    
-//     FL[idx_FLR(i,j, 0)] = norm_m_qr/rho_m*FLx;    
-//     FL[idx_FLR(i,j, 1)] = norm_m_qr/rho_m*FLy;    
-//     FL[idx_FLR(i,j, 2)] = norm_m_qr/rho_m*FLz;
-    
-
-//     FL[idx_FLR(i,j, 3)] = norm_m_qr*((2*mu_m+lam_m)*n_m[0]*FL_x+lam_m*n_m[1]*FL_y+lam_m*n_m[2]*FL_z);
-//     FL[idx_FLR(i,j, 4)] = norm_m_qr*((2*mu_m+lam_m)*n_m[1]*FL_y+lam_m*n_m[0]*FL_x+lam_m*n_m[2]*FL_z);
-//     FL[idx_FLR(i,j, 5)] = norm_m_qr*((2*mu_m+lam_m)*n_m[2]*FL_z+lam_m*n_m[0]*FL_x+lam_m*n_m[1]*FL_y);
-    
-//     FR[idx_FLR(i,j, 3)] = -norm_p_qr*((2*mu_p+lam_p)*n_p[0]*FR_x+lam_p*n_p[1]*FR_y+lam_p*n_p[2]*FR_z);
-//     FR[idx_FLR(i,j, 4)] = -norm_p_qr*((2*mu_p+lam_p)*n_p[1]*FR_y+lam_p*n_p[0]*FR_x+lam_p*n_p[2]*FR_z);
-//     FR[idx_FLR(i,j, 5)] = -norm_p_qr*((2*mu_p+lam_p)*n_p[2]*FR_z+lam_p*n_p[0]*FR_x+lam_p*n_p[1]*FR_y);
-
-    
-//     FL[idx_FLR(i,j, 6)] =  norm_m_qr*mu_m*(n_m[1]*FL_x + n_m[0]*FL_y);
-//     FL[idx_FLR(i,j, 7)] =  norm_m_qr*mu_m*(n_m[2]*FL_x + n_m[0]*FL_z);
-//     FL[idx_FLR(i,j, 8)] =  norm_m_qr*mu_m*(n_m[2]*FL_y + n_m[1]*FL_z);
-    
-//     FR[idx_FLR(i,j, 6)] = -norm_p_qr*mu_p*(n_p[1]*FR_x + n_p[0]*FR_y);
-//     FR[idx_FLR(i,j, 7)] = -norm_p_qr*mu_p*(n_p[2]*FR_x + n_p[0]*FR_z);
-//     FR[idx_FLR(i,j, 8)] = -norm_p_qr*mu_p*(n_p[2]*FR_y + n_p[1]*FR_z);        
-//   }
-//   }
-  
-// }
 
 
 void ElasticWaveEquation3D::ElasticWaveEquation::Gram_Schmidt(double* y, double* z){
@@ -1465,15 +1468,15 @@ void ElasticWaveEquation3D::ElasticWaveEquation::localBasis(double* n, double * 
 
       
       if (diff_norm1 >= tol && diff_norm2 >= tol){
-      	Gram_Schmidt(n, m);}	else
-      	{
-      	  m[0] = 0.;
-      	  m[1] = 0.;
-      	  m[2] = 1.;
-	  
-      	  Gram_Schmidt(n, m);
-	  
-      	}
+        Gram_Schmidt(n, m);}  else
+        {
+          m[0] = 0.;
+          m[1] = 0.;
+          m[2] = 1.;
+    
+          Gram_Schmidt(n, m);
+    
+        }
       
       l[0] = n[1]*m[2]-n[2]*m[1];
       l[1] = -(n[0]*m[2]-n[2]*m[0]);
@@ -1610,11 +1613,11 @@ void ElasticWaveEquation3D::ElasticWaveEquation::get_normals(int normalNonZeroIn
   double s_z=Q[21];
 
   if (normalNonZeroIndex == 0){
-	
+  
     norm = std::sqrt(q_x*q_x + q_y*q_y + q_z*q_z);
     n[0] = q_x/norm;
     n[1] = q_y/norm;
-    n[2] = q_z/norm;	
+    n[2] = q_z/norm;  
 
   }
       
@@ -1623,7 +1626,7 @@ void ElasticWaveEquation3D::ElasticWaveEquation::get_normals(int normalNonZeroIn
     norm = std::sqrt(r_x*r_x + r_y*r_y + r_z*r_z);
     n[0] = r_x/norm;
     n[1] = r_y/norm;
-    n[2] = r_z/norm;	
+    n[2] = r_z/norm;  
   }
 
   if (normalNonZeroIndex == 2){
@@ -1631,7 +1634,7 @@ void ElasticWaveEquation3D::ElasticWaveEquation::get_normals(int normalNonZeroIn
     norm = std::sqrt(s_x*s_x + s_y*s_y + s_z*s_z);
     n[0] = s_x/norm;
     n[1] = s_y/norm;
-    n[2] = s_z/norm;	
+    n[2] = s_z/norm;  
   }
 
 }
@@ -1686,7 +1689,7 @@ void ElasticWaveEquation3D::ElasticWaveEquation::riemannSolver_boundary(int face
 
     riemannSolver_BC0(vn, Tn, zp, r, vn_hat, Tn_hat);
     riemannSolver_BC0(vm, Tm, zs, r, vm_hat, Tm_hat);
-    riemannSolver_BC0(vl, Tl, zs, r, vl_hat, Tl_hat);	
+    riemannSolver_BC0(vl, Tl, zs, r, vl_hat, Tl_hat);  
   }
       
       
@@ -1694,7 +1697,7 @@ void ElasticWaveEquation3D::ElasticWaveEquation::riemannSolver_boundary(int face
 
     riemannSolver_BCn(vn, Tn, zp, r, vn_hat, Tn_hat);
     riemannSolver_BCn(vm, Tm, zs, r, vm_hat, Tm_hat);
-    riemannSolver_BCn(vl, Tl, zs, r, vl_hat, Tl_hat);	
+    riemannSolver_BCn(vl, Tl, zs, r, vl_hat, Tl_hat);  
   }
 
 }

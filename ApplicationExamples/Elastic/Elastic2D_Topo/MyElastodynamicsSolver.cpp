@@ -583,11 +583,17 @@ void Elastodynamics::MyElastodynamicsSolver::nonConservativeProduct(const double
   BgradQ[3] = -q_y*v_q;
   BgradQ[4] = -(q_y*u_q+q_x*v_q);
   
-  BgradQ[5] = 0.0;
-  BgradQ[6] = 0.0;
-  BgradQ[7] = -r_x*u_r;
-  BgradQ[8] = -r_y*v_r;
-  BgradQ[9] = -(r_y*u_r+r_x*v_r);
+  // BgradQ[5] = 0.0;
+  // BgradQ[6] = 0.0;
+  // BgradQ[7] = -r_x*u_r;
+  // BgradQ[8] = -r_y*v_r;
+  // BgradQ[9] = -(r_y*u_r+r_x*v_r);
+
+  BgradQ[0] += 0.0;
+  BgradQ[1] += 0.0;
+  BgradQ[2] += -r_x*u_r;
+  BgradQ[3] += -r_y*v_r;
+  BgradQ[4] += -(r_y*u_r+r_x*v_r);
 
 }
 
@@ -928,7 +934,7 @@ void Elastodynamics::MyElastodynamicsSolver::pointSource(const double* const x,c
   double sigma = 0.1149;
   double t0 = 0.1;
   double f = 0.0;
-  double M0 = 1000.0;
+  double M0 = 1.0;
   
 
   //f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-pow((t-t0)/(std::sqrt(2)*sigma),2.0)));
@@ -938,14 +944,14 @@ void Elastodynamics::MyElastodynamicsSolver::pointSource(const double* const x,c
   f = M0*t/(t0*t0)*std::exp(-t/t0);
 
   if(n == 0){
-  x0[0] = 2.0;
-  x0[1] = 15.0;
-  
-  forceVector[0] = 0.0;
-  forceVector[1] = 0.0;
-  forceVector[2] = 0;
-  forceVector[3] = 0;
-  forceVector[4] = f;
+    //    std::cout << f << std::endl;
+    x0[0] = 0.5;
+    x0[1] = 0.5;
+    forceVector[0] = 0.0;
+    forceVector[1] = 0.0;
+    forceVector[2] = 0;
+    forceVector[3] = 0;
+    forceVector[4] = f;
   }else{
     std::cout << "Source not implemented" << std::endl;
     std::exit(-1);
