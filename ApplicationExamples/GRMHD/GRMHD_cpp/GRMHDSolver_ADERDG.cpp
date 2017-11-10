@@ -153,7 +153,6 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 	*/
 	
 	// employ time-integrated exact BC for AlfenWave.
-	/*
 	double Qgp[nVar], Fs[nDim][nVar], *F[nDim];
 	for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 	// zeroise stateOut, fluxOut
@@ -174,8 +173,8 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 			fluxOut[m] += weight * Fs[d][m];
 		}
 	}
-	*/
 	
+	/*
 	// Neutron star Reflective + Outflow BC
 	setNeutronStarBoundaryConditions(faceIndex, d, stateIn, stateOut);
 	
@@ -183,7 +182,10 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 	for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 	F[d] = fluxOut;
 	flux(stateOut, F);
+	*/
 
+	// ONLY FOR DEBUGGING:
+	
 	//NVARS(i) printf("stateOut[%d]=%e\n", i, stateOut[i]);
 	//NVARS(i) printf("fluxOut[%d]=%e\n", i, fluxOut[i]);
 	//std::abort();
