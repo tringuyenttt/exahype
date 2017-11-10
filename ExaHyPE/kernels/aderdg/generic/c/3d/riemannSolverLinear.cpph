@@ -21,7 +21,7 @@ namespace aderdg {
 namespace generic {
 namespace c {
 
-template <bool useNCP, typename SolverType>
+template <bool useFlux, bool useNCP, bool useMM, typename SolverType>
 void riemannSolverLinear(SolverType& solver, double* FL, double* FR,
                          const double* const QL, const double* const QR,
                          const double dt,
