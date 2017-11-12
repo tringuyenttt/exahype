@@ -32,17 +32,31 @@ void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) { //
 	InitialDataCode::getInstance();
 }
 
+
+/**
+ * This is a modified riemannSolver which turns off the numerical diffusion
+ * for material parameters. Since we need the derivatives of these parameters
+ * which are not computed by the engine, we don't treat them as parameters in
+ * ExaHyPE and instead do this patching here.
+ **/
 #include "kernels/aderdg/generic/Kernels.h"
 void GRMHD::GRMHDSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex,bool isBoundaryFace, int faceIndex) {
 	kernels::aderdg::generic::c::riemannSolverNonlinear<true,GRMHDSolver_ADERDG>(*static_cast<GRMHDSolver_ADERDG*>(this),FL,FR,QL,QR,dt,normalNonZeroIndex);
 	
-	// This is for 3D. for 2D it is one basisSize less.
+	#if DIMENSIONS == 3
 	kernels::idx3 idx_FLR(basisSize, basisSize, NumberOfVariables);
 	for (int i = 0; i < basisSize; i++) {
 	for (int j = 0; j < basisSize; j++) {
 		resetNumericalDiffusionOnADM(FL+idx_FLR(i, j, 0));
 		resetNumericalDiffusionOnADM(FR+idx_FLR(i, j, 0));
 	}}
+	#elif DIMENSIONS == 2
+	kernels::idx2 idx_FLR(basisSize, NumberOfVariables);
+	for (int i = 0; i < basisSize; i++) {
+		resetNumericalDiffusionOnADM(FL+idx_FLR(i, 0));
+		resetNumericalDiffusionOnADM(FR+idx_FLR(i, 0));
+	}
+	#endif
 }
 
 void GRMHD::GRMHDSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const int numberOfObservables,const double* const Q) const {
