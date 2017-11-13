@@ -42,7 +42,7 @@ tarch::logging::Log _log("");
  */
 int exahype::pingPongTest() {
   bool correct = true;
-  #if defined(Parallel)
+  #if defined(Parallel) && defined(Asserts)
   logInfo( "run()", "start ping pong test .... if test fails, please retranslate with -DnoPackedRecords" );
   exahype::Vertex::initDatatype();
   exahype::Vertex sendVertex[5];
@@ -99,28 +99,28 @@ int exahype::pingPongTest() {
       assertion3( receivedVertices[0].getLevel()==4,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[0].getX()(0)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[0].getX()(1)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertex.getLevel()==4 && receivedVertex.getX()(0)==2.0 && receivedVertex.getX()(1)==2.0;
+      correct &=  receivedVertices[0].getLevel()==4 && receivedVertices[0].getX()(0)==2.0 && receivedVertices[0].getX()(1)==2.0;
       #ifdef Dim3
       assertion3( receivedVertices[0].getX()(2)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertex.getX()(2)==2.0;
+      correct &=  receivedVertices[0].getX()(2)==2.0;
       #endif
 
       assertion3( receivedVertices[1].getLevel()==5,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[1].getX()(0)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[1].getX()(1)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertex.getLevel()==5 && receivedVertex.getX()(0)==3.0 && receivedVertex.getX()(1)==3.0;
+      correct &=  receivedVertices[1].getLevel()==5 && receivedVertices[1].getX()(0)==3.0 && receivedVertices[1].getX()(1)==3.0;
       #ifdef Dim3
       assertion3( receivedVertices[1].getX()(2)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertex.getX()(2)==3.0;
+      correct &=  receivedVertices[1].getX()(2)==3.0;
       #endif
 
       assertion3( receivedVertices[2].getLevel()==6,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[2].getX()(0)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[2].getX()(1)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertex.getLevel()==6 && receivedVertex.getX()(0)==4.0 && receivedVertex.getX()(1)==4.0;
+      correct &=  receivedVertices[2].getLevel()==6 && receivedVertices[2].getX()(0)==4.0 && receivedVertices[2].getX()(1)==4.0;
       #ifdef Dim3
       assertion3( receivedVertices[2].getX()(2)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
-      correct &=  receivedVertex.getX()(2)==4.0;
+      correct &=  receivedVertices[2].getX()(2)==4.0;
       #endif
     }
     MPI_Barrier( tarch::parallel::Node::getInstance().getCommunicator() );
@@ -169,6 +169,8 @@ int exahype::pingPongTest() {
   }
 
   logInfo( "run()", " ping pong test ok" );
+  #elif defined(Parallel)
+  logInfo( "run()", "Ping pont tests requires compile with -DAsserts as it uses assert data to validate that right content is exchanged" );
   #endif
 
   return correct ? EXIT_SUCCESS : -1;

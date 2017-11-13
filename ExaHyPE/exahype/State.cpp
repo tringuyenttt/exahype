@@ -244,7 +244,7 @@ exahype::records::State::AlgorithmSection exahype::State::getAlgorithmSection() 
    _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
  }
 
- void exahype::State::switchToLocalRecomputationAndTimeStepSizeComputationFusedTimeSteppingContext() {
+ void exahype::State::switchToLocalRecomputationAndTimeStepSizeComputationContext() {
    _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
    _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
  }

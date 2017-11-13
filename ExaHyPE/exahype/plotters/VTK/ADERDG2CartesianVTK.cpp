@@ -143,7 +143,7 @@ void exahype::plotters::ADERDG2CartesianVTK::init(
   slicer = Slicer::bestFromSelectionQuery(select);
 
   if(slicer) {
-	logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<filename);
+    logInfo("init", "Plotting selection "<<slicer->toString()<<" to Files "<<filename);
   }
 }
 

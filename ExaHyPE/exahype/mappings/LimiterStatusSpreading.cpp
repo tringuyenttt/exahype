@@ -182,7 +182,7 @@ void exahype::mappings::LimiterStatusSpreading::touchVertexFirstTime(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  fineGridVertex.mergeOnlyMetadata(_localState.getAlgorithmSection());
+  fineGridVertex.mergeOnlyNeighboursMetadata(_localState.getAlgorithmSection());
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
@@ -205,7 +205,7 @@ void exahype::mappings::LimiterStatusSpreading::enterCell(
       const int element =
           solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
-        if (solver->isComputing(_localState.getAlgorithmSection())) {
+        if (solver->isUsingSharedMappings(_localState.getAlgorithmSection())) {
           auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
           limitingADERDG->updateLimiterStatusDuringLimiterStatusSpreading(
               fineGridCell.getCellDescriptionsIndex(),element);

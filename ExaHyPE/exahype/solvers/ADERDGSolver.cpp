@@ -838,37 +838,31 @@ bool exahype::solvers::ADERDGSolver::isSending(
   return isSending;
 }
 
-bool exahype::solvers::ADERDGSolver::isComputing(
+bool exahype::solvers::ADERDGSolver::isUsingSharedMappings(
     const exahype::records::State::AlgorithmSection& section) const {
-  bool isComputing = false;
+  bool isUsingSharedMappings = false;
 
   switch (section) {
     case exahype::records::State::AlgorithmSection::TimeStepping:
-      isComputing = true;
-      break;
-    case exahype::records::State::AlgorithmSection::LimiterStatusSpreading:
-      isComputing = false;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinement:
-      isComputing = getMeshUpdateRequest();
+      isUsingSharedMappings = true;
       break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputation:
-      isComputing = getMeshUpdateRequest();
+      isUsingSharedMappings = getMeshUpdateRequest();
       break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-      isComputing = getMeshUpdateRequest();
+      isUsingSharedMappings = getMeshUpdateRequest();
       break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isComputing = getMeshUpdateRequest();
-      break;
-    case exahype::records::State::AlgorithmSection::LocalRecomputationAllSend:
-      isComputing = false;
+      isUsingSharedMappings = getMeshUpdateRequest();
       break;
     case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isComputing = getStabilityConditionWasViolated();
+      isUsingSharedMappings = getStabilityConditionWasViolated();
+      break;
+    default:
+      break;
   }
 
-  return isComputing;
+  return isUsingSharedMappings;
 }
 
 
@@ -995,7 +989,7 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if (fineGridCellElement==exahype::solvers::Solver::NotFound &&
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
-      tarch::la::allGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())) {
+      tarch::la::oneGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())) {
     logDebug("updateStateInEnterCell(...)","Add new uniform grid cell with offset "<<fineGridVerticesEnumerator.getVertexPosition() <<
             " at level "<<fineGridVerticesEnumerator.getLevel());
 
@@ -1147,7 +1141,6 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
   }
 
   if (vetoErasing) {
-    tarch::multicore::Lock lock(HeapSemaphore);
     int coarseGridCellElement = tryGetElement(fineGridCellDescription.getParentIndex(),
                                               fineGridCellDescription.getSolverNumber());
     if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
@@ -1156,13 +1149,13 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
 
       if (coarseGridCellDescription.getRefinementEvent()==CellDescription::ErasingChildrenRequested ||
           coarseGridCellDescription.getRefinementEvent()==CellDescription::ChangeChildrenToDescendantsRequested) {
+        tarch::multicore::Lock lock(HeapSemaphore);
         coarseGridCellDescription.setRefinementEvent(CellDescription::None);
-
+        lock.free();
         assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
                    coarseGridCellDescription.toString());
       }
     }
-    lock.free();
   }
 
   return refineFineGridCell;

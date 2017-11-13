@@ -36,7 +36,7 @@ void GRMHD::Prim2ConsRaw::perform() {
 	// The hydro + magneto exact known prim2cons
 	Dens = rho * W;
 	DFOR(i) Si.lo(i) = Dens*enth*W*vel.lo(i) + BmagBmag*vel.lo(i) - BmagVel*Bmag.lo(i);
-	tau = Dens*enth*W - press + 0.5*(BmagBmag*(1+VelVel) - BmagVel*BmagVel);
+	tau = Dens*(enth*W-1) - press + 0.5*(BmagBmag*(1+VelVel) - BmagVel*BmagVel);
 }
 
 void GRMHD::Prim2ConsRaw::copyFullStateVector() {

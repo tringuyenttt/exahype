@@ -152,7 +152,7 @@ bool exahype::solvers::FiniteVolumesSolver::isSending(
       section==exahype::records::State::AlgorithmSection::LocalRecomputationAllSend;
 }
 
-bool exahype::solvers::FiniteVolumesSolver::isComputing(
+bool exahype::solvers::FiniteVolumesSolver::isUsingSharedMappings(
     const exahype::records::State::AlgorithmSection& section) const {
   return section==exahype::records::State::AlgorithmSection::TimeStepping;
 }
