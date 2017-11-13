@@ -230,8 +230,7 @@ void aderPicardLoopNonlinear(SolverType& solver,
             double lQi_new = 0;
             for (int n = 0; n < basisSize; n++) { // matmul time
               lQi_new += iweight * rhs[idx_rhs(n, j, k, m)] *
-                  kernels::iK1[order][l][n];
-              // TODO: Check if we store iK1 or rather its transpose
+                  kernels::iK1[order][l][n]; // note: iK1 is already the transposed inverse of K1
             }
             sq_res += (lQi_new - lQi[idx_lQi(j, k, l, m)]) * (lQi_new - lQi[idx_lQi(j, k, l, m)]);
             assertion3( !std::isnan(lQi[idx_lQi(j, k, l, m)]), idx_lQi(j, k, l, m), dt, dx );
