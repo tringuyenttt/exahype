@@ -144,34 +144,12 @@ void exahype::mappings::Merging::beginIteration(
       (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
       exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
       &&
-      ( // No synchronous communication for MergeNothing and DropFaceData
-      _localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData)
+      _localState.getMergeMode()!=exahype::records::State::MergeMode::MergeNothing
   ) {
-    exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
-    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
-    DataHeap::getInstance().finishedToSendSynchronousData();
-    MetadataHeap::getInstance().finishedToSendSynchronousData();
-
+    peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
     if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
         exit(-1);
     }
-  }
-
-  if (
-      exahype::State::fuseADERDGPhases()==false
-      &&
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
-      &&
-      (_localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData)
-  ) {
-    exahype::solvers::ADERDGSolver::Heap::getInstance().startToSendSynchronousData();
-    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().startToSendSynchronousData();
-    DataHeap::getInstance().startToSendSynchronousData();
-    MetadataHeap::getInstance().startToSendSynchronousData();
   }
   #endif
 
@@ -197,22 +175,15 @@ void exahype::mappings::Merging::endIteration(
 
   #ifdef Parallel
   if (
-      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
+      (
+        (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch &&
+        _localState.getSendMode()==exahype::records::State::SendMode::SendNothing) ||
+        exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
+      )
       &&
-      ( // No synchronous communication for MergeNothing and DropFaceData
-      _localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData)
+      _localState.getMergeMode()!=exahype::records::State::MergeMode::MergeNothing
   ) {
-    exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
-    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
-    DataHeap::getInstance().finishedToSendSynchronousData();
-    MetadataHeap::getInstance().finishedToSendSynchronousData();
-
-    if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
-        exit(-1);
-    }
+    peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
   }
   #endif
 
@@ -317,12 +288,12 @@ void exahype::mappings::Merging::touchVertexFirstTime(
       _localState.getMergeMode()==exahype::records::State::BroadcastAndMergeTimeStepDataAndMergeFaceData) {
     dfor2(pos1)
       dfor2(pos2)
-        if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar)) { // Assumes that we have to valid indices
+        if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) { // Assumes that we have to valid indices
           mergeNeighboursDataAndMetadata(fineGridVertex,pos1,pos1Scalar,pos2,pos2Scalar);
 
           fineGridVertex.setMergePerformed(pos1,pos2,true);
         }
-        if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar)) {
+        if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) {
           mergeWithBoundaryData(fineGridVertex,pos1,pos1Scalar,pos2,pos2Scalar);
 
           fineGridVertex.setMergePerformed(pos1,pos2,true);
@@ -389,7 +360,7 @@ void exahype::mappings::Merging::mergeWithNeighbour(
         int destScalar = TWO_POWER_D - myDestScalar - 1; // "invert" point indices
         int srcScalar  = TWO_POWER_D - mySrcScalar  - 1;
 
-        if (vertex.hasToReceiveMetadata(src,dest,fromRank)) {
+        if (vertex.hasToReceiveMetadata(fromRank,src,dest)) {
           #ifdef Asserts
           logInfo("mergeWithNeighbour(...)","from rank "<<fromRank <<" vertex="<<fineGridX.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
           #endif

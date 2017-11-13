@@ -190,7 +190,7 @@ void exahype::mappings::Reinitialisation::prepareSendToNeighbour(
 
   dfor2(dest)
     dfor2(src)
-      if (vertex.hasToSendMetadata(src,dest,toRank)) {
+      if (vertex.hasToSendMetadata(toRank,src,dest)) {
         vertex.tryDecrementFaceDataExchangeCountersOfSource(src,dest);
         if (vertex.hasToSendDataToNeighbour(src,dest)) {
           sendDataToNeighbour(

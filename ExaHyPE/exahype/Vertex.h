@@ -95,7 +95,10 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * neighbourMergePerformed flags, do never
    * use it in combination with the Merging mapping.
    */
-  void mergeOnlyNeighboursMetadata(const exahype::records::State::AlgorithmSection& section);
+  void mergeOnlyNeighboursMetadata(
+      const exahype::records::State::AlgorithmSection& section,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
   /**
    * Checks if the cell descriptions at the indices corresponding
@@ -123,7 +126,9 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const int pos2Scalar) const;
+      const int pos2Scalar,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
   /**
    * Checks if the cell descriptions at the indices corresponding
@@ -138,7 +143,9 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const int pos1Scalar,
       const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const int pos2Scalar) const;
+      const int pos2Scalar,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
   /**
    * Sets a flag on the cell descriptions at the indices corresponding
@@ -171,6 +178,15 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
   /**
+   * TODO(Dominic): Add docu.
+   */
+  bool hasToSendMetadataToNeighbour(
+      const tarch::la::Vector<DIMENSIONS,int>& src,
+      const tarch::la::Vector<DIMENSIONS,int>& dest,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+
+  /**
    * Returns if this vertex needs to send a metadata message to a remote rank \p toRank.
    *
    * We need to send a message to remote rank \p roRank if both ranks
@@ -199,9 +215,9 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    *                forking at the same time.
    */
   bool hasToSendMetadata(
+      const int toRank,
       const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest,
-      const int toRank) const;
+      const tarch::la::Vector<DIMENSIONS,int>& dest) const;
 
   /**
    * TODO(Dominic): Add docu
@@ -211,6 +227,25 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       int level) const;
+
+  /**
+   * TODO(Dominic): Add docu.
+   */
+  static tarch::la::Vector<DIMENSIONS,double> computeFaceBarycentre(
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const tarch::la::Vector<DIMENSIONS,double>& h,
+      const int&                                  normalDirection,
+      const tarch::la::Vector<DIMENSIONS,int>&    cellPosition);
+
+  /**
+   * TODO(Dominic): Add docu.
+   */
+  bool hasToMergeWithNeighbourMetadata(
+      const tarch::la::Vector<DIMENSIONS,int>& src,
+      const tarch::la::Vector<DIMENSIONS,int>& dest,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
+
 
   /**
    * Returns if this vertex needs to receive a metadata message from a remote rank \p fromRank.
@@ -242,9 +277,9 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    *
    */
   bool hasToReceiveMetadata(
+      const int fromRank,
       const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest,
-      const int fromRank) const;
+      const tarch::la::Vector<DIMENSIONS,int>& dest) const;
 
   /**
    * Receive metadata from neighbouring ranks
@@ -256,8 +291,8 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void mergeOnlyWithNeighbourMetadata(
       const int fromRank,
-      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int level,
       const exahype::records::State::AlgorithmSection& section) const;
 
@@ -270,8 +305,8 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   void dropNeighbourMetadata(
       const int fromRank,
-      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int level) const;
 
   /**

@@ -256,13 +256,11 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Cell::computeFaceBarycentre(
     const tarch::la::Vector<DIMENSIONS,double>& cellOffset,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
     const int direction, const int orientation) {
-  tarch::la::Vector<DIMENSIONS,double> faceBarycentre = cellOffset;
-  faceBarycentre[direction] += orientation * cellSize[direction];
+  tarch::la::Vector<DIMENSIONS,double> faceBarycentre;
   for (int i=0; i<DIMENSIONS; i++) {
-    if (i!=direction) {
-      faceBarycentre[i] += 0.5 * cellSize[i];
-    }
+    faceBarycentre[i] = cellOffset[i] + 0.5 * cellSize[i];
   }
+  faceBarycentre[direction] = cellOffset[direction] + orientation * cellSize[direction];
 
   return faceBarycentre;
 }
