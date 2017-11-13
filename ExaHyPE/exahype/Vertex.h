@@ -231,7 +231,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   /**
    * TODO(Dominic): Add docu.
    */
-  static bool computeFaceBarycentre(
+  static tarch::la::Vector<DIMENSIONS,double> computeFaceBarycentre(
       const tarch::la::Vector<DIMENSIONS,double>& x,
       const tarch::la::Vector<DIMENSIONS,double>& h,
       const int&                                  normalDirection,

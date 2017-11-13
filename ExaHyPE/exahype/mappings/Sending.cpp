@@ -245,7 +245,7 @@ void exahype::mappings::Sending::prepareSendToNeighbour(
       _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData) {
     dfor2(dest)
       dfor2(src)
-      if (vertex.hasToSendMetadata(src,dest,toRank)) {
+      if (vertex.hasToSendMetadata(toRank,src,dest)) {
         vertex.tryDecrementFaceDataExchangeCountersOfSource(src,dest);
 
         #ifdef Asserts

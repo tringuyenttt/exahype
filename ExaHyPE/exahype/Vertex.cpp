@@ -199,7 +199,7 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
     if (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1)) {
       bool mergeWithBoundaryData =
           !exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1).empty() ||
-          !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1).empty());
+          !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex1).empty();
 
       tarch::la::Vector<DIMENSIONS,double> baryCentreFromPatch1;
       for (const auto& p1 : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex1)) {
@@ -218,7 +218,7 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
     } else if (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2)) {
       bool mergeWithBoundaryData =
           !exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2).empty() ||
-          !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2).empty());
+          !exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex2).empty();
 
       tarch::la::Vector<DIMENSIONS,double> baryCentreFromPatch2;
       for (const auto& p2 : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex2)) {
@@ -323,7 +323,6 @@ bool exahype::Vertex::hasToSendMetadataToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   const int srcScalar  = peano::utils::dLinearisedWithoutLookup(src,2);
-  const int destScalar = peano::utils::dLinearisedWithoutLookup(dest,2);
   const int srcCellDescriptionIndex = getCellDescriptionsIndex()[srcScalar];
 
   bool sendMetadataToNeighbour =
@@ -335,7 +334,6 @@ bool exahype::Vertex::hasToSendMetadataToNeighbour(
   if (sendMetadataToNeighbour) {
     const int direction   = tarch::la::equalsReturnIndex(src, dest);
     const int orientation = (1 + dest(direction) - src(direction))/2;
-    const int faceIndex   = 2*direction+orientation;
 
     if (!exahype::solvers::ADERDGSolver::Heap::getInstance().getData(srcCellDescriptionIndex).empty()) {
       auto& patch = exahype::solvers::ADERDGSolver::Heap::getInstance().getData(srcCellDescriptionIndex)[0];
@@ -406,7 +404,7 @@ bool exahype::Vertex::hasToReceiveMetadata(
       tarch::la::countEqualEntries(dest, src) == (DIMENSIONS-1);
 }
 
-bool exahype::Vertex::computeFaceBarycentre(
+tarch::la::Vector<DIMENSIONS,double> exahype::Vertex::computeFaceBarycentre(
     const tarch::la::Vector<DIMENSIONS,double>& x,
     const tarch::la::Vector<DIMENSIONS,double>& h,
     const int&                                  normalDirection,
@@ -415,7 +413,7 @@ bool exahype::Vertex::computeFaceBarycentre(
   for (int d=0; d<DIMENSIONS; d++) {
     barycentre(d) = x(d) + 0.5*h(d)*(2*cellPosition(d)-1);
   }
-  barycentre(direction) = x(direction);
+  barycentre(normalDirection) = x(normalDirection);
   return barycentre;
 }
 
@@ -424,7 +422,6 @@ bool exahype::Vertex::hasToMergeWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS,int>& dest,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
-  const int srcScalar  = peano::utils::dLinearisedWithoutLookup(src,2);
   const int destScalar = peano::utils::dLinearisedWithoutLookup(dest,2);
   const int destCellDescriptionIndex = getCellDescriptionsIndex()[destScalar];
 
@@ -436,7 +433,6 @@ bool exahype::Vertex::hasToMergeWithNeighbourMetadata(
   if (mergeWithNeighbourMetadata) {
     const int direction   = tarch::la::equalsReturnIndex(src, dest);
     const int orientation = (1 + src(direction) - dest(direction))/2;
-    const int faceIndex   = 2*direction+orientation;
 
     if (!exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionIndex).empty()) {
       auto& patch = exahype::solvers::ADERDGSolver::Heap::getInstance().getData(destCellDescriptionIndex)[0];
