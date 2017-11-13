@@ -21,6 +21,6 @@
     INTEGER, PARAMETER             :: nDim = 2                   ! The number of space dimensions
 #endif
     INTEGER, PARAMETER             :: nVar = 14                           ! The number of variables of the PDE system  
-    
+    INTEGER, PARAMETER             :: nLin = 5
 
   END MODULE Parameters  
