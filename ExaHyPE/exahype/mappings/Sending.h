@@ -131,6 +131,18 @@ void sendEmptySolverDataToNeighbour(
     const tarch::la::Vector<DIMENSIONS,int>&      dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const;
+
+
+/**
+ * Check if we need to reduce time step data.
+ */
+bool reduceTimeStepData() const;
+
+/**
+ * Check if we need to send face data
+ * from worker to master.
+ */
+bool reduceFaceData() const;
 #endif
 
  public:
@@ -358,6 +370,34 @@ void sendEmptySolverDataToNeighbour(
    * Our strategy thus is as follows: If we may skip the Sending, i.e. the
    * user has enabled this optimisation in the ExaHyPE spec file, then we
    * return false if load balancing is disabled.
+   *
+   * <h2>Reductions</h2>
+   *
+   * We always return true (if the send mode requires it)
+   * in this routine even when we are running a batch of iterations.
+   * This sounds counter-intuitively but the rationale is given below:
+   *
+   * Before sending a kickoff message to a worker,
+   * Peano queries on the master side if a worker might perform a reduction
+   * of the State.
+   * This information is then send to the worker which cannot modify
+   * this information by itself.
+   * However, it is only send to the worker in case the CommunicationSpecification
+   * of an adapter specifies that the State should be send from master to worker.
+   *
+   * In our FusedTimeStep adapter batches, the State is sent to the worker only in the first iteration.
+   * In each following iteration, this send is skipped.
+   * The information if the worker skips reductions can thus not be updated
+   * during those batch iterations.
+   *
+   * After each iteration, Peano additionally queries the CommunicationSpecification when it wants to
+   * send the state. At this stage, we still have the possibility to intervene on
+   * both, master and worker side.
+   *
+   * We thus solely use the CommunicationSpecification to
+   * change between performing and skipping reductions.
+   * Therefore, we always return true in prepareSendToWorker if
+   * the send mode requires it.
    */
   bool prepareSendToWorker(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,

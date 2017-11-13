@@ -37,6 +37,7 @@ exahype::repositories::RepositorySTDStack::RepositorySTDStack(
   _vertexStack(),
   _solverState(),
   _gridWithMeshRefinement(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
+  _gridWithMeshRefinementAndPlotGrid(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithFinaliseMeshRefinementAndTimeStepSizeComputation(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithFinaliseMeshRefinementAndReinitialisation(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithFusedTimeStep(_vertexStack,_cellStack,_geometry,_solverState,domainSize,computationalDomainOffset,_regularGridContainer,_traversalOrderOnTopLevel),
@@ -72,6 +73,7 @@ exahype::repositories::RepositorySTDStack::RepositorySTDStack(
   _vertexStack(),
   _solverState(),
   _gridWithMeshRefinement(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
+  _gridWithMeshRefinementAndPlotGrid(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithFinaliseMeshRefinementAndTimeStepSizeComputation(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithFinaliseMeshRefinementAndReinitialisation(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
   _gridWithFusedTimeStep(_vertexStack,_cellStack,_geometry,_solverState,_regularGridContainer,_traversalOrderOnTopLevel),
@@ -123,6 +125,7 @@ void exahype::repositories::RepositorySTDStack::restart(
   _cellStack.clear();
 
   _gridWithMeshRefinement.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
+  _gridWithMeshRefinementAndPlotGrid.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithFinaliseMeshRefinementAndTimeStepSizeComputation.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithFinaliseMeshRefinementAndReinitialisation.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
   _gridWithFusedTimeStep.restart(domainSize,domainOffset,domainLevel, positionOfCentralElementWithRespectToCoarserRemoteLevel);
@@ -159,6 +162,7 @@ void exahype::repositories::RepositorySTDStack::terminate() {
   #endif
 
   _gridWithMeshRefinement.terminate();
+  _gridWithMeshRefinementAndPlotGrid.terminate();
   _gridWithFinaliseMeshRefinementAndTimeStepSizeComputation.terminate();
   _gridWithFinaliseMeshRefinementAndReinitialisation.terminate();
   _gridWithFusedTimeStep.terminate();
@@ -220,15 +224,30 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
   peano::datatraversal::autotuning::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
 
   peano::parallel::loadbalancing::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
-  
-  _solverState.currentlyRunsMultipleIterations(_repositoryState.getNumberOfIterations()>1);
   #else
   peano::datatraversal::autotuning::Oracle::getInstance().switchToOracle(_repositoryState.getAction());
   #endif
   
   for (int i=0; i<numberOfIterations; i++) {
+
+    #ifdef Parallel
+    if (_repositoryState.getNumberOfIterations()==1) {
+      _solverState.currentlyRunsMultipleIterations(State::BatchState::NoBatch);
+    }
+    else if (i==0) {
+      _solverState.currentlyRunsMultipleIterations(State::BatchState::FirstIterationOfBatch);
+    }
+    else if (i==numberOfIterations-1) {
+      _solverState.currentlyRunsMultipleIterations(State::BatchState::LastIterationOfBatch);
+    }
+    else {
+      _solverState.currentlyRunsMultipleIterations(State::BatchState::IntermediateIterationOfBatch);
+    }
+    #endif
+
     switch ( _repositoryState.getAction()) {
       case exahype::records::RepositoryState::UseAdapterMeshRefinement: watch.startTimer(); _gridWithMeshRefinement.iterate(); watch.stopTimer(); _measureMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotGrid: watch.startTimer(); _gridWithMeshRefinementAndPlotGrid.iterate(); watch.stopTimer(); _measureMeshRefinementAndPlotGridCPUTime.setValue( watch.getCPUTime() ); _measureMeshRefinementAndPlotGridCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementAndTimeStepSizeComputation: watch.startTimer(); _gridWithFinaliseMeshRefinementAndTimeStepSizeComputation.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementAndTimeStepSizeComputationCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementAndTimeStepSizeComputationCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementAndReinitialisation: watch.startTimer(); _gridWithFinaliseMeshRefinementAndReinitialisation.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementAndReinitialisationCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementAndReinitialisationCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep: watch.startTimer(); _gridWithFusedTimeStep.iterate(); watch.stopTimer(); _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() ); _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() ); break;
@@ -273,6 +292,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
 }
 
  void exahype::repositories::RepositorySTDStack::switchToMeshRefinement() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterMeshRefinement); }
+ void exahype::repositories::RepositorySTDStack::switchToMeshRefinementAndPlotGrid() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotGrid); }
  void exahype::repositories::RepositorySTDStack::switchToFinaliseMeshRefinementAndTimeStepSizeComputation() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementAndTimeStepSizeComputation); }
  void exahype::repositories::RepositorySTDStack::switchToFinaliseMeshRefinementAndReinitialisation() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementAndReinitialisation); }
  void exahype::repositories::RepositorySTDStack::switchToFusedTimeStep() { _repositoryState.setAction(exahype::records::RepositoryState::UseAdapterFusedTimeStep); }
@@ -289,6 +309,7 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
 
 
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterMeshRefinement() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterMeshRefinement; }
+ bool exahype::repositories::RepositorySTDStack::isActiveAdapterMeshRefinementAndPlotGrid() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterMeshRefinementAndPlotGrid; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterFinaliseMeshRefinementAndTimeStepSizeComputation() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementAndTimeStepSizeComputation; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterFinaliseMeshRefinementAndReinitialisation() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementAndReinitialisation; }
  bool exahype::repositories::RepositorySTDStack::isActiveAdapterFusedTimeStep() const { return _repositoryState.getAction() == exahype::records::RepositoryState::UseAdapterFusedTimeStep; }
@@ -378,6 +399,7 @@ exahype::repositories::RepositorySTDStack::ContinueCommand exahype::repositories
 void exahype::repositories::RepositorySTDStack::logIterationStatistics(bool logAllAdapters) const {
   logInfo( "logIterationStatistics()", "|| adapter name \t || iterations \t || total CPU time [t]=s \t || average CPU time [t]=s \t || total user time [t]=s \t || average user time [t]=s  || CPU time properties  || user time properties " );  
    if (logAllAdapters || _measureMeshRefinementCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| MeshRefinement \t |  " << _measureMeshRefinementCPUTime.getNumberOfMeasurements() << " \t |  " << _measureMeshRefinementCPUTime.getAccumulatedValue() << " \t |  " << _measureMeshRefinementCPUTime.getValue()  << " \t |  " << _measureMeshRefinementCalendarTime.getAccumulatedValue() << " \t |  " << _measureMeshRefinementCalendarTime.getValue() << " \t |  " << _measureMeshRefinementCPUTime.toString() << " \t |  " << _measureMeshRefinementCalendarTime.toString() );
+   if (logAllAdapters || _measureMeshRefinementAndPlotGridCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| MeshRefinementAndPlotGrid \t |  " << _measureMeshRefinementAndPlotGridCPUTime.getNumberOfMeasurements() << " \t |  " << _measureMeshRefinementAndPlotGridCPUTime.getAccumulatedValue() << " \t |  " << _measureMeshRefinementAndPlotGridCPUTime.getValue()  << " \t |  " << _measureMeshRefinementAndPlotGridCalendarTime.getAccumulatedValue() << " \t |  " << _measureMeshRefinementAndPlotGridCalendarTime.getValue() << " \t |  " << _measureMeshRefinementAndPlotGridCPUTime.toString() << " \t |  " << _measureMeshRefinementAndPlotGridCalendarTime.toString() );
    if (logAllAdapters || _measureFinaliseMeshRefinementAndTimeStepSizeComputationCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| FinaliseMeshRefinementAndTimeStepSizeComputation \t |  " << _measureFinaliseMeshRefinementAndTimeStepSizeComputationCPUTime.getNumberOfMeasurements() << " \t |  " << _measureFinaliseMeshRefinementAndTimeStepSizeComputationCPUTime.getAccumulatedValue() << " \t |  " << _measureFinaliseMeshRefinementAndTimeStepSizeComputationCPUTime.getValue()  << " \t |  " << _measureFinaliseMeshRefinementAndTimeStepSizeComputationCalendarTime.getAccumulatedValue() << " \t |  " << _measureFinaliseMeshRefinementAndTimeStepSizeComputationCalendarTime.getValue() << " \t |  " << _measureFinaliseMeshRefinementAndTimeStepSizeComputationCPUTime.toString() << " \t |  " << _measureFinaliseMeshRefinementAndTimeStepSizeComputationCalendarTime.toString() );
    if (logAllAdapters || _measureFinaliseMeshRefinementAndReinitialisationCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| FinaliseMeshRefinementAndReinitialisation \t |  " << _measureFinaliseMeshRefinementAndReinitialisationCPUTime.getNumberOfMeasurements() << " \t |  " << _measureFinaliseMeshRefinementAndReinitialisationCPUTime.getAccumulatedValue() << " \t |  " << _measureFinaliseMeshRefinementAndReinitialisationCPUTime.getValue()  << " \t |  " << _measureFinaliseMeshRefinementAndReinitialisationCalendarTime.getAccumulatedValue() << " \t |  " << _measureFinaliseMeshRefinementAndReinitialisationCalendarTime.getValue() << " \t |  " << _measureFinaliseMeshRefinementAndReinitialisationCPUTime.toString() << " \t |  " << _measureFinaliseMeshRefinementAndReinitialisationCalendarTime.toString() );
    if (logAllAdapters || _measureFusedTimeStepCPUTime.getNumberOfMeasurements()>0) logInfo( "logIterationStatistics()", "| FusedTimeStep \t |  " << _measureFusedTimeStepCPUTime.getNumberOfMeasurements() << " \t |  " << _measureFusedTimeStepCPUTime.getAccumulatedValue() << " \t |  " << _measureFusedTimeStepCPUTime.getValue()  << " \t |  " << _measureFusedTimeStepCalendarTime.getAccumulatedValue() << " \t |  " << _measureFusedTimeStepCalendarTime.getValue() << " \t |  " << _measureFusedTimeStepCPUTime.toString() << " \t |  " << _measureFusedTimeStepCalendarTime.toString() );
@@ -396,6 +418,7 @@ void exahype::repositories::RepositorySTDStack::logIterationStatistics(bool logA
 
 void exahype::repositories::RepositorySTDStack::clearIterationStatistics() {
    _measureMeshRefinementCPUTime.erase();
+   _measureMeshRefinementAndPlotGridCPUTime.erase();
    _measureFinaliseMeshRefinementAndTimeStepSizeComputationCPUTime.erase();
    _measureFinaliseMeshRefinementAndReinitialisationCPUTime.erase();
    _measureFusedTimeStepCPUTime.erase();
@@ -410,6 +433,7 @@ void exahype::repositories::RepositorySTDStack::clearIterationStatistics() {
    _measurePredictionAndPlotCPUTime.erase();
 
    _measureMeshRefinementCalendarTime.erase();
+   _measureMeshRefinementAndPlotGridCalendarTime.erase();
    _measureFinaliseMeshRefinementAndTimeStepSizeComputationCalendarTime.erase();
    _measureFinaliseMeshRefinementAndReinitialisationCalendarTime.erase();
    _measureFusedTimeStepCalendarTime.erase();

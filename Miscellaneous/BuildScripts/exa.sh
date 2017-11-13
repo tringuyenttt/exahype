@@ -292,6 +292,9 @@ case $CMD in
 	"root") # prints out the root of the ExaHyPE installation
 		echo $GITROOT
 		;;
+	"whoopsie") # runs command, if fails, collects info and uploads to a pastebin
+		exec $BuildScripts/../RunScripts/whoopsie.sh $@
+		;;
 	*)
 		fail "Could not understand command '$CMD'"
 		;;

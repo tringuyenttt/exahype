@@ -18,8 +18,8 @@
 double fault(double y,double depth){
   //  return 0.1*(y-0.5*depth);
   double pi = 3.14159265359;
-    return std::sin(2*pi*(y-0.5*depth))*0.1;
-  //return 0;
+  //  return std::sin(2*pi*(y-0.5*depth))*0.1;
+  return 0;
 }
 
 
@@ -155,8 +155,8 @@ void getBoundaryCurves(int num_points,double offset_x, double offset_y,double wi
     top_bnd_x[i]    = 0 + dx*i;
     
     bottom_bnd_y[i] = 0.0;
-    top_bnd_y[i]    = 1 + 0.2*std::sin(4*pi*top_bnd_x[i]);
-	//    top_bnd_y[i]    = 1;
+    //    top_bnd_y[i]    = 1 + 0.2*std::sin(4*pi*top_bnd_x[i]);
+    top_bnd_y[i]    = 1;
 
     //std::cout<<top_bnd_x[i]<<std::endl;
     //std::cout<<i<<std::endl;

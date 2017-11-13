@@ -120,10 +120,10 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
 	// SET BV for all 9 variables + 11 parameters.
 	
 	// EXACT FV AlfenWave BC
-	// InitialData(x, t, stateOut);
+	InitialData(x, t, stateOut);
 	
 	// NEUTRON STAR reflective + outflow BC:
-	setNeutronStarBoundaryConditions(faceIndex, d, stateIn, stateOut);
+	// setNeutronStarBoundaryConditions(faceIndex, d, stateIn, stateOut);
 }
 
 void GRMHD::GRMHDSolver_FV::algebraicSource(const double* const Q,double* S) {

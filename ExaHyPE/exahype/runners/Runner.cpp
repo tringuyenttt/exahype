@@ -790,26 +790,60 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
   #endif
 
   #if  defined(SharedTBBInvade)
-  static tarch::timing::Watch invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
-  static SHMInvade*                               concurrencyLevel = nullptr;
+  static tarch::timing::Watch                     invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
   static peano::performanceanalysis::SpeedupLaws  amdahlsLaw;
 
+  // adopt my local performance model
   invasionWatch.stopTimer();
-
   amdahlsLaw.addMeasurement(
-    // returns   return _invadeRoot.get_num_active_threads();
     tarch::multicore::Core::getInstance().getNumberOfThreads(),
     invasionWatch.getCalendarTime()
   );
-  amdahlsLaw.relaxAmdahlsLaw();
+  amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
 
-  if (concurrencyLevel != nullptr) {
-    delete concurrencyLevel;
-    concurrencyLevel = nullptr;
+  // share local performance model with other ranks running on same node
+  double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
+  SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
+
+  // get data from the other guys
+  int myIndexWithinSharedUserData;
+  int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
+
+  std::vector<double>  t1;
+  std::vector<double>  f;
+  std::vector<double>  s;
+  for (int k=0; k<ranksOnThisNode; k++) {
+    t1.push_back( SHMController::getSingleton()->getSharedUserData<double>(k,0) );
+    f.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,1) );
+    s.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,2) );
   }
 
-  concurrencyLevel = new SHMInvade(2 + (rand() % static_cast<int>(8)));
+  assertionNumericalEquals6(
+    t1[myIndexWithinSharedUserData], amdahlsLaw.getSerialTime(),
+    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
+    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
+  );
+  assertionNumericalEquals6(
+    f[myIndexWithinSharedUserData],  amdahlsLaw.getSerialCodeFraction(),
+    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
+    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
+  );
+  assertionNumericalEquals6(
+    s[myIndexWithinSharedUserData],  amdahlsLaw.getStartupCostPerThread(),
+    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
+    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
+  );
 
+  // ask for an optimal number of cores for local rank
+  int optimalNumberOfThreads = peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
+    myIndexWithinSharedUserData,
+    t1,f,s,
+    SHMInvadeRoot::get_max_available_cores() );
+  logInfo(
+    "postProcessTimeStepInSharedMemoryEnvironment()",
+    "try to use " << optimalNumberOfThreads << " threads" );
+
+  tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
   invasionWatch.startTimer();
   #endif
 }
@@ -924,6 +958,8 @@ void exahype::runners::Runner::updateMeshAndSubdomains(
     repository.iterate(1,false);
   }
 
+  // TODO(Dominic): Try to move AlgorithmSection selection into characteristic mappings
+
   // 1. Only the solvers with irregular limiter domain change do the limiter status spreading.
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLimiterStatusSpreading()) {
     repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::LimiterStatusSpreading);
@@ -972,7 +1008,7 @@ void exahype::runners::Runner::updateMeshAndSubdomains(
     // Do not advance the time stamp if global recomputation/mesh refinement
     // Advance time stamp if local recomputation
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
-    repository.getState().switchToLocalRecomputationAndTimeStepSizeComputationFusedTimeSteppingContext();
+    repository.getState().switchToLocalRecomputationAndTimeStepSizeComputationContext();
     repository.switchToLocalRecomputationAndTimeStepSizeComputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
     repository.iterate(1,false); // local recomputation: has now recomputed predictor in interface cells
   } // LocalRecomputation is done here

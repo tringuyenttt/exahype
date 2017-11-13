@@ -1101,7 +1101,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, 
       double>& cellSize, 
       const double dt,
-      double* pointForceSources) = 0;
+      double** tempPointForceSources) = 0;
 
   /**
    * \brief Returns a stable time step size.
@@ -1441,7 +1441,7 @@ public:
 
   bool isSending(const exahype::records::State::AlgorithmSection& section) const override;
 
-  bool isComputing(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isUsingSharedMappings(const exahype::records::State::AlgorithmSection& section) const override;
 
   bool isValidCellDescriptionIndex(const int cellDescriptionsIndex) const override;
 

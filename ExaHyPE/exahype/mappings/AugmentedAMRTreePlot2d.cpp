@@ -512,11 +512,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::endIteration(
   _isAugmentedWriter = nullptr;
 
   std::ostringstream snapshotFileName;
-  snapshotFileName << "tree"
-#ifdef Parallel
-                   << "-rank-" << tarch::parallel::Node::getInstance().getRank()
-#endif
-                   << "-" << _snapshotCounter;
+  snapshotFileName << "tree-" << _snapshotCounter;
   _vtkWriter->writeToFile(snapshotFileName.str());
 
   _snapshotCounter++;

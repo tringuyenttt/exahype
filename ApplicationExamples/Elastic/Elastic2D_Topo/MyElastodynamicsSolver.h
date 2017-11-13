@@ -139,11 +139,7 @@ class Elastodynamics::MyElastodynamicsSolver : public Elastodynamics::AbstractMy
      */
     void multiplyMaterialParameterMatrix(const double* const Q, double* rhs) final override;
 
-
-
-    virtual void coefficientMatrix(const double* const Q,const int d,double* Bn);
-    
-    void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
+        void riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex) override;
 
     void riemannSolver_Nodal(double v_p,double v_m, double sigma_p, double sigma_m, double z_p , double z_m, double& v_hat_p , double& v_hat_m, double& sigma_hat_p, double& sigma_hat_m);
 
@@ -152,6 +148,8 @@ class Elastodynamics::MyElastodynamicsSolver : public Elastodynamics::AbstractMy
 
     void riemannSolver_BC0(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
     void riemannSolver_BCn(double v, double sigma, double z,  double r, double& v_hat, double& sigma_hat);
+
+        virtual void coefficientMatrix(const double* const Q,const int d,double* Bn);
 
 };
 

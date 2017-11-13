@@ -117,6 +117,11 @@ namespace exahype {
   /**
    * @see waitUntilAllBackgroundTasksHaveTerminated()
    */
+  extern tarch::multicore::BooleanSemaphore BackgroundThreadSemaphore;
+
+  /**
+   * A semaphore for serialising heap access.
+   */
   extern tarch::multicore::BooleanSemaphore HeapSemaphore;
 
 #ifdef Parallel
@@ -1034,8 +1039,22 @@ class exahype::solvers::Solver {
    * This depends usually on internal flags of the solver such as ones indicating
    * a mesh update request or a limiter domain change during a previous time stepping
    * iteration.
+   *
+   * All mappings introduced for a specific job, e.g. limiting, mesh refinement etc.,
+   * do not rely on this method. It is used only for mappings which are shared by different
+   * algorithm sections.
+   * These are
+   * BroadcastAndMergeTimeStepData, Merging, Prediction, StatusSpreading, and
+   * TimeStepSizeComputation.
+   *
+   * E.g. a time step size computation via mapping TimeStepSizeComputation is required in
+   * algorithm section "LocalRecomputationAllSend" for all solvers which
+   * have finished a global recomputation or a mesh refinement.
+   * It is not required for limiting ADER-DG solvers which are currently performing
+   * a local recomputation.
+   *
    */
-  virtual bool isComputing(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isUsingSharedMappings(const exahype::records::State::AlgorithmSection& section) const = 0;
 
   /**
    * Copies the time stepping data from the global solver onto the patch's time

@@ -158,7 +158,7 @@ void exahype::mappings::Prediction::enterCell(
             auto* solver = static_cast<exahype::solvers::ADERDGSolver*>(
                 exahype::solvers::RegisteredSolvers[cellDescription.getSolverNumber()]);
 
-            if (solver->isComputing(_localState.getAlgorithmSection())) {
+            if (solver->isUsingSharedMappings(_localState.getAlgorithmSection())) {
               solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(),i);
               performPredictionAndVolumeIntegral(solver,cellDescription);
             }
@@ -167,7 +167,7 @@ void exahype::mappings::Prediction::enterCell(
             auto* solver = static_cast<exahype::solvers::LimitingADERDGSolver*>(
                 exahype::solvers::RegisteredSolvers[cellDescription.getSolverNumber()]);
 
-            if (solver->isComputing(_localState.getAlgorithmSection())) {
+            if (solver->isUsingSharedMappings(_localState.getAlgorithmSection())) {
               solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(),i);
               if (cellDescription.getLimiterStatus()<solver->getSolver()->getMinimumLimiterStatusForTroubledCell()) {
                 performPredictionAndVolumeIntegral(solver->getSolver().get(),cellDescription);

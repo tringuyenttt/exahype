@@ -565,7 +565,7 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
       tempUnknowns,tempFluxUnknowns,
       ::exahype::tests::testdata::generic_euler::
        testSpaceTimePredictor::luh, // TODO(Dominic): Rename namespace to testSpaceTimePredictorLinear?
-       dx, dt, tempSpaceTimeUnknowns[1]
+       dx, dt, nullptr
   );
 
   for (int i = 0; i < 320; i++) {

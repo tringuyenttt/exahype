@@ -274,7 +274,7 @@ void exahype::mappings::MeshRefinement::touchVertexFirstTime(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  fineGridVertex.mergeOnlyMetadata(_localState.getAlgorithmSection());
+  fineGridVertex.mergeOnlyNeighboursMetadata(_localState.getAlgorithmSection());
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
@@ -329,7 +329,7 @@ void exahype::mappings::MeshRefinement::enterCell(
       bool adjustSolution = exahype::mappings::MeshRefinement::IsFirstIteration;
 
       // Update limiter status and allocate limiter patch if necessary
-      // Further evalute the limiter status based refinement criterion
+      // Further evaluate the limiter status based refinement criterion
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
         const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
@@ -383,15 +383,14 @@ void exahype::mappings::MeshRefinement::enterCell(
       oneSolverRequestsRefinement |= result._refinementRequested;
       adjustSolution     |= result._newComputeCellAllocated;
 
-      // Synchronise time stepping and adjust the solution
-      // if necessary
+      // Synchronise time stepping and adjust the solution if required
       if (fineGridCell.isInitialised()) {
         const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
-          solver->zeroTimeStepSizes(fineGridCell.getCellDescriptionsIndex(),element);
-          solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(),element);
-
           if (adjustSolution) {
+            solver->zeroTimeStepSizes(fineGridCell.getCellDescriptionsIndex(),element);
+            solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(),element);
+
             solver->adjustSolution(
                 fineGridCell.getCellDescriptionsIndex(),
                 element);
@@ -410,9 +409,7 @@ void exahype::mappings::MeshRefinement::enterCell(
     }
   }
 
-
   // Refine all adjacent vertices if necessary and possible.
-  //    if (refineFineGridCell && _state.refineInitialGridInTouchVertexLastTime()) {
   if (oneSolverRequestsRefinement) {
     dfor2(v)
       if (
@@ -659,6 +656,18 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
 }
 
 void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
+    exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,
+    int fromRank, const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
+  if (
+      _localState.isNewWorkerDueToForkOfExistingDomain()
+  ) {
+    exahype::VertexOperations::writeCellDescriptionsIndex(
+        localVertex,multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  }
+}
+
+void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
         exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
         int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
@@ -777,13 +786,6 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
 void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
     exahype::Vertex& localVertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  // do nothing
-}
-
-void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
-    exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,
-    int fromRank, const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   // do nothing
 }

@@ -40,8 +40,9 @@ tarch::logging::Log _log("");
  * The ping pong test has to be triggered by main very very early. There should
  * be no other message in the MPI subsystem.
  */
-void exahype::pingPongTest() {
-  #if defined(Asserts) && defined(Parallel)
+int exahype::pingPongTest() {
+  bool correct = true;
+  #if defined(Parallel) && defined(Asserts)
   logInfo( "run()", "start ping pong test .... if test fails, please retranslate with -DnoPackedRecords" );
   exahype::Vertex::initDatatype();
   exahype::Vertex sendVertex[5];
@@ -75,16 +76,21 @@ void exahype::pingPongTest() {
       assertion1( receivedVertex.getLevel()==4, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(0)==2.0, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(1)==2.0, receivedVertex.toString() );
+      correct &=  receivedVertex.getLevel()==4 && receivedVertex.getX()(0)==2.0 && receivedVertex.getX()(1)==2.0;
       #ifdef Dim3
       assertion1( receivedVertex.getX()(2)==2.0, receivedVertex.toString() );
+      correct &=  receivedVertex.getX()(2)==2.0;
       #endif
+
 
       receivedVertex.receive(0,100,true,-1);
       assertion1( receivedVertex.getLevel()==4, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(0)==2.0, receivedVertex.toString() );
       assertion1( receivedVertex.getX()(1)==2.0, receivedVertex.toString() );
+      correct &=  receivedVertex.getLevel()==4 && receivedVertex.getX()(0)==2.0 && receivedVertex.getX()(1)==2.0;
       #ifdef Dim3
       assertion1( receivedVertex.getX()(2)==2.0, receivedVertex.toString() );
+      correct &=  receivedVertex.getX()(2)==2.0;
       #endif
 
       exahype::Vertex receivedVertices[5];
@@ -93,22 +99,28 @@ void exahype::pingPongTest() {
       assertion3( receivedVertices[0].getLevel()==4,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[0].getX()(0)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[0].getX()(1)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertices[0].getLevel()==4 && receivedVertices[0].getX()(0)==2.0 && receivedVertices[0].getX()(1)==2.0;
       #ifdef Dim3
       assertion3( receivedVertices[0].getX()(2)==2.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertices[0].getX()(2)==2.0;
       #endif
 
       assertion3( receivedVertices[1].getLevel()==5,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[1].getX()(0)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[1].getX()(1)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertices[1].getLevel()==5 && receivedVertices[1].getX()(0)==3.0 && receivedVertices[1].getX()(1)==3.0;
       #ifdef Dim3
       assertion3( receivedVertices[1].getX()(2)==3.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertices[1].getX()(2)==3.0;
       #endif
 
       assertion3( receivedVertices[2].getLevel()==6,  receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[2].getX()(0)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
       assertion3( receivedVertices[2].getX()(1)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertices[2].getLevel()==6 && receivedVertices[2].getX()(0)==4.0 && receivedVertices[2].getX()(1)==4.0;
       #ifdef Dim3
       assertion3( receivedVertices[2].getX()(2)==4.0, receivedVertices[0].toString(), receivedVertices[1].toString(), receivedVertices[2].toString() );
+      correct &=  receivedVertices[2].getX()(2)==4.0;
       #endif
     }
     MPI_Barrier( tarch::parallel::Node::getInstance().getCommunicator() );
@@ -121,22 +133,28 @@ void exahype::pingPongTest() {
       assertion3( heapVertices[0].getLevel()==4,  heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[0].getX()(0)==2.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[0].getX()(1)==2.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[0].getLevel()==4 && heapVertices[0].getX()(0)==2.0 && heapVertices[0].getX()(1)==2.0;
       #ifdef Dim3
       assertion3( heapVertices[0].getX()(2)==2.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[0].getX()(2)==2.0;
       #endif
 
       assertion3( heapVertices[1].getLevel()==5,  heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[1].getX()(0)==3.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[1].getX()(1)==3.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[1].getLevel()==5 && heapVertices[1].getX()(0)==3.0 && heapVertices[1].getX()(1)==3.0;
       #ifdef Dim3
       assertion3( heapVertices[1].getX()(2)==3.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[1].getX()(2)==3.0;
       #endif
 
       assertion3( heapVertices[2].getLevel()==6,  heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[2].getX()(0)==4.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
       assertion3( heapVertices[2].getX()(1)==4.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[2].getLevel()==6 && heapVertices[2].getX()(0)==4.0 && heapVertices[2].getX()(1)==4.0;
       #ifdef Dim3
       assertion3( heapVertices[2].getX()(2)==4.0, heapVertices[0].toString(), heapVertices[1].toString(), heapVertices[2].toString() );
+      correct &=  heapVertices[2].getX()(2)==4.0;
       #endif
     }
     if (tarch::parallel::Node::getInstance().getRank()==1) {
@@ -151,7 +169,11 @@ void exahype::pingPongTest() {
   }
 
   logInfo( "run()", " ping pong test ok" );
+  #elif defined(Parallel)
+  logInfo( "run()", "Ping pont tests requires compile with -DAsserts as it uses assert data to validate that right content is exchanged" );
   #endif
+
+  return correct ? EXIT_SUCCESS : -1;
 }
 
 
@@ -183,8 +205,6 @@ int exahype::main(int argc, char** argv) {
     return sharedMemorySetup;
   }
 
-  pingPongTest();
-
   //
   //   Parse config file
   // =====================
@@ -192,7 +212,7 @@ int exahype::main(int argc, char** argv) {
   std::string progname = argv[0];
 
   if (argc < 2) {
-    logError("main()", "Usage: " << progname << " config-file [additional args passed to Solver...]");
+    logError("main()", "Usage: " << progname << " --help");
     return -1;
   }
 
@@ -202,6 +222,12 @@ int exahype::main(int argc, char** argv) {
 
   bool showHelp    = firstarg == "-h" || firstarg == "--help";
   bool showVersion = firstarg == "-v" || firstarg == "--version";
+  bool runTests    = firstarg == "-t" || firstarg == "--tests";
+  bool runPingPong = firstarg == "-p" || firstarg == "--pingpong";
+
+  if (runPingPong) {
+    return pingPongTest();
+  }
 
   if(showHelp) {
     help(progname);
@@ -211,6 +237,32 @@ int exahype::main(int argc, char** argv) {
   if(showVersion) {
     std::cout << version(progname);
     return EXIT_SUCCESS;
+  }
+
+  if (runTests) {
+    //
+    //   Run tests
+    // =============
+    // Our unit tests do cover the generic ADER-DG kernels. The generic kernels do
+    // parallelise. As a consequence, they connect to the autotuning feature.
+    // Autotuning however is not set up yet, so this will fail. We therefore
+    // disable the unit tests in shared memory mode.
+    //
+
+    //#if (defined(Debug) || defined(Asserts)) && !defined(SharedMemoryParallelisation)
+    //if(! std::getenv("EXAHYPE_SKIP_TESTS")) { // cf issue #74
+    tarch::tests::TestCaseRegistry::getInstance().getTestCaseCollection().run();
+    int testExitCode = tarch::tests::TestCaseRegistry::getInstance()
+                           .getTestCaseCollection()
+                           .getNumberOfErrors();
+
+    if (testExitCode != 0) {
+      logError("main()", "unit tests failed. Quit.");
+      return -2;
+    }
+    else {
+      return EXIT_SUCCESS;
+    }
   }
 
   exahype::Parser parser;
@@ -226,17 +278,6 @@ int exahype::main(int argc, char** argv) {
   // =====================================
   //
   kernels::initSolvers(parser, cmdlineargs);
-
-  /*
-  // We had this before to show the real solver registration, ie. like
-  //    exahype::solvers::RegisteredSolvers->toString(ostream);
-  // This needs kernels::initSolvers(parser...) to be called.
-  if (onlyShowVersion) {
-    version();
-    kernels::finalise();
-    return 0;
-  }
-  */
 
   //
   //   Configure the logging
@@ -290,31 +331,6 @@ int exahype::main(int argc, char** argv) {
                                                              "exahype", false));
   }
 
-//
-//   Run tests
-// =============
-// Our unit tests do cover the generic ADER-DG kernels. The generic kernels do
-// parallelise. As a consequence, they connect to the autotuning feature.
-// Autotuning however is not set up yet, so this will fail. We therefore
-// disable the unit tests in shared memory mode.
-//
-#if (defined(Debug) || defined(Asserts)) && !defined(SharedMemoryParallelisation)
-if(! std::getenv("EXAHYPE_SKIP_TESTS")) { // cf issue #74
-  tarch::tests::TestCaseRegistry::getInstance().getTestCaseCollection().run();
-  int testExitCode = tarch::tests::TestCaseRegistry::getInstance()
-                         .getTestCaseCollection()
-                         .getNumberOfErrors();
-
-  if (testExitCode != 0) {
-    logError("main()", "unit tests failed. Quit.");
-    return -2;
-  }
-} else {
-  logInfo("main()", "Skipping tests as EXAHYPE_SKIP_TESTS is set."
-     "We do so because tests are broken in the moment and nobody repairs them."); //  TODO(Sven,Dominic,JM): Fix tests.
-} // end if getenv(EXAHYPE_SKIP_TESTS)
-#endif
-
   exahype::runners::Runner runner(parser);
   int programExitCode = runner.run();
 
@@ -349,8 +365,9 @@ void exahype::help(const std::string& programname) {
   std::cout << "\n";
   std::cout << "   Other possible parameters:\n";
   std::cout << "\n";
-  std::cout << "    --help     Show this help message\n";
-  std::cout << "    --version  Show version and other hard coded information\n";
+  std::cout << "    --help | -h    Show this help message\n";
+  std::cout << "    --version | -v Show version and other hard coded information\n";
+  std::cout << "    --tests | -t   Run the unit tests\n";
   std::cout << "\n";
 }
 

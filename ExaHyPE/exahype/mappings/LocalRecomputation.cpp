@@ -153,6 +153,13 @@ void exahype::mappings::LocalRecomputation::beginIteration(
 
   _localState = solverState;
 
+  #ifdef Parallel
+  exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
+  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
+  DataHeap::getInstance().finishedToSendSynchronousData();
+  MetadataHeap::getInstance().finishedToSendSynchronousData();
+  #endif
+
   prepareLocalTimeStepVariables();
 
   initialiseTemporaryVariables();

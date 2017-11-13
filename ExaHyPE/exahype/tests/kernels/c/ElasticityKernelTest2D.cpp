@@ -238,6 +238,8 @@ void ElasticityKernelTest::coefficientMatrix(const double *const Q, const int no
 }  // matrixb
 
 void ElasticityKernelTest::testRiemannSolverLinear() {
+  validate(false);
+
   logInfo("ElasticityKernelTest::testRiemannSolverLinear()",
           "Test Riemann solver linear, ORDER=4, DIM=2");
 
@@ -319,6 +321,7 @@ void ElasticityKernelTest::testRiemannSolverLinear() {
 }
 
 void ElasticityKernelTest::testSpaceTimePredictorLinear() {
+  validate(false);
   logInfo("ElasticityKernelTest::testSpaceTimePredictorLinear()",
           "Test SpaceTimePredictor linear, ORDER=4, DIM=2");
 
@@ -379,7 +382,7 @@ void ElasticityKernelTest::testSpaceTimePredictorLinear() {
       lQbnd, lFbnd,
       tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,
       tempUnknowns,tempFluxUnknowns,
-      luh, dx, dt, tempSpaceTimeUnknowns[1]);
+      luh, dx, dt, nullptr);
 
   for (int i = 0; i < DIMENSIONS; i++) {
     for (int j = 0; j < basisSize; j++) {
@@ -447,6 +450,7 @@ void ElasticityKernelTest::testSpaceTimePredictorLinear() {
 }
 
 void ElasticityKernelTest::testVolumeIntegralLinear() {
+  validate(false);
   logInfo("ElasticityKernelTest::testVolumeIntegralLinear()",
           "Test VolumeIntegral linear, ORDER=4, DIM=2");
 
@@ -498,6 +502,7 @@ void ElasticityKernelTest::testVolumeIntegralLinear() {
 }
 
 void ElasticityKernelTest::testSurfaceIntegralLinear() {
+  validate(false);
   logInfo("ElasticityKernelTest::testSurfaceIntegralLinear()",
           "Test SurfaceIntegral linear, ORDER=4, DIM=2");
 

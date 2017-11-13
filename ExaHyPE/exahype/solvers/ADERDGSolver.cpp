@@ -202,8 +202,6 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(CellDe
       &&
       DataHeap::getInstance().isValidIndex(cellDescription.getSolution())
   ) {
-    waitUntilAllBackgroundTasksHaveTerminated();
-
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()));
@@ -262,7 +260,6 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(CellDe
                cellDescription.toString());
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
 
-    waitUntilAllBackgroundTasksHaveTerminated();
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
 
     if (cellDescription.getExtrapolatedPredictor()>=0) {
@@ -312,8 +309,6 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
       &&
       !DataHeap::getInstance().isValidIndex(cellDescription.getSolution())
   ) {
-    waitUntilAllBackgroundTasksHaveTerminated();
-
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
     assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()));
     // Allocate volume DoF for limiter
@@ -370,8 +365,6 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
       !DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor())
   ) {
     assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
-
-    waitUntilAllBackgroundTasksHaveTerminated();
 
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
     // Allocate face DoF
@@ -845,37 +838,31 @@ bool exahype::solvers::ADERDGSolver::isSending(
   return isSending;
 }
 
-bool exahype::solvers::ADERDGSolver::isComputing(
+bool exahype::solvers::ADERDGSolver::isUsingSharedMappings(
     const exahype::records::State::AlgorithmSection& section) const {
-  bool isComputing = false;
+  bool isUsingSharedMappings = false;
 
   switch (section) {
     case exahype::records::State::AlgorithmSection::TimeStepping:
-      isComputing = true;
-      break;
-    case exahype::records::State::AlgorithmSection::LimiterStatusSpreading:
-      isComputing = false;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinement:
-      isComputing = getMeshUpdateRequest();
+      isUsingSharedMappings = true;
       break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputation:
-      isComputing = getMeshUpdateRequest();
+      isUsingSharedMappings = getMeshUpdateRequest();
       break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-      isComputing = getMeshUpdateRequest();
+      isUsingSharedMappings = getMeshUpdateRequest();
       break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isComputing = getMeshUpdateRequest();
-      break;
-    case exahype::records::State::AlgorithmSection::LocalRecomputationAllSend:
-      isComputing = false;
+      isUsingSharedMappings = getMeshUpdateRequest();
       break;
     case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isComputing = getStabilityConditionWasViolated();
+      isUsingSharedMappings = getStabilityConditionWasViolated();
+      break;
+    default:
+      break;
   }
 
-  return isComputing;
+  return isUsingSharedMappings;
 }
 
 
@@ -1002,7 +989,7 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if (fineGridCellElement==exahype::solvers::Solver::NotFound &&
       tarch::la::allSmallerEquals(fineGridVerticesEnumerator.getCellSize(),getMaximumMeshSize()) &&
-      tarch::la::allGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())) {
+      tarch::la::oneGreater(coarseGridVerticesEnumerator.getCellSize(),getMaximumMeshSize())) {
     logDebug("updateStateInEnterCell(...)","Add new uniform grid cell with offset "<<fineGridVerticesEnumerator.getVertexPosition() <<
             " at level "<<fineGridVerticesEnumerator.getLevel());
 
@@ -1154,9 +1141,6 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
   }
 
   if (vetoErasing) {
-    waitUntilAllBackgroundTasksHaveTerminated();
-
-    tarch::multicore::Lock lock(HeapSemaphore);
     int coarseGridCellElement = tryGetElement(fineGridCellDescription.getParentIndex(),
                                               fineGridCellDescription.getSolverNumber());
     if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
@@ -1165,13 +1149,13 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
 
       if (coarseGridCellDescription.getRefinementEvent()==CellDescription::ErasingChildrenRequested ||
           coarseGridCellDescription.getRefinementEvent()==CellDescription::ChangeChildrenToDescendantsRequested) {
+        tarch::multicore::Lock lock(HeapSemaphore);
         coarseGridCellDescription.setRefinementEvent(CellDescription::None);
-
+        lock.free();
         assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
                    coarseGridCellDescription.toString());
       }
     }
-    lock.free();
   }
 
   return refineFineGridCell;
@@ -1979,7 +1963,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         luh,
         &inverseDx[0], //TODO JMG use cellDescription.getInverseSize() when implemented
         cellDescription.getPredictorTimeStepSize(),
-        tempPointForceSources[0]);
+        tempPointForceSources);
     
     volumeIntegral(
         lduh,
@@ -1997,7 +1981,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         luh,
         cellDescription.getSize(),
         cellDescription.getPredictorTimeStepSize(),
-        tempPointForceSources[0]);
+        tempPointForceSources);
     
     volumeIntegral(
         lduh,
@@ -3049,9 +3033,6 @@ void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
     const peano::heap::MessageType&              messageType,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  waitUntilAllBackgroundTasksHaveTerminated();
-  tarch::multicore::Lock lock(exahype::HeapSemaphore);
-
   const int receivedCellDescriptionsIndex =
       Heap::getInstance().createData(0,exahype::solvers::RegisteredSolvers.size());
   Heap::getInstance().receiveData(
@@ -3486,8 +3467,6 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
   const int direction    = tarch::la::equalsReturnIndex(src, dest);
   const int orientation  = (1 + src(direction) - dest(direction))/2;
   const int faceIndex    = 2*direction+orientation;
-
-  waitUntilAllBackgroundTasksHaveTerminated();
 
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
   CellDescription::Type neighbourType =

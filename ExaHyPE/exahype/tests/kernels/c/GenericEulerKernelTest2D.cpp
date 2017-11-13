@@ -847,7 +847,7 @@ void GenericEulerKernelTest::testSpaceTimePredictorLinear() {
       tempUnknowns,tempFluxUnknowns,
       ::exahype::tests::testdata::generic_euler::
           testSpaceTimePredictorLinear::luh,
-      dx, dt, tempSpaceTimeUnknowns[1]);
+      dx, dt, nullptr);
   _setNcpAndMatrixBToZero = false;
 
   for (int i = 0; i < 80; i++) {
