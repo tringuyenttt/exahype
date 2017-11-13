@@ -115,11 +115,11 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     else if (configuration.find( "sfc-diffusion" )!=std::string::npos ) {
       int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,RanksPerNode));
       if (ranksPerNode<=0) {
-        logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"" << RanksPerNode ":XXX\". Read value " << ranksPerNode << " is invalid" );
+        logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"RanksPerNode:XXX\". Read value " << ranksPerNode << " is invalid" );
         ranksPerNode = 1;
       }
       if (tarch::parallel::Node::getInstance().getNumberOfNodes() % ranksPerNode != 0) {
-        logError( "initDistributedMemoryConfiguration()", "Value of \"" << RanksPerNode:XXX << "\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
+        logError( "initDistributedMemoryConfiguration()", "Value of \"RanksPerNode:XXX\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
         ranksPerNode = 1;
       }
       int primaryRanksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"primary-ranks-per-node"));
