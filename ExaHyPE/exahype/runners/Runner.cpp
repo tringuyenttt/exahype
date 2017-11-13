@@ -103,7 +103,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logError( "initDistributedMemoryConfiguration()", "please inform fair balancing how many ranks per node you use through value \"" << RanksPerNode << ":XXX\". Read value " << ranksPerNode << " is invalid" );
         ranksPerNode = 1;
       }
-      if ( ranksPerNode>=tarch::parallel::Node::getInstance().getNumberOfNodes() ) {
+      if ( ranksPerNode>tarch::parallel::Node::getInstance().getNumberOfNodes() ) {
         logWarning( "initDistributedMemoryConfiguration()", "value \"" << RanksPerNode << ":XXX\" exceeds total rank count. Reset to 1" );
         ranksPerNode = 1;
       }
@@ -116,6 +116,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,RanksPerNode));
       if (ranksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"RanksPerNode:XXX\". Read value " << ranksPerNode << " is invalid" );
+        ranksPerNode = 1;
+      }
+      if ( ranksPerNode>tarch::parallel::Node::getInstance().getNumberOfNodes() ) {
+        logWarning( "initDistributedMemoryConfiguration()", "value \"" << RanksPerNode << ":XXX\" exceeds total rank count. Reset to 1" );
         ranksPerNode = 1;
       }
       if (tarch::parallel::Node::getInstance().getNumberOfNodes() % ranksPerNode != 0) {
