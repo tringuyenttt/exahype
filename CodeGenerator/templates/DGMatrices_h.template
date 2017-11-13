@@ -32,7 +32,7 @@ extern double *dudx_T;
 extern double *FLCoeff;
 extern double *FRCoeff;
 extern double ** fineGridProjector1d;
-extern double ** fineGridProjector1d_T;
+extern double ** fineGridProjector1d_T_weighted; // [k][i*nDof+j] = fineGridProjector1d[k][j*nDof+i] * weight[j] / weight[i] / 3.0
 
 {% for namespaceName in codeNamespaceList %}
 }
