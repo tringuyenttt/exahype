@@ -82,6 +82,8 @@ exahype::runners::Runner::~Runner() {}
 
 void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   #ifdef Parallel
+  const std::string RanksPerNode = "ranks-per-node";
+
   const std::string configuration = _parser.getMPIConfiguration();
 
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
@@ -96,13 +98,13 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on FCFS answering strategy");
     }
     else if (configuration.find( "fair" )!=std::string::npos ) {
-      int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"ranks_per_node"));
+      int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,RanksPerNode));
       if (ranksPerNode<=0) {
-        logError( "initDistributedMemoryConfiguration()", "please inform fair balancing how many ranks per node you use through value \"ranks_per_node:XXX\". Read value " << ranksPerNode << " is invalid" );
+        logError( "initDistributedMemoryConfiguration()", "please inform fair balancing how many ranks per node you use through value \"" << RanksPerNode << ":XXX\". Read value " << ranksPerNode << " is invalid" );
         ranksPerNode = 1;
       }
       if ( ranksPerNode>=tarch::parallel::Node::getInstance().getNumberOfNodes() ) {
-        logWarning( "initDistributedMemoryConfiguration()", "value \"ranks_per_node:XXX\" exceeds total rank count. Reset to 1" );
+        logWarning( "initDistributedMemoryConfiguration()", "value \"" << RanksPerNode << ":XXX\" exceeds total rank count. Reset to 1" );
         ranksPerNode = 1;
       }
       tarch::parallel::NodePool::getInstance().setStrategy(
@@ -111,22 +113,22 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
     }
     else if (configuration.find( "sfc-diffusion" )!=std::string::npos ) {
-      int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"ranks_per_node"));
+      int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,RanksPerNode));
       if (ranksPerNode<=0) {
-        logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"ranks_per_node:XXX\". Read value " << ranksPerNode << " is invalid" );
+        logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"" << RanksPerNode ":XXX\". Read value " << ranksPerNode << " is invalid" );
         ranksPerNode = 1;
       }
       if (tarch::parallel::Node::getInstance().getNumberOfNodes() % ranksPerNode != 0) {
-        logError( "initDistributedMemoryConfiguration()", "Value of \"ranks_per_node:XXX\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
+        logError( "initDistributedMemoryConfiguration()", "Value of \"" << RanksPerNode:XXX << "\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
         ranksPerNode = 1;
       }
-      int primaryRanksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"primary_ranks_per_node"));
+      int primaryRanksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"primary-ranks-per-node"));
       if (primaryRanksPerNode<=0) {
-        logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many primary ranks per node you use through value \"primary_ranks_per_node:XXX\". Read value " << primaryRanksPerNode << " is invalid" );
+        logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many primary ranks per node you use through value \"primary-ranks-per-node:XXX\". Read value " << primaryRanksPerNode << " is invalid" );
         primaryRanksPerNode = 1;
       }
       if ( ranksPerNode<primaryRanksPerNode ) {
-        logWarning( "initDistributedMemoryConfiguration()", "value \"ranks_per_node:XXX\" is smaller than primary_ranks_per_node. Reset to 1" );
+        logWarning( "initDistributedMemoryConfiguration()", "value " << RanksPerNode << " is smaller than primary-ranks-per-node. Reset to 1" );
         primaryRanksPerNode = 1;
       }
       tarch::parallel::NodePool::getInstance().setStrategy(
