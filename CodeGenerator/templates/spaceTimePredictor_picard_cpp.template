@@ -44,7 +44,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
   __assume_aligned(lFi, ALIGNMENT);
   __assume_aligned(FLCoeff, ALIGNMENT); // == F0
   __assume_aligned(Kxi, ALIGNMENT);
-  __assume_aligned(iK1, ALIGNMENT);
+  __assume_aligned(iK1_T, ALIGNMENT);
   __assume_aligned(weights3, ALIGNMENT);
   __assume_aligned(luh, ALIGNMENT); //luh should be aligned, see Solver.h
 {% if useSourceOrNCP %}
@@ -56,7 +56,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
 #endif
 
   // 0. Allocate local variable
-  double s_m[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT))); //for the gemms with alpha*Kxi or alpha*iK1
+  double s_m[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT))); //for the gemms with alpha*Kxi or alpha*iK1_T
 {% if useNCP %}
   double ncp[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
 {% endif %}
@@ -340,7 +340,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
       const double iweight = 1.0 / weights3[ijk];
       #pragma vector aligned
       for(int it=0;it<{{nDof*nDofPad}};it++) {
-        s_m[it] = iweight * iK1[it];
+        s_m[it] = iweight * iK1_T[it];
       }
 {% if useLibxsmm %}
 #ifdef USE_IPO

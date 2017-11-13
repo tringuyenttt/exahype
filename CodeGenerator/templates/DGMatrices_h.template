@@ -26,7 +26,7 @@ void freeDGMatrices();
 
 extern double *Kxi;
 extern double *Kxi_T;
-extern double *iK1; //note: the generic version of iK1 is actually transposed
+extern double *iK1_T; //note: the generic version of iK1 is actually transposed
 extern double *dudx;
 extern double *dudx_T;
 extern double *FLCoeff;

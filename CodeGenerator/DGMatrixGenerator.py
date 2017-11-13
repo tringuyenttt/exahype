@@ -58,17 +58,17 @@ class DGMatrixGenerator:
         # Kxi
         Kxi = Utils.assembleStiffnessMatrix(self.m_xGPN, self.m_wGPN, self.m_context['nDof'])
         self.m_context['Kxi']   = Utils.matrixPadAndFlatten_ColMajor(Kxi,l_padSize)
-        self.m_context['Kxi_T'] = Utils.matrixPadAndFlatten_RowMajor(Kxi,l_padSize)
+        self.m_context['Kxi_T'] = Utils.matrixPadAndFlatten_RowMajor(Kxi,l_padSize) #transpose
 
-        # iK1
-        iK1 = Utils.matrixTranspose(Utils.matrixInverse(Utils.assembleK1(Kxi, self.m_xGPN, self.m_context['nDof'])))
-        self.m_context['iK1'] = Utils.matrixPadAndFlatten_ColMajor(iK1,l_padSize)
+        # iK1_T
+        iK1 = Utils.matrixInverse(Utils.assembleK1(Kxi, self.m_xGPN, self.m_context['nDof']))
+        self.m_context['iK1_T'] = Utils.matrixPadAndFlatten_RowMajor(iK1,l_padSize) #transpose
 
         # dudx
         MM   = Utils.assembleMassMatrix(self.m_xGPN, self.m_wGPN, self.m_context['nDof'])
         dudx = Utils.assembleDiscreteDerivativeOperator(MM,Kxi)
         self.m_context['dudx']   = Utils.matrixPadAndFlatten_ColMajor(dudx,l_padSize)
-        self.m_context['dudx_T'] = Utils.matrixPadAndFlatten_RowMajor(dudx,l_padSize)
+        self.m_context['dudx_T'] = Utils.matrixPadAndFlatten_RowMajor(dudx,l_padSize) #transpose
         
         
         #fineGridProjector1d
