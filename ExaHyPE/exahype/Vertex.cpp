@@ -47,6 +47,19 @@ exahype::Vertex::getCellDescriptionsIndex() const {
   return _vertexData.getCellDescriptionsIndex();
 }
 
+tarch::la::Vector<DIMENSIONS,double> exahype::Vertex::computeFaceBarycentre(
+    const tarch::la::Vector<DIMENSIONS,double>& x,
+    const tarch::la::Vector<DIMENSIONS,double>& h,
+    const int&                                  normalDirection,
+    const tarch::la::Vector<DIMENSIONS,int>&    cellPosition) {
+  tarch::la::Vector<DIMENSIONS,double> barycentre;
+  for (int d=0; d<DIMENSIONS; d++) {
+    barycentre(d) = x(d) + 0.5*h(d)*(2*cellPosition(d)-1);
+  }
+  barycentre(normalDirection) = x(normalDirection);
+  return barycentre;
+}
+
 void exahype::Vertex::mergeOnlyNeighboursMetadata(
     const exahype::records::State::AlgorithmSection& section,
     const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -152,6 +165,7 @@ bool exahype::Vertex::hasToMergeNeighbours(
 
     tarch::la::Vector<DIMENSIONS,double> baryCentreFromVertex =
               exahype::Vertex::computeFaceBarycentre(x,h,direction,pos2);
+
     mergeNeighbours &= // ensure the barycentres match
         tarch::la::equals(baryCentreFromPatch1,baryCentreFromPatch2) &&
         tarch::la::equals(baryCentreFromPatch1,baryCentreFromVertex);
@@ -212,7 +226,7 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
       }
 
       tarch::la::Vector<DIMENSIONS,double> baryCentreFromVertex =
-          exahype::Vertex::computeFaceBarycentre(x,h,direction,pos2);
+          exahype::Vertex::computeFaceBarycentre(x,h,direction,pos1);
       mergeWithBoundaryData &= tarch::la::equals(baryCentreFromPatch1,baryCentreFromVertex);
       return mergeWithBoundaryData;
     } else if (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2)) {
@@ -402,19 +416,6 @@ bool exahype::Vertex::hasToReceiveMetadata(
       State::isForkingRank(adjacentRanks(destScalar)))
       &&
       tarch::la::countEqualEntries(dest, src) == (DIMENSIONS-1);
-}
-
-tarch::la::Vector<DIMENSIONS,double> exahype::Vertex::computeFaceBarycentre(
-    const tarch::la::Vector<DIMENSIONS,double>& x,
-    const tarch::la::Vector<DIMENSIONS,double>& h,
-    const int&                                  normalDirection,
-    const tarch::la::Vector<DIMENSIONS,int>&    cellPosition) {
-  tarch::la::Vector<DIMENSIONS,double> barycentre;
-  for (int d=0; d<DIMENSIONS; d++) {
-    barycentre(d) = x(d) + 0.5*h(d)*(2*cellPosition(d)-1);
-  }
-  barycentre(normalDirection) = x(normalDirection);
-  return barycentre;
 }
 
 bool exahype::Vertex::hasToMergeWithNeighbourMetadata(

@@ -87,6 +87,18 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
   tarch::la::Vector<TWO_POWER_D, int> getCellDescriptionsIndex() const;
 
   /**
+   * TODO(Dominic): Add docu.
+   *
+   * \param[in] cellPosition Position of one of the cells adjacent to the
+   *                         face. Which one does not matter.
+   */
+  static tarch::la::Vector<DIMENSIONS,double> computeFaceBarycentre(
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const tarch::la::Vector<DIMENSIONS,double>& h,
+      const int&                                  normalDirection,
+      const tarch::la::Vector<DIMENSIONS,int>&    cellPosition);
+
+  /**
    * Loop over all neighbouring cells and merge
    * the metadata of cell descriptions in neighbouring
    * cells which are owned by the same solver.
@@ -227,15 +239,6 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       int level) const;
-
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  static tarch::la::Vector<DIMENSIONS,double> computeFaceBarycentre(
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const tarch::la::Vector<DIMENSIONS,double>& h,
-      const int&                                  normalDirection,
-      const tarch::la::Vector<DIMENSIONS,int>&    cellPosition);
 
   /**
    * TODO(Dominic): Add docu.
