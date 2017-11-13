@@ -76,6 +76,7 @@ void GRMHD::RawPDE::nonConservativeProduct(const Gradients& grad, State& ncp) {
 	// tau: Cowling approximation instead of extrinsic curvature
 	CONTRACT2(i,j) ncp.tau -= Sij.ul(j,i) * grad.lo(j).beta.up(i);
 	// TODO: Could exploit symmetry: SYMFOR(i,k) CONTRACT(j) instead of CONTRACT3.
+	// Attention: You need a factor 2 per index or so when doing that.
 	CONTRACT3(i,k,j) ncp.tau -= 0.5 * Sij.up(i,k)*beta.up(j) * grad.lo(j).gam.lo(i,k);
 	
 	//CONTRACT3(k,i,j) { printf("%d,%d,%d: ",k,i,j); S(grad.lo(k).gam.lo(i,j)); }
@@ -106,6 +107,7 @@ void GRMHD::RawPDE::nonConservativeProduct(const Gradients& grad, State& ncp) {
 	CONTRACT(k) ncp.phi += phi * grad.lo(k).beta.up(k);
 	// TODO: Could exploit symmetry: Write SYMFOR(l,m) CONTRACT(k) instead CONTRACT3,
 	//       saving more then half of the runtime
+	// Attention: Factor 2 or similar as above
 	CONTRACT3(k,l,m) ncp.phi += 0.5 * gam.up(l,m) * beta.up(k) * grad.lo(k).gam.lo(l,m);
 	
 	// Check the values of these guys which should be zero

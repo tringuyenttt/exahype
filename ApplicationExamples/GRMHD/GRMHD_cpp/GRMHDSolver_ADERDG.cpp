@@ -239,6 +239,15 @@ void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,con
 	// debugging: set BgradQ initially to zero:
 	NVARS(i) BgradQ[i] = 0;
 	
+	// check at this place
+	/*
+	constexpr double x=0.023143948067657905, y=0.68981061473432448;
+	if(tarch::la::equals(Q[19],x,1e-8) && tarch::la::equals(Q[20],y,1e-8)) {
+		printf("Debug guy\n");
+	}
+	}
+	*/
+	
 	// as we only have DIMENSIONS == 2 but TDIM == 3, construct a zero gradient
 	#if DIMENSIONS == 2
 	double gradZ[nVar] = {0.};
@@ -252,8 +261,10 @@ void GRMHD::GRMHDSolver_ADERDG::nonConservativeProduct(const double* const Q,con
 	//zero2Din3D(BgradQ);
 	
 	// the NCP must be zero in flat space
-	//constexpr double eps = 1e-10;
-	//NVARS(i) { if(BgradQ[i]>eps) { printf("BgradQ[%d] = %e\n", i, BgradQ[i]); std::abort(); } }
+	/*
+	constexpr double eps = 1e-10;
+	NVARS(i) { if(BgradQ[i]>eps) { printf("BgradQ[%d] = %e\n", i, BgradQ[i]); std::abort(); } }
+	*/
 }
 
 // The optimized fusedSource
