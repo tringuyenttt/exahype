@@ -374,7 +374,7 @@ void GenericEulerKernelTest::testRiemannSolverLinear() {
     }
   }
 
-  kernels::aderdg::generic::c::riemannSolverLinear<false,GenericEulerKernelTest>(
+  kernels::aderdg::generic::c::riemannSolverLinear<false,false,false,GenericEulerKernelTest>(
       *this,
       FL, FR, QL, QR,
       dt,
