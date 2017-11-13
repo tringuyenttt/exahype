@@ -37,6 +37,7 @@ void {{codeNamespace}}::faceUnknownsProlongation(
   double lFhbndFineTemp[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
 {% if nDim == 3 %} 
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
 {% endif %}
 
   double * pointerQhbnd1 = 0;
@@ -113,6 +114,8 @@ void {{codeNamespace}}::faceUnknownsProlongation(
       #pragma forceinline
 #endif
         {{gemm_face_F}}(&lFhbndCoarse[n2*{{nDof*nDataPad}}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nDataPad}}]);
+        
+        doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
       }
     }
 {% endif %}
@@ -141,6 +144,8 @@ void {{codeNamespace}}::faceUnknownsProlongation(
       #pragma forceinline
 #endif
         {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nDataPad}}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nDataPad}}]);
+        
+        doNotOptimizeAway = coeff[subintervalIndex_0]; //used to prevent the compiler from optimizing coeff away
       }
     }
 {% endif %}      
