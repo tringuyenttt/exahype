@@ -1977,7 +1977,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourMinAndMax(
   if (numberOfObservables>0) {
     SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
-    if (ADERDGSolver::holdsFaceData(solverPatch)) {
+    if (solverPatch.getType()==SolverPatch::Type::Cell) {
       const int direction   = tarch::la::equalsReturnIndex(src, dest);
       const int orientation = (1 + src(direction) - dest(direction))/2;
       const int faceIndex   = 2*direction+orientation;
