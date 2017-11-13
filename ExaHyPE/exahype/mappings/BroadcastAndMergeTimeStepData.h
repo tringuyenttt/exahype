@@ -101,6 +101,33 @@ public:
    */
   peano::CommunicationSpecification communicationSpecification() const;
 
+
+
+  /**
+   * Create a copy of the state.
+   *
+   * TODO(Dominic): Add docu.
+   */
+  void beginIteration(exahype::State& solverState);
+
+  /**
+   * TODO(Dominic): Add docu.
+   */
+  void endIteration(exahype::State& solverState);
+
+  /**
+   * Synchronises the cell descriptions hosted on this cell if
+   * no neigbour merge is performed but the time step data
+   * should still be merged.
+   */
+  void enterCell(
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
   /**
    * Nop.
    */
@@ -125,35 +152,12 @@ public:
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
-  /**
-   * Synchronises the cell descriptions hosted on this cell if
-   * no neigbour merge is performed but the time step data
-   * should still be merged.
-   */
-  void enterCell(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
 #if defined(SharedMemoryParallelisation)
   /**
    * Merge the local state with master thread's state.
    */
   BroadcastAndMergeTimeStepData(const BroadcastAndMergeTimeStepData& masterThread);
 #endif
-
-  /**
-   * Create a copy of the state.
-   */
-  void beginIteration(exahype::State& solverState);
-
-  /**
-   * Nop.
-   */
-  void endIteration(exahype::State& solverState);
 
 #if defined(SharedMemoryParallelisation)
   /**

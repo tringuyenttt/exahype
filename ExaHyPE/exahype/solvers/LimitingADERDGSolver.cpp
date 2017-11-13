@@ -1977,7 +1977,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourMinAndMax(
   if (numberOfObservables>0) {
     SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
-    if (ADERDGSolver::holdsFaceData(solverPatch)) {
+    if (solverPatch.getType()==SolverPatch::Type::Cell) {
       const int direction   = tarch::la::equalsReturnIndex(src, dest);
       const int orientation = (1 + src(direction) - dest(direction))/2;
       const int faceIndex   = 2*direction+orientation;
@@ -2336,9 +2336,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
 
   // merge own data
   const int firstEntry=8;
-  LimiterDomainChange workerLimiterDomainChange =
-      exahype::solvers::convertToLimiterDomainChange(messageFromMaster[firstEntry]);
-  updateNextLimiterDomainChange(workerLimiterDomainChange); // !!! It is important that we merge with the "next" field here
+  _limiterDomainChange = exahype::solvers::convertToLimiterDomainChange(messageFromMaster[firstEntry]);
 
   if (tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
@@ -2352,7 +2350,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
              " messageFromMaster[6]=" << messageFromMaster[6] <<
              " messageFromMaster[7]=" << messageFromMaster[7] <<
              " messageFromMaster[8]=" << messageFromMaster[8]);
-    logDebug("mergeWithWorkerData(...)","nextLimiterDomainChange=" << static_cast<int>(_nextLimiterDomainChange));
+    logDebug("mergeWithWorkerData(...)","_limiterDomainChange=" << static_cast<int>(_limiterDomainChange));
   }
 }
 

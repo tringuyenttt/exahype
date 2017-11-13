@@ -53,7 +53,7 @@ extern double*** Kxi;
 extern double*** dudx;
 
 /**
- * \brief Inverse stiffness matrix
+ * \brief Transposed inverse stiffness matrix
  */
 // todo Dominic Etienne Charrier
 // order, row, column

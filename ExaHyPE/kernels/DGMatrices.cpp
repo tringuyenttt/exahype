@@ -19,7 +19,7 @@ double** kernels::FRCoeff;
 double*** kernels::FCoeff;
 
 double*** kernels::Kxi;
-double*** kernels::iK1;
+double*** kernels::iK1; //actually the TRANSPOSED inversed stiffness matrix
 double*** kernels::dudx;
 
 double*** kernels::equidistantGridProjector1d;

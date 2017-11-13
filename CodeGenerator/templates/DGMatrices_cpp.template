@@ -18,13 +18,13 @@
 //DGMatrices
 double* {{codeNamespace}}::Kxi;
 double* {{codeNamespace}}::Kxi_T;
-double* {{codeNamespace}}::iK1;
+double* {{codeNamespace}}::iK1_T;
 double* {{codeNamespace}}::dudx;
 double* {{codeNamespace}}::dudx_T;
 double* {{codeNamespace}}::FLCoeff;
 double* {{codeNamespace}}::FRCoeff;
 double** {{codeNamespace}}::fineGridProjector1d;
-double** {{codeNamespace}}::fineGridProjector1d_T;
+double** {{codeNamespace}}::fineGridProjector1d_T_weighted;
 
 
 void {{codeNamespace}}::freeDGMatrices() {
@@ -32,7 +32,7 @@ void {{codeNamespace}}::freeDGMatrices() {
   _mm_free(FRCoeff);
   _mm_free(dudx);
   _mm_free(dudx_T);
-  _mm_free(iK1);
+  _mm_free(iK1_T);
   _mm_free(Kxi);
   _mm_free(Kxi_T);
   
@@ -41,10 +41,10 @@ void {{codeNamespace}}::freeDGMatrices() {
   _mm_free(fineGridProjector1d[2]);
   delete [] fineGridProjector1d;
   
-  _mm_free(fineGridProjector1d_T[0]);
-  _mm_free(fineGridProjector1d_T[1]);
-  _mm_free(fineGridProjector1d_T[2]);
-  delete [] fineGridProjector1d_T;
+  _mm_free(fineGridProjector1d_T_weighted[0]);
+  _mm_free(fineGridProjector1d_T_weighted[1]);
+  _mm_free(fineGridProjector1d_T_weighted[2]);
+  delete [] fineGridProjector1d_T_weighted;
 }
 
 
@@ -56,15 +56,15 @@ void {{codeNamespace}}::initDGMatrices() {
   
   dudx    = (double *) _mm_malloc(sizeof(double)*{{nDofPad*nDof}}, ALIGNMENT);
   dudx_T  = (double *) _mm_malloc(sizeof(double)*{{nDofPad*nDof}}, ALIGNMENT);
-  iK1     = (double *) _mm_malloc(sizeof(double)*{{nDofPad*nDof}}, ALIGNMENT);
+  iK1_T   = (double *) _mm_malloc(sizeof(double)*{{nDofPad*nDof}}, ALIGNMENT);
   Kxi     = (double *) _mm_malloc(sizeof(double)*{{nDofPad*nDof}}, ALIGNMENT);
   Kxi_T   = (double *) _mm_malloc(sizeof(double)*{{nDofPad*nDof}}, ALIGNMENT);
 
-  fineGridProjector1d   = new double* [3];
-  fineGridProjector1d_T = new double* [3];
+  fineGridProjector1d            = new double* [3];
+  fineGridProjector1d_T_weighted = new double* [3];
   for(int i=0; i<3; i++) {
-    fineGridProjector1d[i]   = (double *) _mm_malloc(sizeof(double)*{{nDofPad*nDof}}, ALIGNMENT);
-    fineGridProjector1d_T[i] = (double *) _mm_malloc(sizeof(double)*{{nDofPad*nDof}}, ALIGNMENT);
+    fineGridProjector1d[i]            = (double *) _mm_malloc(sizeof(double)*{{nDofPad*nDof}}, ALIGNMENT);
+    fineGridProjector1d_T_weighted[i] = (double *) _mm_malloc(sizeof(double)*{{nDofPad*nDof}}, ALIGNMENT);
   }
   
 {% for i in nDofPad_seq %}
@@ -84,7 +84,7 @@ void {{codeNamespace}}::initDGMatrices() {
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  iK1[{{i}}] = {{"{:.12e}".format(iK1[i])}};
+  iK1_T[{{i}}] = {{"{:.12e}".format(iK1_T[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
@@ -106,13 +106,13 @@ void {{codeNamespace}}::initDGMatrices() {
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_T[0][{{i}}] = {{"{:.12e}".format(fineGridProjector1d_T_0[i])}};
+  fineGridProjector1d_T_weighted[0][{{i}}] = {{"{:.12e}".format(fineGridProjector1d_T_weighted_0[i])}};
 {% endfor %}
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_T[1][{{i}}] = {{"{:.12e}".format(fineGridProjector1d_T_1[i])}};
+  fineGridProjector1d_T_weighted[1][{{i}}] = {{"{:.12e}".format(fineGridProjector1d_T_weighted_1[i])}};
 {% endfor %}
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_T[2][{{i}}] = {{"{:.12e}".format(fineGridProjector1d_T_2[i])}};
+  fineGridProjector1d_T_weighted[2][{{i}}] = {{"{:.12e}".format(fineGridProjector1d_T_weighted_2[i])}};
 {% endfor %}
 
 }

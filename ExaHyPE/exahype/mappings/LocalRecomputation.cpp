@@ -153,13 +153,6 @@ void exahype::mappings::LocalRecomputation::beginIteration(
 
   _localState = solverState;
 
-  #ifdef Parallel
-  exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
-  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
-  DataHeap::getInstance().finishedToSendSynchronousData();
-  MetadataHeap::getInstance().finishedToSendSynchronousData();
-  #endif
-
   prepareLocalTimeStepVariables();
 
   initialiseTemporaryVariables();
@@ -321,7 +314,7 @@ void exahype::mappings::LocalRecomputation::createHangingVertex(
 
   dfor2(pos1)
     dfor2(pos2)
-      if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar)) {
+      if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) {
         auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().
             parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined4);
         pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
@@ -391,7 +384,7 @@ void exahype::mappings::LocalRecomputation::touchVertexFirstTime(
   const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
   dfor2(pos1)
     dfor2(pos2)
-      if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar)) { // Assumes that we have to valid indices
+      if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) { // Assumes that we have to valid indices
         auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().
             parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined5);
         pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
@@ -423,7 +416,7 @@ void exahype::mappings::LocalRecomputation::touchVertexFirstTime(
 
         fineGridVertex.setMergePerformed(pos1,pos2,true);
       }
-      if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar)) {
+      if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) {
         auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().
             parallelise(solvers::RegisteredSolvers.size(), peano::datatraversal::autotuning::MethodTrace::UserDefined6);
         pfor(solverNumber, 0, static_cast<int>(solvers::RegisteredSolvers.size()),grainSize.getGrainSize())
@@ -504,7 +497,7 @@ void exahype::mappings::LocalRecomputation::mergeWithNeighbour(
       int destScalar = TWO_POWER_D - myDestScalar - 1;
       int srcScalar  = TWO_POWER_D - mySrcScalar  - 1;
 
-      if (vertex.hasToReceiveMetadata(src,dest,fromRank)) {
+      if (vertex.hasToReceiveMetadata(fromRank,src,dest)) {
         const int receivedMetadataIndex =
             exahype::receiveNeighbourCommunicationMetadata(
                 fromRank, fineGridX, level);

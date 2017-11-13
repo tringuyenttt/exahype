@@ -19,21 +19,20 @@
 {% for namespaceName in codeNamespaceList %}
 namespace {{namespaceName}} {
 {% endfor %}
-
-static volatile double doNotOptimizeAway = 0; //used to make sure that tmp coefficient array used with gemms are not optimized away by the compiler
+// All matrices are stored as column major array, _T denote a transposed
 
 void initDGMatrices();
 void freeDGMatrices();
 
 extern double *Kxi;
 extern double *Kxi_T;
-extern double *iK1;
+extern double *iK1_T; //note: the generic version of iK1 is actually transposed
 extern double *dudx;
 extern double *dudx_T;
 extern double *FLCoeff;
 extern double *FRCoeff;
 extern double ** fineGridProjector1d;
-extern double ** fineGridProjector1d_T;
+extern double ** fineGridProjector1d_T_weighted; // [k][i*nDof+j] = fineGridProjector1d[k][j*nDof+i] * weight[j] / weight[i] / 3.0
 
 {% for namespaceName in codeNamespaceList %}
 }
