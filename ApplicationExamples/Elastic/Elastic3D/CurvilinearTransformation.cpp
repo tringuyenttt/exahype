@@ -1,3 +1,4 @@
+
 #include "CurvilinearTransformation.h"
 
 #include "kernels/KernelUtils.h"
@@ -23,25 +24,8 @@ double fault(double y, double z,double a_y, double b_y, double a_z, double b_z){
 
   double fault_surface;
   
-  //std::cout << std::endl;  
-   //std::cout <<y <<std::endl;
-   //std::cout << 0.1*std::sin(2*pi*y) << std::endl;//*std::sin(2*pi*(z-(b_z+a_z)*0.5));
-  //return 0.25*std::sin(2*pi*(y-(b_y + a_y)*0.5))*z*(1-z);
-  //return  0.25*(std::sin(2*pi*y/Ly)*std::cos(2*pi*y/Ly))*std::sin(2*pi*z/Lz)*std::cos(2*pi*z/Lz);
-  //return z*(1-z);
-  //*std::sin(2*pi*(z-(b_z+a_z)*0.5));
-   //std::cout <<(1.0/std::tan(angle)) * (y-depth_y/2.0) <<std::endl;
-  // if (y <= 0.7){
-  //   fault_surface = (1.0/std::tan(angle)) * (y-depth_y/2.0);
-  // }else{
-  //    fault_surface = (1.0/std::tan(angle)) *(0.7 - depth_y/2);
-  //   //                           0.5_wp*atan(4.0_wp*(Yright(j,k)-15.0_wp))*exp(-5.0_wp*(Yright(j,k)-15.0_wp)))
-
-  // }
-
   fault_surface=0.25*(std::sin(2*pi*y/Ly)*std::cos(2*pi*y/Ly))*std::sin(2*pi*z/Lz)*std::cos(2*pi*z/Lz);
   
-  fault_surface=0;
   return  fault_surface;
    //return y*(1-y);
 }
@@ -57,11 +41,9 @@ double topography(double x, double z,double a_x, double b_x,double a_z, double b
 
   double topo;
 
-  
-
   topo = 1.0*(0.1*(x + z) + 0.1*(std::sin(4*pi*x/Lx+3.34)*std::cos(4*pi*x/Lx)
 				 * std::sin(4*pi*z/Lz+3.34)*std::cos(4*pi*z/Lz)));
-  topo=0;
+  //topo=0;
   return topo;
 }  
 
@@ -92,44 +74,14 @@ void getBoundaryCurves3D(int num_points,
   double dy= width_y/(num_points-1);
   double dz= width_z/(num_points-1);
 
-  // std::cout << nx  <<" " << ny  <<" "  << nz << std::endl;
-  // std::cout << dx  <<" " << dy  <<" "  << dz << std::endl;
-
-  // std::exit(-1);
-
-
   kernels::idx2 id_xy(ny,nx);// back front
   kernels::idx2 id_xz(nz,nx);// bottom top
   kernels::idx2 id_yz(nz,ny);//left right
 
 
-  
-  // int i_0 =  (offset_x-0.0)/width_x;
-  // int j_0 =  (offset_y-0.0)/width_y;
-  
-
-  //std::cout<<i_0<<std::endl;
-  //std::cout<<j_0<<std::endl;
-  //std::cout<<std::endl;
-
-  
-  // for(int i = 0 ; i< num_points; i++){
-  //   left_bnd_x[i] =  offset_x;
-  //   right_bnd_x[i] = width_x+offset_x;
-  //   bottom_bnd_x[i] = width_x*dx*i + offset_x;
-  //   top_bnd_x[i] = width_x*dx*i + offset_x;
-
-  //   left_bnd_y[i] = width_y*dy*i + offset_y;
-  //   right_bnd_y[i] = width_y*dy*i + offset_y;
-  //   bottom_bnd_y[i] =offset_y;
-  //   top_bnd_y[i] = width_y+offset_y + 0.0*std::sin(2*pi*top_bnd_x[i]);
-  // }
-
   //top bottom
   for(int k = 0 ; k < nz ; k ++){
     for(int i = 0 ; i < nx ; i ++){
-      //index = id_xz((elt_z*num_points)+k,(elt_x*num_points)+i);
-      
       bottom_bnd_x[id_xz(k,i)] = dx*i;
       bottom_bnd_z[id_xz(k,i)] = dz*k;
       bottom_bnd_y[id_xz(k,i)] = 1;	    
@@ -145,8 +97,6 @@ void getBoundaryCurves3D(int num_points,
   //left right
   for(int k = 0 ; k < nz ; k ++){
     for(int j = 0 ; j < ny ; j ++){
-      //index = id_yz((elt_z*num_points)+k,(elt_y*num_points)+j);
-      
       left_bnd_x[id_xz(k,j)]  = 0;	    
       left_bnd_y[id_xz(k,j)]  = dy*j;
       left_bnd_z[id_xz(k,j)]  = dz*k;
@@ -174,138 +124,6 @@ void getBoundaryCurves3D(int num_points,
     
 }
 
-// void getBoundaryCurves3D(int num_points,
-// 			 double offset_x, double offset_y, double offset_z,
-// 			 double width_x, double width_y , double width_z ,
-// 			 double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
-// 			 double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
-// 			 double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
-// 			 double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
-// 			 double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
-// 			 double* back_bnd_x, double* back_bnd_y, double* back_bnd_z){
-
- 
-  
-//   double pi = 3.14159265359;
-
-//   int num_elt_x=1/width_x;
-//   int num_elt_y=1/width_y;
-//   int num_elt_z=1/width_z;
-
-//   int nx = 1/width_x*num_points;
-//   int ny = 1/width_y*num_points;
-//   int nz = 1/width_z*num_points;  
-  
-//   double dx= width_x/(num_points-1);
-//   double dy= width_y/(num_points-1);
-//   double dz= width_z/(num_points-1);
-
-//   std::cout << nx  <<" " << ny  <<" "  << nz << std::endl;
-//   std::cout << dx  <<" " << dy  <<" "  << dz << std::endl;
-
-
-//   kernels::idx2 id_xy(ny,nx);// back front
-//   kernels::idx2 id_xz(nz,nx);// botton top
-//   kernels::idx2 id_yz(nz,ny);//left right
-
-
-  
-//   // int i_0 =  (offset_x-0.0)/width_x;
-//   // int j_0 =  (offset_y-0.0)/width_y;
-  
-
-//   //std::cout<<i_0<<std::endl;
-//   //std::cout<<j_0<<std::endl;
-//   //std::cout<<std::endl;
-
-  
-//   // for(int i = 0 ; i< num_points; i++){
-//   //   left_bnd_x[i] =  offset_x;
-//   //   right_bnd_x[i] = width_x+offset_x;
-//   //   bottom_bnd_x[i] = width_x*dx*i + offset_x;
-//   //   top_bnd_x[i] = width_x*dx*i + offset_x;
-
-//   //   left_bnd_y[i] = width_y*dy*i + offset_y;
-//   //   right_bnd_y[i] = width_y*dy*i + offset_y;
-//   //   bottom_bnd_y[i] =offset_y;
-//   //   top_bnd_y[i] = width_y+offset_y + 0.0*std::sin(2*pi*top_bnd_x[i]);
-//   // }
-
-//   //top bottom
-//   int index ;
-//   for(int elt_z = 0 ; elt_z< num_elt_z; elt_z++){
-//     for(int elt_x = 0 ; elt_x< num_elt_x; elt_x++){
-//       for(int k = 0 ; k < num_points ; k ++){
-// 	for(int i = 0 ; i < num_points ; i ++){
-// 	  index = id_xz((elt_z*num_points)+k,(elt_x*num_points)+i);
-
-// 	  bottom_bnd_x[index] = width_x*elt_x+dx*i;
-// 	  bottom_bnd_z[index] = width_z*elt_z+dz*k;
-// 	  bottom_bnd_y[index] = 1;	    
-
-// 	  top_bnd_x[index] = width_x*elt_x+dx*i;
-// 	  top_bnd_z[index] = width_z*elt_z+dz*k;
-// 	  top_bnd_y[index] = 0+0.0*std::sin(2*pi*top_bnd_x[index])*std::sin(2*pi*top_bnd_z[index]);
-
-// 	  std::cout
-// 	}
-//       }
-//     }
-//   }
-  
-//   //left right
-//   for(int elt_z = 0 ; elt_z< num_elt_z; elt_z++){
-//     for(int elt_y = 0 ; elt_y< num_elt_y; elt_y++){
-//       for(int k = 0 ; k < num_points ; k ++){
-// 	for(int j = 0 ; j < num_points ; j ++){
-// 	  index = id_yz((elt_z*num_points)+k,(elt_y*num_points)+j);
-
-// 	  left_bnd_x[index]  = 0;	    
-// 	  left_bnd_y[index]  = width_y*elt_y+dy*j;
-// 	  left_bnd_z[index]  = width_z*elt_z+dz*k;
-	  
-// 	  right_bnd_x[index] = 1;
-// 	  right_bnd_y[index] = width_y*elt_y+dy*j;
-// 	  right_bnd_z[index] = width_z*elt_z+dz*k;
-// 	}
-//       }
-//     }
-//   }
-
-//   //front back
-//   for(int elt_y = 0 ; elt_y< num_elt_y; elt_y++){
-//     for(int elt_x = 0 ; elt_x< num_elt_x; elt_x++){
-//       for(int j = 0 ; j < num_points ; j ++){
-// 	for(int i = 0 ; i < num_points ; i ++){
-// 	  index = id_xy((elt_y*num_points)+j,(elt_x*num_points)+i);
-
-// 	  front_bnd_x[index]  = width_x*elt_x+dx*i;
-// 	  front_bnd_y[index]  = width_y*elt_y+dy*j;
-// 	  front_bnd_z[index]  = 0;
-	  
-// 	  back_bnd_x[index] = width_x*elt_x+dx*i;
-// 	  back_bnd_y[index] = width_y*elt_y+dy*j;
-// 	  back_bnd_z[index] = 1;
-// 	}
-//       }
-//     }
-//   }
-
-
-  
-//   // double h0y = (top_bnd_y[0] - bottom_bnd_y[0])/(ny-1);
-//   // double hny = (top_bnd_y[nx-1] - bottom_bnd_y[nx-1])/(ny-1);
-
-//   // for(int i = 0 ; i< ny; i++){
-
-//   //   left_bnd_y[i]  = bottom_bnd_y[0] + h0y*i;
-//   //   right_bnd_y[i] = bottom_bnd_y[nx-1] + hny*i;
-    
-//   // }
-  
-// }
-
-
 void getBoundaryCurves3D_fixedTopFace(int num_points,
 				      double offset_x, double offset_y, double offset_z,
 				      double width_x, double width_y , double width_z ,
@@ -315,8 +133,6 @@ void getBoundaryCurves3D_fixedTopFace(int num_points,
 				      double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
 				      double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
 				      double* back_bnd_x, double* back_bnd_y, double* back_bnd_z){
-
- 
   
   double pi = 3.14159265359;
 
@@ -335,8 +151,6 @@ void getBoundaryCurves3D_fixedTopFace(int num_points,
   kernels::idx2 id_xz(nz,nx); // botton top
   kernels::idx2 id_yz(nz,ny); //left right
   
-  //(0.1*XT+1*sin(4*pi*XT/(xPMax-xPMin)+3.34).*cos(2*pi*(XT/(xPMax-xPMin)-0.5)+33.34))
-
   //given top surface
   for(int k = 0 ; k< nz; k++){  
     for(int i = 0 ; i< nx; i++){
@@ -383,8 +197,6 @@ void getBoundaryCurves3D_fixedTopFace(int num_points,
 
 
 void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
-				      //				      double offset_x, double offset_y, double offset_z,
-				      //				      double width_x, double width_y , double width_z ,
 					       int nx, int ny, int nz, int n,
 					       double width_x, double width_y , double width_z,	      
 					       double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
@@ -413,9 +225,6 @@ void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
   kernels::idx2 id_xz(nz,nx); // botton top
   kernels::idx2 id_yz(nz,ny); // left right
   
-  //(0.1*XT+1*sin(4*pi*XT/(xPMax-xPMin)+3.34).*cos(2*pi*(XT/(xPMax-xPMin)-0.5)+33.34))
-
-
   //given top surface
   for(int k = 0 ; k< nz; k++){  
     for(int i = 0 ; i< nx; i++){
@@ -493,8 +302,6 @@ void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
 
 
 void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
-				      //				      double offset_x, double offset_y, double offset_z,
-				      //				      double width_x, double width_y , double width_z ,
 						    int nx, int ny, int nz, int n,double fault_position,
 						    double width_x, double width_y , double width_z,	      
 						    double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
@@ -561,10 +368,6 @@ void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
       bottom_bnd_y[id_xz(k,i)] = depth;      
       bottom_bnd_z[id_xz(k,i)] = top_bnd_z[id_xz(k,i)];
       bottom_bnd_x[id_xz(k,i)] = top_bnd_x[id_xz(k,i)];
-      // if(n == 0) {
-      // 	std::cout<<bottom_bnd_x[id_xz(k, i)]<<std::endl;
-      // }
-      
     }
   }  
   

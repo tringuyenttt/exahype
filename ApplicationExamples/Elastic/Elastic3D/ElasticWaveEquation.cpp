@@ -418,10 +418,13 @@ void ElasticWaveEquation3D::ElasticWaveEquation::adjustSolution(double *luh,cons
     // luh[id_4(k,j,i,10)]  = 0.0; //c(1)
     // luh[id_4(k,j,i,11)]  = 1.484; //c(2)
 
-    luh[id_4(k,j,i,9)]   = 2.7;   //rho
-    luh[id_4(k,j,i,10)]  = 3.343; //c(1)
-    luh[id_4(k,j,i,11)]  = 6.0; //c(2)
+    // luh[id_4(k,j,i,9)]   = 2.7;   //rho
+    // luh[id_4(k,j,i,10)]  = 3.343; //c(1)
+    // luh[id_4(k,j,i,11)]  = 6.0; //c(2)
 
+    luh[id_4(k,j,i,9)]   = 1.0;   //rho
+    luh[id_4(k,j,i,10)]  = 0.0; //c(1)
+    luh[id_4(k,j,i,11)]  = 1.484; //c(2)
   }
 
   
@@ -701,7 +704,7 @@ void ElasticWaveEquation3D::ElasticWaveEquation::pointSource(const double* const
   double sigma = 0.1149;
   double t0 = 0.1;
   double f = 0.0;
-  double M0 = 0.0;
+  double M0 = 1.0;
 
   if(n == 0){
     f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
