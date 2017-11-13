@@ -317,12 +317,12 @@ void exahype::mappings::Merging::touchVertexFirstTime(
       _localState.getMergeMode()==exahype::records::State::BroadcastAndMergeTimeStepDataAndMergeFaceData) {
     dfor2(pos1)
       dfor2(pos2)
-        if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar)) { // Assumes that we have to valid indices
+        if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) { // Assumes that we have to valid indices
           mergeNeighboursDataAndMetadata(fineGridVertex,pos1,pos1Scalar,pos2,pos2Scalar);
 
           fineGridVertex.setMergePerformed(pos1,pos2,true);
         }
-        if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar)) {
+        if (fineGridVertex.hasToMergeWithBoundaryData(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) {
           mergeWithBoundaryData(fineGridVertex,pos1,pos1Scalar,pos2,pos2Scalar);
 
           fineGridVertex.setMergePerformed(pos1,pos2,true);
@@ -389,7 +389,7 @@ void exahype::mappings::Merging::mergeWithNeighbour(
         int destScalar = TWO_POWER_D - myDestScalar - 1; // "invert" point indices
         int srcScalar  = TWO_POWER_D - mySrcScalar  - 1;
 
-        if (vertex.hasToReceiveMetadata(src,dest,fromRank)) {
+        if (vertex.hasToReceiveMetadata(fromRank,src,dest)) {
           #ifdef Asserts
           logInfo("mergeWithNeighbour(...)","from rank "<<fromRank <<" vertex="<<fineGridX.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
           #endif
