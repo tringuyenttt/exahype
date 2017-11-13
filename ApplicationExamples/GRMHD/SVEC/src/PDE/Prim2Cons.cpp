@@ -5,6 +5,7 @@
 using namespace SVEC;
 
 constexpr bool debug_p2c = false;
+
 #define S(x) printf(#x " = %e\n", x);
 #define SI(x) {DFOR(i) S(x(i)); }
 
@@ -22,6 +23,7 @@ void GRMHD::Prim2ConsRaw::prepare() {
 	BmagVel  = 0; CONTRACT(k)  BmagVel += Bmag.lo(k) *  vel.up(k); // B^j * v_j
 	
 	W = 1. / std::sqrt(1.0 - VelVel); // Lorentz factor
+	
 	if(debug_p2c) { printf("P2C: "); S(W); S(VelVel); }
 
 	// If we store the pressure (as we do currently in ExaHyPE) in the primitive variables, i.e.
@@ -30,6 +32,12 @@ void GRMHD::Prim2ConsRaw::prepare() {
 	epsilon = press / (rho * (gamma-1));
 	// The specific enthalpy including restmass is now independent of the EOS:
 	enth = 1 + epsilon + press / rho;
+	
+	if(debug_p2c) {
+		// compute what c2p rtsafe would give us, for debugging:
+		// RTSAFE gives us x = v^2, y = rho * h * Gamma^2.
+		S(rho*enth*W*W);
+	}
 }
 
 void GRMHD::Prim2ConsRaw::perform() {
@@ -37,6 +45,7 @@ void GRMHD::Prim2ConsRaw::perform() {
 	Dens = rho * W;
 	DFOR(i) Si.lo(i) = Dens*enth*W*vel.lo(i) + BmagBmag*vel.lo(i) - BmagVel*Bmag.lo(i);
 	tau = Dens*(enth*W-1) - press + 0.5*(BmagBmag*(1+VelVel) - BmagVel*BmagVel);
+	// Note: There must be a -1 in (enth*W - 1) in tau. Otherwise it is U = tau + D
 }
 
 void GRMHD::Prim2ConsRaw::copyFullStateVector() {

@@ -68,12 +68,15 @@ constexpr int nSize = 300; // array size
 constexpr int nCheck = 19; // hydro vars
 #define CHECK(A,B) check(#A, A, #B, B)
 #define P(A) ((std::abs(A) < 1e-20) ? 0.0 : A)
-void check(const char* const labelA, const double* const A, const char* const labelB, const double* const B) {
+bool check(const char* const labelA, const double* const A, const char* const labelB, const double* const B) {
+	bool globalDiffer = false;
 	for(int j=0; j<nCheck; j++) {
 		double difference = std::abs(A[j] - B[j]);
 		bool differ = ( difference > eps );
+		if(differ) globalDiffer = true;
 		printf("[%2d]: %s=%15e %s=%15e %s\t(diff=%e)\n", j, labelA, P(A[j]), labelB, P(B[j]), differ ? "differ" : "SAME", difference);
 	}
+	return globalDiffer;
 }
 
 void readArray(double* target, const std::string& text) {
@@ -156,12 +159,12 @@ void cmain_() {
 	for(int i=0; i<N; i++) {
 		x[1] += dx;
 		constexpr bool doC=true;
-		constexpr bool doF=true;
+		constexpr bool doF=false;
 		
 		printf("Generating ID at x=[%f %f %f].\n", x[0], x[1], x[2]);
 		
-		if(doC) AlfenWave id(x,t,VC);
-		if(doF) alfenwave_(x,&t,VF);
+		if(doC) AlfenWave id(x,t,VC); // gives prims
+		if(doF) alfenwave_(x,&t,VF);  // probably gives cons
 		
 		if(doC&&doF) printf("Initial Data (Primitives) from Fortran and C:\n");
 		if(doC&&doF) CHECK(VC, VF);
@@ -187,22 +190,21 @@ void cmain_() {
 		return -1;
 		*/
 		
-		// Do the c2p:
-		if(doF) pdeprim2cons_(QF, VF);
+		// get the fortran cons from the gfortran executable
+		std::string FortCons = " 1.1241719689735967       0.45685025174785676        2.1089451544283881      -0.58620660444159478        2.7714719547653637        1.0000000000000000      -0.96347212472303134       0.26780863481539874        0.0000000000000000        1.0000000000000000        0.0000000000000000        0.0000000000000000        0.0000000000000000        1.0000000000000000        0.0000000000000000        0.0000000000000000        1.0000000000000000        0.0000000000000000        1.0000000000000000";
+		readArray(QF, FortCons);
+		//printf("C vs F cons\n");
+		//CHECK(QC,QF);
+		
+		// Do the c2p
+		//if(doF) pdeprim2cons_(QF, VF);
 		if(doC) GRMHD::Prim2Cons(QC, VC).copyFullStateVector();
 		if(doF) { printf("Compare Fortran PRIM <-> Fortran COONS:\n"); CHECK(QF, VF); }
 		
 		printf("Orig prims and cons:\n");
 		AlfenWaveCons id(x,t,QQC);
 		CHECK(QQC,QC);
-		
-		// get the fortran cons from the gfortran executable
-		/*
-		std::string FortCons = " 1.1241719689735967       0.45685025174785676        2.1089451544283881      -0.58620660444159478        2.7714719547653637        1.0000000000000000      -0.96347212472303134       0.26780863481539874        0.0000000000000000        1.0000000000000000        0.0000000000000000        0.0000000000000000        0.0000000000000000        1.0000000000000000        0.0000000000000000        0.0000000000000000        1.0000000000000000        0.0000000000000000        1.0000000000000000";
-		readArray(QF, FortCons);
-		printf("C vs F cons\n");
-		CHECK(QC,QF);
-		*/
+
 		
 		// do again the comparison
 		if(doC&&doF) printf("Prim2Cons:\n");
