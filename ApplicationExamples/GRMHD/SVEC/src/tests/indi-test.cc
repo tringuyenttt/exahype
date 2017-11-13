@@ -18,7 +18,7 @@
 using namespace std;
 using namespace SVEC;
 
-#include "PDE/GRMHD-for-ExaHyPE.h"
+#include "PDE/PDE-GRMHD-ExaHyPE.h"
 using namespace GRMHD;
 using namespace ExaHyPEAdapter;
 
