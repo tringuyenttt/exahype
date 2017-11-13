@@ -110,8 +110,6 @@ void exahype::mappings::Reinitialisation::endIteration(
         static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
         ==exahype::solvers::LimiterDomainChange::Irregular
     ) {
-      logInfo("endIteration(...)","meshUpdateRequest="<< solver->getMeshUpdateRequest());
-
       static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStep();
       if (!exahype::State::fuseADERDGPhases()) {
         static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
@@ -184,30 +182,28 @@ void exahype::mappings::Reinitialisation::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  if (!vertex.hasToCommunicate(h)) {
-    return;
-  }
-
-  dfor2(dest)
-    dfor2(src)
-      if (vertex.hasToSendMetadata(toRank,src,dest)) {
-        vertex.tryDecrementFaceDataExchangeCountersOfSource(src,dest);
-        if (vertex.hasToSendDataToNeighbour(src,dest)) {
-          sendDataToNeighbour(
-              toRank,src,dest,
-              vertex.getCellDescriptionsIndex()[srcScalar],
-              vertex.getCellDescriptionsIndex()[destScalar],
-              x,level);
-        } else {
-          sendEmptyDataToNeighbour(
-              toRank,src,dest,
-              vertex.getCellDescriptionsIndex()[srcScalar],
-              vertex.getCellDescriptionsIndex()[destScalar],
-              x,level);
+  if (vertex.hasToCommunicate(h)) {
+    dfor2(dest)
+      dfor2(src)
+        if (vertex.hasToSendMetadata(toRank,src,dest)) {
+          vertex.tryDecrementFaceDataExchangeCountersOfSource(src,dest);
+          if (vertex.hasToSendDataToNeighbour(src,dest)) {
+            sendDataToNeighbour(
+                toRank,src,dest,
+                vertex.getCellDescriptionsIndex()[srcScalar],
+                vertex.getCellDescriptionsIndex()[destScalar],
+                x,level);
+          } else {
+            sendEmptyDataToNeighbour(
+                toRank,src,dest,
+                vertex.getCellDescriptionsIndex()[srcScalar],
+                vertex.getCellDescriptionsIndex()[destScalar],
+                x,level);
+          }
         }
-      }
+      enddforx
     enddforx
-  enddforx
+  }
 }
 
 void exahype::mappings::Reinitialisation::sendEmptyDataToNeighbour(

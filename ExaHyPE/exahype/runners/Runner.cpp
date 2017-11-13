@@ -955,14 +955,11 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
 
 void exahype::runners::Runner::updateMeshAndSubdomains(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
-  // 1. All solvers drop their MPI messages
+  // 1. All solvers drop their MPI messages and broadcast time step data
   assertion(repository.getState().getAlgorithmSection()==exahype::records::State::AlgorithmSection::TimeStepping);
-
-  if (fusedTimeStepping) {
-    repository.getState().switchToNeighbourDataDroppingContext();
-    repository.switchToNeighbourDataMerging();
-    repository.iterate(1,false);
-  }
+  repository.getState().switchToNeighbourDataDroppingContext();
+  repository.switchToNeighbourDataMerging(); // TODO(Dominic): Rename to Merging
+  repository.iterate(1,false);
 
   // TODO(Dominic): Try to move AlgorithmSection selection into characteristic mappings
 
