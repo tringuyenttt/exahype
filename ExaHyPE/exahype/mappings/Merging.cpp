@@ -144,34 +144,12 @@ void exahype::mappings::Merging::beginIteration(
       (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
       exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
       &&
-      ( // No synchronous communication for MergeNothing and DropFaceData
-      _localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData)
+      _localState.getMergeMode()!=exahype::records::State::MergeMode::MergeNothing
   ) {
-    exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
-    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
-    DataHeap::getInstance().finishedToSendSynchronousData();
-    MetadataHeap::getInstance().finishedToSendSynchronousData();
-
+    peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
     if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
         exit(-1);
     }
-  }
-
-  if (
-      exahype::State::fuseADERDGPhases()==false
-      &&
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
-      &&
-      (_localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData)
-  ) {
-    exahype::solvers::ADERDGSolver::Heap::getInstance().startToSendSynchronousData();
-    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().startToSendSynchronousData();
-    DataHeap::getInstance().startToSendSynchronousData();
-    MetadataHeap::getInstance().startToSendSynchronousData();
   }
   #endif
 
@@ -197,22 +175,15 @@ void exahype::mappings::Merging::endIteration(
 
   #ifdef Parallel
   if (
-      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
+      (
+        (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch &&
+        _localState.getSendMode()==exahype::records::State::SendMode::SendNothing) ||
+        exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
+      )
       &&
-      ( // No synchronous communication for MergeNothing and DropFaceData
-      _localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData ||
-      _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData)
+      _localState.getMergeMode()!=exahype::records::State::MergeMode::MergeNothing
   ) {
-    exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
-    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
-    DataHeap::getInstance().finishedToSendSynchronousData();
-    MetadataHeap::getInstance().finishedToSendSynchronousData();
-
-    if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
-        exit(-1);
-    }
+    peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
   }
   #endif
 

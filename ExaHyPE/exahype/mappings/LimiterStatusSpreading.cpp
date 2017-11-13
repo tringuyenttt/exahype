@@ -115,20 +115,11 @@ void exahype::mappings::LimiterStatusSpreading::beginIteration(
   }
 
   #ifdef Parallel
-  exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
-  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
-  DataHeap::getInstance().finishedToSendSynchronousData();
+  peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
 
-  MetadataHeap::getInstance().setName("MetadataHeap");
-  MetadataHeap::getInstance().finishedToSendSynchronousData();
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
       exit(-1);
   }
-
-  exahype::solvers::ADERDGSolver::Heap::getInstance().startToSendSynchronousData();
-  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().startToSendSynchronousData();
-  DataHeap::getInstance().startToSendSynchronousData();
-  MetadataHeap::getInstance().startToSendSynchronousData();
   #endif
 }
 
@@ -155,6 +146,8 @@ void exahype::mappings::LimiterStatusSpreading::endIteration(exahype::State& sol
 
   #ifdef Parallel
   exahype::mappings::LimiterStatusSpreading::IsFirstIteration = false;
+
+  peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
   #endif
 }
 
@@ -308,6 +301,7 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
 
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -323,6 +317,8 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
       localCell.getCellDescriptionsIndex(),
       verticesEnumerator.getCellCenter(),
       verticesEnumerator.getLevel());
+
+  peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
 }
 
 void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(

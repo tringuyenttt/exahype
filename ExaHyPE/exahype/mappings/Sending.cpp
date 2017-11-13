@@ -107,25 +107,42 @@ tarch::logging::Log exahype::mappings::Sending::_log(
 
 void exahype::mappings::Sending::beginIteration(
     exahype::State& solverState) {
-  _localState = solverState;
+  if (
+       exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+       exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
+     ) {
+    _localState = solverState;
+  }
 
   #ifdef Parallel
   if (
-      // TODO(Dominic): In theory, only LastIterationOfBatch and NoBatch should be checked. In practice, this is not working.
-      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch ||
+      ((exahype::State::getBatchState()==exahype::State::BatchState::NoBatch &&
+          _localState.getMergeMode()==exahype::State::Records::MergeMode::MergeNothing) ||
       exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
       &&
       _localState.getSendMode()!=exahype::records::State::SendMode::SendNothing
   ) {
-    exahype::solvers::ADERDGSolver::Heap::getInstance().startToSendSynchronousData();
-    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().startToSendSynchronousData();
-    exahype::MetadataHeap::getInstance().startToSendSynchronousData();
-    exahype::DataHeap::getInstance().startToSendSynchronousData();
+    peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
+    if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
+      exit(-1);
+    }
   }
   #endif
 
   logDebug("beginIteration(...)","MergeMode="<<_localState.getMergeMode()<<", SendMode="<<_localState.getSendMode());
+}
+
+
+void exahype::mappings::Sending::endIteration(
+    exahype::State& solverState) {
+  if (
+    (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+    exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+    &&
+    _localState.getSendMode()!=exahype::records::State::SendMode::SendNothing
+  ) {
+    peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
+  }
 }
 
 #if defined(SharedMemoryParallelisation)
@@ -343,6 +360,8 @@ void exahype::mappings::Sending::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
+
   if ( reduceTimeStepData() ) {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->isSending(_localState.getAlgorithmSection())) {
@@ -397,6 +416,8 @@ void exahype::mappings::Sending::prepareSendToMaster(
       }
     } // else  do nothing
   }
+
+  peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
 }
 
 void exahype::mappings::Sending::mergeWithMaster(
@@ -591,11 +612,6 @@ exahype::mappings::Sending::Sending() {
 }
 
 exahype::mappings::Sending::~Sending() {
-  // do nothing
-}
-
-void exahype::mappings::Sending::endIteration(
-    exahype::State& solverState) {
   // do nothing
 }
 
