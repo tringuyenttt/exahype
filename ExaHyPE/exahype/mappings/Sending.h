@@ -93,6 +93,11 @@ public:
    */
   static tarch::multicore::BooleanSemaphore _semaphoreForRestriction;
 
+  /**
+   * TODO(Dominic): Add docu.
+   */
+  bool sendFaceData() const;
+
 #ifdef Parallel
 /**
  * Loop over all the solvers and check

@@ -155,6 +155,17 @@ void exahype::mappings::Sending::mergeWithWorkerThread(
 }
 #endif
 
+bool exahype::mappings::Sending::sendFaceData() const {
+  return
+      (_localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::TimeStepping ||
+      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::LocalRecomputationAllSend ||
+      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend ||
+      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::PredictionRerunAllSend)
+      &&
+      (_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
+      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
+}
+
 void exahype::mappings::Sending::enterCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -162,8 +173,7 @@ void exahype::mappings::Sending::enterCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if (_localState.getSendMode()==exahype::records::State::SendFaceData ||
-      _localState.getSendMode()==exahype::records::State::ReduceAndMergeTimeStepDataAndSendFaceData) {
+  if ( sendFaceData() ) {
     const int numberOfSolvers = static_cast<int>(exahype::solvers::RegisteredSolvers.size());
 
     auto grainSize = peano::datatraversal::autotuning::Oracle::
@@ -180,7 +190,6 @@ void exahype::mappings::Sending::enterCell(
     grainSize.parallelSectionHasTerminated();
   }
 }
-
 
 void exahype::mappings::Sending::leaveCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -203,8 +212,7 @@ void exahype::mappings::Sending::leaveCell(
       if (fineGridElement!=exahype::solvers::Solver::NotFound) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-        if (_localState.getSendMode()==exahype::records::State::SendFaceData ||
-            _localState.getSendMode()==exahype::records::State::ReduceAndMergeTimeStepDataAndSendFaceData) {
+        if ( sendFaceData() ) {
           const int coarseGridElement =
               solver->tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
           if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
@@ -254,12 +262,10 @@ void exahype::mappings::Sending::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  if (!vertex.hasToCommunicate(h)) {
-    return;
-  }
-
-  if (_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
-      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData) {
+  if (
+      vertex.hasToCommunicate(h) &&
+      sendFaceData()
+  ) {
     dfor2(dest)
       dfor2(src)
       if (vertex.hasToSendMetadata(toRank,src,dest)) {
@@ -373,7 +379,10 @@ void exahype::mappings::Sending::prepareSendToMaster(
     }
   }
 
-  if ( reduceFaceData() ) {
+  if (
+      sendFaceData() &&
+      reduceFaceData()
+  ) {
     if (localCell.isInside() && localCell.isInitialised()) {
       exahype::sendMasterWorkerCommunicationMetadata(
           tarch::parallel::NodePool::getInstance().getMasterRank(),
@@ -443,7 +452,10 @@ void exahype::mappings::Sending::mergeWithMaster(
     }
   }
 
-  if ( reduceFaceData() ) {
+  if (
+      sendFaceData() &&
+      reduceFaceData()
+  ) {
     // TODO(Dominic): Add to docu, we only know from the worker grid cell if it is inside.
     // I encountered a problem where workerGridCell.isInside() != fineGridCell.isInside()
     if (workerGridCell.isInside() && fineGridCell.isInitialised()) {
@@ -511,6 +523,7 @@ bool exahype::mappings::Sending::prepareSendToWorker(
   bool workerHasToSendDataToMaster = false;
 
   if (
+    sendFaceData() &&
     reduceFaceData() &&
     fineGridCell.isInside()
   ) {
