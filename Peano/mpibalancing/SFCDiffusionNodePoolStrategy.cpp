@@ -97,14 +97,16 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
     break;
     default: // we give out secondary notes
     {
-      updateStrategyState();
       #ifdef Parallel
       // get the messages out of the system
-      while (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
-        tarch::parallel::messages::WorkerRequestMessage message;
-        message.receive(MPI_ANY_SOURCE,_tag, true, SendAndReceiveLoadBalancingMessagesBlocking);
-        queue.push_back( message );
+      if (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
+        while (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
+          tarch::parallel::messages::WorkerRequestMessage message;
+          message.receive(MPI_ANY_SOURCE,_tag, true, SendAndReceiveLoadBalancingMessagesBlocking);
+          queue.push_back( message );
+        }
       }
+      else updateStrategyState();
       #endif
       queue = sortRequestQueue( queue );
     }
@@ -618,6 +620,7 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::haveReservedSecondaryRank(int m
     "reserve rank " << workerRank << " for master " << masterRank
   );
 
+  bool haveIncreasedSomePriorities = false;
   for (auto& p: _priorities) {
     if ( p.first/_mpiRanksPerNode == workerRank/_mpiRanksPerNode) {
       p.second._priority += 1.1;
@@ -625,7 +628,21 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::haveReservedSecondaryRank(int m
         "haveReservedSecondaryRank(int,int)",
         "increase priority of node " << (p.first) << " to " << p.second._priority
       );
+      haveIncreasedSomePriorities = true;
     }
+  }
+
+  if (!haveIncreasedSomePriorities) {
+    logInfo( "haveReservedSecondaryRank(int,int)",
+      "no request from node of new worker rank " << workerRank << " booked yet. Insert dummy" );
+    DeploymentPriority priority;
+    priority._maxNumberOfSecondaryRanksToBeDeployed = 1;
+    priority._priority = 1.1; 
+
+    for (int r=0; r<_mpiRanksPerNode/_primaryMPIRanksPerNode; r++) {
+      _priorities.insert( std::pair<int,DeploymentPriority>(workerRank / _mpiRanksPerNode+r,priority) );
+      _priorities.insert( std::pair<int,DeploymentPriority>(workerRank / _mpiRanksPerNode-r+_mpiRanksPerNode,priority) );
+    }    
   }
 }
 
