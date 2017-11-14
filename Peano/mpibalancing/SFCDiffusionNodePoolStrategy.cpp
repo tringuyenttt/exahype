@@ -86,20 +86,8 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
           "fillWorkerRequestQueue(RequestQueue)",
           "have " << totalNumberOfRequestedWorkers <<
           " worker requests but only " << getNumberOfIdlePrimaryRanks() <<
-          " primary node(s), i.e. code is running out of idle nodes. Start to deploy secondary nodes. Don't wait for further requests as" <<
-          " queue size exceeds number of available ranks=" <<
-          ((static_cast<int>(queue.size()) < getNumberOfRegisteredNodes()-getNumberOfIdleNodes())) << ", or node pool server ran into timeout=" <<
-          (clock() < waitTimeoutTimeStamp)
+          " primary node(s), i.e. code is running out of idle nodes. Start to deploy secondary nodes"
         );
-        std::clock_t waitTimeoutTimeStamp = clock() + static_cast<std::clock_t>(std::floor(_waitTimeOut * CLOCKS_PER_SEC));
-        while ( clock() < waitTimeoutTimeStamp ) {
-          while (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
-            tarch::parallel::messages::WorkerRequestMessage message;
-            message.receive(MPI_ANY_SOURCE,_tag, true, SendAndReceiveLoadBalancingMessagesBlocking);
-            queue.push_back( message );
-            waitTimeoutTimeStamp = clock() + static_cast<std::clock_t>(std::floor(_waitTimeOut * CLOCKS_PER_SEC));
-          }
-        }
         buildUpPriorityMap(queue);
         queue = sortRequestQueue( queue );
       }
@@ -489,7 +477,7 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::deployIdlePrimaryRank(int forMas
   logInfo(
     "deployIdlePrimaryRank(int)",
     "can't serve request from rank " << forMaster << " with the constraint of " <<
-    _numberOfPrimaryRanksPerNodeThatAreCurrentlyDeployed << " primary ranks per node. Fallback to all primary ranks"
+    _numberOfPrimaryRanksPerNodeThatAreCurrentlyDeployed << " primary ranks per node that should currently be deployed. Fallback to all primary ranks"
   );
 
   // Fallback
@@ -567,6 +555,11 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::reserveNode(int forMaster) {
     static_cast<int>(_nodePoolState) >static_cast<int>(NodePoolState::DeployingAlsoSecondaryRanksLastSweep)
   ) {
     _nodePoolState = static_cast<NodePoolState>( static_cast<int>(_nodePoolState)-1 );
+    logInfo("reserveNode(int)",
+      "reduce internal state to " << static_cast<int>(_nodePoolState) <<
+      " with DeployingAlsoSecondaryRanksFirstSweep=" << static_cast<int>(NodePoolState::DeployingAlsoSecondaryRanksFirstSweep) <<
+      " and DeployingAlsoSecondaryRanksLastSweep=" << static_cast<int>(NodePoolState::DeployingAlsoSecondaryRanksLastSweep)
+    )
   }
 
   switch (_nodePoolState) {
@@ -582,6 +575,10 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::reserveNode(int forMaster) {
       break;
     case NodePoolState::DeployingAlsoSecondaryRanksLastSweep:
       _nodePoolState = NodePoolState::NoNodesLeft;
+      logInfo(
+        "reserveNode(int)",
+        "switch to NoNodesLeft state"
+      );
       return deployIdleSecondaryRank(forMaster);
     default:
       return deployIdleSecondaryRank(forMaster);
