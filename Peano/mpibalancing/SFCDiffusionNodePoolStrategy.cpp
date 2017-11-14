@@ -98,6 +98,14 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
     default: // we give out secondary notes
     {
       updateStrategyState();
+      #ifdef Parallel
+      // get the messages out of the system
+      while (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
+        tarch::parallel::messages::WorkerRequestMessage message;
+        message.receive(MPI_ANY_SOURCE,_tag, true, SendAndReceiveLoadBalancingMessagesBlocking);
+        queue.push_back( message );
+      }
+      #endif
       queue = sortRequestQueue( queue );
     }
     break;
