@@ -152,9 +152,42 @@ bool exahype::solvers::FiniteVolumesSolver::isSending(
       section==exahype::records::State::AlgorithmSection::LocalRecomputationAllSend;
 }
 
-bool exahype::solvers::FiniteVolumesSolver::isUsingSharedMappings(
+bool exahype::solvers::FiniteVolumesSolver::isComputingTimeStepSize(
     const exahype::records::State::AlgorithmSection& section) const {
-  return section==exahype::records::State::AlgorithmSection::TimeStepping;
+  bool result = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
+      result |= getMeshUpdateRequest();
+      break;
+    default:
+      break;
+  }
+
+  return false;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isMerging(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return
+      section==exahype::records::State::AlgorithmSection::TimeStepping ||
+      section==exahype::records::State::AlgorithmSection::PredictionRerunAllSend;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isBroadcasting(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return
+      section==exahype::records::State::AlgorithmSection::TimeStepping;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isPerformingPrediction(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return false;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isMergingMetadata(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return false;
 }
 
 void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(

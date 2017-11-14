@@ -945,11 +945,12 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
 void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository& repository) {
   // We refine here using the previous solution (which is valid)
   logInfo("initialiseMesh(...)","create initial grid");
-  repository.getState().setAlgorithmSection(exahype::records::State::TimeStepping);
-
+  repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::MeshRefinement);
   repository.getState().switchToUpdateMeshContext();
   createMesh(repository);
+
   logInfo("initialiseMesh(...)","finalise mesh refinement and compute first time step size");
+  repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation);
   repository.getState().switchToTimeStepSizeComputationContext();
   repository.switchToFinaliseMeshRefinementAndTimeStepSizeComputation();
   repository.iterate();
@@ -1004,8 +1005,12 @@ void exahype::runners::Runner::updateMeshAndSubdomains(
     repository.iterate(1,false);
 
     // 4. Perform a local recomputation of the solution of the solvers that requested one.
-    // Perform a time
-    if (!exahype::solvers::Solver::oneSolverRequestedMeshUpdate() &&
+    // Perform a time step size computation for all other solvers that
+    // requested a global recomputation or a simple mesh refinement
+    // If we are running fused time stepping and only a local recomputation
+    // was requested by a solver, let all solvers send out data
+    if (fusedTimeStepping &&
+        !exahype::solvers::Solver::oneSolverRequestedMeshUpdate() &&
         !exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
       repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::LocalRecomputationAllSend);
     }

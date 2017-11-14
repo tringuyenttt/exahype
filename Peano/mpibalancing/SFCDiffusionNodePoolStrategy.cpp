@@ -69,8 +69,6 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
          (static_cast<int>(queue.size()) < getNumberOfRegisteredNodes()-getNumberOfIdleNodes()) &&
          (clock() < waitTimeoutTimeStamp);
       }
-      #endif
-
 
       int totalNumberOfRequestedWorkers = 0;
       for (auto m: queue) {
@@ -94,6 +92,7 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
       else if (totalNumberOfRequestedWorkers>0) {
         configureForPrimaryRanksDelivery(totalNumberOfRequestedWorkers);
       }
+      #endif
     }
     break;
     default: // we give out secondary notes
