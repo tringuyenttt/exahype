@@ -138,7 +138,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       tarch::parallel::NodePool::getInstance().setStrategy(
         new mpibalancing::SFCDiffusionNodePoolStrategy(ranksPerNode,primaryRanksPerNode)
       );
-      logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
+      logInfo("initDistributedMemoryConfiguration()",
+        "load balancing relies on an sfc-diffusion answering strategy with " << ranksPerNode <<
+        " rank(s) per node while " << primaryRanksPerNode << " rank(s) per node are primary ranks" );
     }
     else {
       logError("initDistributedMemoryConfiguration()", "no valid load balancing answering strategy specified");

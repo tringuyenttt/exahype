@@ -282,7 +282,9 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::addNode(const tarch::parallel::
   logInfo( 
     "addNode(...)", 
     "added " << _nodes[node.getSenderRank()].toString() << 
-    " as is-primary-rank=" << isPrimaryMPIRank(node.getSenderRank())
+    " as is-primary-rank=" << isPrimaryMPIRank(node.getSenderRank()) <<
+    ". Primary MPI ranks per node=" << _primaryMPIRanksPerNode <<
+    ", MPI ranks per node=" << _mpiRanksPerNode
   );
 
   logTraceOutWith1Argument( "addNode(...)", _nodes[node.getSenderRank()].toString() );
