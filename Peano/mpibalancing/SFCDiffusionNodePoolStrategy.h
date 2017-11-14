@@ -148,17 +148,18 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
        * Standard mode. As soon as we run out of primary nodes, we switch it to
        * DeployingAlsoSecondaryRanks.
        */
-      DeployingIdlePrimaryRanks,
+      DeployingIdlePrimaryRanks=11,
       /**
-       * If this flag is set, we also deploy secondary nodes. However, as soon
-       * as our request queue is empty, i.e. as soon as we have answered one
-       * batch of requests, we switch into NoNodesLeft.
+       * If this flag is set, we also deploy secondary nodes for a fixed number
+       * of sweeps. Afterwards (or as soon as absolutely no entries are left 
+       * anymore), we switch into NoNodesLeft.
        */
-      DeployingAlsoSecondaryRanks,
+      DeployingAlsoSecondaryRanksFirstSweep=10,
+      DeployingAlsoSecondaryRanksLastSweep=1,
       /**
        * We do not hand out any nodes anymore.
        */
-      NoNodesLeft
+      NoNodesLeft=0
     };
 
 
