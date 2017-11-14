@@ -108,7 +108,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         ranksPerNode = 1;
       }
       tarch::parallel::NodePool::getInstance().setStrategy(
-        new mpibalancing::FairNodePoolStrategy(ranksPerNode)
+        new mpibalancing::FairNodePoolStrategy(ranksPerNode,1,_parser.getNodePoolAnsweringTimeout())
       );
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
     }
@@ -136,7 +136,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         primaryRanksPerNode = 1;
       }
       tarch::parallel::NodePool::getInstance().setStrategy(
-        new mpibalancing::SFCDiffusionNodePoolStrategy(ranksPerNode,primaryRanksPerNode)
+        new mpibalancing::SFCDiffusionNodePoolStrategy(ranksPerNode,primaryRanksPerNode,_parser.getNodePoolAnsweringTimeout())
       );
       logInfo("initDistributedMemoryConfiguration()",
         "load balancing relies on an sfc-diffusion answering strategy with " << ranksPerNode <<

@@ -101,7 +101,10 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
           "fillWorkerRequestQueue(RequestQueue)",
           "have " << totalNumberOfRequestedWorkers <<
           " worker requests but only " << getNumberOfIdlePrimaryRanks() <<
-          " primary node(s), i.e. code is running out of idle nodes. Start to deploy secondary nodes"
+          " primary node(s), i.e. code is running out of idle nodes. Start to deploy secondary nodes. Don't wait for further requests as" <<
+          " no idle nodes remain=" << hasIdleNode(-1) << ", as queue size exceeds number of available ranks=" <<
+          ((static_cast<int>(queue.size())+1 < getNumberOfRegisteredNodes()-getNumberOfIdleNodes())) << ", or node pool server ran into timeout=" <<
+          (clock() < waitTimeoutTimeStamp)
         );
         buildUpPriorityMap(queue);
         queue = sortRequestQueue( queue );
@@ -357,13 +360,13 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::setNodeIdle( int rank ) {
   _nodes[rank].deActivate();
   if (isPrimaryMPIRank(rank)) {
     if (_nodePoolState==NodePoolState::NoNodesLeft) {
-      logInfo( "setNodeIdle(int)", "reset node pool state to DeployingIdlePrimaryRanks" );
+      logInfo( "setNodeIdle(int)", "reset node pool state to DeployingIdlePrimaryRanks as rank " << rank << " registered as idle" );
       _nodePoolState = NodePoolState::DeployingIdlePrimaryRanks;
     }
   }
   else if (_nodePoolState == NodePoolState::NoNodesLeft) {
     if (_nodePoolState==NodePoolState::NoNodesLeft) {
-      logInfo( "setNodeIdle(int)", "reset node pool state to DeployingAlsoSecondaryRanks" );
+      logInfo( "setNodeIdle(int)", "reset node pool state to DeployingAlsoSecondaryRanks as rank " << rank << " registered as idle" );
       _nodePoolState = NodePoolState::DeployingAlsoSecondaryRanks;
     }
   }
@@ -486,8 +489,8 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::deployIdlePrimaryRank(int forMas
 
   logInfo(
     "deployIdlePrimaryRank(int)",
-    "can't serve request from rank " << forMaster << " with constraint " <<
-    _numberOfPrimaryRanksPerNodeThatAreCurrentlyDeployed << " of primary ranks per node. Fallback to all primary ranks"
+    "can't serve request from rank " << forMaster << " with the constraint of " <<
+    _numberOfPrimaryRanksPerNodeThatAreCurrentlyDeployed << " primary ranks per node. Fallback to all primary ranks"
   );
 
   // Fallback
