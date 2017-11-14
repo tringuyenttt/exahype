@@ -168,6 +168,7 @@ void exahype::mappings::GlobalRollback::enterCell(
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
 
+#ifdef Parallel
 void exahype::mappings::GlobalRollback::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
@@ -181,14 +182,11 @@ void exahype::mappings::GlobalRollback::mergeWithNeighbour(
   logTraceOut("mergeWithNeighbour(...)");
 }
 
-
 //
 // Below all methods are nop.
 //
 //===================================
 
-
-#ifdef Parallel
 void exahype::mappings::GlobalRollback::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
