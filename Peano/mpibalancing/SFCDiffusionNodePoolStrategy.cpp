@@ -182,10 +182,14 @@ mpibalancing::SFCDiffusionNodePoolStrategy::RequestQueue mpibalancing::SFCDiffus
   // sort
   result.sort(
     [&](const tarch::parallel::messages::WorkerRequestMessage & a, const tarch::parallel::messages::WorkerRequestMessage & b) {
-      return _priorities[a.getSenderRank()]._priority > _priorities[b.getSenderRank()]._priority;
+      return 
+        _priorities.count(a.getSenderRank())==0
+        ||
+        _priorities.count(b.getSenderRank())==0
+        ||
+        _priorities[a.getSenderRank()]._priority > _priorities[b.getSenderRank()]._priority;
     }
   );
-//  #endif // TODO @Tobias: please check if this is fine
 
   assertionEquals( result.size(), queue.size() );
 
@@ -193,9 +197,15 @@ mpibalancing::SFCDiffusionNodePoolStrategy::RequestQueue mpibalancing::SFCDiffus
     "sortRequestQueue(RequestQueue)",
     "(re-)sorted request queue. New first element is now "
     << (result.begin()->toString()) << " from rank " <<
-    (result.begin()->getSenderRank()) << " with a priority of " <<
-    _priorities[result.begin()->getSenderRank()]._priority
+    (result.begin()->getSenderRank()) 
   );
+
+  if ( _priorities.count(result.begin()->getSenderRank())==0 ) {
+    logInfo( "sortRequestQueue(RequestQueue)", "no priority entry exists for this rank. All requests will be rejected" );
+  }
+  else {
+    logInfo("sortRequestQueue(RequestQueue)", "corresponding priority is " << _priorities[result.begin()->getSenderRank()]._priority );
+  }
   #endif
 
   return result;
@@ -519,7 +529,7 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::deployIdleSecondaryRank(int forM
     const int relativeMasterRank = forMaster % _mpiRanksPerNode;
     const int SearchRange = _mpiRanksPerNode<=2 ? 2 : std::max( relativeMasterRank, _mpiRanksPerNode - relativeMasterRank );
 
-    for (int i=0; i< SearchRange; i++) {
+    for (int i=0; i< SearchRange*2; i++) {
       const int rank = forMaster + i/2*sign;
 
       if (
@@ -538,11 +548,11 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::deployIdleSecondaryRank(int forM
 
       sign = -sign;
     }
+    logInfo(
+      "deployIdleSecondaryRank(int)",
+      "can't serve " << forMaster << " as no free nodes found. Searched a range of " << SearchRange << " without success"
+    );
   }
-  logInfo(
-    "deployIdleSecondaryRank(int)",
-    "can't serve " << forMaster
-  );
   return tarch::parallel::NodePool::NoFreeNodesMessage;
 }
 
