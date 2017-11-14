@@ -807,64 +807,107 @@ void exahype::solvers::ADERDGSolver::initSolver(
 
 bool exahype::solvers::ADERDGSolver::isSending(
     const exahype::records::State::AlgorithmSection& section) const {
-  bool isSending = false;
+  bool isUsingSending = false;
 
   switch (section) {
     case exahype::records::State::AlgorithmSection::TimeStepping:
-      isSending = true;
-      break;
-    case exahype::records::State::AlgorithmSection::LimiterStatusSpreading:
-      isSending = false;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinement:
-      isSending = getMeshUpdateRequest();
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputation:
-      isSending = getMeshUpdateRequest();
-      break;
+    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
     case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-      isSending = true;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isSending = getMeshUpdateRequest();
-      break;
     case exahype::records::State::AlgorithmSection::LocalRecomputationAllSend:
-      isSending = true;
-      break;
-    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isSending = true;
-  }
-
-  return isSending;
-}
-
-bool exahype::solvers::ADERDGSolver::isUsingSharedMappings(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isUsingSharedMappings = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-      isUsingSharedMappings = true;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputation:
-      isUsingSharedMappings = getMeshUpdateRequest();
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-      isUsingSharedMappings = getMeshUpdateRequest();
+      isUsingSending = true;
       break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isUsingSharedMappings = getMeshUpdateRequest();
-      break;
-    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isUsingSharedMappings = getStabilityConditionWasViolated();
+      isUsingSending |= getMeshUpdateRequest();
       break;
     default:
       break;
   }
 
-  return isUsingSharedMappings;
+  return isUsingSending;
 }
 
+bool exahype::solvers::ADERDGSolver::isComputingTimeStepSize(
+    const exahype::records::State::AlgorithmSection& section) const {
+  bool isUsingSharedMapping = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
+      isUsingSharedMapping |= getMeshUpdateRequest();
+      break;
+    default:
+      break;
+  }
+
+  return isUsingSharedMapping;
+}
+
+bool exahype::solvers::ADERDGSolver::isMerging(
+    const exahype::records::State::AlgorithmSection& section) const {
+  bool isUsingMerging = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::TimeStepping:
+    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
+      isUsingMerging = true; // every solver drops neighbour data here
+      break;
+    default:
+      break;
+  }
+
+  return isUsingMerging;
+}
+
+bool exahype::solvers::ADERDGSolver::isBroadcasting(
+    const exahype::records::State::AlgorithmSection& section) const {
+  bool isUsingBroadcastAndMergeTimeStepData = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::TimeStepping:
+      isUsingBroadcastAndMergeTimeStepData = true;
+      break;
+    case exahype::records::State::AlgorithmSection::MeshRefinement:
+      isUsingBroadcastAndMergeTimeStepData |= getMeshUpdateRequest();
+      break;
+    default:
+      break;
+  }
+
+  return isUsingBroadcastAndMergeTimeStepData;
+}
+
+bool exahype::solvers::ADERDGSolver::isPerformingPrediction(
+    const exahype::records::State::AlgorithmSection& section) const {
+  bool isUsingPrediction = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::TimeStepping:
+      isUsingPrediction = true;
+      break;
+    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
+      isUsingPrediction = getStabilityConditionWasViolated();
+      break;
+    default:
+      break;
+  }
+
+  return isUsingPrediction;
+}
+
+bool exahype::solvers::ADERDGSolver::isMergingMetadata(
+    const exahype::records::State::AlgorithmSection& section) const {
+  bool isMergingMetadata = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::MeshRefinement:
+      isMergingMetadata = getMeshUpdateRequest();
+      break;
+    default:
+      break;
+  }
+
+  return isMergingMetadata;
+}
 
 void exahype::solvers::ADERDGSolver::initFusedSolverTimeStepSizes() {
   setPreviousMinCorrectorTimeStepSize(getMinPredictorTimeStepSize());

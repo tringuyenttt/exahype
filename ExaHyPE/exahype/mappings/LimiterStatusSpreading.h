@@ -61,6 +61,12 @@ private:
    */
   exahype::solvers::SolverFlags _solverFlags;
 
+  /**
+   * \return true if we need to perform limiter status spreading
+   * for this solver.
+   */
+  static bool spreadLimiterStatus(exahype::solvers::Solver* solver);
+
 public:
   #ifdef Parallel
   /**

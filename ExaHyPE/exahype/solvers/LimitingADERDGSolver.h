@@ -523,8 +523,11 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
 
   bool isSending(const exahype::records::State::AlgorithmSection& section) const override;
-
-  bool isUsingSharedMappings(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isComputingTimeStepSize(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isBroadcasting(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isMerging(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const override;
 
   void synchroniseTimeStepping(
           const int cellDescriptionsIndex,

@@ -1042,10 +1042,9 @@ class exahype::solvers::Solver {
    *
    * All mappings introduced for a specific job, e.g. limiting, mesh refinement etc.,
    * do not rely on this method. It is used only for mappings which are shared by different
-   * algorithm sections.
-   * These are
-   * BroadcastAndMergeTimeStepData, Merging, Prediction, StatusSpreading, and
-   * TimeStepSizeComputation.
+   * algorithm sections. These are
+   * BroadcastAndMergeTimeStepData, Merging, Prediction, and TimeStepSizeComputation,
+   * MeshRefinement (+FinaliseMeshRefinement)
    *
    * E.g. a time step size computation via mapping TimeStepSizeComputation is required in
    * algorithm section "LocalRecomputationAllSend" for all solvers which
@@ -1054,7 +1053,19 @@ class exahype::solvers::Solver {
    * a local recomputation.
    *
    */
-  virtual bool isUsingSharedMappings(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isBroadcasting(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isComputingTimeStepSize(const exahype::records::State::AlgorithmSection& section) const = 0;
+  /**
+   * \return true if this solvers is using the Merging mapping functionalities
+   * like broadcasting time step data or merging neighbour data in the
+   * current algorithm section.
+   */
+  virtual bool isMerging(const exahype::records::State::AlgorithmSection& section) const = 0;
+  /**
+   * \return true if this solver needs to merge metadata only(!) in the current algorithm section.
+   */
+  virtual bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const = 0;
 
   /**
    * Copies the time stepping data from the global solver onto the patch's time
