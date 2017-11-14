@@ -154,6 +154,16 @@ bool exahype::solvers::FiniteVolumesSolver::isSending(
 
 bool exahype::solvers::FiniteVolumesSolver::isComputingTimeStepSize(
     const exahype::records::State::AlgorithmSection& section) const {
+  bool result = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
+      result |= getMeshUpdateRequest();
+      break;
+    default:
+      break;
+  }
+
   return false;
 }
 
