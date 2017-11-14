@@ -257,6 +257,14 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
 
     int deployIdlePrimaryRank(int forMaster);
     int deployIdleSecondaryRank(int forMaster);
+    
+    /**
+     * If no ranks are available or we are still giving out primary ranks, then 
+     * this operation becomes nop. If we are however already deploying 
+     * secondary ranks, then this routine decrements the internal state such 
+     * that it eventually becomes "nothing left".
+     */
+    void updateStrategyState();
   public:
     /**
      * Constructor

@@ -97,16 +97,8 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
     break;
     default: // we give out secondary notes
     {
-      if (getNumberOfIdleNodes()==0) {
-        logInfo(
-          "fillWorkerRequestQueue(RequestQueue)",
-          "running out of secondary ranks, too. Stop to deliver MPI ranks"
-        );
-        _nodePoolState = NodePoolState::NoNodesLeft;
-      }
-      else {
-        queue = sortRequestQueue( queue );
-      }
+      updateStrategyState();
+      queue = sortRequestQueue( queue );
     }
     break;
   }
@@ -547,20 +539,30 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::deployIdleSecondaryRank(int forM
 }
 
 
-int mpibalancing::SFCDiffusionNodePoolStrategy::reserveNode(int forMaster) {
+void mpibalancing::SFCDiffusionNodePoolStrategy::updateStrategyState() {
   if (
     static_cast<int>(_nodePoolState)<=static_cast<int>(NodePoolState::DeployingAlsoSecondaryRanksFirstSweep)
     &&
     static_cast<int>(_nodePoolState) >static_cast<int>(NodePoolState::DeployingAlsoSecondaryRanksLastSweep)
   ) {
     _nodePoolState = static_cast<NodePoolState>( static_cast<int>(_nodePoolState)-1 );
-    logInfo("reserveNode(int)",
+    logInfo("updateStrategyState()",
       "reduce internal state to " << static_cast<int>(_nodePoolState) <<
       " with DeployingAlsoSecondaryRanksFirstSweep=" << static_cast<int>(NodePoolState::DeployingAlsoSecondaryRanksFirstSweep) <<
       " and DeployingAlsoSecondaryRanksLastSweep=" << static_cast<int>(NodePoolState::DeployingAlsoSecondaryRanksLastSweep)
-    )
+    );
+    if (getNumberOfIdleNodes()==0) {
+      logInfo(
+        "updateStrategyState()",
+        "running out of secondary ranks, too. Stop to deliver MPI ranks"
+      );
+      _nodePoolState = NodePoolState::NoNodesLeft;
+    }
   }
+}
 
+
+int mpibalancing::SFCDiffusionNodePoolStrategy::reserveNode(int forMaster) {
   switch (_nodePoolState) {
     case NodePoolState::DeployingIdlePrimaryRanks:
       return deployIdlePrimaryRank(forMaster);
