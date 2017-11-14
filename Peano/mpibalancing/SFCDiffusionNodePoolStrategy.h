@@ -273,6 +273,15 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
      * Here's the magic to get the balancing right.
      */
     tarch::parallel::messages::WorkerRequestMessage extractElementFromRequestQueue(RequestQueue& queue) override;
+    
+    /**
+     * Wait strategy for DeployingIdlePrimaryRanks:
+     * 
+     * In this mode, hasIdleNodes returns true iff there are still primary 
+     * nodes available. Compared to the fair strategy, we thus may not stop
+     * immediately if we have more requests than primary nodes. We might 
+     * skip the waits too early - way too early.
+     */
     void fillWorkerRequestQueue(RequestQueue& queue) override;
     void addNode(const tarch::parallel::messages::RegisterAtNodePoolMessage& node ) override;
     void removeNode( int rank ) override;
