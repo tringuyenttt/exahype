@@ -105,6 +105,15 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
           ((static_cast<int>(queue.size()) < getNumberOfRegisteredNodes()-getNumberOfIdleNodes())) << ", or node pool server ran into timeout=" <<
           (clock() < waitTimeoutTimeStamp)
         );
+        std::clock_t waitTimeoutTimeStamp = clock() + static_cast<std::clock_t>(std::floor(_waitTimeOut * CLOCKS_PER_SEC));
+        while ( clock() < waitTimeoutTimeStamp ) {
+          while (tarch::parallel::messages::WorkerRequestMessage::isMessageInQueue(_tag, true)) {
+            tarch::parallel::messages::WorkerRequestMessage message;
+            message.receive(MPI_ANY_SOURCE,_tag, true, SendAndReceiveLoadBalancingMessagesBlocking);
+            queue.push_back( message );
+            waitTimeoutTimeStamp = clock() + static_cast<std::clock_t>(std::floor(_waitTimeOut * CLOCKS_PER_SEC));
+          }
+        }
         buildUpPriorityMap(queue);
         queue = sortRequestQueue( queue );
       }
