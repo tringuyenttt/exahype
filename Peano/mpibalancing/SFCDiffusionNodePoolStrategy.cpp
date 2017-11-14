@@ -80,7 +80,7 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
         }
 
        continueToWait =
-         (static_cast<int>(queue.size())+1 < getNumberOfRegisteredNodes()-getNumberOfIdleNodes()) &&
+         (static_cast<int>(queue.size()) < getNumberOfRegisteredNodes()-getNumberOfIdleNodes()) &&
          (clock() < waitTimeoutTimeStamp);
       }
       #endif
@@ -102,7 +102,7 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
           " worker requests but only " << getNumberOfIdlePrimaryRanks() <<
           " primary node(s), i.e. code is running out of idle nodes. Start to deploy secondary nodes. Don't wait for further requests as" <<
           " queue size exceeds number of available ranks=" <<
-          ((static_cast<int>(queue.size())+1 < getNumberOfRegisteredNodes()-getNumberOfIdleNodes())) << ", or node pool server ran into timeout=" <<
+          ((static_cast<int>(queue.size()) < getNumberOfRegisteredNodes()-getNumberOfIdleNodes())) << ", or node pool server ran into timeout=" <<
           (clock() < waitTimeoutTimeStamp)
         );
         buildUpPriorityMap(queue);
