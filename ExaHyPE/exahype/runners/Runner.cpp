@@ -187,7 +187,8 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logInfo("initDistributedMemoryConfiguration()", "use global hotspot elimination without joins (mpibalancing/StaticBalancing)");
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
-                false,getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize)+1 /*boundary regularity*/
+                false,getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize)+1, /*boundary regularity*/
+                peano::parallel::Node::getInstance().getNumberOfRanks()/THREE_POWER_D
           )
         );
         break;
