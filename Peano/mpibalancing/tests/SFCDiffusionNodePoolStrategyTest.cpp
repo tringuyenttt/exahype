@@ -194,7 +194,7 @@ void mpibalancing::tests::SFCDiffusionNodePoolStrategyTest::testSecondaryNodeDel
 
   SFCDiffusionNodePoolStrategy::RequestQueue originalRequestQueue = createQueueTriggeredByWorkersOfFirstWorkerWith4Nodes();
 
-  myStrategy._nodePoolState = mpibalancing::SFCDiffusionNodePoolStrategy::NodePoolState::DeployingAlsoSecondaryRanks;
+  myStrategy._nodePoolState = mpibalancing::SFCDiffusionNodePoolStrategy::NodePoolState::DeployingAlsoSecondaryRanksFirstSweep;
 
   myStrategy.buildUpPriorityMap(originalRequestQueue);
   SFCDiffusionNodePoolStrategy::RequestQueue sortedRequestQueue = myStrategy.sortRequestQueue( originalRequestQueue );

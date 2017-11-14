@@ -39,20 +39,6 @@ mpibalancing::SFCDiffusionNodePoolStrategy::~SFCDiffusionNodePoolStrategy() {
 
 void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQueue& queue) {
   switch (_nodePoolState) {
-    case NodePoolState::DeployingAlsoSecondaryRanks:
-    {
-      if (queue.empty()) {
-        logInfo(
-          "fillWorkerRequestQueue(RequestQueue)",
-          "running out of ranks. Answered all pending MPI questions before but new requests keep on dropping in. Stop to deliver MPI ranks"
-        );
-        _nodePoolState = NodePoolState::NoNodesLeft;
-      }
-      else {
-        queue = sortRequestQueue( queue );
-      }
-    }
-    break;
     case NodePoolState::NoNodesLeft:
     {
       #ifdef Parallel
@@ -93,7 +79,7 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
         &&
         !hasCompleteIdleNode()
       ) {
-        _nodePoolState = NodePoolState::DeployingAlsoSecondaryRanks;
+        _nodePoolState = NodePoolState::DeployingAlsoSecondaryRanksFirstSweep;
         logInfo(
           "fillWorkerRequestQueue(RequestQueue)",
           "have " << totalNumberOfRequestedWorkers <<
@@ -119,6 +105,20 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::fillWorkerRequestQueue(RequestQ
         configureForPrimaryRanksDelivery(totalNumberOfRequestedWorkers);
       }
       #endif
+    }
+    break;
+    default: // we give out secondary notes
+    {
+      if (getNumberOfIdleNodes()==0) {
+        logInfo(
+          "fillWorkerRequestQueue(RequestQueue)",
+          "running out of secondary ranks, too. Stop to deliver MPI ranks"
+        );
+        _nodePoolState = NodePoolState::NoNodesLeft;
+      }
+      else {
+        queue = sortRequestQueue( queue );
+      }
     }
     break;
   }
@@ -184,7 +184,6 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::buildUpPriorityMap(const Reques
 
 
 mpibalancing::SFCDiffusionNodePoolStrategy::RequestQueue mpibalancing::SFCDiffusionNodePoolStrategy::sortRequestQueue( const RequestQueue&  queue ) {
-  assertion1( _nodePoolState == NodePoolState::DeployingAlsoSecondaryRanks, nodePoolStateToString() );
   RequestQueue result;
 
   for (auto p: queue) {
@@ -330,7 +329,9 @@ bool mpibalancing::SFCDiffusionNodePoolStrategy::hasIdleNode(int forMaster) cons
         }
       }
       break;
-    case NodePoolState::DeployingAlsoSecondaryRanks:
+    case NodePoolState::NoNodesLeft:
+      break;
+    default:
     {
       for (auto node: _nodes) {
         if (node.isIdlePrimaryRank() || node.isIdleSecondaryRank()) {
@@ -339,8 +340,6 @@ bool mpibalancing::SFCDiffusionNodePoolStrategy::hasIdleNode(int forMaster) cons
       }
     }
     break;
-    case NodePoolState::NoNodesLeft:
-      break;
   }
   return false;
 }
@@ -365,17 +364,9 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::getNumberOfIdleNodes() const {
 void mpibalancing::SFCDiffusionNodePoolStrategy::setNodeIdle( int rank ) {
   assertion( isRegisteredNode(rank) );
   _nodes[rank].deActivate();
-  if (isPrimaryMPIRank(rank)) {
-    if (_nodePoolState==NodePoolState::NoNodesLeft) {
-      logInfo( "setNodeIdle(int)", "reset node pool state to DeployingIdlePrimaryRanks as rank " << rank << " registered as idle" );
-      _nodePoolState = NodePoolState::DeployingIdlePrimaryRanks;
-    }
-  }
-  else if (_nodePoolState == NodePoolState::NoNodesLeft) {
-    if (_nodePoolState==NodePoolState::NoNodesLeft) {
-      logInfo( "setNodeIdle(int)", "reset node pool state to DeployingAlsoSecondaryRanks as rank " << rank << " registered as idle" );
-      _nodePoolState = NodePoolState::DeployingAlsoSecondaryRanks;
-    }
+  if (_nodePoolState!=NodePoolState::DeployingIdlePrimaryRanks) {
+    logInfo( "setNodeIdle(int)", "reset node pool state to DeployingIdlePrimaryRanks as rank " << rank << " registered as idle" );
+    _nodePoolState = NodePoolState::DeployingIdlePrimaryRanks;
   }
 }
 
@@ -409,16 +400,16 @@ std::string mpibalancing::SFCDiffusionNodePoolStrategy::nodePoolStateToString() 
     case NodePoolState::DeployingIdlePrimaryRanks:
       result << "deploying-idle-ranks";
       break;
-    case NodePoolState::DeployingAlsoSecondaryRanks:
+    case NodePoolState::NoNodesLeft:
+      result << "no-nodes-left";
+      break;
+    default:
       result << "deploying-also-secondary-ranks";
       for (auto p: _priorities) {
         result << ",priority(rank-" << p.first
                << "):" << p.second._priority
                << "/" << p.second._maxNumberOfSecondaryRanksToBeDeployed;
       }
-      break;
-    case NodePoolState::NoNodesLeft:
-      result << "no-nodes-left";
       break;
   }
 
@@ -569,12 +560,17 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::deployIdleSecondaryRank(int forM
 
 
 int mpibalancing::SFCDiffusionNodePoolStrategy::reserveNode(int forMaster) {
+  if (
+    static_cast<int>(_nodePoolState)<=static_cast<int>(NodePoolState::DeployingAlsoSecondaryRanksFirstSweep)
+    &&
+    static_cast<int>(_nodePoolState) >static_cast<int>(NodePoolState::DeployingAlsoSecondaryRanksLastSweep)
+  ) {
+    _nodePoolState = static_cast<NodePoolState>( static_cast<int>(_nodePoolState)-1 );
+  }
+
   switch (_nodePoolState) {
     case NodePoolState::DeployingIdlePrimaryRanks:
       return deployIdlePrimaryRank(forMaster);
-      break;
-    case NodePoolState::DeployingAlsoSecondaryRanks:
-      return deployIdleSecondaryRank(forMaster);
       break;
     case NodePoolState::NoNodesLeft:
       logInfo(
@@ -583,7 +579,14 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::reserveNode(int forMaster) {
       );
       return tarch::parallel::NodePool::NoFreeNodesMessage;
       break;
+    case NodePoolState::DeployingAlsoSecondaryRanksLastSweep:
+      _nodePoolState = NodePoolState::NoNodesLeft;
+      return deployIdleSecondaryRank(forMaster);
+    default:
+      return deployIdleSecondaryRank(forMaster);
+      break;
   }
+
   assertion1(false,toString());
   return tarch::parallel::NodePool::NoFreeNodesMessage;
 }
