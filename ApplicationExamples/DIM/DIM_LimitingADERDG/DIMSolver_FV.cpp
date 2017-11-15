@@ -68,9 +68,9 @@ double DIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL
   // Compute the average variables and parameters from the left and the right
   double QavL[numberOfData] = {0.0}; // ~(numberOfVariables+numberOfParameters)
   double QavR[numberOfData] = {0.0}; // ~(numberOfVariables+numberOfParameters)
-  
+
   // std::cout << "opened ---------------------"<< std::endl;
-  
+
     kernels::idx2 idx_QLR(basisSize, numberOfData);
     for (int j = 0; j < basisSize; j++) {
       const double weight = kernels::gaussLegendreWeights[order][j];
@@ -80,10 +80,10 @@ double DIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL
         QavR[k] += weight * qR[idx_QLR(j, k)];
       }
     }
-	
+
 // Call the Fortran routine
 // std::cout << "normalNonZero=" << normalNonZero << std::endl;
-//std::cout << "Means done ---------------------"<< std::endl;	
+//std::cout << "Means done ---------------------"<< std::endl;
 //std::cout << "numberOfVariables=" << numberOfVariables << std::endl;
 //std::cout << "numberOfParameters=" << numberOfParameters << std::endl;
 //std::cout << "numberOfData=" << numberOfData << std::endl;

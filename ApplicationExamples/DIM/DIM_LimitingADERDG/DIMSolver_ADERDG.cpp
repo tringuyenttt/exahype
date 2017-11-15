@@ -90,10 +90,22 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
   const double t, const double dt) const {
   
-//  if ((center[0]-0.5)*(center[0]-0.5)+(center[1]-0.5)*(center[1]-0.5)<0.25*dx[0]*dx[0]) return false;
-
-  if (observablesMin[0] <= 0.0) return false;
-  return true;
+//  double outerRadius = 1.25*0.25;
+//  double innerRadius = 0.75*0.25;
+//  double radiusSquared = (center[0])*(center[0])+(center[1])*(center[1]);
+//
+//  if (
+//    radiusSquared<outerRadius*outerRadius &&
+//    radiusSquared>=innerRadius*innerRadius
+//  ) {
+//    return false;
+//  }
+  if (observablesMin[0] <= 0.0) {
+    return false;
+  }
+  else {
+    return true;
+  }
 }
 
 
