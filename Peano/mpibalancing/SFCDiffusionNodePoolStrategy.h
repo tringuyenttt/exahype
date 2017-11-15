@@ -12,7 +12,7 @@
 #include "tarch/logging/Log.h"
 
 #include <vector>
-#include <map>
+#include <set>
 
 
 namespace mpibalancing {
@@ -213,20 +213,7 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
 
     NodePoolState _nodePoolState;
 
-    struct DeploymentPriority {
-      double  _priority;
-      int     _maxNumberOfSecondaryRanksToBeDeployed;
-    };
-
-    std::map<int, DeploymentPriority> _priorities;
-
-    /**
-     * This routine is called once when the node pool's status
-     * switches from DeployingIdlePrimaryRanks into DeployingAlsoSecondaryRanks.
-     * From hereon, it acts as guidance to the actual sorting of the queue.
-     * The rank deployment might change entries.
-     */
-    void buildUpPriorityMap(const RequestQueue& queue);
+    std::set<int> _rankBlackList;
 
     int getNumberOfIdlePrimaryRanks() const;
 
@@ -240,20 +227,17 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
      */
     int getNumberOfPhysicalNodes() const;
 
-    /**
-     * Take queue and return re-sorted queue. Input and output queue contain
-     * the same elements in different ordering though.
-     */
-    RequestQueue sortRequestQueue( const RequestQueue& queue );
-
     bool hasCompleteIdleNode() const;
 
     bool isPrimaryMPIRank(int rank) const;
-    bool isFirstOrLastRankInQueueAlongSFC(int rank, const RequestQueue& queue) const;
 
     void configureForPrimaryRanksDelivery(int numberOfRequestedRanks);
 
-    void haveReservedSecondaryRank(int masterRank, int workerRank);
+    /**
+     * Called in diffusion phase. Just ensure that noone grabs now ranks from 
+     * the master's node. That would be an oscillation.
+     */
+    void haveReservedSecondaryRank(int masterRank);
 
     int deployIdlePrimaryRank(int forMaster);
     int deployIdleSecondaryRank(int forMaster);
