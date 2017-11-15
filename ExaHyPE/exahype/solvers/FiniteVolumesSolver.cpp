@@ -704,6 +704,11 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
+  if (!cellDescription.getNeighbourMergePerformed().all()) {
+    logError("updateSolution(...)","Not all neighbour merges have been performed! cell="<<
+        cellDescription.toString());
+    std::terminate();
+  }
 
   double* solution    = DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
   double* newSolution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
