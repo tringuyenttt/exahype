@@ -23,7 +23,9 @@ void DIM::DIMSolver_FV::adjustSolution(const double* const x,const double t,cons
   
   // @todo Please implement/augment if required
   // Fortran
-  initialdata_(x, &t, Q);
+  if (tarch::la::equals(t,0.0)) {
+    initialdata_(x, &t, Q);
+  }
 }
 
 void DIM::DIMSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
@@ -57,44 +59,6 @@ initialdata_(x, &t, stateOutside);
 
 //to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
 
-/*
-void DIM::DIMSolver_FV::flux(const double* const Q,double** F) {
-  // Dimensions                        = 2
-  // Number of variables + parameters  = 14 + 0
-  
-  // @todo Please implement/augment if required
-  F[0][0] = 0.0;
-  F[0][1] = 0.0;
-  F[0][2] = 0.0;
-  F[0][3] = 0.0;
-  F[0][4] = 0.0;
-  F[0][5] = 0.0;
-  F[0][6] = 0.0;
-  F[0][7] = 0.0;
-  F[0][8] = 0.0;
-  F[0][9] = 0.0;
-  F[0][10] = 0.0;
-  F[0][11] = 0.0;
-  F[0][12] = 0.0;
-  F[0][13] = 0.0;
-  
-  F[1][0] = 0.0;
-  F[1][1] = 0.0;
-  F[1][2] = 0.0;
-  F[1][3] = 0.0;
-  F[1][4] = 0.0;
-  F[1][5] = 0.0;
-  F[1][6] = 0.0;
-  F[1][7] = 0.0;
-  F[1][8] = 0.0;
-  F[1][9] = 0.0;
-  F[1][10] = 0.0;
-  F[1][11] = 0.0;
-  F[1][12] = 0.0;
-  F[1][13] = 0.0;
-  
-}
-*/
 double DIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, int normalNonZero) {
   const int numberOfVariables  = DIM::AbstractDIMSolver_FV::NumberOfVariables;
   const int numberOfParameters = DIM::AbstractDIMSolver_FV::NumberOfParameters;
@@ -127,7 +91,7 @@ double DIM::DIMSolver_FV::riemannSolver(double* fL, double *fR, const double* qL
 hllemriemannsolver_(&basisSize, &normalNonZero, fL,fR,qL, qR,QavL, QavR);
 //std::cout << "closed ---------------------"<< std::endl;
 
-	
+	return 1.0; // if you don't want to return a proper maximum eigenvalue
 }
 
 void  DIM::DIMSolver_FV::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {

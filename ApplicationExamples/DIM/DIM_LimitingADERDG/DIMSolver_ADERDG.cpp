@@ -22,8 +22,8 @@ void DIM::DIMSolver_ADERDG::adjustPointSolution(const double* const x,const doub
   // Number of variables + parameters  = 14 + 0
   // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
-  // Fortran
-  initialdata_(x, &t, Q);
+    // Fortran
+    initialdata_(x, &t, Q);
   }
 }
 
@@ -72,60 +72,15 @@ exahype::solvers::Solver::RefinementControl DIM::DIMSolver_ADERDG::refinementCri
 
 
 void DIM::DIMSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
-  // Dimensions                        = 2
-  // Number of variables + parameters  = 14 + 0
-  
-  // @todo Please implement/augment if required
   double nv[3] = {0.};
   nv[d] = 1;
   pdeeigenvalues_(lambda, Q, nv);
 }
 
-/*
-void DIM::DIMSolver_ADERDG::flux(const double* const Q,double** F) {
-  // Dimensions                        = 2
-  // Number of variables + parameters  = 14 + 0
-  
-  // @todo Please implement/augment if required
-  F[0][0] = 0.0;
-  F[0][1] = 0.0;
-  F[0][2] = 0.0;
-  F[0][3] = 0.0;
-  F[0][4] = 0.0;
-  F[0][5] = 0.0;
-  F[0][6] = 0.0;
-  F[0][7] = 0.0;
-  F[0][8] = 0.0;
-  F[0][9] = 0.0;
-  F[0][10] = 0.0;
-  F[0][11] = 0.0;
-  F[0][12] = 0.0;
-  F[0][13] = 0.0;
-  
-  F[1][0] = 0.0;
-  F[1][1] = 0.0;
-  F[1][2] = 0.0;
-  F[1][3] = 0.0;
-  F[1][4] = 0.0;
-  F[1][5] = 0.0;
-  F[1][6] = 0.0;
-  F[1][7] = 0.0;
-  F[1][8] = 0.0;
-  F[1][9] = 0.0;
-  F[1][10] = 0.0;
-  F[1][11] = 0.0;
-  F[1][12] = 0.0;
-  F[1][13] = 0.0;
-  
-}
-*/
-
 void DIM::DIMSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
     double* observables,const int numberOfObservables,
     const double* const Q) const {
   assertion(numberOfObservables==1);
-  ReadOnlyVariables vars(Q);
-
   observables[0]=Q[12]; //extract alpha
 }
 
@@ -143,7 +98,6 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
 
 
 void  DIM::DIMSolver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
-  // @todo Please implement/augment if required
   pdencp_(BgradQ, Q, gradQ);
 }
 
