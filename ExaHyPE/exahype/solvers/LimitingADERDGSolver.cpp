@@ -875,11 +875,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   return result;
 }
 
-
-/**
- * This method assumes the ADERDG solver's cell-local limiter status has
- * already been determined.
- */
 void exahype::solvers::LimitingADERDGSolver::updateSolution(
     const int cellDescriptionsIndex,
     const int element)  {

@@ -2507,13 +2507,13 @@ void exahype::solvers::ADERDGSolver::restrictLimiterStatus(
     const int element,
     const int parentCellDescriptionsIndex,
     const int parentElement) const {
-  CellDescription& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
-  if (solverPatch.getLimiterStatus()>=ADERDGSolver::_minimumLimiterStatusForTroubledCell) {
+  CellDescription& cellDescription = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+  if (cellDescription.getLimiterStatus()>=ADERDGSolver::_minimumLimiterStatusForTroubledCell) {
     CellDescription& parentCellDescription =
         ADERDGSolver::getCellDescription(parentCellDescriptionsIndex,parentElement);
     if(parentCellDescription.getType()==CellDescription::Type::Ancestor) {
       parentCellDescription.setLimiterStatus(ADERDGSolver::_minimumLimiterStatusForTroubledCell);
-      solverPatch.setFacewiseLimiterStatus(0);
+      cellDescription.setFacewiseLimiterStatus(0);
     }
   }
 }
