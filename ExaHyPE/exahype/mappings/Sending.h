@@ -93,6 +93,34 @@ public:
    */
   static tarch::multicore::BooleanSemaphore _semaphoreForRestriction;
 
+  /**
+   * \return if we need to send face
+   * data in the current algorithm
+   * section and considering the send
+   * mode.
+   */
+  bool sendFaceData() const;
+
+
+  /**
+   * \return if we need to reduce time step
+   * data from worker to master
+   * in the current algorithm
+   * section and considering the send
+   * mode.
+   */
+  bool reduceTimeStepData() const;
+
+  /**
+   * Check if we need to send face data
+   * from worker to master.
+   *
+   * Differs from sendFaceData() since
+   * it also takes the BatchState into
+   * account.
+   */
+  bool reduceFaceData() const;
+
 #ifdef Parallel
 /**
  * Loop over all the solvers and check
@@ -131,34 +159,6 @@ void sendEmptySolverDataToNeighbour(
     const tarch::la::Vector<DIMENSIONS,int>&      dest,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const;
-
-
-  /**
-   * \return if we need to reduce time step
-   * data from worker to master
-   * in the current algorithm
-   * section and considering the send
-   * mode.
-   */
-  bool reduceTimeStepData() const;
-
-  /**
-   * \return if we need to send face
-   * data in the current algorithm
-   * section and considering the send
-   * mode.
-   */
-  bool sendFaceData() const;
-
-  /**
-   * Check if we need to send face data
-   * from worker to master.
-   *
-   * Differs from sendFaceData() since
-   * it also takes the BatchState into
-   * account.
-   */
-  bool reduceFaceData() const;
 #endif
 
  public:

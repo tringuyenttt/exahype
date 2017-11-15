@@ -194,7 +194,7 @@ void exahype::mappings::Sending::leaveCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if (
-      reduceTimeStepData() || reduceFaceData()
+      reduceTimeStepData() || sendFaceData()
   ) {
     const int numberOfSolvers = static_cast<int>(exahype::solvers::RegisteredSolvers.size());
     auto grainSize = peano::datatraversal::autotuning::Oracle::
@@ -206,16 +206,14 @@ void exahype::mappings::Sending::leaveCell(
         if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
           auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-          if ( reduceTimeStepData() ) {
-            const int coarseGridElement =
-                solver->tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-            if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
-              tarch::multicore::Lock lock(_semaphoreForRestriction);
-              solver->restrictToNextParent(
-                  fineGridCell.getCellDescriptionsIndex(),fineGridElement,
-                  coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
-              lock.free();
-            }
+          const int coarseGridElement =
+              solver->tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
+          if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
+            tarch::multicore::Lock lock(_semaphoreForRestriction);
+            solver->restrictToNextParent(
+                fineGridCell.getCellDescriptionsIndex(),fineGridElement,
+                coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
+            lock.free();
           }
 
           if ( sendFaceData() ) {
