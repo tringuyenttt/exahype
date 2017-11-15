@@ -3329,7 +3329,7 @@ void exahype::solvers::ADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
              ", cell: "<< x << ", level: " << level);
 
     DataHeap::getInstance().sendData(
-        solution, getUnknownsPerCell(), toRank, x, level,
+        solution, getDataPerCell(), toRank, x, level,
         peano::heap::MessageType::ForkOrJoinCommunication);
   }
 }
