@@ -462,11 +462,12 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::reserveNode(int forMaster) {
 
 
 void mpibalancing::SFCDiffusionNodePoolStrategy::haveReservedSecondaryRank(int masterRank) {
-  const int baseRankOfMasterNode = masterRank / _mpiRanksPerNode;
-  const int lastRankOnMasterNode = masterRank / _mpiRanksPerNode + _mpiRanksPerNode;
+  const int baseRankOfMasterNode = (masterRank / _mpiRanksPerNode) * _mpiRanksPerNode;
+  const int lastRankOnMasterNode = baseRankOfMasterNode + _mpiRanksPerNode;
   logInfo(
     "haveReservedSecondaryRank(int)",
-    "blacklist ranks " << baseRankOfMasterNode << "-" << (lastRankOnMasterNode-1)
+    "blacklist ranks " << baseRankOfMasterNode << "-" << (lastRankOnMasterNode-1) <<
+    " as master " << masterRank << " has aquired new worker through diffusion"
   );
 
   for (int i=baseRankOfMasterNode; i<lastRankOnMasterNode; i++) {
