@@ -398,6 +398,11 @@ class exahype::Parser {
    * Returns an empty string if no log file is specified in the file.
    */
   std::string getLogFileName() const;
+
+  /**
+   * Always returns a valid value (or default if not specified).
+   */
+  double getNodePoolAnsweringTimeout() const;
 };
 
 #endif

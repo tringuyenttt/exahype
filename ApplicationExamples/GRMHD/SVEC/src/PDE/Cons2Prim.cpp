@@ -24,7 +24,18 @@ void GRMHD::Cons2Prim::prepare() {
 	BmagScon = 0; CONTRACT(k) BmagScon += Bmag.lo(k)*Si.up(k);   // B^j * S_j // needed for c2p
 }
 
+/**
+ * Debug the C2P computation.
+ **/
 constexpr bool debug_c2p = false;
+
+/**
+ * This is a *major* switch whether to quietly ignore C2P failures (as needed for
+ * a limiting scheme where failures shall be caught) or fail verbosely. We could
+ * do anything beyond (like: Passing errors etc).
+ **/
+constexpr bool crash_on_failure = true;
+
 #define S_STR_HELPER(x) #x
 #define S_STR(x) S_STR_HELPER(x)
 #define SL(x,l) printf(l " = %e\n", x);
@@ -67,12 +78,10 @@ void GRMHD::Cons2Prim::perform() {
 	constexpr double p_floor   = atmo_press; // 1.0e-5;
 	constexpr double rho_floor = atmo_rho; // 1.0e-4;
 	//constexpr double gamma = gamma;
-	
-	constexpr bool crash_on_failure = false;
 
 	// RTSAFE gives us x = v^2, y = rho * h * Gamma^2.
 	failed = rtsafe(VelVel, RhoEnthWW);
-	if(debug_c2p) { printf("Outcome: "); S(VelVel); S(RhoEnthWW);}
+	if(debug_c2p) { printf("C2P Outcome: "); S(VelVel); S(RhoEnthWW);}
 	if (failed) {
 		if(crash_on_failure) {
 			// We should raise an error instead, the c2p failed.
@@ -108,7 +117,7 @@ void GRMHD::Cons2Prim::perform() {
 		press = p_floor;
 		DFOR(i) vel.up(i) = 0;
 	} else {
-		rho  = Dens*sqrt(1.-VelVel);
+		rho  = Dens*std::sqrt(1.-VelVel);
 		DFOR(i) vel.up(i) = (Si.up(i) + BmagScon/RhoEnthWW * Bmag.up(i)) / (RhoEnthWW+BmagBmag);
 		//DFOR(i) vel.lo(i) = (Si.lo(i) + BmagScon/RhoEnthWW * Bmag.lo(i)) / (RhoEnthWW+BmagBmag);
 		//vel.up=0; DFOR(i) CONTRACT(j)  vel.up(i) +=  vel.lo(j) * gam.up(i,j);
@@ -126,7 +135,8 @@ bool GRMHD::Cons2Prim::rtsafe(double& x, double& y) {
 	constexpr double x2     = 1.-eps;
 	
 	constexpr double gamma = GRMHD::Parameters::gamma;
-	double e      = tau;// + Dens; // sic! My naming is probably sick.
+	//double e      = tau;// + Dens; // sic! My naming is probably sick.
+	double e      = tau + Dens;
 
 	// This is ECHO paper, first option
 	// [Del Zanna et al. (2007) A&A, 473, 11-30 (method 3)]

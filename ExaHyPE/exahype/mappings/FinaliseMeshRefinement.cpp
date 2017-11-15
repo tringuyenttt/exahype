@@ -34,12 +34,6 @@ exahype::mappings::FinaliseMeshRefinement::communicationSpecification() const {
       true);
 }
 
-peano::MappingSpecification exahype::mappings::FinaliseMeshRefinement::
-    touchVertexFirstTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
-}
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::enterCellSpecification(int level) const {
@@ -49,6 +43,12 @@ exahype::mappings::FinaliseMeshRefinement::enterCellSpecification(int level) con
 }
 
 // Below all specs are Nop
+peano::MappingSpecification exahype::mappings::FinaliseMeshRefinement::
+    touchVertexFirstTimeSpecification(int level) const {
+  return peano::MappingSpecification(
+      peano::MappingSpecification::Nop,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+}
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::leaveCellSpecification(int level) const {
@@ -100,18 +100,6 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   #ifdef Parallel
   exahype::mappings::LimiterStatusSpreading::IsFirstIteration = true;
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
-  #endif
-
-  #ifdef Parallel
-  exahype::solvers::ADERDGSolver::Heap::getInstance().finishedToSendSynchronousData();
-  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().finishedToSendSynchronousData();
-  DataHeap::getInstance().finishedToSendSynchronousData();
-  MetadataHeap::getInstance().finishedToSendSynchronousData();
-
-  exahype::solvers::ADERDGSolver::Heap::getInstance().startToSendSynchronousData();
-  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().startToSendSynchronousData();
-  DataHeap::getInstance().startToSendSynchronousData();
-  MetadataHeap::getInstance().startToSendSynchronousData();
   #endif
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);

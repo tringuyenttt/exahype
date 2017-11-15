@@ -376,7 +376,7 @@ S^i v^j + p_\text{tot} \gamma^{ij} - \frac{B^i B^j}{W^2} - (B^k v_k)v^i B^j
 \end{alignat}
 Consequently, also the conserved momentum changes to the 
 \begin{alignat}{3}
-\desc{GRMHD Prim2Cons}
+\desc{GRMHD P2C}
 &
 Q(u)
 &=
@@ -388,8 +388,8 @@ S_j \\
 &=
 \begin{pvector}
 \rho W \\
-\rho h W^2 v_j + B^2 v_j - (B^i v_i) B_j \\
-\rho h W^2 - p + \frac 12 \left( B^2 (1 + v^2) - (B^j v_j)^2 \right)
+D h W v_j + B^2 v_j - (B^i v_i) B_j \\
+D (h W -1) - p + \frac 12 \left( B^2 (1 + v^2) - (B^j v_j)^2 \right)
 \end{pvector}
 \label{eq.grhd.Qu}
 \end{alignat}
@@ -405,16 +405,17 @@ equivalent for the magnetic field.
 
 The MHD conserved vector is just $Q_\mhd=(B^j)$ and has fluxes and sources
 \begin{equation}
-F^i(Q) = w^i B^j - B^i V^j,
+F^i(Q) = w^i B^j - B^i w^j,
 \quad S(Q) = 0
 \end{equation}
 i.e. the new PDE for the magnetic field reads
 \begin{equation}\label{eq.grmhd.pdeb.simple}
-\partial_t B^j + \partial_i (w^i B^j - B^i V^j) = 0
+\partial_t B^j + \partial_i (w^i B^j - B^i w^j) = 0
 \end{equation}
-This evolution equation is \emph{only} used if one does \emph{not} employ
-divergence cleaning. For instance, for constraint transport, the set
-of PDEs is fully given.
+This evolution equation does not handle the magnetic field divergence.
+If one has techniques to do that (for instance constraint transport),
+it is fine. Otherwise, it needs a modification, as done in the
+next section.
 
 %
 %\subsection{The pure GRMHD equations}
@@ -520,7 +521,7 @@ S_\mhd
 D \\
 S_j \\
 \tau \\
- B^i \\
+ B^j \\
 \phi
 \end{pvector}
 =
@@ -546,7 +547,7 @@ Obviously, we need the
 &\desc{and}
 &
 \desc{nonconservative derivatives} &= \{ \partial_i \alpha,
-\partial_i \beta^j, \partial_i \gamma_{jk} \}
+\partial_i \beta^j, \partial_i \gamma_{jk}, \partial_i \phi \}
 \end{alignat}
 
 

@@ -12,6 +12,8 @@ void initialdata_(const double* x, const double* const t, double* Q);
 void InitialPlaneWave_(const double* x, const double* const t, double* Q);
 void GaussianBubble_(const double* x, const double* const t, double* Q);
 
+// Smoothing functions for alpha
+// void SmoothInterface(const double* alpha, const double* const r, const double* const ICsig);
 // Exact solutions in FORTRAN
 //void alfenwave_(const double* x, double* Q, const double* /* scalar */ t);
 

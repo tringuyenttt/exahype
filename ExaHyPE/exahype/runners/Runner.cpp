@@ -82,6 +82,8 @@ exahype::runners::Runner::~Runner() {}
 
 void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   #ifdef Parallel
+  const std::string RanksPerNode = "ranks-per-node";
+
   const std::string configuration = _parser.getMPIConfiguration();
 
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
@@ -96,43 +98,49 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on FCFS answering strategy");
     }
     else if (configuration.find( "fair" )!=std::string::npos ) {
-      int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"ranks_per_node"));
+      int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,RanksPerNode));
       if (ranksPerNode<=0) {
-        logError( "initDistributedMemoryConfiguration()", "please inform fair balancing how many ranks per node you use through value \"ranks_per_node:XXX\". Read value " << ranksPerNode << " is invalid" );
+        logError( "initDistributedMemoryConfiguration()", "please inform fair balancing how many ranks per node you use through value \"" << RanksPerNode << ":XXX\". Read value " << ranksPerNode << " is invalid" );
         ranksPerNode = 1;
       }
-      if ( ranksPerNode>=tarch::parallel::Node::getInstance().getNumberOfNodes() ) {
-        logWarning( "initDistributedMemoryConfiguration()", "value \"ranks_per_node:XXX\" exceeds total rank count. Reset to 1" );
+      if ( ranksPerNode>tarch::parallel::Node::getInstance().getNumberOfNodes() ) {
+        logWarning( "initDistributedMemoryConfiguration()", "value \"" << RanksPerNode << ":XXX\" exceeds total rank count. Reset to 1" );
         ranksPerNode = 1;
       }
       tarch::parallel::NodePool::getInstance().setStrategy(
-        new mpibalancing::FairNodePoolStrategy(ranksPerNode)
+        new mpibalancing::FairNodePoolStrategy(ranksPerNode,1,_parser.getNodePoolAnsweringTimeout())
       );
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
     }
     else if (configuration.find( "sfc-diffusion" )!=std::string::npos ) {
-      int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"ranks_per_node"));
+      int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,RanksPerNode));
       if (ranksPerNode<=0) {
-        logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"ranks_per_node:XXX\". Read value " << ranksPerNode << " is invalid" );
+        logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"RanksPerNode:XXX\". Read value " << ranksPerNode << " is invalid" );
+        ranksPerNode = 1;
+      }
+      if ( ranksPerNode>tarch::parallel::Node::getInstance().getNumberOfNodes() ) {
+        logWarning( "initDistributedMemoryConfiguration()", "value \"" << RanksPerNode << ":XXX\" exceeds total rank count. Reset to 1" );
         ranksPerNode = 1;
       }
       if (tarch::parallel::Node::getInstance().getNumberOfNodes() % ranksPerNode != 0) {
-        logError( "initDistributedMemoryConfiguration()", "Value of \"ranks_per_node:XXX\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
+        logError( "initDistributedMemoryConfiguration()", "Value of \"RanksPerNode:XXX\" does not fit to total number of ranks. ExaHyPE requires homogeneous rank distribution" );
         ranksPerNode = 1;
       }
-      int primaryRanksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"primary_ranks_per_node"));
+      int primaryRanksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,"primary-ranks-per-node"));
       if (primaryRanksPerNode<=0) {
-        logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many primary ranks per node you use through value \"primary_ranks_per_node:XXX\". Read value " << primaryRanksPerNode << " is invalid" );
+        logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many primary ranks per node you use through value \"primary-ranks-per-node:XXX\". Read value " << primaryRanksPerNode << " is invalid" );
         primaryRanksPerNode = 1;
       }
       if ( ranksPerNode<primaryRanksPerNode ) {
-        logWarning( "initDistributedMemoryConfiguration()", "value \"ranks_per_node:XXX\" is smaller than primary_ranks_per_node. Reset to 1" );
+        logWarning( "initDistributedMemoryConfiguration()", "value " << RanksPerNode << " is smaller than primary-ranks-per-node. Reset to 1" );
         primaryRanksPerNode = 1;
       }
       tarch::parallel::NodePool::getInstance().setStrategy(
-        new mpibalancing::SFCDiffusionNodePoolStrategy(ranksPerNode,primaryRanksPerNode)
+        new mpibalancing::SFCDiffusionNodePoolStrategy(ranksPerNode,primaryRanksPerNode,_parser.getNodePoolAnsweringTimeout())
       );
-      logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
+      logInfo("initDistributedMemoryConfiguration()",
+        "load balancing relies on an sfc-diffusion answering strategy with " << ranksPerNode <<
+        " rank(s) per node while " << primaryRanksPerNode << " rank(s) per node are primary ranks" );
     }
     else {
       logError("initDistributedMemoryConfiguration()", "no valid load balancing answering strategy specified");
@@ -179,7 +187,8 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logInfo("initDistributedMemoryConfiguration()", "use global hotspot elimination without joins (mpibalancing/StaticBalancing)");
         peano::parallel::loadbalancing::Oracle::getInstance().setOracle(
             new mpibalancing::HotspotBalancing(
-                false,getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize)+1 /*boundary regularity*/
+                false,getFinestUniformGridLevelForLoadBalancing(_boundingBoxSize)+1, /*boundary regularity*/
+                tarch::parallel::Node::getInstance().getNumberOfNodes()/THREE_POWER_D
           )
         );
         break;
@@ -937,11 +946,12 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
 void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository& repository) {
   // We refine here using the previous solution (which is valid)
   logInfo("initialiseMesh(...)","create initial grid");
-  repository.getState().setAlgorithmSection(exahype::records::State::TimeStepping);
-
+  repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::MeshRefinement);
   repository.getState().switchToUpdateMeshContext();
   createMesh(repository);
+
   logInfo("initialiseMesh(...)","finalise mesh refinement and compute first time step size");
+  repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation);
   repository.getState().switchToTimeStepSizeComputationContext();
   repository.switchToFinaliseMeshRefinementAndTimeStepSizeComputation();
   repository.iterate();
@@ -949,14 +959,11 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
 
 void exahype::runners::Runner::updateMeshAndSubdomains(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
-  // 1. All solvers drop their MPI messages
+  // 1. All solvers drop their MPI messages and broadcast time step data
   assertion(repository.getState().getAlgorithmSection()==exahype::records::State::AlgorithmSection::TimeStepping);
-
-  if (fusedTimeStepping) {
-    repository.getState().switchToNeighbourDataDroppingContext();
-    repository.switchToNeighbourDataMerging();
-    repository.iterate(1,false);
-  }
+  repository.getState().switchToNeighbourDataDroppingContext();
+  repository.switchToNeighbourDataMerging(); // TODO(Dominic): Rename to Merging
+  repository.iterate(1,false);
 
   // TODO(Dominic): Try to move AlgorithmSection selection into characteristic mappings
 
@@ -999,8 +1006,12 @@ void exahype::runners::Runner::updateMeshAndSubdomains(
     repository.iterate(1,false);
 
     // 4. Perform a local recomputation of the solution of the solvers that requested one.
-    // Perform a time
-    if (!exahype::solvers::Solver::oneSolverRequestedMeshUpdate() &&
+    // Perform a time step size computation for all other solvers that
+    // requested a global recomputation or a simple mesh refinement
+    // If we are running fused time stepping and only a local recomputation
+    // was requested by a solver, let all solvers send out data
+    if (fusedTimeStepping &&
+        !exahype::solvers::Solver::oneSolverRequestedMeshUpdate() &&
         !exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
       repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::LocalRecomputationAllSend);
     }

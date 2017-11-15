@@ -386,6 +386,25 @@ std::string exahype::Parser::getMPIConfiguration() const {
   return getTokenAfter("distributed-memory", "configure");
 }
 
+
+double exahype::Parser::getNodePoolAnsweringTimeout() const {
+  const std::string token         = "max-node-pool-answering-time";
+  const double      defaultResult = 1e-2;
+  if (getMPIConfiguration().find( token )!=std::string::npos ) {
+    const double result = static_cast<double>(exahype::Parser::getValueFromPropertyString(getMPIConfiguration(),token));
+    if (result<0.0) {
+      logWarning( "getNodePoolAnsweringTimeout()", "token " << token << " not specified for MPI configuration so use default timeout of " << defaultResult );
+      return defaultResult;
+    }
+    else return result;
+  }
+  else {
+    logWarning( "getNodePoolAnsweringTimeout()", "token " << token << " not specified for MPI configuration so use default timeout of " << defaultResult );
+    return defaultResult;
+  }
+}
+
+
 int exahype::Parser::getMPIBufferSize() const {
   std::string token = getTokenAfter("distributed-memory", "buffer-size");
 

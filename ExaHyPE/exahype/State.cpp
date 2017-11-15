@@ -246,12 +246,17 @@ exahype::records::State::AlgorithmSection exahype::State::getAlgorithmSection() 
 
  void exahype::State::switchToLocalRecomputationAndTimeStepSizeComputationContext() {
    _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
-   _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
+   _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
  }
 
  void exahype::State::switchToNeighbourDataDroppingContext() {
-   _stateData.setMergeMode(records::State::MergeMode::DropFaceData);
-   _stateData.setSendMode (records::State::SendMode::SendNothing);
+   if (fuseADERDGPhases()) {
+     _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData);
+     _stateData.setSendMode (records::State::SendMode::SendNothing);
+   } else {
+     _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
+     _stateData.setSendMode (records::State::SendMode::SendNothing);
+   }
  }
 
  bool exahype::State::fuseADERDGPhases() {

@@ -358,6 +358,9 @@ private:
    * \p element in heap array \p cellDescriptionsIndex to the
    * neighbour.
    *
+   * We send the min and max values to all neighbours if the current
+   * solver patch holds face data.
+   *
    * \see exahype::solvers::Solver::sendDataToNeighbour
    * for a description of the parameters.
    */
@@ -375,6 +378,10 @@ private:
    * and further the merged limiter status for the solver patch
    * \p element in heap array \p cellDescriptionsIndex from the
    * neighbour.
+   *
+   * We only merge the received values if we consider
+   * a solver patch of type Cell. Otherwise,
+   * we just drop them.
    *
    * \see exahype::solvers::Solver::sendDataToNeighbour
    * for a description of the parameters.
@@ -516,8 +523,11 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
 
   bool isSending(const exahype::records::State::AlgorithmSection& section) const override;
-
-  bool isUsingSharedMappings(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isComputingTimeStepSize(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isBroadcasting(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isMerging(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const override;
 
   void synchroniseTimeStepping(
           const int cellDescriptionsIndex,

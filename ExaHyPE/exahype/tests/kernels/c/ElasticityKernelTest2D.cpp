@@ -289,7 +289,7 @@ void ElasticityKernelTest::testRiemannSolverLinear() {
   tempStateSizedSquareMatrices[2] = tempStateSizedSquareMatrices[1]+nVar*nVar;
 
   // TODO(Dominic): Fix test
-  kernels::aderdg::generic::c::riemannSolverLinear<true,ElasticityKernelTest>(*this,
+  kernels::aderdg::generic::c::riemannSolverLinear<true,false,false,ElasticityKernelTest>(*this,
       FL, FR, qL, qR,
       dt, 1 /* normalNonZero */);
 

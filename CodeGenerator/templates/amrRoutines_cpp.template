@@ -35,8 +35,9 @@ void {{codeNamespace}}::faceUnknownsProlongation(
 
   double lQhbndFineTemp[{{nDof*nDof3D*nDataPad}}] __attribute__((aligned(ALIGNMENT)));
   double lFhbndFineTemp[{{nDof*nDof3D*nVarPad }}] __attribute__((aligned(ALIGNMENT)));
-{% if nDim == 3 %} 
+{% if nDim == 3 and useLibxsmm %} 
   double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
 {% endif %}
 
   double * pointerQhbnd1 = 0;
@@ -91,61 +92,64 @@ void {{codeNamespace}}::faceUnknownsProlongation(
     if (l==1) {
 {% if nDim==2 %}
 #ifdef USE_IPO
-    #pragma forceinline
+      #pragma forceinline
 #endif
-    {{gemm_face_Q}}(&lQhbndCoarse[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerQhbnd1[0]);
-#ifdef USE_IPO
-    #pragma forceinline
-#endif
-    {{gemm_face_F}}(&lFhbndCoarse[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerFhbnd1[0]);
-{% else %}
-    for(int m2=0; m2<{{nDof}}; m2++) {
-      for(int n2=0; n2<{{nDof}}; n2++) {
-        #pragma vector aligned
-        for(int it=0; it<{{nDof*nDofPad}}; it++) {
-          coeff[it] = {{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
-        }
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        {{gemm_face_Q}}(&lQhbndCoarse[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
+      {{gemm_face_Q}}(&lQhbndCoarse[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerQhbnd1[0]);
 #ifdef USE_IPO
       #pragma forceinline
 #endif
-        {{gemm_face_F}}(&lFhbndCoarse[n2*{{nDof*nDataPad}}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nDataPad}}]);
+      {{gemm_face_F}}(&lFhbndCoarse[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerFhbnd1[0]);
+{% else %}
+      for(int m2=0; m2<{{nDof}}; m2++) {
+        for(int n2=0; n2<{{nDof}}; n2++) {
+          #pragma vector aligned
+          for(int it=0; it<{{nDof*nDofPad}}; it++) {
+            coeff[it] = {{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
+          }
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_face_Q}}(&lQhbndCoarse[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+          {{gemm_face_F}}(&lFhbndCoarse[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
+        
+          doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
+        }
       }
-    }
 {% endif %}
     } else { // l!= 1
 {% if nDim==2 %}
 #ifdef USE_IPO
-    #pragma forceinline
+      #pragma forceinline
 #endif
-    {{gemm_face_Q}}(&pointerQhbnd2[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerQhbnd1[0]);
-#ifdef USE_IPO
-    #pragma forceinline
-#endif
-    {{gemm_face_F}}(&pointerFhbnd2[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerFhbnd1[0]);
-{% else %}
-    for(int m2=0; m2<{{nDof}}; m2++) {
-      for(int n2=0; n2<{{nDof}}; n2++) {
-        #pragma vector aligned
-        for(int it=0; it<{{nDof*nDofPad}}; it++) {
-          coeff[it] = {{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
-        }
-#ifdef USE_IPO
-        #pragma forceinline
-#endif
-        {{gemm_face_Q}}(&pointerQhbnd2[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
+      {{gemm_face_Q}}(&pointerQhbnd2[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerQhbnd1[0]);
 #ifdef USE_IPO
       #pragma forceinline
 #endif
-        {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nDataPad}}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nDataPad}}]);
+      {{gemm_face_F}}(&pointerFhbnd2[0],&{{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][0],&pointerFhbnd1[0]);
+{% else %}
+      for(int m2=0; m2<{{nDof}}; m2++) {
+        for(int n2=0; n2<{{nDof}}; n2++) {
+          #pragma vector aligned
+          for(int it=0; it<{{nDof*nDofPad}}; it++) {
+            coeff[it] = {{codeNamespace}}::fineGridProjector1d[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d[subintervalIndex_1][m2*{{nDofPad}}+n2];
+          }
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_face_Q}}(&pointerQhbnd2[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
+        
+          doNotOptimizeAway = coeff[subintervalIndex_0]; //used to prevent the compiler from optimizing coeff away
+        }
       }
-    }
 {% endif %}      
     }
-  
 {% else%}
     if (l==1) {
       // singleLevelFaceUnknownsProlongation<{{nDataPad}}>(pointerQhbnd1, lQhbndCoarse, subintervalIndex);
@@ -256,6 +260,11 @@ void {{codeNamespace}}::faceUnknownsRestriction(
   double lFhbndCoarseTemp1[{{nDof*nDof3D*nVarPad }}];
   double lQhbndCoarseTemp2[{{nDof*nDof3D*nDataPad}}];
   double lFhbndCoarseTemp2[{{nDof*nDof3D*nVarPad }}];
+  
+  {% if nDim == 3 and useLibxsmm %} 
+  double coeff[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing coeff away
+{% endif %}
 
   double * pointerQhbnd1 = 0;
   double * pointerQhbnd2 = 0;
@@ -293,6 +302,69 @@ void {{codeNamespace}}::faceUnknownsRestriction(
 
     // Apply the single level restriction operator.
     // Use the fine level unknowns as input in the first iteration.
+{% if useLibxsmm %}
+    if (l==1) {
+{% if nDim==2 %}
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+      {{gemm_face_Q}}(&lQhbndFine[0],&{{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][0],&pointerQhbnd1[0]);
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+      {{gemm_face_F}}(&lFhbndFine[0],&{{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][0],&pointerFhbnd1[0]);
+{% else %}
+      for(int m2=0; m2<{{nDof}}; m2++) {
+        for(int n2=0; n2<{{nDof}}; n2++) {
+          #pragma vector aligned
+          for(int it=0; it<{{nDof*nDofPad}}; it++) {
+            coeff[it] = {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2];
+          }
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_face_Q}}(&lQhbndFine[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+          {{gemm_face_F}}(&lFhbndFine[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
+        
+          doNotOptimizeAway = coeff[subintervalIndex_0]; // used to prevent the compiler from optimizing coeff away
+        }
+      }
+{% endif %}
+    } else { // l!= 1
+{% if nDim==2 %}
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+      {{gemm_face_Q}}(&pointerQhbnd2[0],&{{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][0],&pointerQhbnd1[0]);
+#ifdef USE_IPO
+      #pragma forceinline
+#endif
+      {{gemm_face_F}}(&pointerFhbnd2[0],&{{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][0],&pointerFhbnd1[0]);
+{% else %}
+      for(int m2=0; m2<{{nDof}}; m2++) {
+        for(int n2=0; n2<{{nDof}}; n2++) {
+          #pragma vector aligned
+          for(int it=0; it<{{nDof*nDofPad}}; it++) {
+            coeff[it] = {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][it] * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2];
+          }
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_face_Q}}(&pointerQhbnd2[n2*{{nDof*nDataPad}}],&coeff[0],&pointerQhbnd1[m2*{{nDof*nDataPad}}]);
+#ifdef USE_IPO
+          #pragma forceinline
+#endif
+          {{gemm_face_F}}(&pointerFhbnd2[n2*{{nDof*nVarPad }}],&coeff[0],&pointerFhbnd1[m2*{{nDof*nVarPad }}]);
+        
+          doNotOptimizeAway = coeff[subintervalIndex_0]; //used to prevent the compiler from optimizing coeff away
+        }
+      }
+{% endif %}      
+    }
+{% else %}
     if (l==1) {
       //singleLevelFaceUnknownsRestriction<{{nDataPad}}>(pointerQhbnd1, lQhbndFine, subintervalIndex);
       for (int m2=0; m2<{{nDof3D}}; m2++) {
@@ -302,13 +374,10 @@ void {{codeNamespace}}::faceUnknownsRestriction(
               for (int n1 = 0; n1<{{nDof}}; n1++) {          
                 pointerQhbnd1[(m2*{{nDof}}+m1)*{{nDataPad}}+d] +=
                                  lQhbndFine[(n2*{{nDof}}+n1)*{{nDataPad}}+d]
-                                 * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_0][m1*{{nDofPad}}+n1]
 {% if nDim==3 %}                             
-                                 * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_1][m2*{{nDofPad}}+n2]
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% endif %}
-                                 * {{codeNamespace}}::weights2[n2*{{nDof}}+n1]
-                                 / {{codeNamespace}}::weights2[m2*{{nDof}}+m1]
-                                 / {{ 9.0 if nDim==3 else 3.0}};
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
               }
             }
           }
@@ -322,13 +391,10 @@ void {{codeNamespace}}::faceUnknownsRestriction(
               for (int n1 = 0; n1<{{nDof}}; n1++) {          
                 pointerFhbnd1[(m2*{{nDof}}+m1)*{{nVarPad}}+d] +=
                                  lFhbndFine[(n2*{{nDof}}+n1)*{{nVarPad}}+d]
-                                 * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_0][m1*{{nDofPad}}+n1]
 {% if nDim==3 %}                             
-                                 * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_1][m2*{{nDofPad}}+n2]
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% endif %}
-                                 * {{codeNamespace}}::weights2[n2*{{nDof}}+n1]
-                                 / {{codeNamespace}}::weights2[m2*{{nDof}}+m1]
-                                 / {{ 9.0 if nDim==3 else 3.0}};
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
               }
             }
           }
@@ -343,13 +409,10 @@ void {{codeNamespace}}::faceUnknownsRestriction(
               for (int n1 = 0; n1<{{nDof}}; n1++) {          
                 pointerQhbnd1[(m2*{{nDof}}+m1)*{{nDataPad}}+d] +=
                                  pointerQhbnd2[(n2*{{nDof}}+n1)*{{nDataPad}}+d]
-                                 * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_0][m1*{{nDofPad}}+n1]
 {% if nDim==3 %}                             
-                                 * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_1][m2*{{nDofPad}}+n2]
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% endif %}
-                                 * {{codeNamespace}}::weights2[n2*{{nDof}}+n1]
-                                 / {{codeNamespace}}::weights2[m2*{{nDof}}+m1]
-                                 / {{ 9.0 if nDim==3 else 3.0}};
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
               }
             }
           }
@@ -363,19 +426,17 @@ void {{codeNamespace}}::faceUnknownsRestriction(
               for (int n1 = 0; n1<{{nDof}}; n1++) {          
                 pointerFhbnd1[(m2*{{nDof}}+m1)*{{nVarPad}}+d] +=
                                  pointerFhbnd2[(n2*{{nDof}}+n1)*{{nVarPad}}+d]
-                                 * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_0][m1*{{nDofPad}}+n1]
 {% if nDim==3 %}                             
-                                 * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_1][m2*{{nDofPad}}+n2]
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% endif %}
-                                 * {{codeNamespace}}::weights2[n2*{{nDof}}+n1]
-                                 / {{codeNamespace}}::weights2[m2*{{nDof}}+m1]
-                                 / {{ 9.0 if nDim==3 else 3.0}};
+                                 * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
               }
             }
           }
         }
       }
     }
+{% endif %} {# useLibxsmm #}
 
     // Prepare next iteration.
     pointerQhbnd2 = pointerQhbnd1;
@@ -585,14 +646,11 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
                   for (int n1 = 0; n1<{{nDof}}; n1++) {  
                     pointerUh1[((m3*{{nDof}}+m2)*{{nDof}}+m1)*{{nData}}+d] +=
                         luhFine[((m3*{{nDof}}+m2)*{{nDof}}+m1)*{{nData}}+d]
-                        * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_0][m1*{{nDofPad}}+n1]
-                        * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% if nDim==3 %}
-                        * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_2][m3*{{nDofPad}}+n3]
+                        * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_2][m3*{{nDofPad}}+n3]
 {% endif %}
-                        * {{codeNamespace}}::weights3[(n3*{{nDof}}+n2)*{{nDof}}+n1]
-                        / {{codeNamespace}}::weights3[(m3*{{nDof}}+m2)*{{nDof}}+m1]
-                        / {{ 27.0 if nDim==3 else 9.0}};
+                        * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
+                        * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
                   }
                 }
               }
@@ -611,14 +669,11 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
                   for (int n1 = 0; n1<{{nDof}}; n1++) {  
                     pointerUh1[((m3*{{nDof}}+m2)*{{nDof}}+m1)*{{nData}}+d] +=
                         pointerUh2[((m3*{{nDof}}+m2)*{{nDof}}+m1)*{{nData}}+d]
-                        * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_0][m1*{{nDofPad}}+n1]
-                        * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_1][m2*{{nDofPad}}+n2]
 {% if nDim==3 %}
-                        * {{codeNamespace}}::fineGridProjector1d_T[subintervalIndex_2][m3*{{nDofPad}}+n3]
+                        * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_2][m3*{{nDofPad}}+n3]
 {% endif %}
-                        * {{codeNamespace}}::weights3[(n3*{{nDof}}+n2)*{{nDof}}+n1]
-                        / {{codeNamespace}}::weights3[(m3*{{nDof}}+m2)*{{nDof}}+m1]
-                        / {{ 27.0 if nDim==3 else 9.0}};
+                        * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_1][m2*{{nDofPad}}+n2]
+                        * {{codeNamespace}}::fineGridProjector1d_T_weighted[subintervalIndex_0][m1*{{nDofPad}}+n1];
                   }
                 }
               }

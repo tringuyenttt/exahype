@@ -79,9 +79,9 @@ void {{project}}::{{abstractSolver}}::volumeIntegral(double* lduh,const double* 
   kernels::aderdg::generic::fortran::volumeIntegral{{linearOrNonlinear}}(lduh,lFhi,dx,getNumberOfVariables(),getNumberOfParameters(),getNodesPerCoordinateAxis());
 {%- else %}
   {%- if isLinear %}
-  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
+  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource || useNCP}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
   {%- else %}
-  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFi,lFhi,dx);
+  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource || useNCP}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFi,lFhi,dx);
   {%- endif %}
 {%- endif %}
 {%- if enableProfiler %}
@@ -108,7 +108,11 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
 {%- if isFortran %}
   kernels::aderdg::generic::fortran::riemannSolver{{linearOrNonlinear}}<{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,normalNonZeroIndex);
 {%- else %}
-  kernels::aderdg::generic::c::riemannSolver{{linearOrNonlinear}}<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,normalNonZeroIndex);
+  {%- if isLinear %}
+    kernels::aderdg::generic::c::riemannSolverLinear<{{useFlux}},{{useNCP}},{{useMaterialParam}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,normalNonZeroIndex);
+  {%- else %}
+    kernels::aderdg::generic::c::riemannSolver{{linearOrNonlinear}}<{{useNCP}},{{solver}}>(*static_cast<{{solver}}*>(this),FL,FR,QL,QR,dt,normalNonZeroIndex);
+  {%- endif %}
 {%- endif %}
 {%- if enableProfiler %}
   _profiler->stop("riemannSolver");
@@ -203,19 +207,19 @@ void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const dou
 }
 
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("algebraicSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
         
 void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("nonConservativeProduct: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("pointSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 /**

@@ -206,7 +206,7 @@ void exahype::Cell::mergeWithWorkerMetadata(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-      if (solver->isUsingSharedMappings(section) &&
+      if (solver->isMergingMetadata(section) &&
           element!=exahype::solvers::Solver::NotFound &&
           receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
         MetadataHeap::HeapEntries metadataPortion(
@@ -236,7 +236,7 @@ void exahype::Cell::mergeWithMasterMetadata(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-      if (solver->isUsingSharedMappings(section) &&
+      if (solver->isMergingMetadata(section) &&
           element!=exahype::solvers::Solver::NotFound &&
           receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
         MetadataHeap::HeapEntries metadataPortion(
@@ -256,13 +256,11 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Cell::computeFaceBarycentre(
     const tarch::la::Vector<DIMENSIONS,double>& cellOffset,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
     const int direction, const int orientation) {
-  tarch::la::Vector<DIMENSIONS,double> faceBarycentre = cellOffset;
-  faceBarycentre[direction] += orientation * cellSize[direction];
+  tarch::la::Vector<DIMENSIONS,double> faceBarycentre;
   for (int i=0; i<DIMENSIONS; i++) {
-    if (i!=direction) {
-      faceBarycentre[i] += 0.5 * cellSize[i];
-    }
+    faceBarycentre[i] = cellOffset[i] + 0.5 * cellSize[i];
   }
+  faceBarycentre[direction] = cellOffset[direction] + orientation * cellSize[direction];
 
   return faceBarycentre;
 }

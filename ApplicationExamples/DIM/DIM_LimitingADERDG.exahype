@@ -25,10 +25,10 @@ exahype-project DIM
   log-file                         = whatever.log
 
   computational-domain
-    dimension const                = 2
-    width                          = 2.0, 2.0
-    offset                         = -1.0, -1.0
-    end-time                       = 1.0
+    dimension const         = 2
+    width                   = 6.0, 6.0, 6.0
+    offset                  = -3.0, -3.0, -3.0
+    end-time                = 0.5
   end computational-domain
   
   shared-memory
@@ -58,19 +58,21 @@ exahype-project DIM
     /* gamma is actually parts of a matrix... */
     variables const                = sigma:6,vel:3,lambda:1,mu:1,rho:1,alpha:1,xi:1
     order const                    = 3
-    maximum-mesh-size              = 0.4
-    maximum-mesh-depth             = 3
+    maximum-mesh-size              = 0.12
+    maximum-mesh-depth             = 2
     time-stepping                  = global
     type const = nonlinear
 	terms const = ncp
 	optimisation const = generic
     language const                 = C
-    limiter-kernel const           = generic::musclhancock 
-    limiter-language const         = C 
-    dmp-observables                = 0
+    limiter-type const         = musclhancock
+    limiter-optimisation const = generic
+    limiter-language const     = C
+    dmp-observables                = 1
     dmp-relaxation-parameter       = 1e-2 
     dmp-difference-scaling         = 1e-3 
-    steps-till-cured               = 0
+    steps-till-cured           = 5
+    helper-layers              = 2
 
     plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 14

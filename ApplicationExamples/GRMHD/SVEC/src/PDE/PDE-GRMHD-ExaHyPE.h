@@ -17,6 +17,8 @@
 #include "AbstractGRMHDSolver_ADERDG.h" // Defines: nVar
 #endif
 
+#include "peano/utils/Dimensions.h" // Defines DIMENSIONS
+
 
 namespace SVEC {
 namespace GRMHD {
@@ -29,8 +31,12 @@ namespace ExaHyPEAdapter {
 		constexpr int nVar = /*global*/::GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;  // ensure this is 19 or so
 	#endif
 
-	#ifdef NVARS
+	#if defined(NVARS)
 	#error NVARS was already defined. Maybe you try to load several different PDEs at a time?
+	#endif
+	
+	#if !defined(DIMENSIONS)
+	#error DIMENSIONS needs to be defined. Maybe include tarch/la/Dimensions.h
 	#endif
 
 	// a very handy macro.

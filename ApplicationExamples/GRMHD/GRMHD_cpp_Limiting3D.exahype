@@ -56,9 +56,9 @@ exahype-project GRMHD
 
   solver Limiting-ADER-DG GRMHDSolver
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1
-    order const                    = 6
-    maximum-mesh-size              = 6.66666669
-    maximum-mesh-depth             = 0
+    order const                    = 3
+    maximum-mesh-size              = 6.6666669
+    maximum-mesh-depth             = 1
     time-stepping                  = global
     type const = nonlinear
     terms const = flux,ncp,source
@@ -78,12 +78,45 @@ exahype-project GRMHD
     //constants                      = dummy:dummy
     /* not yet working: constants aka left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact */
 
-    plot vtk::Cartesian::vertices::limited::binary ConservedWriter
+
+    // BEGIN of comparing plotters
+
+    plot vtk::Cartesian::vertices::limited::ascii ConservedWriter
       variables const = 23
       time      = 0.0
-      repeat    = 0.000666667
-      output    = ./vtk-output/conserved
+      repeat    = 0.00001
+      output    = ./vtk-output/vtk-conserved-limited
     end plot
+
+    plot vtk::Cartesian::vertices::ascii ConservedWriter
+      variables const = 23
+      time      = 0.0
+      repeat    = 0.00001
+      output    = ./vtk-output/vtk-conserved
+    end plot
+
+    plot Peano::Legendre::vertices::ascii ConservedWriter
+      variables const = 23
+      time      = 0.0
+      repeat    = 0.00001
+      output    = ./vtk-output/peano-ascii-conserved
+    end plot
+
+    plot Peano::Legendre::vertices::hdf5 ConservedWriter
+      variables const = 23
+      time      = 0.0
+      repeat    = 0.00001
+      output    = ./vtk-output/peano-hdf5-conserved
+    end plot
+
+    plot Carpet::Cartesian::Vertices::HDF5 ConservedWriter
+      variables const = 23
+      time = 0.0
+      repeat = 0.00001
+      output = ./hdf5/carpet-hdf5-conserved
+    end plot
+
+    // END of comparing plotters
 
     plot vtk::Legendre::vertices::binary DifferenceWithIDWriter
       variables const = 23
@@ -96,14 +129,21 @@ exahype-project GRMHD
       variables const = 23
       time      = 0.0
       repeat    = 0.000666667
-      output    = ./vtk-output/primitive
+      output    = ./vtk-output/primitive-legendre
+    end plot
+    
+    plot vtk::Cartesian::vertices::binary PrimitiveWriter
+      variables const = 23
+      time      = 0.0
+      repeat    = 0.000666667
+      output    = ./vtk-output/primitive-cartesian
     end plot
     
     plot Carpet::Cartesian::Vertices::HDF5 ConservedWriter
       variables const = 23
       time = 0.0
       repeat = 1000.000001
-      output = ./hdf5/conserved1d
+      output = ./hdf5/conserved
       select = x:0,y:0
     end plot
     
@@ -111,7 +151,7 @@ exahype-project GRMHD
       variables const = 23
       time = 0.0
       repeat = 1000.000001
-      output = ./hdf5/primitive1d
+      output = ./hdf5/primitive
       select = x:0,y:0
     end plot
 

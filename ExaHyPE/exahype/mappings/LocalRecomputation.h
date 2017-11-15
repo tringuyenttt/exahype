@@ -145,6 +145,16 @@ class exahype::mappings::LocalRecomputation {
    */
   void deleteTemporaryVariables();
 
+  /**
+   * \return if we perform a local recomputation for this solver.
+   */
+  static bool performLocalRecomputation(exahype::solvers::Solver* solver);
+
+  /**
+   * \return if we perform a global recomputation for this solver.
+   */
+  static bool performGlobalRecomputation(exahype::solvers::Solver* solver);
+
   #ifdef Parallel
   /**
    * TODO(Dominic): Add docu.
