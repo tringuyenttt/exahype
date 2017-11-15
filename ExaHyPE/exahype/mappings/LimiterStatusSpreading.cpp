@@ -45,24 +45,25 @@ exahype::mappings::LimiterStatusSpreading::communicationSpecification() const {
       true);
 }
 
-peano::MappingSpecification
-exahype::mappings::LimiterStatusSpreading::touchVertexLastTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::Nop,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
-}
-
+// Switched on.
 peano::MappingSpecification
 exahype::mappings::LimiterStatusSpreading::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::AvoidFineGridRaces,true);
 }
-
 peano::MappingSpecification
 exahype::mappings::LimiterStatusSpreading::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+}
+
+// Switched off.
+peano::MappingSpecification
+exahype::mappings::LimiterStatusSpreading::touchVertexLastTimeSpecification(int level) const {
+  return peano::MappingSpecification(
+      peano::MappingSpecification::Nop,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 peano::MappingSpecification
@@ -284,21 +285,6 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToNeighbour(
   logTraceOut("prepareSendToNeighbour(...)");
 }
 
-void exahype::mappings::LimiterStatusSpreading::prepareCopyToRemoteNode(
-    exahype::Cell& localCell, int toRank,
-    const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-    const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
-  // do nothing
-}
-
-void exahype::mappings::LimiterStatusSpreading::mergeWithRemoteDataDueToForkOrJoin(
-        exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
-        int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-        const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
-  // do nothing
-}
-
-
 void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
     exahype::Cell& localCell, exahype::Vertex* vertices,
     const peano::grid::VertexEnumerator& verticesEnumerator,
@@ -364,13 +350,24 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
   }
 }
 
-
 //
 // All methods below are nop,
 //
 // ==================================
 
+void exahype::mappings::LimiterStatusSpreading::prepareCopyToRemoteNode(
+    exahype::Cell& localCell, int toRank,
+    const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
+  // do nothing
+}
 
+void exahype::mappings::LimiterStatusSpreading::mergeWithRemoteDataDueToForkOrJoin(
+        exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
+        int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+        const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
+  // do nothing
+}
 
 void exahype::mappings::LimiterStatusSpreading::prepareCopyToRemoteNode(
     exahype::Vertex& localVertex, int toRank,
