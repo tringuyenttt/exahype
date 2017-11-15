@@ -93,11 +93,6 @@ public:
    */
   static tarch::multicore::BooleanSemaphore _semaphoreForRestriction;
 
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  bool sendFaceData() const;
-
 #ifdef Parallel
 /**
  * Loop over all the solvers and check
@@ -138,16 +133,32 @@ void sendEmptySolverDataToNeighbour(
     const int                                     level) const;
 
 
-/**
- * Check if we need to reduce time step data.
- */
-bool reduceTimeStepData() const;
+  /**
+   * \return if we need to reduce time step
+   * data from worker to master
+   * in the current algorithm
+   * section and considering the send
+   * mode.
+   */
+  bool reduceTimeStepData() const;
 
-/**
- * Check if we need to send face data
- * from worker to master.
- */
-bool reduceFaceData() const;
+  /**
+   * \return if we need to send face
+   * data in the current algorithm
+   * section and considering the send
+   * mode.
+   */
+  bool sendFaceData() const;
+
+  /**
+   * Check if we need to send face data
+   * from worker to master.
+   *
+   * Differs from sendFaceData() since
+   * it also takes the BatchState into
+   * account.
+   */
+  bool reduceFaceData() const;
 #endif
 
  public:
@@ -291,10 +302,14 @@ bool reduceFaceData() const;
   /**
    * This routine is called on the worker.
    *
-   * Send the local array of minimal time step sizes up to the master.
-   * Further send up face data if a cell description
-   * registered in the fine grid cell of the worker (and master)
-   * is of type Ancestor.
+   * In case, we have to reduce time step data
+   * we send the local array of minimal time step sizes up to the master.
+   * We further send the cell's metadata up to the the master in this case.
+   *
+   * In case we have to reduce face data to the master,
+   * we send both the cell's metadata and the face data
+   * of certain cell descriptions (or empty data)
+   * up to the master.
    *
    * <h2>Domain Decomposition in Peano</h2>
    * It is important to notice
@@ -346,10 +361,7 @@ bool reduceFaceData() const;
   /**
     * This routine is called on the master.
     *
-    * Receive and merge the array of minimal time step sizes send
-    * by the worker on the master.
-    * Further receive face data if a cell description
-    * registered in the fine grid cell is of type Descendant.
+    * Counterpart to prepareSendToMaster.
     *
     * \see prepareSendToMaster
     */
