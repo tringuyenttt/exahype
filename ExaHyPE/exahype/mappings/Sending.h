@@ -212,13 +212,24 @@ void sendEmptySolverDataToNeighbour(
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * Restricts face data from \p cellDescription to
-   * a parent cell description if the fine grid cell associated with
-   * cell description is adjacent to a boundary of the
-   * coarse grid cell associated with the parent cell description.
+   * If we send face data, this routine restricts face data from a
+   * cell description to a parent cell description if the fine grid cell
+   * associated with the cell description is adjacent to a boundary of the
+   * coarser grid cell associated with the parent cell description.
    *
-   * \note We use a semaphore to make this operation thread-safe.
+   * We further restrict data (e.g. the limiter status) to the
+   * next parent if it exists. This operation is performed
+   * if we send face data or if we reduce time step data.
+   * In the first case, we might encounter a batch. We
+   * then still want to restrict that data up locally
+   * per rank. In the second case, we might run the nonfused
+   * time stepping scheme. Then, we are required to
+   * restrict the limiter status before we
+   * send out face data.
    *
+   * \note We use locks to make both operation thread-safe.
+   *
+   * \see reduceTimeStepData(), sendFaceData()
    *
    * <h2> Multicore parallelisation </h2>
    *
