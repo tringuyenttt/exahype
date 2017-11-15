@@ -207,19 +207,19 @@ void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const dou
 }
 
 void {{project}}::{{abstractSolver}}::flux(const double* const Q,double** F) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("flux: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::algebraicSource(const double* const Q,double* S) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("algebraicSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
         
 void {{project}}::{{abstractSolver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* BgradQ) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("nonConservativeProduct: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 void {{project}}::{{abstractSolver}}::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
-      abortWithMsg("If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
+      abortWithMsg("pointSource: If this operation is entered, you have activated the corresponding guard. Then you have to re-implement this routine, too." );
 }
 
 /**
