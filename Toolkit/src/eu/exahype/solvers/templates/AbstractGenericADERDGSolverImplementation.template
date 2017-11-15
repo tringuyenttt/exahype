@@ -79,9 +79,9 @@ void {{project}}::{{abstractSolver}}::volumeIntegral(double* lduh,const double* 
   kernels::aderdg::generic::fortran::volumeIntegral{{linearOrNonlinear}}(lduh,lFhi,dx,getNumberOfVariables(),getNumberOfParameters(),getNodesPerCoordinateAxis());
 {%- else %}
   {%- if isLinear %}
-  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
+  kernels::aderdg::generic::c::volumeIntegralLinear<{{useSource || useNCP}}, {{useFlux}}, NumberOfVariables, Order+1>(lduh,lFhi,dx);
   {%- else %}
-  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFi,lFhi,dx);
+  kernels::aderdg::generic::c::volumeIntegralNonlinear<{{useSource || useNCP}}, {{useFlux}}, {{noTimeAveraging}}, NumberOfVariables, Order+1>(lduh,lFi,lFhi,dx);
   {%- endif %}
 {%- endif %}
 {%- if enableProfiler %}
