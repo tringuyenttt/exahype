@@ -10,6 +10,7 @@
 #include <cstring> // memset
 #include "kernels/KernelUtils.h" // matrix indexing
 #include "kernels/GaussLegendreQuadrature.h"
+#include "peano/utils/Loop.h"
 tarch::logging::Log DIM::DIMSolver_ADERDG::_log( "DIM::DIMSolver_ADERDG" );
 
 
@@ -90,16 +91,35 @@ bool DIM::DIMSolver_ADERDG::isPhysicallyAdmissible(
   const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
   const double t, const double dt) const {
   
-//  double outerRadius = 1.25*0.25;
-//  double innerRadius = 0.75*0.25;
-//  double radiusSquared = (center[0])*(center[0])+(center[1])*(center[1]);
-//
-//  if (
-//    radiusSquared<outerRadius*outerRadius &&
-//    radiusSquared>=innerRadius*innerRadius
-//  ) {
-//    return false;
-//  }
+  // Variant 1 (cheapest, currently works only in 2D)
+  //  double outerRadius = 1.25*0.25;
+  //  double innerRadius = 0.75*0.25;
+  //  double radiusSquared = (center[0])*(center[0])+(center[1])*(center[1]);
+  //
+  //  if (
+  //    radiusSquared<outerRadius*outerRadius &&
+  //    radiusSquared>=innerRadius*innerRadius
+  //  ) {
+  //    return false;
+  //  }
+
+  // Variant 2 (comparably cheap, currently works only in 2D)
+  //  double largest   = -std::numeric_limits<double>::max();
+  //  double smallest  = +std::numeric_limits<double>::max();
+  //
+  //  kernels::idx3 idx_luh(Order+1,Order+1,NumberOfVariables);
+  //  dfor(i,Order+1) {
+  //    const double* Q = solution + idx_luh(i(1),i(0),0);
+  //
+  //    largest  = std::max (largest,   Q[12]);
+  //    smallest = std::min (smallest,  Q[12]);
+  //  }
+  //
+  //  if (!tarch::la::equals(largest,smallest,1e-6)) {
+  //    return false;
+  //  }
+
+  // Variant 3 (expensive since it requires DMP, min and max gets confused by this variant for more than 2 mesh levels. Do not know why yet...)
   if (observablesMin[0] <= 0.0) {
     return false;
   }
