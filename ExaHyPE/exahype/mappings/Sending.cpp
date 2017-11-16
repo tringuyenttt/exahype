@@ -402,7 +402,7 @@ void exahype::mappings::Sending::prepareSendToMaster(
               solver->sendDataToMaster(
                   tarch::parallel::NodePool::getInstance().getMasterRank(),
                   localCell.getCellDescriptionsIndex(),
-                  element,ExaHyPE/exahype/mappings/FinaliseMeshRefinement.cpp
+                  element,
                   verticesEnumerator.getCellCenter(),
                   verticesEnumerator.getLevel());
             } else {
