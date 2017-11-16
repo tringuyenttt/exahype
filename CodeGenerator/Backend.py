@@ -28,6 +28,7 @@ import os
 import copy
 import subprocess
 import errno
+import time
 
 import KernelsHeaderGenerator
 import SpaceTimePredictorGenerator
@@ -45,6 +46,7 @@ import ConverterGenerator
 import GemmsCPPGenerator
 import AMRRoutinesGenerator
 
+g_runtimes               = {}
 g_config                 = {}
 g_simdWidth              = {  'noarch' : 1,
                               'wsm'    : 2,
@@ -101,36 +103,66 @@ def generateContext(i_config):
 
     
 def generateComputeKernels():
+    start = time.perf_counter()
     kernelsHeaderGenerator = KernelsHeaderGenerator.KernelsHeaderGenerator(generateContext(g_config))
     kernelsHeaderGenerator.generateCode()
+    g_runtimes['kernelsHeaderGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     spaceTimePredictorGenerator = SpaceTimePredictorGenerator.SpaceTimePredictorGenerator(generateContext(g_config))
     spaceTimePredictorGenerator.generateCode()
+    g_runtimes['spaceTimePredictorGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     volumeIntegralGenerator = VolumeIntegralGenerator.VolumeIntegralGenerator(generateContext(g_config))
     volumeIntegralGenerator.generateCode()
+    g_runtimes['volumeIntegralGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     surfaceIntegralGenerator = SurfaceIntegralGenerator.SurfaceIntegralGenerator(generateContext(g_config))
     surfaceIntegralGenerator.generateCode()
+    g_runtimes['surfaceIntegralGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     riemannGenerator = RiemannGenerator.RiemannGenerator(generateContext(g_config))
     riemannGenerator.generateCode()
+    g_runtimes['riemannGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     solutionUpdateGenerator = SolutionUpdateGenerator.SolutionUpdateGenerator(generateContext(g_config))
     solutionUpdateGenerator.generateCode()
+    g_runtimes['solutionUpdateGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     adjustSolutionGenerator = AdjustSolutionGenerator.AdjustSolutionGenerator(generateContext(g_config))
     adjustSolutionGenerator.generateCode()
+    g_runtimes['adjustSolutionGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     stableTimeStepSizeGenerator = StableTimeStepSizeGenerator.StableTimeStepSizeGenerator(generateContext(g_config))
     stableTimeStepSizeGenerator.generateCode()
+    g_runtimes['stableTimeStepSizeGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     quadratureGenerator = QuadratureGenerator.QuadratureGenerator(generateContext(g_config))
     quadratureGenerator.generateCode()
+    g_runtimes['quadratureGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     dgMatrixGenerator = DGMatrixGenerator.DGMatrixGenerator(generateContext(g_config))
     dgMatrixGenerator.generateCode()
+    g_runtimes['dgMatrixGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     gemmsCPPGenerator = GemmsCPPGenerator.GemmsCPPGenerator(generateContext(g_config))
     gemmsCPPGenerator.generateCode()
+    g_runtimes['gemmsCPPGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     configurationParametersGenerator = ConfigurationParametersGenerator.ConfigurationParametersGenerator(generateContext(g_config))
     configurationParametersGenerator.generateCode()
+    g_runtimes['configurationParametersGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     boundaryConditionsGenerator = BoundaryConditionsGenerator.BoundaryConditionsGenerator(generateContext(g_config))
     boundaryConditionsGenerator.generateCode()
+    g_runtimes['boundaryConditionsGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     converterGenerator = ConverterGenerator.ConverterGenerator(generateContext(g_config))
     converterGenerator.generateCode()
+    g_runtimes['converterGenerator'] = time.perf_counter() - start
+    start = time.perf_counter()
     amrRoutinesGenerator = AMRRoutinesGenerator.AMRRoutinesGenerator(generateContext(g_config))
     amrRoutinesGenerator.generateCode()
+    g_runtimes['amrRoutinesGenerator'] = time.perf_counter() - start
 
 
 def executeLibxsmmGenerator(i_commandLineParameters):
@@ -160,3 +192,7 @@ def generateAssemblerCode(i_outputFileName,
                                  ' ' + l_matmul.prefetchStrategy+ \
                                  ' ' + 'DP' #always use double precision, 'SP' for single
         executeLibxsmmGenerator(l_commandLineArguments)
+
+def printRuntimes():
+    for key, value in g_runtimes.items():
+        print(key+": "+str(value))
