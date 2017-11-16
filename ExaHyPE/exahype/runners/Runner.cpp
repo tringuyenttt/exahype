@@ -311,6 +311,13 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     break;
   }
   #endif
+
+
+
+  #if  defined(SharedTBBInvade)
+  double localData[3] = { 0.0, 0.0, 0.0 };
+  SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
+  #endif
 }
 
 
