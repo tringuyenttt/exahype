@@ -117,7 +117,8 @@ config = {
            "architecture"          : l_commandLineArguments.architecture,
            "pathToLibxsmmGemmGenerator"  : os.path.join(os.path.dirname(__file__),pathToLibxsmmGemmGenerator),
            "quadratureType"        : "Gauss-Legendre", #TODO JMG other type as argument
-           "useLibxsmm"            : True
+           "useLibxsmm"            : True,
+           "runtimeDebug"          : False #for debug
           }
 
 # configure global setup of the code generator
@@ -129,5 +130,7 @@ Backend.prepareOutputDirectory(config['pathToOutputDirectory'])
 # generate the compute kernels.
 Backend.generateComputeKernels()
 
+if config['runtimeDebug']: 
+    Backend.printRuntimes() #print runtimes of generators
 
 
