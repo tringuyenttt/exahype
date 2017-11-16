@@ -127,7 +127,18 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::configureForPrimaryRanksDeliver
 tarch::parallel::messages::WorkerRequestMessage mpibalancing::SFCDiffusionNodePoolStrategy::extractElementFromRequestQueue(RequestQueue& queue) {
   assertion( !queue.empty() );
 
-  RequestQueue::iterator pResultInQueue = queue.begin();
+  RequestQueue::iterator p                   = queue.begin();
+  RequestQueue::iterator pResultInQueue      = queue.begin();
+  int                    maxWorkersRequested = 0;
+  while (p!=queue.end()) {
+    maxWorkersRequested = std::max( maxWorkersRequested,p->getNumberOfRequestedWorkers() );
+    if (maxWorkersRequested==p->getNumberOfRequestedWorkers()) {
+      pResultInQueue = p;
+    }
+    p++;
+  }
+  assertion(pResultInQueue!=queue.end());
+
   tarch::parallel::messages::WorkerRequestMessage result = *pResultInQueue;
   queue.erase(pResultInQueue);
 
