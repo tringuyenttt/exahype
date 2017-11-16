@@ -826,19 +826,6 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
     invasionWatch.getCalendarTime()
   );
   amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
-
-  // share local performance model with other ranks running on same node
-  /*
-  int myIndexWithinSharedUserData;
-  int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
-  assertionEquals(ranksOnThisNode,6);
-
-  for (int k=0; k<ranksOnThisNode; k++) {
-    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
-    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
-    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
-  }
-  */
   
   //
   //
@@ -898,7 +885,10 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
     peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
       myIndexWithinSharedUserData,
       t1,f,s,
-      SHMInvadeRoot::get_max_available_cores()
+      SHMInvadeRoot::get_max_available_cores(),
+      // @todo Hack, bitte anpassen auf no of ranks -> Parser Objekt waere da
+      tarch::parallel::Node::getInstance().getRank()==0 ||
+      tarch::parallel::Node::getInstance().getRank()==6
     ),
     2
     );
