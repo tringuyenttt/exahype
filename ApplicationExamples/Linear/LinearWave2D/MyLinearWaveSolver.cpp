@@ -52,10 +52,13 @@ void Linear::MyLinearWaveSolver::adjustSolution(double *luh, const tarch::la::Ve
 	luh[id_3(j,i,2)]  = 0;
 
 	// Parameters
-	luh[id_3(j,i,3)]  = 2.7;     // density
-	luh[id_3(j,i,4)]  = 6.0;   // wavespeed
-
-
+	//	luh[id_3(j,i,3)]  = 2.7;     // density
+	//	luh[id_3(j,i,4)]  = 6.0;   // wavespeed
+	
+	// Parameters
+	luh[id_3(j,i,3)]  = 1.0;     // density
+	luh[id_3(j,i,4)]  = 1.0;   // wavespeed
+	
       }
     }
 
@@ -302,115 +305,115 @@ void Linear::MyLinearWaveSolver::riemannSolver_Nodal(double v_p,double v_m, doub
 
 
 
-void Linear::MyLinearWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
+// void Linear::MyLinearWaveSolver::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double dt,const int normalNonZeroIndex, bool isBoundaryFace, int faceIndex){
 
-  constexpr int numberOfVariables  = MyLinearWaveSolver::NumberOfVariables;
-  constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
-  constexpr int numberOfParameters = MyLinearWaveSolver::NumberOfParameters;
-  constexpr int numberOfData       = numberOfVariables+numberOfParameters;
-  constexpr int basisSize          = MyLinearWaveSolver::Order+1;
-  constexpr int order              = basisSize - 1;
+//   constexpr int numberOfVariables  = MyLinearWaveSolver::NumberOfVariables;
+//   constexpr int numberOfVariables2 = numberOfVariables*numberOfVariables;
+//   constexpr int numberOfParameters = MyLinearWaveSolver::NumberOfParameters;
+//   constexpr int numberOfData       = numberOfVariables+numberOfParameters;
+//   constexpr int basisSize          = MyLinearWaveSolver::Order+1;
+//   constexpr int order              = basisSize - 1;
   
-  kernels::idx2 idx_QLR(basisSize, numberOfData);
+//   kernels::idx2 idx_QLR(basisSize, numberOfData);
   
-  kernels::idx2 idx_FLR(basisSize, numberOfVariables);
+//   kernels::idx2 idx_FLR(basisSize, numberOfVariables);
   
-  double n[2]={0,0};
-  n[normalNonZeroIndex]=1;
+//   double n[2]={0,0};
+//   n[normalNonZeroIndex]=1;
   
-  double cp_p;
-  double rho_p;
-  double lam_p;
+//   double cp_p;
+//   double rho_p;
+//   double lam_p;
 
-  double cp_m;
-  double rho_m;
-  double lam_m;
+//   double cp_m;
+//   double rho_m;
+//   double lam_m;
   
-  double n_p[2]={0,0};
-  double n_m[2]={0,0};
+//   double n_p[2]={0,0};
+//   double n_m[2]={0,0};
 
-  double m_p[2]={0,0};
-  double m_m[2]={0,0};
+//   double m_p[2]={0,0};
+//   double m_m[2]={0,0};
   
-  double norm_p_qr;
-  double norm_m_qr;
+//   double norm_p_qr;
+//   double norm_m_qr;
   
-  //std::cout<<" riemann solver called"<<std::endl;
-  //std::exit(-1);
+//   //std::cout<<" riemann solver called"<<std::endl;
+//   //std::exit(-1);
   
 
-  for (int k = 0; k < 2; k++){
+//   for (int k = 0; k < 2; k++){
     
-    n_m[k] = n[k];
-    n_p[k] = n[k];
+//     n_m[k] = n[k];
+//     n_p[k] = n[k];
     
-  }
+//   }
   
-  norm_m_qr = 1.0;
-  norm_p_qr = 1.0;   
+//   norm_m_qr = 1.0;
+//   norm_p_qr = 1.0;   
   
   
-  for (int i = 0; i < basisSize; i++) {
+//   for (int i = 0; i < basisSize; i++) {
     
-    rho_m = QL[idx_QLR(i,3)];
-    cp_m  = QL[idx_QLR(i,4)];
-    lam_m = cp_m*cp_m*rho_m;
+//     rho_m = QL[idx_QLR(i,3)];
+//     cp_m  = QL[idx_QLR(i,4)];
+//     lam_m = cp_m*cp_m*rho_m;
 
-    rho_p = QR[idx_QLR(i,3)];
-    cp_p  = QR[idx_QLR(i,4)];
-    lam_p = cp_p*cp_p*rho_p;
+//     rho_p = QR[idx_QLR(i,3)];
+//     cp_p  = QR[idx_QLR(i,4)];
+//     lam_p = cp_p*cp_p*rho_p;
     
     
     
-    double v_m=QL[idx_QLR(i,1)]*n_m[0]+QL[idx_QLR(i,2)]*n_m[1];
-    double v_p=QR[idx_QLR(i,1)]*n_p[0]+QR[idx_QLR(i,2)]*n_p[1];
+//     double v_m=QL[idx_QLR(i,1)]*n_m[0]+QL[idx_QLR(i,2)]*n_m[1];
+//     double v_p=QR[idx_QLR(i,1)]*n_p[0]+QR[idx_QLR(i,2)]*n_p[1];
     
-    double sigma_m = QL[idx_QLR(i,0)];
-    double sigma_p = QR[idx_QLR(i,0)];
+//     double sigma_m = QL[idx_QLR(i,0)];
+//     double sigma_p = QR[idx_QLR(i,0)];
     
     
-    double z_p=rho_p*cp_p;
-    double z_m=rho_m*cp_m;
+//     double z_p=rho_p*cp_p;
+//     double z_m=rho_m*cp_m;
     
-    double v_hat_p=0;
-    double v_hat_m=0;
-    double sigma_hat_p=0;
-    double sigma_hat_m=0;
+//     double v_hat_p=0;
+//     double v_hat_m=0;
+//     double sigma_hat_p=0;
+//     double sigma_hat_m=0;
 
-    double r = 0.;
+//     double r = 0.;
 
-    if (faceIndex  == 2) { r = 1.0;} 
+//     if (faceIndex  == 2) { r = 1.0;} 
     
-    if (isBoundaryFace) { // external boundaries
-      if (faceIndex % 2  == 0) {
+//     if (isBoundaryFace) { // external boundaries
+//       if (faceIndex % 2  == 0) {
 	
-	riemannSolver_BC0(v_p, sigma_p, z_p, r, v_hat_p, sigma_hat_p);
-	riemannSolver_BC0(v_m, sigma_m, z_m, r, v_hat_m, sigma_hat_m);
-      }
+// 	riemannSolver_BC0(v_p, sigma_p, z_p, r, v_hat_p, sigma_hat_p);
+// 	riemannSolver_BC0(v_m, sigma_m, z_m, r, v_hat_m, sigma_hat_m);
+//       }
       
       
-      if  (faceIndex % 2  == 1) {
+//       if  (faceIndex % 2  == 1) {
 	
 	
-	riemannSolver_BCn(v_p, sigma_p, z_p, r, v_hat_p, sigma_hat_p);
-	riemannSolver_BCn(v_m, sigma_m, z_m, r, v_hat_m, sigma_hat_m);
-      }
+// 	riemannSolver_BCn(v_p, sigma_p, z_p, r, v_hat_p, sigma_hat_p);
+// 	riemannSolver_BCn(v_m, sigma_m, z_m, r, v_hat_m, sigma_hat_m);
+//       }
       
-    }
-    else {// inter-element boundaries
-      riemannSolver_Nodal(v_p,v_m, sigma_p, sigma_m, z_p , z_m, v_hat_p , v_hat_m, sigma_hat_p, sigma_hat_m);
-    }
+//     }
+//     else {// inter-element boundaries
+//       riemannSolver_Nodal(v_p,v_m, sigma_p, sigma_m, z_p , z_m, v_hat_p , v_hat_m, sigma_hat_p, sigma_hat_m);
+//     }
         
-    FR[idx_FLR(i,0)] = -norm_p_qr*0.5*lam_p*((v_p-v_hat_p) - (sigma_p-sigma_hat_p)/z_p);
-    FL[idx_FLR(i,0)] =  norm_m_qr*0.5*lam_m*((v_m-v_hat_m) + (sigma_m-sigma_hat_m)/z_m);
+//     FR[idx_FLR(i,0)] = -norm_p_qr*0.5*lam_p*((v_p-v_hat_p) - (sigma_p-sigma_hat_p)/z_p);
+//     FL[idx_FLR(i,0)] =  norm_m_qr*0.5*lam_m*((v_m-v_hat_m) + (sigma_m-sigma_hat_m)/z_m);
     
-    FR[idx_FLR(i,1)] = norm_p_qr*0.5/rho_p*(z_p*(v_p-v_hat_p) - (sigma_p-sigma_hat_p))*n_p[0];
-    FL[idx_FLR(i,1)] = norm_m_qr*0.5/rho_m*(z_m*(v_m-v_hat_m) + (sigma_m-sigma_hat_m))*n_m[0];
+//     FR[idx_FLR(i,1)] = norm_p_qr*0.5/rho_p*(z_p*(v_p-v_hat_p) - (sigma_p-sigma_hat_p))*n_p[0];
+//     FL[idx_FLR(i,1)] = norm_m_qr*0.5/rho_m*(z_m*(v_m-v_hat_m) + (sigma_m-sigma_hat_m))*n_m[0];
     
-    FR[idx_FLR(i,2)] = norm_p_qr*0.5/rho_p*(z_p*(v_p-v_hat_p) - (sigma_p-sigma_hat_p))*n_p[1];
-    FL[idx_FLR(i,2)] = norm_m_qr*0.5/rho_m*(z_m*(v_m-v_hat_m) + (sigma_m-sigma_hat_m))*n_m[1];
+//     FR[idx_FLR(i,2)] = norm_p_qr*0.5/rho_p*(z_p*(v_p-v_hat_p) - (sigma_p-sigma_hat_p))*n_p[1];
+//     FL[idx_FLR(i,2)] = norm_m_qr*0.5/rho_m*(z_m*(v_m-v_hat_m) + (sigma_m-sigma_hat_m))*n_m[1];
         
-  }
+//   }
   
-}
+// }
 
