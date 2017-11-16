@@ -765,7 +765,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
         runOneTimeStepWithThreeSeparateAlgorithmicSteps(repository, plot);
       }
 
-      postProcessTimeStepInSharedMemoryEnvironment(repository);
+      postProcessTimeStepInSharedMemoryEnvironment();
 
       logDebug("runAsMaster(...)", "state=" << repository.getState().toString());
     }
@@ -787,9 +787,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 }
 
 
-void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
-  const exahype::repositories::Repository&   repository
-) {
+void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   #if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis) && !defined(Parallel)
   if (sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize::hasLearnedSinceLastQuery()) {
     static int dumpCounter = -1;
@@ -844,10 +842,14 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment(
   );
 
   // ask for an optimal number of cores for local rank
-  int optimalNumberOfThreads = peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
-    myIndexWithinSharedUserData,
-    t1,f,s,
-    SHMInvadeRoot::get_max_available_cores() );
+  int optimalNumberOfThreads = std::max(
+    peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
+      myIndexWithinSharedUserData,
+      t1,f,s,
+      SHMInvadeRoot::get_max_available_cores()
+    ),
+    2
+    );
   logInfo(
     "postProcessTimeStepInSharedMemoryEnvironment()",
     "try to use " << optimalNumberOfThreads << " threads" );
