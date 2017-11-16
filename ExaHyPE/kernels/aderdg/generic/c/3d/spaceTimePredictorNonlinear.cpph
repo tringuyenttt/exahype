@@ -313,7 +313,6 @@ namespace {
       // 5. Exit condition
       constexpr double tol = 1e-7;
       if (sq_res < tol * tol) {
-        std::cout << "STP: happy breakdown with #iter=" << iter << std::endl;
         break;
       }
       
