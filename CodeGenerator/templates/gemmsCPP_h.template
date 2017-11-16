@@ -21,6 +21,7 @@ namespace {{namespaceName}} {
 // amrRoutines gemms
 void {{gemm_prefix}}_{{nData}}_{{nDof}}_{{nDof}}_face_Q(const double* A, const double* B, double* C);
 void {{gemm_prefix}}_{{nVar }}_{{nDof}}_{{nDof}}_face_F(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nData}}_{{nDof}}_{{nDof}}_volume(const double* A, const double* B, double* C);
 
 
 {% if isLinear %}
@@ -33,7 +34,6 @@ void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_rhs_z(const double* A, const dou
 {% endif %}  
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lqi(const double* A, const double* B, double* C);
 {% endif %}
-
 {% if useNCP %}
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_x(const double* A, const double* B, double* C);
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_y(const double* A, const double* B, double* C);
