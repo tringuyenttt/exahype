@@ -315,8 +315,20 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
 
   #if  defined(SharedTBBInvade)
-  double localData[3] = { 0.0, 0.0, 0.0 };
+  double localData[3] = { 1.0, 1.0, 0.0 };
   SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
+  logInfo( "initSharedMemoryConfiguration()", "initialised local shared memory region with dummies" );
+
+  #if defined(Asserts)
+  int myIndexWithinSharedUserData;
+  int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
+  
+  for (int k=0; k<ranksOnThisNode; k++) {
+    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
+    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
+    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
+  }
+  #endif
   #endif
 }
 
@@ -816,8 +828,33 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
 
   // share local performance model with other ranks running on same node
+  /*
+  int myIndexWithinSharedUserData;
+  int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
+  assertionEquals(ranksOnThisNode,6);
+
+  for (int k=0; k<ranksOnThisNode; k++) {
+    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
+    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
+    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
+  }
+  */
+  
+  //
+  //
+  //
   double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
   SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
+
+  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "ranksOnThisNode=" << ranksOnThisNode );
+  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[0]=" << localData[0] );
+  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[1]=" << localData[1] );
+  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[2]=" << localData[2] );
+
+  assertion2( amdahlsLaw.getSerialTime()>=0.0,           amdahlsLaw.getSerialTime(),            amdahlsLaw.toString() );
+  assertion2( amdahlsLaw.getSerialCodeFraction()>=0.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
+  assertion2( amdahlsLaw.getSerialCodeFraction()<=1.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
+  assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
 
   // get data from the other guys
   int myIndexWithinSharedUserData;
@@ -827,9 +864,17 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   std::vector<double>  f;
   std::vector<double>  s;
   for (int k=0; k<ranksOnThisNode; k++) {
+    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,0)>1e-12 );
+    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,1)>=0.0 );
+    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,2)>=0.0 );
+
     t1.push_back( SHMController::getSingleton()->getSharedUserData<double>(k,0) );
     f.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,1) );
     s.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,2) );
+
+    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
+    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
+    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
   }
 
   assertionNumericalEquals6(
