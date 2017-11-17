@@ -382,8 +382,14 @@ exahype::Parser::MPILoadBalancingType exahype::Parser::getMPILoadBalancingType()
   return result;
 }
 
+
 std::string exahype::Parser::getMPIConfiguration() const {
   return getTokenAfter("distributed-memory", "configure");
+}
+
+
+std::string exahype::Parser::getSharedMemoryConfiguration() const {
+  return getTokenAfter("shared-memory", "configure");
 }
 
 

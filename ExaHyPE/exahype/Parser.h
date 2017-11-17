@@ -213,6 +213,7 @@ class exahype::Parser {
 
   MPILoadBalancingType getMPILoadBalancingType() const;
   std::string getMPIConfiguration() const;
+  std::string getSharedMemoryConfiguration() const;
   int getMPIBufferSize() const;
   int getMPITimeOut() const;
   bool getMPIMasterWorkerCommunication() const;
