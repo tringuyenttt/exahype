@@ -403,6 +403,8 @@ class exahype::Parser {
    * Always returns a valid value (or default if not specified).
    */
   double getNodePoolAnsweringTimeout() const;
+
+  int getRanksPerNode();
 };
 
 #endif

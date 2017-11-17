@@ -1346,6 +1346,14 @@ bool exahype::Parser::ParserView::isValueValidBool(
   }
 }
 
+
+int exahype::Parser::ParserView::getRanksPerNode() {
+  const std::string RanksPerNode = "ranks-per-node";
+
+  return static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,RanksPerNode));
+}
+
+
 bool exahype::Parser::ParserView::isValueValidString(
     const std::string& key) const {
   const std::string inputString = _parser.getTokenAfter(
