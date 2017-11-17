@@ -1347,10 +1347,10 @@ bool exahype::Parser::ParserView::isValueValidBool(
 }
 
 
-int exahype::Parser::ParserView::getRanksPerNode() {
+int exahype::Parser::getRanksPerNode() {
   const std::string RanksPerNode = "ranks-per-node";
 
-  return static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,RanksPerNode));
+  return static_cast<int>(exahype::Parser::getValueFromPropertyString(getMPIConfiguration(),RanksPerNode));
 }
 
 
