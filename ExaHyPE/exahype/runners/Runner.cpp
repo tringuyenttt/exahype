@@ -247,13 +247,13 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       new peano::datatraversal::autotuning::OracleForOnePhaseDummy(
          true, //   bool useMultithreading                  = true,
          0, //   int  grainSizeOfUserDefinedRegions      = 0,
-         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
+         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::DoNotSplit,
          #ifdef SharedOMP // Pipelining does not pay off for OpenMP (yet)
          false, //  bool pipelineDescendProcessing          = false,
          false,  //   bool pipelineAscendProcessing           = false,
          #else
-         true, //  bool pipelineDescendProcessing          = true,
-         true, //   bool pipelineAscendProcessing           = true,
+         false, //  bool pipelineDescendProcessing          = true,
+         false, //   bool pipelineAscendProcessing           = true,
          #endif
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
@@ -313,7 +313,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
 
   #if  defined(SharedTBBInvade)
-  double localData[3] = { 1.0, 1.0, 0.0 };
+  double localData[3] = { 0.0, 1.0, 1.0 };
   SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
   logInfo( "initSharedMemoryConfiguration()", "initialised local shared memory region with dummies" );
 
