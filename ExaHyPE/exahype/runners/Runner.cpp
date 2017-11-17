@@ -890,9 +890,15 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
     );
   logInfo(
     "postProcessTimeStepInSharedMemoryEnvironment()",
-    "try to use " << optimalNumberOfThreads << " threads" );
+    "it would be optimal to use " << optimalNumberOfThreads << " threads" );
 
-  tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
+  if (_parser.getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) {
+    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
+  }
+  else if (_parser.getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) {
+    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
+  }
+
   invasionWatch.startTimer();
   #endif
 }
