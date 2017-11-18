@@ -142,6 +142,11 @@ tarch::parallel::messages::WorkerRequestMessage mpibalancing::SFCDiffusionNodePo
   tarch::parallel::messages::WorkerRequestMessage result = *pResultInQueue;
   queue.erase(pResultInQueue);
 
+  logInfo(
+    "extractElementFromRequestQueue(RequestQueue)",
+    "return " << result.toString() << " with " << queue.size() << " element(s) remaining in queue"
+  );
+
   return result;
 }
 
