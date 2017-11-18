@@ -13,20 +13,41 @@
 //   return;
 // }
 
-double fault(double y, double z,double depth_y,double a_z, double b_z){
+double fault(double y, double z,double a_y, double b_y, double a_z, double b_z){
   double pi = 3.14159265359;
   double angle = 60.0/360.0 * 2 * pi;
-   std::cout << std::endl;  
-   std::cout <<y <<std::endl;
-   std::cout << 0.1*std::sin(2*pi*y) << std::endl;//*std::sin(2*pi*(z-(b_z+a_z)*0.5));
-   //   return 0.1*std::sin(2*pi*y)*z*(1-z);//*std::sin(2*pi*(z-(b_z+a_z)*0.5));
+  double depth_y = 1.0; //b_y-a_y;
+
+  double Ly = b_y-a_y;
+  double Lz = b_z-a_z;
+
+  double fault_surface;
+  
+  //std::cout << std::endl;  
+   //std::cout <<y <<std::endl;
+   //std::cout << 0.1*std::sin(2*pi*y) << std::endl;//*std::sin(2*pi*(z-(b_z+a_z)*0.5));
+  //return 0.25*std::sin(2*pi*(y-(b_y + a_y)*0.5))*z*(1-z);
+  //return  0.25*(std::sin(2*pi*y/Ly)*std::cos(2*pi*y/Ly))*std::sin(2*pi*z/Lz)*std::cos(2*pi*z/Lz);
+  //return z*(1-z);
+  //*std::sin(2*pi*(z-(b_z+a_z)*0.5));
    //std::cout <<(1.0/std::tan(angle)) * (y-depth_y/2.0) <<std::endl;
-   //return (1.0/std::tan(angle)) * (y-depth_y/2.0);
-   return z*(1-z);
+  // if (y <= 0.7){
+  //   fault_surface = (1.0/std::tan(angle)) * (y-depth_y/2.0);
+  // }else{
+  //    fault_surface = (1.0/std::tan(angle)) *(0.7 - depth_y/2);
+  //   //                           0.5_wp*atan(4.0_wp*(Yright(j,k)-15.0_wp))*exp(-5.0_wp*(Yright(j,k)-15.0_wp)))
+
+  // }
+
+  fault_surface=0.25*(std::sin(2*pi*y/Ly)*std::cos(2*pi*y/Ly))*std::sin(2*pi*z/Lz)*std::cos(2*pi*z/Lz);
+  
+  fault_surface=0;
+  return  fault_surface;
+   //return y*(1-y);
 }
 
 
-double topography(double x, double z,double a_x, double b_x,double a_z, double b_z){
+double topography(double x, double z,double a_x, double b_x,double a_z, double b_z, double depth){
 
   double pi = 3.14159265359;
   double angle = 60.0/360.0 * 2 * pi;
@@ -38,8 +59,9 @@ double topography(double x, double z,double a_x, double b_x,double a_z, double b
 
   
 
-  topo = (0.1*(x + z) + 3*(std::sin(4*pi*x/Lx+3.34)*std::cos(4*pi*x/Lx)
-				* std::sin(4*pi*z/Lz+3.34)*std::cos(4*pi*z/Lz)));
+  topo = 1.0*(0.1*(x + z) + 0.25*depth*(std::sin(4*pi*x/Lx+3.34)*std::cos(4*pi*x/Lx)
+				 * std::sin(4*pi*z/Lz+3.34)*std::cos(4*pi*z/Lz)));
+  //topo=0;
   return topo;
 }  
 
@@ -414,7 +436,7 @@ void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
       x = top_bnd_x[id_xz(k,i)];
       z = top_bnd_z[id_xz(k,i)];
 
-      top_bnd_y[id_xz(k,i)] -= topography(x, z, 0.0, 10.0, 0.0, 10.0);
+      top_bnd_y[id_xz(k,i)] -= topography(x, z, 0.0, 10.0, 0.0, 10.0, 10.0);
     }
   }
   
@@ -470,258 +492,550 @@ void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
 
 
 
-// void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
-// 				      //				      double offset_x, double offset_y, double offset_z,
-// 				      //				      double width_x, double width_y , double width_z ,
-// 						    int nx, int ny, int nz, int n,
-// 						    double width_x, double width_y , double width_z,	      
-// 						    double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
-// 						    double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
-// 						    double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
-// 						    double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
-// 						    double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
-// 						    double* back_bnd_x, double* back_bnd_y, double* back_bnd_z){
+void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
+				      //				      double offset_x, double offset_y, double offset_z,
+				      //				      double width_x, double width_y , double width_z ,
+						    int nx, int ny, int nz, int n,double fault_position,
+						    double a_x, double a_y , double a_z,
+						    double b_x, double b_y , double b_z,
+						    double width_x, double width_y , double width_z,	      
+						    double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
+						    double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
+						    double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
+						    double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
+						    double* front_bnd_x, double* front_bnd_y, double* front_bnd_z,
+						    double* back_bnd_x, double* back_bnd_y, double* back_bnd_z){
 
   
-//   double pi = 3.14159265359;
+  double pi = 3.14159265359;
 
 
-//   double dx= width_x/(nx-1);
-//   double dz= width_y/(nz-1);
-//   double dy= width_z/(ny-1);
+  double dx= width_x/(nx-1);
+  double dz= width_y/(nz-1);
+  double dy= width_z/(ny-1);
 
-//   double depth=1.0;
+  double depth= b_y;
 
-//   kernels::idx2 id_xy(ny,nx); // back front
-//   kernels::idx2 id_xz(nz,nx); // botton top
-//   kernels::idx2 id_yz(nz,ny); // left right
-
-
+  kernels::idx2 id_xy(ny,nx); // back front
+  kernels::idx2 id_xz(nz,nx); // botton top
+  kernels::idx2 id_yz(nz,ny); // left right
 
 
-//   for(int k = 0 ; k< nz; k++){
-//     for(jnt j = 0 ; j< ny; j++){
-//       left_bnd_y[id_xy(k,j)] = 0.0 +dy*j
-//       left_bnd_z[id_xy(k,j)] = 0.0 +dz*k
+  double* X1 = new double[ny*nz];
+  double* Y1 = new double[ny*nz];
+  double* Z1 = new double[ny*nz];
 
-//       if(n==0){
-// 	left_bnd_x[id_xy(k,j)] = 0.0;
-//       }else{
-// 	left_bnd_x[id_xy(k,j)] = 0.5-fault(left_bnd_y[id_xy(k,j)],left_bnd_z[id_xy(k,j)],1.0,0.0,1.0);
-//       }
+
+  double x;
+  double z;
+  double y;
+
+  
+  //given top surface
+  for(int k = 0 ; k< nz; k++){  
+    for(int i = 0 ; i< nx; i++){
       
-//     }
-//   }
+      top_bnd_y[id_xz(k,i)] = a_y;      
+      top_bnd_z[id_xz(k,i)] = a_z+dz*k;
+         
+      if(n == 0){
+	
+	top_bnd_x[id_xz(k,i)] = a_x+dx*i;
+      
+      }else{
+	
+	top_bnd_x[id_xz(k,i)] = fault_position + dx*i;
+	
+      }
 
-
-//   for(int k = 0 ; k< nz; k++){
-//     for(jnt j = 0 ; j< ny; j++){
-//       right_bnd_y[id_xy(k,j)] = 0.0 +dy*j
-//       right_bnd_z[id_xy(k,j)] = 0.0 +dz*k
-
-//       if(n==0){
-// 	right_bnd_x[id_xy(k,j)] = 0.5-fault(right_bnd_y[id_xy(k,j)],right_bnd_z[id_xy(k,j)],1.0,0.0,1.0);
-//       }else{
-// 	right_bnd_x[id_xy(k,j)] = 1.0;
-//       }
-//     }
-//   }
-
-
-//   //top
-//   double left_edge_x = new double[nx];
-//   double right_edge_x = new double[nx];
-//   double top_edge_x = new double[nx];
-//   double bottom_edge_x = new double[nx];
-
-
-//   double left_edge_z = new double[nz];
-//   double right_edge_z = new double[nz];
-//   double top_edge_z = new double[nz];
-//   double bottom_edge_z = new double[nz];
-
-//   // top face
-//   for(int i_z=0; i_z < nz ;i_z++){
-//     left_edge_x[i]  = left_bnd_x[id_yz(i_z,0)];
-//     left_edge_z[i]  = left_bnd_z[id_yz(i_z,0)];
-
-//     right_edge_x[i]  = right_bnd_x[id_yz(i_z,0)];
-//     right_edge_z[i]  = right_bnd_z[id_yz(i_z,0)];    
-//   }
-
-//   double distance_x_bottom=(right_edge_x[0]-left_edge_x[0])/(nx-1);
-//   double distance_x_top=(right_edge_x[nz-1]-left_edge_x[nz-1])/(nx-1);
+      x = top_bnd_x[id_xz(k,i)];
+      z = top_bnd_z[id_xz(k,i)];
+      
+      top_bnd_y[id_xz(k,i)] -= topography(x, z, a_x, b_x, a_z, b_z,  depth);
+    }
+  }
   
-//   for(int i_x=0; i_x < nx ;i_x++){
-//     bottom_edge_x[i]  = left_edge_x[0] + distance_x_bottom*i_x;
-//     bottom_edge_z[i]  = 0.0;
+  //fault(double y, double z,double depth_y,double a_z, double b_z)
+  //given bottom surface
+  for(int k = 0 ; k< nz; k++){
+    for(int i = 0 ; i< nx; i++){
+      
+      bottom_bnd_y[id_xz(k,i)] = depth;      
+      bottom_bnd_z[id_xz(k,i)] = top_bnd_z[id_xz(k,i)];
+      bottom_bnd_x[id_xz(k,i)] = top_bnd_x[id_xz(k,i)];
+      // if(n == 0) {
+      // 	std::cout<<bottom_bnd_x[id_xz(k, i)]<<std::endl;
+      // }
+      
+    }
+  }  
+  
+  //and the fault surface
+  for(int k = 0 ; k< nz; k++){
+    for(int j = 0 ; j< ny; j++){
+      
+      left_bnd_y[id_yz(k,j)] = a_y + dy*j;
+      left_bnd_z[id_yz(k,j)] = a_z +dz*k;
 
-//     top_edge_x[i]  = left_edge_x[nz-1] + distance_x_top*i_x;
-//     top_edge_z[i]  = 1.0;
-//   }
+      if(n==0){
+  	left_bnd_x[id_yz(k,j)] = a_x;
+      }else{
+	
+	y = left_bnd_y[id_yz(k,j)];
+	z = left_bnd_z[id_yz(k,j)];
+	
+  	left_bnd_x[id_yz(k,j)] = fault_position;
+
+	// synthetic fault not compatible with computational geometry
+	Y1[id_yz(k,j)] = a_y-(b_y-a_y)*0.3 + 1.3*dy*j;
+	Z1[id_yz(k,j)] = a_z + dz*k;
+
+	X1[id_yz(k,j)] = fault_position - fault(Y1[id_yz(k,j)], Z1[id_yz(k,j)], a_y, b_y, a_z, b_z);
+	
+      }
+      
+    }
+  }
+
+  //and the fault surface
+  for(int k = 0 ; k< nz; k++){
+    for(int j = 0 ; j< ny; j++){
+      right_bnd_y[id_yz(k,j)] = a_y + dy*j;
+      right_bnd_z[id_yz(k,j)] = a_z + dz*k;
+
+      if(n==0){
+	
+	y = right_bnd_y[id_yz(k,j)];
+	z = right_bnd_z[id_yz(k,j)];
+	
+	right_bnd_x[id_yz(k,j)] = fault_position;
+
+	// synthetic fault not compatible with computational geometry
+	Y1[id_yz(k,j)] = a_y-(b_y-a_y)*0.3 + 1.3*dy*j;
+	Z1[id_yz(k,j)] = a_z + dz*k;
+	
+	X1[id_yz(k,j)] = fault_position - fault(Y1[id_yz(k,j)], Z1[id_yz(k,j)], a_y, b_y, a_z, b_z);
+      }else{
+	right_bnd_x[id_yz(k,j)] = b_x;
+      }
+    }
+  }
+
+  double g;
+
+  for(int k = 0 ; k< nz; k++){
+    for(int j = 0 ; j< ny; j++){
+      if (n == 0){
+
+	y = right_bnd_y[id_yz(k,j)];
+	z = right_bnd_z[id_yz(k,j)];
+	
+	g =interpolate_fault_surface(X1, Y1, Z1, y, z, ny, nz);
+
+	right_bnd_x[id_yz(k,j)] = g;
+
+	
+      }
+
+      if (n == 1){
+
+	y = left_bnd_y[id_yz(k,j)];
+	z = left_bnd_z[id_yz(k,j)];
+	
+	g =interpolate_fault_surface(X1, Y1, Z1, y, z, ny, nz);
+
+	left_bnd_x[id_yz(k,j)] = g;
+	
+      }
+
+    }
+
+  }
+
+  {
+    double* top_edge_x = new double[nz];
+    double* bottom_edge_x = new double[nz];
+    
+    double* left_edge_x = new double[nx];
+    double* right_edge_x = new double[nx];
+
+    if (n == 0) {
+      double distance_x_left=(right_bnd_x[id_yz(0,ny-1)]-a_x)/(nx-1);
+      double distance_x_right=(right_bnd_x[id_yz(nz-1,ny-1)]-a_x)/(nx-1);
+      
+      for (int k = 0; k < nz; k++){
+	
+	top_edge_x[k] = right_bnd_x[id_yz(k,ny-1)];
+	bottom_edge_x[k] = a_x;
+	
+      }
+      
+      for (int i = 0; i < nx; i++){
+	
+	left_edge_x[i] = a_x + i*distance_x_left;
+	right_edge_x[i] = a_x + i*distance_x_right;
+	
+	
+      }
+      
+      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, bottom_bnd_x);
+      
+      
+      distance_x_left=(right_bnd_x[id_yz(0,0)]-a_x)/(nx-1);
+      distance_x_right=(right_bnd_x[id_yz(nz-1,0)]-a_x)/(nx-1);
+      
+      for (int k = 0; k < nz; k++){
+	
+	top_edge_x[k] = right_bnd_x[id_yz(k,0)];
+	bottom_edge_x[k] = a_x;
+	
+      }
+      
+      for (int i = 0; i < nx; i++){
+	
+	left_edge_x[i] = a_x + i*distance_x_left;
+	right_edge_x[i] = a_x + i*distance_x_right;
+	
+	
+      }
+      
+      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, top_bnd_x);
+      
+      
+    }
+    
+    if (n == 1) {
+      double distance_x_left=(b_x - left_bnd_x[id_yz(0,ny-1)])/(nx-1);
+      double distance_x_right=(b_x - left_bnd_x[id_yz(nz-1,ny-1)])/(nx-1);
+      
+      for (int k = 0; k < nz; k++){
+	
+	top_edge_x[k] = b_x;
+	bottom_edge_x[k] = left_bnd_x[id_yz(k,ny-1)];
+	
+      }
+      
+      //
+      
+      for (int i = 0; i < nx; i++){
+	
+	left_edge_x[i] = left_bnd_x[id_yz(0,ny-1)] + i*distance_x_left;
+	right_edge_x[i] =  left_bnd_x[id_yz(nz-1,ny-1)] + i*distance_x_right;
+	
+	
+	
+      }
+      
+      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, bottom_bnd_x);
+      
+      
+      distance_x_left=(b_x - left_bnd_x[id_yz(0,0)])/(nx-1);
+      distance_x_right=(b_x - left_bnd_x[id_yz(nz-1,0)])/(nx-1);
+      
+      for (int k = 0; k < nz; k++){
+	
+	top_edge_x[k] = b_x;
+	bottom_edge_x[k] = left_bnd_x[id_yz(k,0)];   
+	
+      }
+      
+      
+      
+      for (int i = 0; i < nx; i++){
+	
+	left_edge_x[i] = left_bnd_x[id_yz(0,0)] + i*distance_x_left;
+	right_edge_x[i] =  left_bnd_x[id_yz(nz-1,0)] + i*distance_x_right;
+	
+      }
+      
+      transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, top_bnd_x);
+      
+    }
+  }
+   //given top surface
+  for(int k = 0 ; k< nz; k++){  
+    for(int i = 0 ; i< nx; i++){
+      
+      x = top_bnd_x[id_xz(k,i)];
+      z = top_bnd_z[id_xz(k,i)];
+	
+      top_bnd_y[id_xz(k,i)] = -topography(x, z, a_x, b_x, a_z, b_z,  depth);
+    }
+  }
   
 
-//   transFiniteInterpolation_singleCoordinate( nx, nz ,  left_edge_x,  right_edge_x,  top_edge_x,  bottom_edge_x,  top_bnd_x );
-//   transFiniteInterpolation_singleCoordinate( nx, nz ,  left_edge_z,  right_edge_z,  top_edge_z,  bottom_edge_z,  top_bnd_z );  
-  
-//   for(int k=0; k < nz ;k++){
-//     for(int i=0; i < nx ;i++){
-//       top_bnd_y[id_xz(k,i)]=0.0;
-//     }
-//   }
+  {
+  double* top_edge_y = new double[nz];
+  double* bottom_edge_y = new double[nz];
+
+  double* left_edge_y = new double[ny];
+  double* right_edge_y = new double[ny];
 
 
-//   // bottom face
-//   for(int i_z=0; i_z < nz ;i_z++){
-//     left_edge_x[i]  = left_bnd_x[id_yz(i_z,ny-1)];
-//     left_edge_z[i]  = left_bnd_z[id_yz(i_z,ny-1)];
+  if ( n == 0){
+    double distance_y_left=(bottom_bnd_y[id_xz(0,nx-1)]-top_bnd_y[id_xz(0,nx-1)])/(ny-1);
+    double distance_y_right=(bottom_bnd_y[id_xz(nz-1,nx-1)]-top_bnd_y[id_xz(nz-1,nx-1)])/(ny-1);
+    
 
-//     right_edge_x[i]  = right_bnd_x[id_yz(i_z,ny-1)];
-//     right_edge_z[i]  = right_bnd_z[id_yz(i_z,ny-1)];    
-//   }
+    for (int k = 0; k < nz; k++){
 
-//   double distance_x_bottom=(right_edge_x[0]-left_edge_x[0])/(nx-1);
-//   double distance_x_top=(right_edge_x[nz-1]-left_edge_x[nz-1])/(nx-1);
-  
-//   for(int i_x=0; i_x < nx ;i_x++){
-//     bottom_edge_x[i]  = left_edge_x[0] + distance_x_bottom*i_x;
-//     bottom_edge_z[i]  = 0.0;
+      top_edge_y[k] = top_bnd_y[id_xz(k,nx-1)];
+      bottom_edge_y[k] = bottom_bnd_y[id_xz(k,nx-1)];
+     
+   }
 
-//     top_edge_x[i]  = left_edge_x[nz-1] + distance_x_top*i_x;
-//     top_edge_z[i]  = 1.0;
-//   }
-  
+    for (int j = 0; j < ny; j++){
 
-//   transFiniteInterpolation_singleCoordinate( nx, nz ,  left_edge_x,  right_edge_x,  top_edge_x,  bottom_edge_x,  bottom_bnd_x );
-//   transFiniteInterpolation_singleCoordinate( nx, nz ,  left_edge_z,  right_edge_z,  top_edge_z,  bottom_edge_z,  bottom_bnd_z );  
-  
-//   for(int k=0; k < nz ;k++){
-//     for(int i=0; i < nx ;i++){
-//       bottom_bnd_y [id_xz(k,i)]=1.0;
-//     }
-//   }
+      left_edge_y[j]  = top_bnd_y[id_xz(0,nx-1)]    + j*distance_y_left;
+      right_edge_y[j] = top_bnd_y[id_xz(nz-1,nx-1)] + j*distance_y_right;
+     
+   }
+
+    transFiniteInterpolation_singleCoordinate(ny, nz, top_edge_y, bottom_edge_y, left_edge_y, right_edge_y,  right_bnd_y);
 
 
+    distance_y_left=(bottom_bnd_y[id_xz(0,0)]-top_bnd_y[id_xz(0,0)])/(ny-1);
+    distance_y_right=(bottom_bnd_y[id_xz(nz-1,0)]-top_bnd_y[id_xz(nz-1,0)])/(ny-1);
 
-//   // front face
-//   for(int i_y=0; i_y < ny ;i_y++){
-//     left_edge_x[i]  = left_bnd_x[id_yz(0,i_y)];
-//     left_edge_y[i]  = left_bnd_y[id_yz(0,i_y)];
 
-//     right_edge_x[i]  = right_bnd_x[id_yz(0,i_y)];
-//     right_edge_z[i]  = right_bnd_z[id_yz(0,i_y)];    
-//   }
+    for (int k = 0; k < nz; k++){
 
-//   double distance_x_bottom=(right_edge_x[0]-left_edge_x[0])/(nx-1);
-//   double distance_x_top=(right_edge_x[nz-1]-left_edge_x[nz-1])/(nx-1);
-  
-//   for(int i_x=0; i_x < nx ;i_x++){
-//     bottom_edge_x[i]  = left_edge_x[0] + distance_x_bottom*i_x;
-//     bottom_edge_z[i]  = 0.0;
+      top_edge_y[k] = top_bnd_y[id_xz(k,0)];
+      bottom_edge_y[k] = bottom_bnd_y[id_xz(k,0)];
+     
+   }
 
-//     top_edge_x[i]  = left_edge_x[nz-1] + distance_x_top*i_x;
-//     top_edge_z[i]  = 1.0;
-//   }
+    for (int j = 0; j < ny; j++){
+
+      left_edge_y[j]  = top_bnd_y[id_xz(0,0)]     + j*distance_y_left;
+      right_edge_y[j] = top_bnd_y[id_xz(nz-1,0)]  + j*distance_y_right;
+     
+   }
+
+    transFiniteInterpolation_singleCoordinate(ny, nz, top_edge_y, bottom_edge_y, left_edge_y, right_edge_y,  left_bnd_y);
+  }
   
 
-//   transFiniteInterpolation_singleCoordinate( nx, nz ,  left_edge_x,  right_edge_x,  top_edge_x,  bottom_edge_x,  front_bnd_x );
-//   transFiniteInterpolation_singleCoordinate( nx, nz ,  left_edge_z,  right_edge_z,  top_edge_z,  bottom_edge_z,  front_bnd_z );  
+  if ( n == 1){
+    double distance_y_left=(bottom_bnd_y[id_xz(0,0)]-top_bnd_y[id_xz(0,0)])/(ny-1);
+    double distance_y_right=(bottom_bnd_y[id_xz(nz-1,0)]-top_bnd_y[id_xz(nz-1,0)])/(ny-1);
+    
+    for (int k = 0; k < nz; k++){
+
+      top_edge_y[k] = top_bnd_y[id_xz(k,0)];
+      bottom_edge_y[k] = bottom_bnd_y[id_xz(k,0)];
+     
+   }
+
+    for (int j = 0; j < ny; j++){
+
+      left_edge_y[j] = top_bnd_y[id_xz(0,0)] + j*distance_y_left;
+      right_edge_y[j] = top_bnd_y[id_xz(nz-1,0)] + j*distance_y_right;
+     
+   }
+
+    transFiniteInterpolation_singleCoordinate(ny, nz, top_edge_y, bottom_edge_y, left_edge_y, right_edge_y,  left_bnd_y);
+
+    distance_y_left=(bottom_bnd_y[id_xz(0,nx-1)]-top_bnd_y[id_xz(0,nx-1)])/(ny-1);
+    distance_y_right=(bottom_bnd_y[id_xz(nz-1,nx-1)]-top_bnd_y[id_xz(nz-1,nx-1)])/(ny-1);
+    
+    for (int k = 0; k < nz; k++){
+
+      top_edge_y[k] = top_bnd_y[id_xz(k,nx-1)];
+      bottom_edge_y[k] = bottom_bnd_y[id_xz(k,nx-1)];
+     
+   }
+
+    for (int j = 0; j < ny; j++){
+
+      left_edge_y[j] = top_bnd_y[id_xz(0,nx-1)] + j*distance_y_left;
+      right_edge_y[j] = top_bnd_y[id_xz(nz-1,nx-1)] + j*distance_y_right;
+     
+   }
+
+    transFiniteInterpolation_singleCoordinate(ny, nz, top_edge_y, bottom_edge_y, left_edge_y, right_edge_y,  right_bnd_y);
+  }
+  
+ 
+  }
 
 
+  double* top_edge_y = new double[nx];
+  double* bottom_edge_y = new double[nx];
+
+  double* left_edge_y = new double[ny];
+  double* right_edge_y = new double[ny];
+
+ double distance_y_left=(bottom_bnd_y[id_xz(0,0)]-top_bnd_y[id_xz(0,0)])/(ny-1);
+ double distance_y_right=(bottom_bnd_y[id_xz(0,nx-1)]-top_bnd_y[id_xz(0,nx-1)])/(ny-1);
+    
+    for (int i = 0; i < nx; i++){
+
+      top_edge_y[i] = top_bnd_y[id_xz(0,i)];
+      bottom_edge_y[i] = bottom_bnd_y[id_xz(0,i)];
+
+      
+     
+   }
+
+    
+
+    for (int j = 0; j < ny; j++){
+
+      left_edge_y[j]  = top_bnd_y[id_xz(0,0)] + j*distance_y_left;
+      right_edge_y[j] = top_bnd_y[id_xz(0,nx-1)] + j*distance_y_right;
+
+      
+     
+   }
+
+    
+
+    transFiniteInterpolation_singleCoordinate(nx, ny, left_edge_y, right_edge_y, top_edge_y, bottom_edge_y, front_bnd_y);
+
+
+    distance_y_left=(bottom_bnd_y[id_xz(nz-1,0)]-top_bnd_y[id_xz(nz-1,0)])/(ny-1);
+    distance_y_right=(bottom_bnd_y[id_xz(nz-1,nx-1)]-top_bnd_y[id_xz(nz-1,nx-1)])/(ny-1);
+
+    
+    for (int i = 0; i < nx; i++){
+      
+      top_edge_y[i] = top_bnd_y[id_xz(nz-1,i)];
+      bottom_edge_y[i] = bottom_bnd_y[id_xz(nz-1,i)];
+     
+   }
+
+    for (int j = 0; j < ny; j++){
+
+      left_edge_y[j] = top_bnd_y[id_xz(nz-1,0)] + j*distance_y_left;
+      right_edge_y[j] = top_bnd_y[id_xz(nz-1,nx-1)] + j*distance_y_right;
+      
+   }
+
+
+    transFiniteInterpolation_singleCoordinate(nx, ny, left_edge_y, right_edge_y,  top_edge_y, bottom_edge_y,   back_bnd_y);
+
+
+    double* top_edge_x = new double[ny];
+    double* bottom_edge_x = new double[ny];
+    
+    double* left_edge_x = new double[nx];
+    double* right_edge_x = new double[nx];
+    if (n == 0)
+      {
+    double distance_x_left=(right_bnd_x[id_yz(nz-1,0)]-0)/(nx-1);
+    double distance_x_right=(right_bnd_x[id_yz(nz-1,ny-1)]-0)/(nx-1);
+
+
+
+    for (int j = 0; j < ny; j++){
+
+      bottom_edge_x[j] = a_x;
+      top_edge_x[j] = right_bnd_x[id_yz(nz-1,j)];
+     
+   }
+
+
+    for (int i = 0; i < nx; i++){
+
+
+       left_edge_x[i] = a_x + i*distance_x_left;
+      right_edge_x[i] = a_x + i*distance_x_right;
+
+     
+   }
+
+    transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x,  top_edge_x, left_edge_x, right_edge_x,  back_bnd_x);
+
+    
+
+    distance_x_left=(right_bnd_x[id_yz(0,0)]-0)/(nx-1);
+    distance_x_right=(right_bnd_x[id_yz(0,ny-1)]-0)/(nx-1);
+
+
+    for (int j = 0; j < ny; j++){
+
+      top_edge_x[j] = right_bnd_x[id_yz(0,j)];
+      bottom_edge_x[j] = a_x;
+
+     
+   }
+
+
+    for (int i = 0; i < nx; i++){
+
+      left_edge_x[i] = a_x + i*distance_x_left;
+      right_edge_x[i] = a_x + i*distance_x_right;
+ 
+     
+   }
+    
+    transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, front_bnd_x);
+      }
+
+
+    if (n == 1)
+      {
+    double distance_x_left=(b_x-left_bnd_x[id_yz(nz-1,0)])/(nx-1);
+    double distance_x_right=(b_x-left_bnd_x[id_yz(nz-1,ny-1)])/(nx-1);
+
+
+
+    for (int j = 0; j < ny; j++){
+
+      bottom_edge_x[j] = left_bnd_x[id_yz(nz-1,j)];
+      top_edge_x[j] = b_x;
+     
+   }
+
+
+    for (int i = 0; i < nx; i++){
+
+
+       left_edge_x[i] = left_bnd_x[id_yz(nz-1,0)] + i*distance_x_left;
+      right_edge_x[i] = left_bnd_x[id_yz(nz-1,ny-1)] + i*distance_x_right;
+
+
+     
+   }
+
+    transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x,  top_edge_x, left_edge_x, right_edge_x,  back_bnd_x);
+
+
+    distance_x_left=(b_x-left_bnd_x[id_yz(0,0)])/(nx-1);
+    distance_x_right=(b_x-left_bnd_x[id_yz(0,ny-1)])/(nx-1);
+
+
+    for (int j = 0; j < ny; j++){
+
+      top_edge_x[j] = b_x;
+      bottom_edge_x[j] = left_bnd_x[id_yz(0,j)];
+     
+   }
+
+
+    for (int i = 0; i < nx; i++){
+
+      left_edge_x[i] = left_bnd_x[id_yz(0,0)] + i*distance_x_left;
+      right_edge_x[i] = left_bnd_x[id_yz(0,ny-1)] + i*distance_x_right;
+
+     
+   }
+
+    transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, front_bnd_x);
+      }
+
+    
+    for(int j = 0 ; j< ny; j++){
+      for(int i = 0 ; i< nx; i++){
+	
+	front_bnd_z[id_xy(j,i)] = a_z;
+	back_bnd_z[id_xy(j,i)] = b_z;
+      }
+    }
 
   
-
-
-
-
-
-//   for(int j = 0 ; j< ny; j++){
-//     for(int i = 0 ; i< nx; i++){
-//       front_bnd_y[id_xy(j,i)] = 0+dy*j;
-//       front_bnd_z[id_xy(j,i)] = 0;
-
-//       if(n == 0){
-// 	front_bnd_x[id_xy(j,i)] = 0+dx*i;
-//       }else{
-// 	front_bnd_x[id_xy(j,i)] = 0.5+dx*i;
-//       }
-//     }
-//   }
-
-//   for(int j = 0 ; j< ny; j++){
-//     for(int i = 0 ; i< nx; i++){
-//       back_bnd_x[id_xy(j,i)] = front_bnd_x[id_xy(j,i)]
-//       back_bnd_y[id_xy(j,i)] = front_bnd_y[id_xy(j,i)]
-//       back_bnd_z[id_xy(j,i)] = 1.0;
-//     }
-//   }
-
-
-//   int n_left_right=ny;
-
-  
-//   int n_block;
-//   int n_top_bottom;
-
-//   //left face
-//   n_block = nx;
-//   n_top_bottom = nz;
-
-//                                      //n_block, n_left_right, n_top_bottom,
-//   getInterpolatedFace_fromBottomAndTop(n_block, n_left_right, n_top_bottom,0,
-// 				       top_bnd_x,top_bnd_y,top_bnd_z,
-// 				       bottom_bnd_x,bottom_bnd_y,bottom_bnd_z,
-// 				       left_bnd_x,left_bnd_y,left_bnd_z);
-
-//   //right face
-//   getInterpolatedFace_fromBottomAndTop(n_block, n_left_right, n_top_bottom,1,
-// 				       top_bnd_x,top_bnd_y,top_bnd_z,
-// 				       bottom_bnd_x,bottom_bnd_y,bottom_bnd_z,
-// 				       right_bnd_x,right_bnd_y,right_bnd_z);
-
-
-//   //front face
-//   n_block = nz;
-//   n_top_bottom = nx;
-  
-//   getInterpolatedFace_fromBottomAndTop(n_block, n_left_right, n_top_bottom,2,
-// 				       top_bnd_x,top_bnd_y,top_bnd_z,
-// 				       bottom_bnd_x,bottom_bnd_y,bottom_bnd_z,
-// 				       front_bnd_x,front_bnd_y,front_bnd_z);
-
-//   getInterpolatedFace_fromBottomAndTop(n_block, n_left_right, n_top_bottom,3,
-// 				       top_bnd_x,top_bnd_y,top_bnd_z,
-// 				       bottom_bnd_x,bottom_bnd_y,bottom_bnd_z,
-// 				       back_bnd_x,back_bnd_y,back_bnd_z);
-
-
-//   std::cout << "fault" << std::endl;
-  
-//   double z;
-//   double y;
-  
-//   if(n==0){
-//     for(int k = 0 ; k< nz; k++){
-//       for(int i = 0 ; i< ny; i++){
-// 	//	right_bnd_x[id_yz(k,i)] -= 1.0*fault(right_bnd_y[id_yz(k,i)],  right_bnd_z[id_yz(k,i)],depth,0,1);
-// 	z=right_bnd_z[id_yz(i,k)];
-// 	y=right_bnd_y[id_yz(i,k)];
-// 	right_bnd_x[id_yz(k,i)] -=  z*(1-z)*(std::exp(-(y-0.5)*(y-0.5)/0.05));
-//       }
-//     }
-//   }else{
-//     for(int k = 0 ; k< nz; k++){
-//       for(int i = 0 ; i< ny; i++){
-// 	//	left_bnd_x[id_yz(k,i)] -= 1.0*fault(left_bnd_y[id_yz(k,i)],left_bnd_z[id_yz(k,i)],depth,0,1);
-// 	z=left_bnd_z[id_yz(i,k)];
-// 	y=left_bnd_y[id_yz(i,k)];
-// 	left_bnd_x[id_yz(k,i)] -=   z*(1-z)*(std::exp(-(y-0.5)*(y-0.5)/0.05));
-
-//       }
-//     }
-//   }
-  
-// }
+}
 
 
 
@@ -1517,4 +1831,239 @@ void metricDerivativesAndJacobian3D(int num_nodes,
 
 
 }
+
+
+double interpolate_fault_surface(double* X1, double* Y1, double* Z1, double y, double z, int my, int mz)
+{
+//real(kind = wp), dimension(:,:),intent(in) :: X1, Y1, Z1       ! data
+//    real(kind = wp),intent(in) :: y, z
+//    real(kind = wp),intent(inout) :: gg
+//    integer,intent(in) :: my, mz
+  
+  double dz, dy, r, r0;
+  
+  int jj, kk, nmy, npy, nmz, npz, stenc, ndp;
+  
+  kernels::idx2 id_yz(mz,my);
+  
+  dy = Y1[id_yz(0,1)] - Y1[id_yz(0,0)];
+  dz = Z1[id_yz(1,0)] - Z1[id_yz(0,0)];
+  
+  r0 = std::sqrt(pow(dy,2) + pow(dz, 2));
+    
+  stenc = 2;
+  ndp = 5;
+
+  double* yy = new double [my];
+  double* zz = new double [mz];
+
+  double gg;
+
+ 
+                
+  for (int k = 0; k<mz; k++){
+    for (int j = 0; j<my; j++){
+
+      r = std::sqrt(pow(y- Y1[id_yz(k,j)], 2) + pow(z-Z1[id_yz(k,j)], 2));
+
+      if (r < 2*r0) {
+             
+	if (std::sqrt(pow(y-Y1[id_yz(k,j)], 2)) <= dy) {
+                
+	  nmy = j-stenc;
+	  npy = j+stenc;
+            
+	  if (j == 0) {
+                   
+	    nmy = j;
+	    npy = j+ndp-1;
+                   
+	  }
+	  
+	  if (j == 1) {
+                   
+	    nmy = j-1;
+	    npy = j+ndp-2;
+            
+	  }
+
+	  if (j == 2) {
+                   
+	    nmy = j-2;
+	    npy = j+ndp-3;
+            
+	  }
+
+	   if (j == my-3){
+                   
+	    nmy = j-(ndp-3);
+	    npy = j+2;
+                   
+	  }
+                
+	  if (j == my-2){
+                   
+	    nmy = j-(ndp-2);
+	    npy = j+1;
+                   
+	  }
+
+	  if (j == my-1){
+                   
+	    nmy = j-(ndp-1);
+	    npy = j;
+            
+	  }
+                
+                
+	  if  (std::sqrt(pow(z-Z1[id_yz(k,j)], 2)) <= dz) {
+	    
+	    nmz = k-stenc;
+	    npz = k+stenc;
+                   
+	    if (k == 0){
+	      
+	      nmz = k;
+	      npz = k+ndp-1;
+	    }        
+       
+
+	    if (k == 1) {
+                      
+	      nmz = k-1;
+	      npz = k+ndp-2;
+              
+	    }
+
+	     if (k == 2) {
+                      
+	      nmz = k-2;
+	      npz = k+ndp-3;
+              
+	    }
+                   
+	    if (k == mz-1){
+                      
+	      nmz = k-(ndp-1);
+	      npz = k;
+                      
+	    }
+
+	    if (k == mz-2) {
+                      
+	      nmz = k-(ndp-2);
+	      npz = k+1;
+                      
+	    }
+
+	    if (k == mz-3) {
+                      
+	      nmz = k-(ndp-3);
+	      npz = k+2;
+                      
+	    }
+
+	    //std::cout<< "y " << std::endl;
+	    for (int j0 = 0; j0<my; j0++){
+	      yy[j0] = Y1[id_yz(k,j0)];
+	      //std::cout<<j0<<" "<<yy[j0] << std::endl;
+	    }
+
+	    
+	    //std::cout<< "z " << std::endl;
+	    for (int k0 = 0; k0<mz; k0++){
+	      zz[k0] = Z1[id_yz(k0,j)];
+	      
+	      //std::cout<<k0<<" "<<zz[k0] << std::endl;
+	    }
+
+	    //std::exit(-1);
+	    
+	     gg = interpol2d_dG(my, mz, nmy, npy, nmz, npz, y, z, yy, zz, X1);
+                                    
+                
+	  }
+	  //==============================================
+	}
+      }
+    }
+  }
+
+  return gg;
+  
+}
+
+double interpol2d_dG(int my, int mz, int nmy, int npy, int nmz, int npz, double y, double z, double* yj, double* zk, double* f)
+{
+  //!contruct the langrange interpolation g(x,y) of  f(x,y)
+  
+  //! g(x,y): lagrange interpolant
+  //! nmx, nmy: lower bound
+  //! npx, npy: upper bound
+  //! xi,yj: data points
+  //! x,y : interpolation point
+  //  integer, intent(in) :: nmx, nmy, npx, npy             ! number of rows and column
+  //  real(kind = wp), intent(out) :: g                     ! lagrange interpolant 
+  //  real(kind = wp), intent(in) :: x, y                   ! interpolation point
+  //  real(kind = wp), dimension(:),intent(in) :: xi, yj    ! data points
+  //  real(kind = wp), dimension(:,:),intent(in) :: f       ! data
+  
+  double a_j, a_k, g;
+
+ 
+    
+  
+  g = 0.0;
+  
+  kernels::idx2 id_yz(mz,my);
+    
+  for (int k = nmz; k< npz+1; k++){
+    for (int j = nmy; j <npy+1; j++){
+      
+      a_j = lagrange(nmy, npy, j, y, yj);
+      a_k = lagrange(nmz, npz, k, z, zk);
+      g = g + a_j*a_k*f[id_yz(k,j)];
+      
+    }
+  }
+
+  return g;
+  
+}
+
+
+double lagrange(int m, int p, int i, double x, double *xi){
+  
+  //!Function to calculate  Lagrange polynomial for order N and polynomial
+  //![nm, np] at location x.
+  
+  //! nm: lower bound
+  //! np: upper bound
+  //! xi: data points
+  //! x : interpolation point
+  
+  //integer, intent(in) :: m, p, i
+  //real(kind = wp), intent(in) :: x, xi(:)
+  
+  double h, num, den;
+  
+  h = 1.0;
+  
+  for (int j = m; j <p+1; j++){
+    if (j != i) {
+      
+      num = x - xi[j];
+      den = xi[i] - xi[j];
+      h = h*num/den;
+      
+      //std::cout<< i << " " << j << " "<< xi[i]-xi[j]<< std::endl;
+      //std::cout<< x << " " << den << " "<< h << std::endl;
+    }
+  }
+
+ 
+  return h;
+}
+
+  
 

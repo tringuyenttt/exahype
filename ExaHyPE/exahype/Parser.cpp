@@ -382,8 +382,14 @@ exahype::Parser::MPILoadBalancingType exahype::Parser::getMPILoadBalancingType()
   return result;
 }
 
+
 std::string exahype::Parser::getMPIConfiguration() const {
   return getTokenAfter("distributed-memory", "configure");
+}
+
+
+std::string exahype::Parser::getSharedMemoryConfiguration() const {
+  return getTokenAfter("shared-memory", "configure");
 }
 
 
@@ -1345,6 +1351,14 @@ bool exahype::Parser::ParserView::isValueValidBool(
     return false;
   }
 }
+
+
+int exahype::Parser::getRanksPerNode() {
+  const std::string RanksPerNode = "ranks-per-node";
+
+  return static_cast<int>(exahype::Parser::getValueFromPropertyString(getMPIConfiguration(),RanksPerNode));
+}
+
 
 bool exahype::Parser::ParserView::isValueValidString(
     const std::string& key) const {

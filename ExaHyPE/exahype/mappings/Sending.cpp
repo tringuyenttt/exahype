@@ -105,6 +105,36 @@ exahype::mappings::Sending::descendSpecification(int level) const {
 tarch::logging::Log exahype::mappings::Sending::_log(
     "exahype::mappings::Sending");
 
+
+
+bool exahype::mappings::Sending::reduceTimeStepData() const {
+  return
+      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+      &&
+      (_localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepData ||
+      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
+}
+
+bool exahype::mappings::Sending::sendFaceData() const {
+  return
+      (_localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::TimeStepping ||
+      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::LocalRecomputationAllSend ||
+      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend ||
+      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::PredictionRerunAllSend)
+      &&
+      (_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
+      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
+}
+
+bool exahype::mappings::Sending::reduceFaceData() const {
+  return
+      sendFaceData()
+      &&
+      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
+      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch);
+}
+
 void exahype::mappings::Sending::beginIteration(
     exahype::State& solverState) {
   if (
@@ -331,33 +361,6 @@ void exahype::mappings::Sending::sendSolverDataToNeighbour(
 ///////////////////////////////////////
 // WORKER->MASTER->WORKER
 ///////////////////////////////////////
-bool exahype::mappings::Sending::reduceTimeStepData() const {
-  return
-      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
-      &&
-      (_localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepData ||
-      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
-}
-
-bool exahype::mappings::Sending::sendFaceData() const {
-  return
-      (_localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::TimeStepping ||
-      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::LocalRecomputationAllSend ||
-      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend ||
-      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::PredictionRerunAllSend)
-      &&
-      (_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
-      _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
-}
-
-bool exahype::mappings::Sending::reduceFaceData() const {
-  return
-      sendFaceData()
-      &&
-      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch);
-}
 
 void exahype::mappings::Sending::prepareSendToMaster(
     exahype::Cell& localCell, exahype::Vertex* vertices,

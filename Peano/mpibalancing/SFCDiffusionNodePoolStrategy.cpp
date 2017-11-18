@@ -26,9 +26,9 @@ mpibalancing::SFCDiffusionNodePoolStrategy::SFCDiffusionNodePoolStrategy(int mpi
   _nodePoolState(NodePoolState::DeployingIdlePrimaryRanks),
   _rankBlackList() {
 
-  assertion( mpiRanksPerNode>0 );
-  assertion( primaryMPIRanksPerNode<=mpiRanksPerNode );
-  assertion( (mpiRanksPerNode%primaryMPIRanksPerNode==0) );
+  assertion2( mpiRanksPerNode>0, mpiRanksPerNode, primaryMPIRanksPerNode );
+  assertion2( primaryMPIRanksPerNode<=mpiRanksPerNode, mpiRanksPerNode, primaryMPIRanksPerNode );
+  assertion2( (mpiRanksPerNode%primaryMPIRanksPerNode==0), mpiRanksPerNode, primaryMPIRanksPerNode );
 
   _totalNumberOfRanks = tarch::parallel::Node::getInstance().getNumberOfNodes();
 }
@@ -386,7 +386,6 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::deployIdlePrimaryRank(int forMas
 
 
 int mpibalancing::SFCDiffusionNodePoolStrategy::deployIdleSecondaryRank(int forMaster) {
-  assertion1( hasIdleNode(forMaster), forMaster );
   assertion1( !_nodes[forMaster].isIdlePrimaryRank(), forMaster );
   assertion1( !_nodes[forMaster].isIdleSecondaryRank(), forMaster );
 

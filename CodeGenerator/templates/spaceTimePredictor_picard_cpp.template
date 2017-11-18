@@ -77,7 +77,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
   // 1. Trivial initial guess
   for (int ijk = 0; ijk < {{nDof**nDim}}; ijk++) {
     for (int l = 0; l < {{nDof}}; l++) {
-      std::copy(&luh[{{nData}}*ijk], &luh[{{nData}}*ijk]+{{nData}}, &lQi[{{nDataPad}}*(l+{{nDof}}*ijk)]);
+      std::copy_n(&luh[{{nData}}*ijk], {{nData}}, &lQi[{{nDataPad}}*(l+{{nDof}}*ijk)]);
     }
   }
 
@@ -172,7 +172,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
             for (int m = 0; m < {{nDof}}; m++) {
               #pragma simd
               for (int n = 0; n < {{nVar}}; n++) {
-                gradQ[n+{{nVar}}*(0+{{nDim}}*(i+{{nDof}}*(l+{{nDof}}*(k+{{nDof}}*j))))] += inverseDx[0] *
+                gradQ[n+{{nVarPad}}*(0+{{nDim}}*(i+{{nDof}}*(l+{{nDof}}*(k+{{nDof}}*j))))] += inverseDx[0] *
                     lQi[n+{{nDataPad}}*(i+{{nDof}}*(m+{{nDof}}*(k+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
               }
             }
@@ -223,7 +223,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
             for (int m = 0; m < {{nDof}}; m++) {
               #pragma simd
               for (int n = 0; n < {{nVar}}; n++) {
-                gradQ[n+{{nVar}}*(1+{{nDim}}*(i+{{nDof}}*(k+{{nDof}}*(l+{{nDof}}*j))))] += inverseDx[0] *
+                gradQ[n+{{nVarPad}}*(1+{{nDim}}*(i+{{nDof}}*(k+{{nDof}}*(l+{{nDof}}*j))))] += inverseDx[0] *
                     lQi[n+{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*(m+{{nDof}}*j)))] * dudx[l+{{nDofPad}}*m];
               }
             }
@@ -272,7 +272,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
             for (int m = 0; m < {{nDof}}; m++) {
               #pragma simd
               for (int n = 0; n < {{nVar}}; n++) {
-                gradQ[n+{{nVar}}*(2+{{nDim}}*(i+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*l))))] += inverseDx [0] *
+                gradQ[n+{{nVarPad}}*(2+{{nDim}}*(i+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*l))))] += inverseDx[0] *
                     lQi[n+{{nDataPad}}*(i+{{nDof}}*(k+{{nDof}}*(j+{{nDof}}*m)))] * dudx[l+{{nDofPad}}*m];
               }
             }
@@ -305,10 +305,10 @@ void {{codeNamespace}}::picardLoopNonlinear(
 {% endif %}
 {% if useNCP %}
         double gradQNoPad[{{nVar*nDim}}]; //remove padding to use the same user function as generic kernel
-        std::copy(&gradQ[{{nVarPad*nDim}}*it]              , &gradQ[{{nVarPad*nDim}}*it+{{0*nVarPad+nVar}}], &gradQNoPad[{{0*nVar}}]); //x
-        std::copy(&gradQ[{{nVarPad*nDim}}*it+{{1*nVarPad}}], &gradQ[{{nVarPad*nDim}}*it+{{1*nVarPad+nVar}}], &gradQNoPad[{{1*nVar}}]); //y
+        std::copy_n(&gradQ[{{nVarPad*nDim}}*it]              , {{nVar}}, &gradQNoPad[{{0*nVar}}]); //x
+        std::copy_n(&gradQ[{{nVarPad*nDim}}*it+{{1*nVarPad}}], {{nVar}}, &gradQNoPad[{{1*nVar}}]); //y
 {% if nDim==3 %}
-        std::copy(&gradQ[{{nVarPad*nDim}}*it+{{2*nVarPad}}], &gradQ[{{nVarPad*nDim}}*it+{{2*nVarPad+nVar}}], &gradQNoPad[{{2*nVar}}]); //z
+        std::copy_n(&gradQ[{{nVarPad*nDim}}*it+{{2*nVarPad}}], {{nVar}}, &gradQNoPad[{{2*nVar}}]); //z
 {% endif %}
         std::memset(&ncp[0], 0, {{nVarPad}} * sizeof(double));
 #ifdef USE_IPO

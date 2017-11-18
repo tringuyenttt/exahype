@@ -142,36 +142,36 @@ namespace {{namespaceName}} {
 //------------
 
   void faceUnknownsProlongation(
-    double* lQhbndFine,
-    double* lFhbndFine,
-    const double* lQhbndCoarse,
-    const double* lFhbndCoarse,
+    double* restrict lQhbndFine,
+    double* restrict lFhbndFine,
+    const double* restrict lQhbndCoarse,
+    const double* restrict lFhbndCoarse,
     const int coarseGridLevel,
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
   );
 
   void faceUnknownsRestriction(
-    double* lQhbndCoarse,
-    double* lFhbndCoarse,
-    const double* lQhbndFine,
-    const double* lFhbndFine,
+    double* restrict lQhbndCoarse,
+    double* restrict lFhbndCoarse,
+    const double* restrict lQhbndFine,
+    const double* restrict lFhbndFine,
     const int coarseGridLevel,
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS-1, int>& subfaceIndex
   );
 
   void volumeUnknownsProlongation(
-    double* luhFine,
-    const double* luhCoarse,
+    double* restrict luhFine,
+    const double* restrict luhCoarse,
     const int coarseGridLevel,
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex
   );
   
   void volumeUnknownsRestriction(
-    double* luhCoarse,
-    const double* luhFine,
+    double* restrict luhCoarse,
+    const double* restrict luhFine,
     const int coarseGridLevel,
     const int fineGridLevel,
     const tarch::la::Vector<DIMENSIONS, int>& subcellIndex
