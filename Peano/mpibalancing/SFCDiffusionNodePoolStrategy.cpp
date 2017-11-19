@@ -24,7 +24,8 @@ mpibalancing::SFCDiffusionNodePoolStrategy::SFCDiffusionNodePoolStrategy(int mpi
   _numberOfPrimaryRanksPerNodeThatAreCurrentlyDeployed(_primaryMPIRanksPerNode),
   _numberOfNodesToSkipPerRequestPlusOne(1),
   _nodePoolState(NodePoolState::DeployingIdlePrimaryRanks),
-  _rankBlackList() {
+  _rankBlackList(),
+  _rankPriorityList() {
 
   assertion2( mpiRanksPerNode>0, mpiRanksPerNode, primaryMPIRanksPerNode );
   assertion2( primaryMPIRanksPerNode<=mpiRanksPerNode, mpiRanksPerNode, primaryMPIRanksPerNode );
@@ -127,7 +128,20 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::configureForPrimaryRanksDeliver
 tarch::parallel::messages::WorkerRequestMessage mpibalancing::SFCDiffusionNodePoolStrategy::extractElementFromRequestQueue(RequestQueue& queue) {
   assertion( !queue.empty() );
 
-  RequestQueue::iterator p                   = queue.begin();
+  queue.sort(
+    [&]( const tarch::parallel::messages::WorkerRequestMessage& l, const tarch::parallel::messages::WorkerRequestMessage& r ) {
+      return (l.getNumberOfRequestedWorkers() > r.getNumberOfRequestedWorkers())
+          || (
+              (l.getNumberOfRequestedWorkers() == r.getNumberOfRequestedWorkers()) 
+              &&
+              (_rankPriorityList.count(l.getSenderRank())>0) 
+              && 
+              (_rankPriorityList.count(r.getSenderRank())==0)
+             );
+    }
+  );
+
+/*  RequestQueue::iterator p                   = queue.begin();
   RequestQueue::iterator pResultInQueue      = queue.begin();
   int                    maxWorkersRequested = 0;
   while (p!=queue.end()) {
@@ -140,7 +154,9 @@ tarch::parallel::messages::WorkerRequestMessage mpibalancing::SFCDiffusionNodePo
   assertion(pResultInQueue!=queue.end());
 
   tarch::parallel::messages::WorkerRequestMessage result = *pResultInQueue;
-  queue.erase(pResultInQueue);
+  queue.erase(pResultInQueue);*/
+  tarch::parallel::messages::WorkerRequestMessage result = *queue.begin();
+  queue.erase(queue.begin());
 
   logInfo(
     "extractElementFromRequestQueue(RequestQueue)",
@@ -392,8 +408,6 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::deployIdleSecondaryRank(int forM
   assertion1( !_nodes[forMaster].isIdlePrimaryRank(), forMaster );
   assertion1( !_nodes[forMaster].isIdleSecondaryRank(), forMaster );
 
-logInfo( "deployIdleSecondaryRank","in");
-
   const int firstRankOnMastersNode = (forMaster / _mpiRanksPerNode) * _mpiRanksPerNode;
   const int searchStart = (forMaster - firstRankOnMastersNode < _mpiRanksPerNode/2) ? firstRankOnMastersNode - _mpiRanksPerNode : firstRankOnMastersNode + _mpiRanksPerNode;
   if (
@@ -423,7 +437,7 @@ logInfo( "deployIdleSecondaryRank","in");
 
       _nodes[rank].activate();
       _nodePoolState = NodePoolState::DeployingAlsoSecondaryRanksFirstSweep;
-      haveReservedSecondaryRank(forMaster);
+      haveReservedSecondaryRank(forMaster,rank);
       return rank;
     }
   }
@@ -488,7 +502,7 @@ int mpibalancing::SFCDiffusionNodePoolStrategy::reserveNode(int forMaster) {
 }
 
 
-void mpibalancing::SFCDiffusionNodePoolStrategy::haveReservedSecondaryRank(int masterRank) {
+void mpibalancing::SFCDiffusionNodePoolStrategy::haveReservedSecondaryRank(int masterRank, int workerRank) {
   const int baseRankOfMasterNode = (masterRank / _mpiRanksPerNode) * _mpiRanksPerNode;
   const int lastRankOnMasterNode = baseRankOfMasterNode + _mpiRanksPerNode;
   logInfo(
@@ -499,6 +513,16 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::haveReservedSecondaryRank(int m
 
   for (int i=baseRankOfMasterNode; i<lastRankOnMasterNode; i++) {
     _rankBlackList.insert(i);
+    if (_rankPriorityList.find(i) != _rankPriorityList.end()) {
+      _rankPriorityList.erase(i);
+    }
+  }
+
+  const int baseRankOfWorkerNode = (workerRank / _mpiRanksPerNode) * _mpiRanksPerNode;
+  const int lastRankOnWorkerNode = baseRankOfWorkerNode + _mpiRanksPerNode;
+
+  for (int i=baseRankOfWorkerNode; i<lastRankOnWorkerNode; i++) {
+    _rankPriorityList.insert(i);
   }
 }
 
