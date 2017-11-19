@@ -128,6 +128,7 @@ void mpibalancing::SFCDiffusionNodePoolStrategy::configureForPrimaryRanksDeliver
 tarch::parallel::messages::WorkerRequestMessage mpibalancing::SFCDiffusionNodePoolStrategy::extractElementFromRequestQueue(RequestQueue& queue) {
   assertion( !queue.empty() );
 
+  #ifdef Parallel
   queue.sort(
     [&]( const tarch::parallel::messages::WorkerRequestMessage& l, const tarch::parallel::messages::WorkerRequestMessage& r ) {
       return (l.getNumberOfRequestedWorkers() > r.getNumberOfRequestedWorkers())
@@ -140,28 +141,17 @@ tarch::parallel::messages::WorkerRequestMessage mpibalancing::SFCDiffusionNodePo
              );
     }
   );
+  #endif
 
-/*  RequestQueue::iterator p                   = queue.begin();
-  RequestQueue::iterator pResultInQueue      = queue.begin();
-  int                    maxWorkersRequested = 0;
-  while (p!=queue.end()) {
-    maxWorkersRequested = std::max( maxWorkersRequested,p->getNumberOfRequestedWorkers() );
-    if (maxWorkersRequested==p->getNumberOfRequestedWorkers()) {
-      pResultInQueue = p;
-    }
-    p++;
-  }
-  assertion(pResultInQueue!=queue.end());
-
-  tarch::parallel::messages::WorkerRequestMessage result = *pResultInQueue;
-  queue.erase(pResultInQueue);*/
   tarch::parallel::messages::WorkerRequestMessage result = *queue.begin();
   queue.erase(queue.begin());
 
+  #ifdef Parallel
   logInfo(
     "extractElementFromRequestQueue(RequestQueue)",
     "return " << result.toString() << " from sender rank " << result.getSenderRank() << " with " << queue.size() << " element(s) remaining in queue"
   );
+  #endif
 
   return result;
 }
