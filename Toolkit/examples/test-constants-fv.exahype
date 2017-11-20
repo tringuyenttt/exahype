@@ -15,7 +15,7 @@ exahype-project Test
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const           = ./Toolkit/examples/output/test-constants-aderdg
+  output-directory const           = ./Toolkit/examples/output/test-constants-fv
   architecture const               = noarch
   log-file                         = whatever.log
 
@@ -36,17 +36,18 @@ exahype-project Test
     spawn-double-compression-as-background-thread = on
   end global-optimisation
 
-  solver ADER-DG TestSolver_ADERDG
-    variables const                = foo:1,bar:2,baz:3
-    order const                    = 3
-    maximum-mesh-size              = 0.333339
+  solver Finite-Volumes TestSolver_FV
+    variables const                = a:1,b:2,c:3
+    patch-size const               = 8
+    maximum-mesh-size              = 5.00009
     maximum-mesh-depth             = 0
     time-stepping                  = global
-    type const = nonlinear
-    terms const = flux,ncp,source
+    type const         = musclhancock
+    terms const        = flux,ncp
     optimisation const = generic
     language const                 = C
-    constants                      = dummy:dummy,bar:baz
+    constants  = foo:bar,blo:dez
+
 
     plot vtk::Legendre::vertices::ascii ConservedWriter
       variables const = 23

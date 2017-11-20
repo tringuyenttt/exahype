@@ -3,10 +3,19 @@
 TOOLKIT="java -jar ./Toolkit/dist/ExaHyPE.jar --not-interactive"
 
 # code output directories
-mkdir -p output/test-constants-aderdg
+rm -rf output
+mkdir -p output/test-constants-{aderdg,fv,limiting}
 
 examples="Toolkit/examples"
 
 cd  ../../
 
-$TOOLKIT $examples/test-constants-aderdg.exahype
+for specfile in $examples/test-constants-{aderdg,fv,limiting}.exahype; do
+#for specfile in $examples/test-constants-limiting.exahype; do
+	outputdir=$(basename "$specfile")
+	outputdir=$examples/output/${outputdir%.*}
+	
+	(
+	$TOOLKIT $specfile && cd $outputdir && make && echo "SUCCESS with $specfile" || echo "FAILURE with $specfile"
+	) 
+done
