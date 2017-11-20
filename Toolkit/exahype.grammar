@@ -21,6 +21,7 @@ Helpers
    not_star             =   [ all - '*' ];
    not_star_not_slash   =   [ not_star - '/' ];
    not_comma            =   [ all - ',' ];
+   not_bracket          =   [ all - [ '{' + '}' ] ];
 
    filename_element     =  digit | nondigit | '-' | '/' | '*' | '%' | dot;
 
@@ -147,7 +148,7 @@ Tokens
   documentation_comment             = '/**' '*'* (not_star_not_slash not_star* '*'+)* '/';
   end_of_line_comment               = '//' not_line_terminator* line_terminator;
   
-  configure_type                    = '{' all* '}';
+  configure_type                    = '{' not_bracket* '}';
 
 Ignored Tokens
 
