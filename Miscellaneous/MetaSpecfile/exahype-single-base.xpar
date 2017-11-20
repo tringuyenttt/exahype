@@ -15,6 +15,7 @@ ExaHyPE::log_file = "whatever.log"
 # Meta registration of a single global solver.
 
 Solver::plotters = Plotters
+Solver::constants = Parameters
 Solver::parameters = Parameters
 ExaHyPE::solvers += Solver
 

@@ -62,6 +62,11 @@ def mapComplex(func, node):
 		else:
 			node[key] = func(item)
 	return node
+# remove elements from list by indexlist
+withoutIndices = lambda lst, indices: [i for j, i in enumerate(lst) if j not in indices]
+# raise an exception. Useful from lambdas.
+def raise_exception(e):
+	raise e
 
 # operations.
 let = namedtuple('let', 'lhs rhs') # overwritable = can be overwritten
@@ -77,7 +82,7 @@ rhs = namedtuple('rhs', 'value src')
 
 lang = Namespace()
 lang.opor = "|".join(map(re.escape, opsymbol.keys())) # regex detecting operators
-lang.symb = r"[a-z_][a-z_0-9:/-]+" # regex defining a LHS symbol
+lang.symb = r"[a-z_][a-z_0-9:/-]*" # regex defining a LHS symbol
 lang.comment = r"#" # comment character
 lang.linecomment = r"(?:" + lang.comment + r".*)?$" # allows a comment until end of line
 lang.stringvarchar = "@" # variable escape character
@@ -182,22 +187,25 @@ class sourceline(namedtuple('sourceline', 'fname linenum text')):
 		return cls(filename, line_number, lines[0])
 	
 	@classmethod
-	def from_unknown(cls):
+	def from_unknown(cls, text="unknown"):
 		"Quickly create an instance without any known location"
-		return cls('unknown', 0, "unknown")
+		return cls('unknown', 0, text)
 	
 class sourcemap:
-	def __init__(self,fh):
-		self.fh = fh
+	def __init__(self,iterable,source_name=None):
+		self.iterable = iterable
 		# todo: test with StringIO
-		try:
-			self.fname = fh.name
-		except AttributeError:
-			self.fname = str(fh) # hopefully short description
+		if not source_name:
+			try:
+				self.source_name = iterable.name
+			except AttributeError:
+				self.source_name = str(iterable) # hopefully short description
+		else:
+			self.source_name = source_name
 	def iter(self):
 		"Returns an iterator over the file"
 		offset = 1 # python starts with 0 for line counting but humans start with 1
-		return (sourceline(self.fname,linenum+offset,text) for linenum, text in enumerate(self.fh))
+		return (sourceline(self.source_name,linenum+offset,text) for linenum, text in enumerate(self.iterable))
 	def map(self,func):
 		return map(func, self.iter())
 
@@ -236,12 +244,16 @@ def parseRHS(text):
 	return text
 
 def line2operation(srcline):
+	"""
+	Parses a single line. Input is a sourceline object. You can test lines quickly with
+	> line2operation(sourceline.from_unknown("foo=10"))
+	"""
 	if re.match(r"^"+lang.comment+"|^\s*$", srcline.text): # comments
 		return None
 
 	parts = re.match(r"^(?P<lhs>(?:"+lang.symb+"|))\s*(?P<op>(?:"+lang.opor+"))\s*(?P<rhs>.+)\s*$", srcline.text, re.IGNORECASE)
 	if not parts:
-		raise ValueError("Don't understand line %d in %s: %s"%(srcline.linenum,srcline.fname,srcline.text))
+		raise ValueError("Don't understand line %d in %s: '%s'"%(srcline.linenum,srcline.fname,srcline.text))
 
 	# split lhs into name path
 	name = symbol(parts.group('lhs'))
@@ -345,6 +357,14 @@ class mexafile:
 		# run the actual operator evaluator
 		# self.evaluate() ## shall be invoked manually
 		
+	def append(self, oplines, source_name="unkown"):
+		"""
+		Quickly add operations (list of single lines) into this oplist.
+		"""
+		if not isa(oplines, list):
+			oplines = [oplines]
+		self.oplist += sourcemap(oplines, source_name).map(line2operation)
+
 	@classmethod
 	def from_filename(cls, fname):
 		"Create an instance from a filename instead of filehandle"
@@ -377,9 +397,15 @@ class mexafile:
 					# include a file
 					fname = self.evalrhsstring(op.rhs)
 					inc_oplist = mexafile.from_filename(fname).evaluate(reduce_let=False).oplist
+					#print "Oplist to include:"
+					#pprint.pprint(inc_oplist)
+					#print "End of included oplist."
 					# allow including at any point
 					inc_oplist = op.lhs.prefix_oplist(inc_oplist)
 					self.oplist = replace_with_list_at(i, self.oplist, inc_oplist)
+					#print "Included in place:"
+					#pprint.pprint(self.oplist)
+					#print "Done"
 					break # go to next iteration of "which has_includes"
 		
 		# 4. Evaluate data structure extensions in-place:
@@ -408,15 +434,16 @@ class mexafile:
 			self.oplist[i] = optype(self.oplist[i].lhs, newrhs)
 		def updateOplistRHS(updater):
 			for i,op in enumerate(self.oplist):
-				newrhs = None
 				if(isa(op.rhs,list)):
 					newrhs = map(updater, op.rhs)
+					if all(newrhs): # check for None
+						updateRhs(i,newrhs)
 				elif(isa(op.rhs,rhs)):
 					newrhs = updater(op.rhs)
+					if newrhs:
+						updateRhs(i, newrhs)
 				else:
 					raise ValueError("Unsupported type for %s in operation %s" % (op.rhs,op))
-				if newrhs:
-					updateRhs(i, newrhs)
 		
 		# 5. Evaluate all strings.
 		def evaluateRhsString(irhs):
@@ -426,6 +453,7 @@ class mexafile:
 				#if newval != irhs.value:
 				#	print newrhs
 				return newrhs
+			else:	return None # for clarity
 		updateOplistRHS(evaluateRhsString)
 
 		# 6. Collect the appends and join them to the list of assignments,
@@ -455,11 +483,14 @@ class mexafile:
 					# Replace the append with an assign.
 					#opindex = i
 					#self.oplist[opindex] = assign(op.lhs, [ op.rhs ])
-					new_oplist.append( assign(op.lhs, [op.rhs]) )
+					newop = assign(op.lhs, [op.rhs])
+					#print "Making new "+str(newop)
+					new_oplist.append(newop)
 			else:
 				new_oplist.append(op)
 		# TODO: Clean the comments and leftovers from the old inplace algorithm
 		self.oplist = new_oplist
+		#pprint.pprint(self.oplist); print "after step 6"
 		
 		# now all appends should be removed from the list
 		for op in self.oplist:
@@ -494,24 +525,26 @@ class mexafile:
 		if reduce_let:
 			#[ assign(lhs, rhs) for lhs, rhs in self.symbols ]
 			#for op in self.filtertype(let):
-			lets = self.filtertype(let)
+			lets, lets_positions = self.filtertype(let, return_indices=True)
 			lets_names = unique([ op.lhs for op in lets ])
 			# delete all the lets
-			for i,op in enumerate(lets):
-				del self.oplist[i]
+			# self.oplist = without_indices(self.oplist, lets_positions)
+			# -> done anyway already below.
 			# and prepend them as assignments before everything else
 			lets_values = [ self.symbols[lhs] for lhs in lets_names ]
 			resolved_lets = [ assign(lhs, irhs) for lhs, irhs in izip(lets_names, lets_values) ] 
-			self.oplist = resolved_lets + self.oplist
+			self.oplist = resolved_lets + [op for op in self.oplist if not isa(op,let) ]
 			# Could improve this by positioning the assign() in place of the last occurance of
 			# a let() with same lhs.
 			
 		# evaluate() is chainable:
 		return self
 
-	def filtertype(self, optype):
+	def filtertype(self, optype, return_indices=False):
 		"Typical optypes are assign or include. optype can be a list of optypes"
-		return [op for op in self.oplist if isa(op,optype)]
+		items = [op for op in self.oplist if isa(op,optype)]
+		indices = [i for i,op in enumerate(self.oplist) if isa(op,optype)]
+		return (items,indices) if return_indices else items
 	
 	def getvar(self, varname, src=sourceline.from_unknown()):
 		"""
@@ -679,7 +712,7 @@ class mexafile:
 		#	symbolmapper = rec_simplemexa if simple_mexa else symbol.canonical
 		#	myop2str = lambda op: op2str(op, symbolmapper) 
 			
-			assert isa(op,assign), "There is a "+str(op)
+			# assert isa(op,assign), "There is a "+str(op)
 			if isa(op.rhs, list):
 				# reconstruct the append operation from the list assignment
 				if simple_mexa:
@@ -798,7 +831,7 @@ class mexafile:
 		ctx = mapComplex(replBool, ctx)
 
 		# for debugging:
-		if True:
+		if False:
 			pprint.pprint(ctx)
 		
 		mexa_path = mf.get_value_by_key("mexa")
@@ -808,33 +841,45 @@ class mexafile:
 		
 		jinja_env = jinja2.Environment(
 			loader=jinja2.FileSystemLoader(mexa_path),
-			#undefined=jinja2.StrictUndefined
+			undefined=jinja2.StrictUndefined
 		)
 		
 		# provide further jinja functions:
 		# w decorators: https://stackoverflow.com/a/47291097
 		
-		def errorStop(msg):
-			raise ValueError("Template stopped: "+msg)
+		def jinja_filter(func):
+			jinja_env.filters[func.__name__] = func
+			return func
+		
+		@jinja_filter
 		def dimlist(comp_domain, field):
 			"Compute the ExaHypE computational domain string (width_x, width_y, width_z?) "
 			fieldnames = [field+"_"+i for i in "xyz"]
 			fieldnames = fieldnames[:comp_domain['dimension']]
 			fields = [str(comp_domain[fn]) for fn in fieldnames]
 			return ", ".join(fields)
+		
+		@jinja_filter
 		def count_variables(variable_list):
 			"""Count the variables in a list 'x,y,z' or 'x:1,y:5,z:17' to 3 or 23, respectively"""
 			matches = re.findall(r"([a-zA-Z-_]+)(?:[:](\d+))?", variable_list)
 			return sum([1 if count == "" else int(count) for label,count in matches ])
 		
-		def resolve_path(node):
-			"Lookup the tree_backref_native inserted backreference and embed it"
+		@jinja_filter
+		def resolve_path(node, prepend='/'):
+			"""
+			Lookup the tree_backref_native inserted backreference and embed it.
+			In order to have this be understood as a file path by the ExaHyPE specfile parser,
+			prepend a slash.
+			"""
 			# print out the query xpath (backref)
 			backref_key = "$path"
 			if backref_key in node:
-				return node[backref_key]
+				return prepend + node[backref_key]
 			else:
 				raise ValueError("Missing backref key '%s' in node '%s'" % (backref_key, str(node)))
+			
+		@jinja_filter
 		def embed(node, encoding):
 			# embed the configuration as a string, suitable for the specfile constants
 			# parameters
@@ -843,20 +888,33 @@ class mexafile:
 			opfilter=symbol(root).remove_prefix_oplist # => does not work, opfilter is broken
 			#opfilter = idfunc
 			return self.dump_encoded_mexa(encoding=encoding, root=root, opfilter=opfilter)
+		
+		@jinja_filter
 		def link_in_list(node):
 			# This can be either resolve_path or embed. Here we do both for simplicity
 			encoding = 'quotedprintable'
 			return 'mexa:embedded,mexaref:%s,mexaformat:%s,mexacontent:%s' % (resolve_path(node), encoding, embed(node,encoding) )
-	
-		ctx['error'] = errorStop
-		jinja_env.filters['count_variables'] = count_variables
-		jinja_env.filters['dimlist'] = dimlist
-		jinja_env.filters['resolve_path'] = resolve_path
-		jinja_env.filters['embed'] = embed
-		jinja_env.filters['link_in_list'] = link_in_list
 		
+		@jinja_filter
+		def as_float(txt):
+			"""
+			Ensure a number does look like a float (2.) instead of an int (2).
+			This is what the ExaHyPE parser is sensitive on...
+			"""
+			return str(float(txt))
+		
+		# function (not a filter):
+		jinja_env.globals['error'] = lambda msg: raise_exception(ValueError("Template stopped: "+msg))
+		
+		#try:
 		return jinja_env.get_template(tplfile).render(ctx)
-	
+		# without exception chaining, we loose the stack trace:
+		#except Exception as e:
+		#	print "Debuggin context:"
+		#	pprint.pprint(ctx)
+		#	print "Exception:"
+		#	print str(e)
+		#	raise e	
 	
 	encode_languages=["json", "yaml", "xml"]
 	def encode(self, lang='json', style='linear', root=''):
@@ -871,14 +929,32 @@ class mexafile:
 
 parser = argparse.ArgumentParser(description=__doc__)
 
-parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
-parser.add_argument('outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout)
-parser.add_argument('--outformat', choices=['mexa','simple-mexa','encode-mexa','yaml','json','xml','exahype'], help="Language format for output")
+parser.add_argument('expressions', type=str, nargs='*',# action='append',
+	metavar='foo=bar', help="Mexa expressions to validate. Each argument represents one line. Arguments are appended to files read in.")
+parser.add_argument('--infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
+	metavar='FILENAME', help="Input file to read. If no file is given, read from stdin.")
+parser.add_argument('--outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout,
+	metavar='FILENAME', help="Output file to write to. If no file is given, write to stdout.")
+parser.add_argument('--outformat', choices=['mexa','simple-mexa','encode-mexa','yaml','json','xml','exahype'], 
+	help="Language format for output", default='mexa')
 parser.add_argument('--style', choices=mexafile.native_styles, default='linear', help="Style applied if outformat in "+str(mexafile.encode_languages))
 parser.add_argument('--root', default='', help='Queried root container')
 args = parser.parse_args()
 
-mf = mexafile(args.infile).evaluate()
+mf = mexafile(args.infile)
+
+append_oplist = removeNone(args.expressions)
+if len(append_oplist):
+	#print "Parsing: " + str(append_oplist)
+	mf.append(append_oplist, "Command line argument expression")
+
+# todo: Could offer here also an option to inject various or all environment
+# variables, just by passing "--env". Could setup manual assign() operations
+# similar to mexafile.rootbase.
+# Could also get rid of "let" statements by moving the rootbase outside the class.
+
+mf.evaluate()
+
 write = lambda t: args.outfile.write(t)
 
 # 1. Create list of operations

@@ -79,7 +79,6 @@ Boundaries::back = "exact"
 Parameters::Boundaries = Boundaries
 Parameters::RNSID = RNSID
 Parameters::InitialData = InitialData
-Solver::constants = Parameters
 
 
 
