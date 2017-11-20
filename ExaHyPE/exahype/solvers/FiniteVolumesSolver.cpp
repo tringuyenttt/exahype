@@ -152,9 +152,42 @@ bool exahype::solvers::FiniteVolumesSolver::isSending(
       section==exahype::records::State::AlgorithmSection::LocalRecomputationAllSend;
 }
 
-bool exahype::solvers::FiniteVolumesSolver::isUsingSharedMappings(
+bool exahype::solvers::FiniteVolumesSolver::isComputingTimeStepSize(
     const exahype::records::State::AlgorithmSection& section) const {
-  return section==exahype::records::State::AlgorithmSection::TimeStepping;
+  bool result = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
+      result |= getMeshUpdateRequest();
+      break;
+    default:
+      break;
+  }
+
+  return false;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isMerging(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return
+      section==exahype::records::State::AlgorithmSection::TimeStepping ||
+      section==exahype::records::State::AlgorithmSection::PredictionRerunAllSend;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isBroadcasting(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return
+      section==exahype::records::State::AlgorithmSection::TimeStepping;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isPerformingPrediction(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return false;
+}
+
+bool exahype::solvers::FiniteVolumesSolver::isMergingMetadata(
+    const exahype::records::State::AlgorithmSection& section) const {
+  return false;
 }
 
 void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(
@@ -671,6 +704,11 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
+  if (!cellDescription.getNeighbourMergePerformed().all()) {
+    logError("updateSolution(...)","Not all neighbour merges have been performed! cell="<<
+        cellDescription.toString());
+    std::terminate();
+  }
 
   double* solution    = DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
   double* newSolution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
@@ -701,7 +739,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   // cellDescription.getTimeStepSize() = 0 is an initial condition
   assertion2( tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || !std::isnan(admissibleTimeStepSize), cellDescription.toString(), cellDescriptionsIndex );
   assertion2( tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || !std::isinf(admissibleTimeStepSize), cellDescription.toString(), cellDescriptionsIndex );
-  assertion2( tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || admissibleTimeStepSize<std::numeric_limits<double>::max(), cellDescription.toString(), cellDescriptionsIndex );
+  assertion3( tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || admissibleTimeStepSize<std::numeric_limits<double>::max(),
+      admissibleTimeStepSize, cellDescription.toString(), cellDescriptionsIndex );
 
   if ( !tarch::la::equals(cellDescription.getTimeStepSize(), 0.0) && tarch::la::smaller(admissibleTimeStepSize,cellDescription.getTimeStepSize()) ) { //TODO JMG 1.001 factor to prevent same dt computation to throw logerror
     logWarning("updateSolution(...)","Finite volumes solver time step size harmed CFL condition. dt="<<

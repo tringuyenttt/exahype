@@ -45,54 +45,52 @@ int exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubled
 }
 
 bool exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLimiterStatusSpreading() {
+  bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
+    result |=
+        solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
         &&
         (static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        !=exahype::solvers::LimiterDomainChange::Regular
-        ||
-        solver->getMeshUpdateRequest())
-    ) {
-      return true;
-    }
+        !=exahype::solvers::LimiterDomainChange::Regular ||
+        solver->getMeshUpdateRequest());
   }
-  return false;
+  return result;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalOrGlobalRecomputation() {
+  bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
+    result |=
+        solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
+        &&
         static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        !=exahype::solvers::LimiterDomainChange::Regular
-    ) {
-      return true;
-    }
+        !=exahype::solvers::LimiterDomainChange::Regular;
   }
-  return false;
+  return result;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation(){
+  bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
+    result |=
+        solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
+        &&
         static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        ==exahype::solvers::LimiterDomainChange::Irregular
-    ) {
-      return true;
-    }
+        ==exahype::solvers::LimiterDomainChange::Irregular;
   }
-  return false;
+  return result;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation(){
+  bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG &&
+    result |=
+        solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
+        &&
         static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-        ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate
-    ) {
-      return true;
-    }
+        ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
   }
-  return false;
+  return result;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::isValidCellDescriptionIndex(
@@ -194,70 +192,110 @@ bool exahype::solvers::LimitingADERDGSolver::isSending(
 
   switch (section) {
     case exahype::records::State::AlgorithmSection::TimeStepping:
-      isSending = true;
-      break;
-    case exahype::records::State::AlgorithmSection::LimiterStatusSpreading:
-      isSending = false; // value doesn't actually matter
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinement:
-      isSending |= getMeshUpdateRequest();
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputation:
-      isSending |= getMeshUpdateRequest();
-      isSending |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-      break;
+    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
     case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-      isSending = true;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isSending |= getMeshUpdateRequest();
-      isSending |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
-      isSending |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-      break;
     case exahype::records::State::AlgorithmSection::LocalRecomputationAllSend:
       isSending = true;
       break;
-    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isSending = true;
-  }
-
-  return isSending;
-}
-
-bool exahype::solvers::LimitingADERDGSolver::isUsingSharedMappings(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isUsingSharedMappings = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-      isUsingSharedMappings = true;
-      break;
-    case exahype::records::State::AlgorithmSection::LimiterStatusSpreading:
-      isUsingSharedMappings |= getMeshUpdateRequest();
-      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
-      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-      isUsingSharedMappings |= getMeshUpdateRequest();
-      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputation:
-      isUsingSharedMappings |= getMeshUpdateRequest();
-      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-      break;
     case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isUsingSharedMappings |= getMeshUpdateRequest();
-      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
-      isUsingSharedMappings |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-      break;
-    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isUsingSharedMappings = _solver->getStabilityConditionWasViolated();
+      isSending |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
+      isSending |= getMeshUpdateRequest();
+      assertion(getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate || getMeshUpdateRequest());
       break;
     default:
       break;
   }
 
-  return isUsingSharedMappings;
+  return isSending;
+}
+
+bool exahype::solvers::LimitingADERDGSolver::isComputingTimeStepSize(
+    const exahype::records::State::AlgorithmSection& section) const {
+  bool isComputingTimeStepSize = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
+      isComputingTimeStepSize |= getMeshUpdateRequest();
+      assertion(getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate || getMeshUpdateRequest());
+      break;
+    default:
+      break;
+  }
+
+  return isComputingTimeStepSize;
+}
+
+bool exahype::solvers::LimitingADERDGSolver::isMerging(
+    const exahype::records::State::AlgorithmSection& section) const {
+  bool isMerging = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::TimeStepping:
+    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
+      isMerging = true;
+      break;
+    default:
+      break;
+  }
+
+  return isMerging;
+}
+
+bool exahype::solvers::LimitingADERDGSolver::isBroadcasting(
+    const exahype::records::State::AlgorithmSection& section) const {
+  bool isBroadcasting = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::TimeStepping:
+      isBroadcasting = true;
+      break;
+    case exahype::records::State::AlgorithmSection::MeshRefinement:
+      isBroadcasting = getMeshUpdateRequest();
+      assertion(getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate || getMeshUpdateRequest());
+      break;
+    default:
+      break;
+  }
+
+  return isBroadcasting;
+}
+
+bool exahype::solvers::LimitingADERDGSolver::isPerformingPrediction(
+    const exahype::records::State::AlgorithmSection& section) const {
+  bool isPerformingPrediction = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::TimeStepping:
+      isPerformingPrediction = true;
+      break;
+    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
+      isPerformingPrediction = _solver->getStabilityConditionWasViolated();
+      break;
+    default:
+      break;
+  }
+
+  return isPerformingPrediction;
+}
+
+bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
+    const exahype::records::State::AlgorithmSection& section) const {
+  bool isMergingMetadata = false;
+
+  switch (section) {
+    case exahype::records::State::AlgorithmSection::LimiterStatusSpreading:
+      isMergingMetadata = getLimiterDomainChange()!=LimiterDomainChange::Regular;
+      break;
+    case exahype::records::State::AlgorithmSection::MeshRefinement:
+      isMergingMetadata = getMeshUpdateRequest();
+      assertion( getLimiterDomainChange()!=LimiterDomainChange::IrregularRequiringMeshUpdate || getMeshUpdateRequest());
+      break;
+    default:
+      break;
+  }
+
+  return isMergingMetadata;
 }
 
 void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
@@ -837,11 +875,6 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   return result;
 }
 
-
-/**
- * This method assumes the ADERDG solver's cell-local limiter status has
- * already been determined.
- */
 void exahype::solvers::LimitingADERDGSolver::updateSolution(
     const int cellDescriptionsIndex,
     const int element)  {
@@ -1318,9 +1351,6 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolverSolutionsGlobally(
       _solver->swapSolutionAndPreviousSolution(solverPatch);
     }
   }
-  // 2. Update the limiter status (do not overwrite the previous limiter status)
-  //solverPatch.setLimiterStatus(ADERDGSolver::determineLimiterStatus(solverPatch));
-  //solverPatch.setFacewiseLimiterStatus(solverPatch.getLimiterStatus());
 }
 
 void exahype::solvers::LimitingADERDGSolver::reinitialiseSolversGlobally(

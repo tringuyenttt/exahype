@@ -43,11 +43,14 @@ class AMRRoutinesGenerator:
     def generateCode(self):
         self.m_context['gemm_face_Q'] = 'gemm_'+str(self.m_context['nData'])+'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])+'_face_Q'
         self.m_context['gemm_face_F'] = 'gemm_'+str(self.m_context['nVar']) +'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])+'_face_F'
+        self.m_context['gemm_volume'] = 'gemm_'+str(self.m_context['nData'])+'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])+'_volume'
+        
         TemplatingUtils.renderAsFile('amrRoutines_cpp.template', self.m_filename, self.m_context)
         # generates gemms
         if(self.m_context['useLibxsmm']):
             self.generateGemms()
     
+    #TODO JMG alignment
     def generateGemms(self):
         # define a sequence of matmul configs
         l_matmulList = []
@@ -74,9 +77,9 @@ class AMRRoutinesGenerator:
                                     # alignment A
                                     0,                            \
                                     # alignment C
-                                    0,                            \
+                                    1,                            \
                                     # name
-                                    "face_Q",                   \
+                                    "face_Q",                     \
                                     # prefetching
                                     "nopf",                       \
                                     # type
@@ -101,13 +104,40 @@ class AMRRoutinesGenerator:
                                     # alignment A
                                     0,                            \
                                     # alignment C
-                                    0,                            \
+                                    1,                            \
                                     # name
-                                    "face_F",                   \
+                                    "face_F",                     \
                                     # prefetching
                                     "nopf",                       \
                                     # type
                                     "gemm")
         l_matmulList.append(l_face_F)
+        l_volume = MatmulConfig(  # M
+                                    self.m_context['nData'],       \
+                                    # N
+                                    self.m_context['nDof'],       \
+                                    # K
+                                    self.m_context['nDof'],       \
+                                    # LDA
+                                    self.m_context['nData'],      \
+                                    # LDB
+                                    self.m_context['nDofPad'],    \
+                                    # LDC
+                                    self.m_context['nData'],      \
+                                    # alpha 
+                                    1,                            \
+                                    # beta
+                                    1,                            \
+                                    # alignment A
+                                    0,                            \
+                                    # alignment C
+                                    1,                            \
+                                    # name
+                                    "volume",                     \
+                                    # prefetching
+                                    "nopf",                       \
+                                    # type
+                                    "gemm")
+        l_matmulList.append(l_volume)
         
         Backend.generateAssemblerCode("asm_"+self.m_filename, l_matmulList)

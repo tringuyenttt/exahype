@@ -34,12 +34,6 @@ exahype::mappings::FinaliseMeshRefinement::communicationSpecification() const {
       true);
 }
 
-peano::MappingSpecification exahype::mappings::FinaliseMeshRefinement::
-    touchVertexFirstTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
-}
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::enterCellSpecification(int level) const {
@@ -49,6 +43,12 @@ exahype::mappings::FinaliseMeshRefinement::enterCellSpecification(int level) con
 }
 
 // Below all specs are Nop
+peano::MappingSpecification exahype::mappings::FinaliseMeshRefinement::
+    touchVertexFirstTimeSpecification(int level) const {
+  return peano::MappingSpecification(
+      peano::MappingSpecification::Nop,
+      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+}
 
 peano::MappingSpecification
 exahype::mappings::FinaliseMeshRefinement::leaveCellSpecification(int level) const {

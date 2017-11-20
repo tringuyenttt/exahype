@@ -14,7 +14,7 @@
 // public:
 //  CurvilinearTransformation();
 
-double fault(double y, double z,double depth_y,double a_z, double b_z);
+double fault(double y, double z,double a_y, double b_y, double a_z, double b_z);
 
 
 void getBoundaryCurves(int num_points,double offset_x, double offset_y,double width_x, double width_y , double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y);
@@ -53,8 +53,10 @@ void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
 
 
 void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
-						    int nx, int ny, int nz, int n,
-						    double width_x, double width_y , double width_z,	      
+						    int nx, int ny, int nz, int n,double fault_position,
+						    double a_x, double a_y , double a_z,
+						    double b_x, double b_y , double b_z,
+						    double width_x, double width_y , double width_z,
 						    double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
 						    double* right_bnd_x, double* right_bnd_y, double* right_bnd_z,
 						    double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
@@ -122,4 +124,9 @@ void metricDerivativesAndJacobian3D(int num_nodes,
 				  double* jacobian,
 				  double dx, double dy, double dz
 				    );
+
+
+double interpolate_fault_surface(double* X1, double* Y1, double* Z1, double y, double z, int my, int mz);
+double interpol2d_dG(int my, int mz, int nmy, int npy, int nmz, int npz, double y, double z, double* yj, double* zk, double* f);
+double lagrange(int m, int p, int i, double x, double *xi);
 

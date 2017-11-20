@@ -210,7 +210,7 @@ void exahype::mappings::TimeStepSizeComputation::endIteration(
   for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    if (solver->isUsingSharedMappings(_localState.getAlgorithmSection())) {
+    if (solver->isComputingTimeStepSize(_localState.getAlgorithmSection())) {
       // cell sizes
       solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
       solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
@@ -278,7 +278,7 @@ void exahype::mappings::TimeStepSizeComputation::enterCell(
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined15);
     pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if (solver->isUsingSharedMappings(_localState.getAlgorithmSection())) {
+      if (solver->isComputingTimeStepSize(_localState.getAlgorithmSection())) {
         const int element = solver->tryGetElement(
             fineGridCell.getCellDescriptionsIndex(),solverNumber);
 

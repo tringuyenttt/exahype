@@ -60,6 +60,8 @@ int exahype::runners::Runner::runAsWorker(
                 peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics( _parser.getMulticorePropertiesFile() + "-dump-" + std::to_string(dumpCounter) );
               }
               #endif
+
+              postProcessTimeStepInSharedMemoryEnvironment();
             }
             break;
           case exahype::repositories::Repository::Terminate:
