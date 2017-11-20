@@ -67,6 +67,7 @@
 
 #include "peano/performanceanalysis/SpeedupLaws.h"
 
+#include "peano/datatraversal/TaskSet.h"
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
@@ -239,6 +240,8 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   const int numberOfThreads = _parser.getNumberOfThreads();
   tarch::multicore::Core::getInstance().configure(numberOfThreads);
 
+  peano::datatraversal::TaskSet::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
+
   switch (_parser.getMulticoreOracleType()) {
   case Parser::MulticoreOracleType::Dummy:
     logInfo("initSharedMemoryConfiguration()",
@@ -257,8 +260,8 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
          false,  //   bool pipelineAscendProcessing           = false,
          #else
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
-         true, //  bool pipelineDescendProcessing          = true,
-         true, //   bool pipelineAscendProcessing           = true,
+         true, //  bool pipelineDescendProcessing
+         true, //   bool pipelineAscendProcessing
          #endif
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,

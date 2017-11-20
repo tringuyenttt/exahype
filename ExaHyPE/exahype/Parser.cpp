@@ -1360,6 +1360,19 @@ int exahype::Parser::getRanksPerNode() {
 }
 
 
+int exahype::Parser::getNumberOfBackgroundTasks() {
+  const std::string Search = "background-tasks";
+
+  int result = static_cast<int>(exahype::Parser::getValueFromPropertyString(getSharedMemoryConfiguration(),Search));
+  if (result<1) {
+    logWarning("getNumberOfBackgroundTasks()", "invalid number of background tasks (background-tasks field in configuration) " <<
+      "set or no number at all. Use default (1)");
+    result = 1;
+  }
+  return result;
+}
+
+
 bool exahype::Parser::ParserView::isValueValidString(
     const std::string& key) const {
   const std::string inputString = _parser.getTokenAfter(

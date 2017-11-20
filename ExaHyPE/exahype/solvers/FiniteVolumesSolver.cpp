@@ -2043,7 +2043,7 @@ void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescri
       lock.free();
 
       CompressionTask myTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( myTask );
+      peano::datatraversal::TaskSet spawnedSet( myTask,false );
     }
     else {
       determineUnknownAverages(cellDescription);

@@ -406,6 +406,7 @@ class exahype::Parser {
   double getNodePoolAnsweringTimeout() const;
 
   int getRanksPerNode();
+  int getNumberOfBackgroundTasks();
 };
 
 #endif
