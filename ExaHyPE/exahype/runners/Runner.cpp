@@ -762,6 +762,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       bool plot = exahype::plotters::startPlottingIfAPlotterIsActive(
           solvers::Solver::getMinSolverTimeStampOfAllSolvers());
 
+      preProcessTimeStepInSharedMemoryEnvironment();
+
       if (exahype::State::fuseADERDGPhases()) {
         int numberOfStepsToRun = 1;
         if (plot) {
@@ -812,6 +814,49 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 }
 
 
+void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
+  #if defined(SharedTBBInvade)
+  // get data from the other guys
+  int myIndexWithinSharedUserData;
+  int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
+
+  std::vector<double>  t1;
+  std::vector<double>  f;
+  std::vector<double>  s;
+  for (int k=0; k<ranksOnThisNode; k++) {
+    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,0)>1e-12 );
+    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,1)>=0.0 );
+    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,2)>=0.0 );
+
+    t1.push_back( SHMController::getSingleton()->getSharedUserData<double>(k,0) );
+    f.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,1) );
+    s.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,2) );
+
+    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
+    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
+    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
+  }
+
+  // ask for an optimal number of cores for local rank
+  int optimalNumberOfThreads = std::max(
+    peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
+      myIndexWithinSharedUserData,
+      t1,f,s,
+      SHMInvadeRoot::get_max_available_cores(),
+      tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
+    ),
+    2
+    );
+
+  if (_parser.getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) {
+  }
+  else if (_parser.getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) {
+    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
+  }
+  #endif
+}
+
+
 void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   #if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis) && !defined(Parallel)
   if (sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize::hasLearnedSinceLastQuery()) {
@@ -849,61 +894,10 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   assertion2( amdahlsLaw.getSerialCodeFraction()<=1.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
   assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
 
-  // get data from the other guys
-  int myIndexWithinSharedUserData;
-  int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
-
-  std::vector<double>  t1;
-  std::vector<double>  f;
-  std::vector<double>  s;
-  for (int k=0; k<ranksOnThisNode; k++) {
-    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,0)>1e-12 );
-    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,1)>=0.0 );
-    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,2)>=0.0 );
-
-    t1.push_back( SHMController::getSingleton()->getSharedUserData<double>(k,0) );
-    f.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,1) );
-    s.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,2) );
-
-    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
-    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
-    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
-  }
-
-  assertionNumericalEquals6(
-    t1[myIndexWithinSharedUserData], amdahlsLaw.getSerialTime(),
-    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
-    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
-  );
-  assertionNumericalEquals6(
-    f[myIndexWithinSharedUserData],  amdahlsLaw.getSerialCodeFraction(),
-    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
-    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
-  );
-  assertionNumericalEquals6(
-    s[myIndexWithinSharedUserData],  amdahlsLaw.getStartupCostPerThread(),
-    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
-    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
-  );
-
-  // ask for an optimal number of cores for local rank
-  int optimalNumberOfThreads = std::max(
-    peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
-      myIndexWithinSharedUserData,
-      t1,f,s,
-      SHMInvadeRoot::get_max_available_cores(),
-      tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
-    ),
-    2
-    );
-  logInfo(
-    "postProcessTimeStepInSharedMemoryEnvironment()",
-    "it would be optimal to use " << optimalNumberOfThreads << " threads" );
-
   if (_parser.getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) {
   }
   else if (_parser.getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) {
-    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
+    tarch::multicore::Core::getInstance().configure( 1 );
   }
 
   invasionWatch.startTimer();

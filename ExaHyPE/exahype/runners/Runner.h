@@ -359,6 +359,7 @@ class exahype::runners::Runner {
       const double meshSize) const;
 
 
+  void preProcessTimeStepInSharedMemoryEnvironment();
   void postProcessTimeStepInSharedMemoryEnvironment();
  public:
   explicit Runner(Parser& parser);
