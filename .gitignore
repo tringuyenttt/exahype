@@ -129,6 +129,7 @@ ExternalLibraries
 *.ilg
 *.ind
 *.ist
+*.synctex.gz
 
 # Coredumps
 core
