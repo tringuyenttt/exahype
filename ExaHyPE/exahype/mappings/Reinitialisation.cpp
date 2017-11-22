@@ -111,15 +111,6 @@ bool exahype::mappings::Reinitialisation::performLocalRecomputation(
       ==exahype::solvers::LimiterDomainChange::Irregular;
 }
 
-bool exahype::mappings::Reinitialisation::performGlobalRecomputation(
-    exahype::solvers::Solver* solver) {
-  return
-      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-      &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-      ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-}
-
 void exahype::mappings::Reinitialisation::endIteration(
     exahype::State& solverState) {
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
@@ -168,14 +159,6 @@ void exahype::mappings::Reinitialisation::enterCell(
             limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
           }
           limitingADERDGSolver->reinitialiseSolversLocally(fineGridCell.getCellDescriptionsIndex(),element);
-        }
-        else if ( performGlobalRecomputation( solver ) ) {
-          auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-
-          // TODO(Dominc): Add to docu: Rollback is performed here in GlobalRollback mapping
-          // TODO(Dominic): Move this functionality to finalise mesh refinement
-          limitingADERDGSolver->reinitialiseSolversGlobally(fineGridCell.getCellDescriptionsIndex(),element);
-          limitingADERDGSolver->determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
         }
       }
     endpfor
