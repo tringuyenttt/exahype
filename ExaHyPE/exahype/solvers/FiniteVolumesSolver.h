@@ -36,6 +36,7 @@ class FiniteVolumesSolver;
  * Abstract base class for one-step Finite Volumes solvers.
  */
 class exahype::solvers::FiniteVolumesSolver : public exahype::solvers::Solver {
+  friend class LimitingADERDGSolver;
 public:
   typedef exahype::DataHeap DataHeap;
 
@@ -448,22 +449,6 @@ public:
   double getMinTimeStepSize() const override;
 
   void updateMinNextTimeStepSize( double value ) override;
-
-  void setMinTimeStepSize(double value) { // TODO(Dominic): Hack
-    _minTimeStepSize = value;
-  }
-
-  void setMinTimeStamp(double value) { // TODO(Dominic): Hack
-    _minTimeStamp = value;
-  }
-
-  void setMinNextTimeStepSize(double value) { // TODO(Dominic): Hack
-      _minNextTimeStepSize = value;
-  }
-
-  void setPreviousMinTimeStepSize(double value) { // TODO(Dominic): Hack
-    _previousMinTimeStepSize = value;
-  }
 
   void initSolver(
       const double timeStamp,

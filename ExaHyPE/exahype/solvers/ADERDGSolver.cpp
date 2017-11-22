@@ -764,56 +764,32 @@ double exahype::solvers::ADERDGSolver::getMinNextPredictorTimeStepSize() const {
   return _minNextTimeStepSize;
 }
 
-void exahype::solvers::ADERDGSolver::setMinCorrectorTimeStamp(
-    double minCorrectorTimeStamp) {
-  _minCorrectorTimeStamp = minCorrectorTimeStamp;
-}
-
 double exahype::solvers::ADERDGSolver::getMinCorrectorTimeStamp() const {
   return _minCorrectorTimeStamp;
-}
-
-void exahype::solvers::ADERDGSolver::setMinPredictorTimeStamp(
-    double minPredictorTimeStamp) {
-  _minPredictorTimeStamp = minPredictorTimeStamp;
 }
 
 double exahype::solvers::ADERDGSolver::getMinPredictorTimeStamp() const {
   return _minPredictorTimeStamp;
 }
 
-void exahype::solvers::ADERDGSolver::setMinCorrectorTimeStepSize(
-    double minCorrectorTimeStepSize) {
-  _minCorrectorTimeStepSize = minCorrectorTimeStepSize;
-}
-
 double exahype::solvers::ADERDGSolver::getMinCorrectorTimeStepSize() const {
   return _minCorrectorTimeStepSize;
-}
-
-void exahype::solvers::ADERDGSolver::setMinPredictorTimeStepSize(
-    double minPredictorTimeStepSize) {
-  _minPredictorTimeStepSize = minPredictorTimeStepSize;
 }
 
 double exahype::solvers::ADERDGSolver::getMinPredictorTimeStepSize() const {
   return _minPredictorTimeStepSize;
 }
 
+void exahype::solvers::ADERDGSolver::setMinPredictorTimeStepSize(const double value) {
+  _minPredictorTimeStepSize = value;
+}
+
 double exahype::solvers::ADERDGSolver::getPreviousMinCorrectorTimeStepSize() const {
   return _previousMinCorrectorTimeStepSize;
 }
 
-void exahype::solvers::ADERDGSolver::setPreviousMinCorrectorTimeStamp(double value) {
-  _previousMinCorrectorTimeStamp = value;
-}
-
 double exahype::solvers::ADERDGSolver::getPreviousMinCorrectorTimeStamp() const {
   return _previousMinCorrectorTimeStamp;
-}
-
-void exahype::solvers::ADERDGSolver::setPreviousMinCorrectorTimeStepSize(double value) {
-  _previousMinCorrectorTimeStepSize = value;
 }
 
 double exahype::solvers::ADERDGSolver::getMinTimeStamp() const {
@@ -843,13 +819,13 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _coarsestMeshLevel =
       exahype::solvers::Solver::computeMeshLevel(_maximumMeshSize,boundingBoxSize[0]);
 
-  setPreviousMinCorrectorTimeStepSize(0.0);
-  setMinCorrectorTimeStepSize(0.0);
-  setMinPredictorTimeStepSize(0.0);
+  _previousMinCorrectorTimeStepSize = 0.0;
+  _minCorrectorTimeStepSize = 0.0;
+  _minPredictorTimeStepSize = 0.0;
 
-  setPreviousMinCorrectorTimeStamp(timeStamp);
-  setMinCorrectorTimeStamp(timeStamp);
-  setMinPredictorTimeStamp(timeStamp);
+  _previousMinCorrectorTimeStamp = timeStamp;
+  _minCorrectorTimeStamp         = timeStamp;
+  _minPredictorTimeStamp         = timeStamp;
 
   _meshUpdateRequest = true;
 }
@@ -956,12 +932,6 @@ bool exahype::solvers::ADERDGSolver::isMergingMetadata(
   }
 
   return isMergingMetadata;
-}
-
-void exahype::solvers::ADERDGSolver::initFusedSolverTimeStepSizes() {
-  setPreviousMinCorrectorTimeStepSize(getMinPredictorTimeStepSize());
-  setMinCorrectorTimeStepSize(getMinPredictorTimeStepSize());
-  setMinPredictorTimeStepSize(getMinPredictorTimeStepSize());
 }
 
 void exahype::solvers::ADERDGSolver::setStabilityConditionWasViolated(bool state) {
@@ -2373,6 +2343,8 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution(...)",i);
     } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
 
+    assertion1(cellDescription.getCorrectorTimeStamp()<std::numeric_limits<double>::max(),cellDescription.toString());
+    assertion1(cellDescription.getCorrectorTimeStepSize()<std::numeric_limits<double>::max(),cellDescription.toString());
     solutionUpdate(newSolution,update,cellDescription.getCorrectorTimeStepSize());
 
     adjustSolution(

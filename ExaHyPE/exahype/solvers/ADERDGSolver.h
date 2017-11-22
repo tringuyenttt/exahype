@@ -41,6 +41,7 @@ namespace exahype {
  * Describes one solver.
  */
 class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
+  friend class LimitingADERDGSolver;
 public:
   /**
    * The maximum helper status.
@@ -1351,40 +1352,24 @@ public:
   void updateMinNextPredictorTimeStepSize(
       const double& nextPredictorTimeStepSize);
 
+  /**
+   * Currently, required by TimeStepSizeComputation.
+   */
+  void setMinPredictorTimeStepSize(const double value);
+
   double getMinNextPredictorTimeStepSize() const;
-
-  // todo 16/02/25:Dominic Etienne Charrier: It follows stuff that must be
-  // revised:
-
-  // todo 25/02/16:Dominic Etienne Charrier
-  // Remove the time stamps that are not used in ExaHype.
-  void setMinPredictorTimeStepSize(double minPredictorTimeStepSize);
   double getMinPredictorTimeStepSize() const;
-
-  void setMinPredictorTimeStamp(double value);
   double getMinPredictorTimeStamp() const;
-
-  void setMinCorrectorTimeStamp(double value);
   double getMinCorrectorTimeStamp() const;
-
-  void setMinCorrectorTimeStepSize(double value);
   double getMinCorrectorTimeStepSize() const;
-
-  void setPreviousMinCorrectorTimeStamp(double value);
   double getPreviousMinCorrectorTimeStamp() const;
-
-  void setPreviousMinCorrectorTimeStepSize(double value);
   double getPreviousMinCorrectorTimeStepSize() const;
 
   double getMinTimeStamp() const override;
-
   double getMinTimeStepSize() const override;
-
   double getMinNextTimeStepSize() const override;
 
-  void updateMinNextTimeStepSize( double value ) override;
-
-  void initFusedSolverTimeStepSizes();
+  void updateMinNextTimeStepSize(double value) override;
 
   /**
    * Set if the CFL condition was violated

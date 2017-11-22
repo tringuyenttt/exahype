@@ -307,6 +307,7 @@ void exahype::solvers::LimitingADERDGSolver::synchroniseTimeStepping(
 
 void exahype::solvers::LimitingADERDGSolver::startNewTimeStep() {
   _solver->startNewTimeStep();
+  ensureLimiterTimeStepDataIsConsistent();
 
   logDebug("startNewTimeStep()","_limiterDomainHasChanged="<<static_cast<int>(_limiterDomainChange)<<
            ",nextLimiterDomainChange="<<static_cast<int>(_nextLimiterDomainChange));
@@ -316,21 +317,32 @@ void exahype::solvers::LimitingADERDGSolver::startNewTimeStepFused(
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch) {
   _solver->startNewTimeStepFused(isFirstIterationOfBatch,isLastIterationOfBatch);
+  ensureLimiterTimeStepDataIsConsistent();
 
   logDebug("startNewTimeStep()","_limiterDomainHasChanged="<<static_cast<int>(_limiterDomainChange)<<
            ",nextLimiterDomainChange="<<static_cast<int>(_nextLimiterDomainChange));
 }
 
+void exahype::solvers::LimitingADERDGSolver::ensureLimiterTimeStepDataIsConsistent() const {
+  _limiter->_minTimeStamp            = _solver->_minCorrectorTimeStamp;
+  _limiter->_minTimeStepSize         = _solver->_minCorrectorTimeStepSize;
+  _limiter->_previousMinTimeStamp    = _solver->_previousMinCorrectorTimeStamp;
+  _limiter->_previousMinTimeStepSize = _solver->_previousMinCorrectorTimeStepSize;
+}
+
 void exahype::solvers::LimitingADERDGSolver::updateTimeStepSizesFused()  {
   _solver->updateTimeStepSizesFused();
+  ensureLimiterTimeStepDataIsConsistent();
 }
 
 void exahype::solvers::LimitingADERDGSolver::updateTimeStepSizes()  {
   _solver->updateTimeStepSizes();
+  ensureLimiterTimeStepDataIsConsistent();
 }
 
 void exahype::solvers::LimitingADERDGSolver::zeroTimeStepSizes() {
   _solver->zeroTimeStepSizes();
+  ensureLimiterTimeStepDataIsConsistent();
 }
 
 exahype::solvers::LimiterDomainChange
@@ -354,10 +366,12 @@ exahype::solvers::LimitingADERDGSolver::getLimiterDomainChange() const {
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStep() {
   _solver->rollbackToPreviousTimeStep();
+  ensureLimiterTimeStepDataIsConsistent();
 }
 
 void exahype::solvers::LimitingADERDGSolver::rollbackToPreviousTimeStepFused() {
   _solver->rollbackToPreviousTimeStepFused();
+  ensureLimiterTimeStepDataIsConsistent();
 }
 
 void exahype::solvers::LimitingADERDGSolver::updateNextMinCellSize(double minCellSize) {
@@ -1305,6 +1319,7 @@ bool exahype::solvers::LimitingADERDGSolver::ensureRequiredLimiterPatchIsAllocat
       solverPatch.getType()==SolverPatch::Type::Cell        &&
       solverPatch.getLimiterStatus()>0
   ) {
+//    std::cout << "allocate limiter patch after solution update" << std::endl; // TODO(Dominic): remove
     assertion1(solverPatch.getPreviousLimiterStatus()==0,solverPatch.toString());
     allocateLimiterPatch(cellDescriptionsIndex,solverElement);
     return true;

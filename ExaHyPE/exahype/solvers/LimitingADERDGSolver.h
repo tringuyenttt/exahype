@@ -350,6 +350,49 @@ private:
    */
   int computeMinimumLimiterStatusForRefinement(int level) const;
 
+  /**
+   * Ensure that the time step data of the limiter is
+   * consistent with the one of the solver.
+   */
+  void ensureLimiterTimeStepDataIsConsistent() const;
+
+  /**
+   * Returns the index of the limiter patch corresponding to
+   * the solver patch with index \p solverElement.
+   * Both patches link to the same ::LimitingADERDGSolver.
+   * If no limiter patch is found, this function
+   * returns exahype::solvers::Solver::NotFound.
+   */
+  int tryGetLimiterElementFromSolverElement(
+      const int cellDescriptionsIndex,
+      const int solverElement) const {
+    SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+    return _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
+  }
+
+  /**
+   * If a limiter patch is allocated for the solver patch,
+   * ensure that it's time step data is consistent
+   * with the solver patch's time step data.
+   */
+  void ensureLimiterPatchTimeStepDataIsConsistent(
+        const int cellDescriptionsIndex,
+        const int solverElement) const;
+
+  /**
+   * Copies the time stamp and the time step sizes from the solver patch
+   * to the limiter patch.
+   */
+  static void copyTimeStepDataFromSolverPatch(
+      const SolverPatch& solverPatch, const int cellDescriptionsIndex, const int limiterElement);
+
+  /**
+   * Copies the time stamp and the time step sizes from the solver patch
+   * to the limiter patch.
+   */
+  static void copyTimeStepDataFromSolverPatch(
+      const SolverPatch& solverPatch, LimiterPatch& limiterPatch);
+
 #ifdef Parallel
 
   /**
@@ -613,43 +656,6 @@ public:
       const int solverNumber) const {
     return _limiter->tryGetElement(cellDescriptionsIndex,solverNumber);
   }
-
-  /**
-   * Returns the index of the limiter patch corresponding to
-   * the solver patch with index \p solverElement.
-   * Both patches link to the same ::LimitingADERDGSolver.
-   * If no limiter patch is found, this function
-   * returns exahype::solvers::Solver::NotFound.
-   */
-  int tryGetLimiterElementFromSolverElement(
-      const int cellDescriptionsIndex,
-      const int solverElement) const {
-    SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-    return _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
-  }
-
-  /**
-   * If a limiter patch is allocated for the solver patch,
-   * ensure that it's time step data is consistent
-   * with the solver patch's time step data.
-   */
-  void ensureLimiterPatchTimeStepDataIsConsistent(
-        const int cellDescriptionsIndex,
-        const int solverElement) const;
-
-  /**
-   * Copies the time stamp and the time step sizes from the solver patch
-   * to the limiter patch.
-   */
-  static void copyTimeStepDataFromSolverPatch(
-      const SolverPatch& solverPatch, const int cellDescriptionsIndex, const int limiterElement);
-
-  /**
-   * Copies the time stamp and the time step sizes from the solver patch
-   * to the limiter patch.
-   */
-  static void copyTimeStepDataFromSolverPatch(
-      const SolverPatch& solverPatch, LimiterPatch& limiterPatch);
 
   /**
    * Looks up the limiter patch for the given solver patch.

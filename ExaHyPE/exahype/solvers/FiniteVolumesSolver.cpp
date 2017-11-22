@@ -197,11 +197,13 @@ void exahype::solvers::FiniteVolumesSolver::synchroniseTimeStepping(
     CellDescription& cellDescription) const {
   switch (_timeStepping) {
     case TimeStepping::Global:
-      cellDescription.setPreviousTimeStepSize(_previousMinTimeStepSize);;
+      cellDescription.setPreviousTimeStepSize(_previousMinTimeStamp);
+      cellDescription.setPreviousTimeStepSize(_previousMinTimeStepSize);
       cellDescription.setTimeStamp(_minTimeStamp);
       cellDescription.setTimeStepSize(_minTimeStepSize);
       break;
     case TimeStepping::GlobalFixed:
+      cellDescription.setPreviousTimeStepSize(_previousMinTimeStamp);
       cellDescription.setPreviousTimeStepSize(_previousMinTimeStepSize);
       cellDescription.setTimeStamp(_minTimeStamp);
       cellDescription.setTimeStepSize(_minTimeStepSize);
@@ -806,8 +808,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
 //    std::cout << "aderPatch="<<aderPatch.toString() << std::endl;
 //  }
 
-  // TODO(Dominic): Hotfix on master branch. This will not
-  // be necessary in the future.
+  assertion1(cellDescription.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription.toString());
+  assertion1(cellDescription.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription.toString());
   double admissibleTimeStepSize=0;
   if (cellDescription.getTimeStepSize()>0) {
     solutionUpdate(
@@ -901,10 +903,21 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
   CellDescription& cellDescription1 = getCellDescription(cellDescriptionsIndex1,element1);
   CellDescription& cellDescription2 = getCellDescription(cellDescriptionsIndex2,element2);
 
+//  if (cellDescriptionsIndex1==2516 ||
+//      cellDescriptionsIndex2==2516) {
+//    std::cout << "cell1: "<< cellDescriptionsIndex1 << "," << cellDescription1.toString() << std::endl;
+//    std::cout << "cell2: "<< cellDescriptionsIndex2 << "," << cellDescription2.toString() << std::endl;
+//  }
+
   if (cellDescription1.getType()==CellDescription::Cell ||
       cellDescription2.getType()==CellDescription::Cell) {
     synchroniseTimeStepping(cellDescription1);
     synchroniseTimeStepping(cellDescription2);
+
+    assertion1(cellDescription1.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription1.toString());
+    assertion1(cellDescription1.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription1.toString());
+    assertion1(cellDescription2.getTimeStamp()<std::numeric_limits<double>::max(),cellDescription2.toString());
+    assertion1(cellDescription2.getTimeStepSize()<std::numeric_limits<double>::max(),cellDescription2.toString());
 
     peano::datatraversal::TaskSet uncompression(
       [&] () -> void {
