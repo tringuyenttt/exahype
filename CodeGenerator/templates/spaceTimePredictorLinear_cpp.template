@@ -117,10 +117,10 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
   //2. Add point source (if required) to the zeroth time derivative 
 {% if usePointSources %}
   for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-    for (int n = 0; n < {{nDof}}; n++) {  
+    for (int t = 0; t < {{nDof}}; t++) {  
       #pragma simd
-      for (int m = 0; m < {{nVar}}; m++) { //skip parameters
-        lQi[xyz*{{nDataPad}}+m] += dt*weights1[n]*PSi[((n+1)*{{nDof**nDim}}+xyz)*{{nVarPad}}+m];
+      for (int n = 0; n < {{nVar}}; n++) { //skip parameters
+        lQi[xyz*{{nDataPad}}+n] += dt*weights1[t]*PSi[((t+1)*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
       }
     }
   }
@@ -131,7 +131,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
   // Add point source to the first time derivative
   for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
     #pragma simd
-    for (int n = 0; n < {{nVarPad}}; n++) { //skip parameters, var padding should be zero
+    for (int n = 0; n < {{nVar}}; n++) { //skip parameters
       lQi[{{(nDof**nDim)*nDataPad}}+(xyz*{{nDataPad}}+n)] += PSi[xyz*{{nVarPad}}+n];
     }
   }
@@ -144,7 +144,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
         for (int s = 0; s < {{nDof}}; s++) {
           #pragma simd
           for (int n = 0; n < {{nVarPad}}; n++) {
-            tmp_PSderivatives[(t*{{nDof**nDim}}+xyz)*{{nVarPad}}+n] += PSderivatives[(s*{{nDof**nDim}}+xyz)*{{nVarPad}}+n] * dudx[t*{{nDofPad}}+s] * invDt;
+            tmp_PSderivatives[(t*{{nDof**nDim}}+xyz)*{{nVarPad}}+n] += PSderivatives[(s*{{nDof**nDim}}+xyz)*{{nVarPad}}+n] * dudx_T[t*{{nDofPad}}+s] * invDt;
           }
         }
       } 
@@ -187,7 +187,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
         for (int n = 0; n < {{nVar}}; n++) {
           for (int x = 0; x < {{nDof}}; x++) {
-            fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D*nDof}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] * dudx[l*{{nDofPad}}+x] * inverseDx[0] ;
+            fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D*nDof}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] * dudx_T[l*{{nDofPad}}+x] * inverseDx[0] ;
           }
         }
       }
@@ -207,7 +207,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
           for (int n = 0; n < {{nVar}}; n++) {
             for (int y = 0; y < {{nDof}}; y++) {
               fluxDerivative[l*{{nVarPad}}+n] += lFi[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}]*
-              dudx[l*{{nDofPad}}+y] * inverseDx[1] ;
+              dudx_T[l*{{nDofPad}}+y] * inverseDx[1] ;
               
             }
           }
@@ -229,7 +229,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
         for (int n = 0; n < numberOfVariables; n++) {
           for (int z = 0; z < basisSize; z++) {
             fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}]*
-             dudx[l*{{nDofPad}}+z] * inverseDx[2] ; 
+             dudx_T[l*{{nDofPad}}+z] * inverseDx[2] ; 
           }
         }
       }
@@ -249,7 +249,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       for (int x = 0; x < {{nDof}}; x++) { // TODO use Libxsmm
         for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
           for (int l = 0; l < {{nDof}}; l++) {
-            gradQ[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] += lQi[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+l)*{{nDataPad}}+n] * dudx[x*{{nDofPad}}+l] * inverseDx[0];
+            gradQ[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] += lQi[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+l)*{{nDataPad}}+n] * dudx_T[x*{{nDofPad}}+l] * inverseDx[0];
           }
         }
       }
@@ -261,7 +261,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
         for (int y = 0; y < {{nDof}}; y++) { //TODO use Libxsmm
           for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
             for (int l = 0; l < {{nDof}}; l++) {
-              gradQ[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] += lQi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nDataPad}}+n] * dudx[y*{{nDofPad}}+l] * inverseDx[1];
+              gradQ[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] += lQi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nDataPad}}+n] * dudx_T[y*{{nDofPad}}+l] * inverseDx[1];
             }
           }
         }
@@ -274,7 +274,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       for (int z = 0; z < {{nDof}}; z++) {     
         for (int n = 0; n < {{nVar}}; n++) {// Skip parameters
           for (int l = 0; l < {{nDof}}; l++) {
-            gradQ[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}})] += lQi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * dudx[z*{{nDofPad}}+l] * inverseDx[2];
+            gradQ[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}})] += lQi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * dudx_T[z*{{nDofPad}}+l] * inverseDx[2];
           }
         }
       }
@@ -404,13 +404,13 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
       #pragma simd
       for (int n = 0; n < {{nVarPad}}; n++) {
-        lFhi[xyz*{{nVarPad}}+n] += dtavFac * lFi[(i*{{nDof**nDim}}+xyz)*{{nDataPad}}+n]; //x
-        lFhi[xyz*{{nVarPad}}+n+{{1*(nDof**nDim)*nVarPad}}] += dtavFac * lFi[(i*{{nDof**nDim}}+xyz)*{{nDataPad}}+n+{{1*nDof*(nDof**nDim)*nVarPad}}]; //y
+        lFhi[xyz*{{nVarPad}}+n] += dtavFac * lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n]; //x
+        lFhi[xyz*{{nVarPad}}+n+{{1*(nDof**nDim)*nVarPad}}] += dtavFac * lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n+{{1*nDof*(nDof**nDim)*nVarPad}}]; //y
 {% if nDim==3 %}
-        lFhi[xyz*{{nVarPad}}+n+{{2*(nDof**nDim)*nVarPad}}] += dtavFac * lFi[(i*{{nDof**nDim}}+xyz)*{{nDataPad}}+n+{{2*nDof*(nDof**nDim)*nVarPad}}]; //z
+        lFhi[xyz*{{nVarPad}}+n+{{2*(nDof**nDim)*nVarPad}}] += dtavFac * lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n+{{2*nDof*(nDof**nDim)*nVarPad}}]; //z
 {% endif %}
 {% if useSource %}
-        lShi[xyz*{{nVarPad}}+n] += dtavFac * lSi[(i*{{nDof**nDim}}+xyz)*{{nDataPad}}+n]; //source
+        lShi[xyz*{{nVarPad}}+n] += dtavFac * lSi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n]; //source
 {% endif %}
       }
     }
