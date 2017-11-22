@@ -240,7 +240,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   const int numberOfThreads = _parser.getNumberOfThreads();
   tarch::multicore::Core::getInstance().configure(numberOfThreads);
 
-  peano::datatraversal::TaskSet::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
+  tarch::multicore::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
 
   switch (_parser.getMulticoreOracleType()) {
   case Parser::MulticoreOracleType::Dummy:
@@ -248,8 +248,9 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
         "use dummy shared memory oracle");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
       new peano::datatraversal::autotuning::OracleForOnePhaseDummy(
-         true, //   bool useMultithreading                  = true,
-         0, //   int  grainSizeOfUserDefinedRegions      = 0,
+         true,  //   bool useMultithreading                  = true,
+         0,     //   int  grainSizeOfUserDefinedRegions      = 0,
+/*
          #if defined(SharedOMP) // Pipelining does not pay off for OpenMP (yet)
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::DoNotSplit,
          false, //  bool pipelineDescendProcessing          = false,
@@ -259,10 +260,11 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
          false, //  bool pipelineDescendProcessing          = false,
          false,  //   bool pipelineAscendProcessing           = false,
          #else
+*/
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
          true, //  bool pipelineDescendProcessing
          true, //   bool pipelineAscendProcessing
-         #endif
+//         #endif
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
          1, //   int  smallestProblemSizeForEnterLeaveCell = tarch::la::aPowI(DIMENSIONS,9/2),
