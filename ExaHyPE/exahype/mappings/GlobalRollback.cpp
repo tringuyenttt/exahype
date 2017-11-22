@@ -112,13 +112,18 @@ void exahype::mappings::GlobalRollback::endIteration(
     exahype::State& solverState) {
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( performGlobalRollback( solver ) ) {
+    if (
+         performGlobalRollback(solver) &&
+         exahype::State::fuseADERDGPhases()==true
+    ) {
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStepFused();
+    } else if (
+         performGlobalRollback(solver) &&
+         exahype::State::fuseADERDGPhases()==false
+    ) {
       static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->rollbackToPreviousTimeStep();
-      if (!exahype::State::fuseADERDGPhases()) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-            reconstructStandardTimeSteppingDataAfterRollback();
-      }
     }
+
   }
 }
 
@@ -147,9 +152,11 @@ void exahype::mappings::GlobalRollback::enterCell(
         auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
 
         limitingADERDGSolver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(), element);
-        limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
-        if (!exahype::State::fuseADERDGPhases()) {
-          limitingADERDGSolver->reconstructStandardTimeSteppingDataAfterRollback(fineGridCell.getCellDescriptionsIndex(),element);
+
+        if (exahype::State::fuseADERDGPhases()) {
+          limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
+        } else {
+          limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
         }
 
         limitingADERDGSolver->rollbackSolverSolutionsGlobally(fineGridCell.getCellDescriptionsIndex(),element);

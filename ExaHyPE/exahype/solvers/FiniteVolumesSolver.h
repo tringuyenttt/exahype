@@ -18,7 +18,6 @@
 
 
 #include "exahype/solvers/Solver.h"
-#include "exahype/solvers/UserSolverInterface.h"
 
 #include "exahype/records/FiniteVolumesCellDescription.h"
 
@@ -55,6 +54,12 @@ private:
    * Log device.
    */
   static tarch::logging::Log _log;
+
+  /**
+   * Minimum time stamp of all patches
+   * in the previous iteration.
+   */
+  double _previousMinTimeStamp;
 
   /**
    * Minimum time step size of all patches
@@ -479,6 +484,10 @@ public:
 
   void startNewTimeStep() override;
 
+  void startNewTimeStepFused(
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch) final override;
+
   void updateTimeStepSizesFused() override;
 
   void updateTimeStepSizes()      override;
@@ -489,7 +498,9 @@ public:
    * Roll back the time step data to the
    * ones of the previous time step.
    */
-  void rollbackToPreviousTimeStep();
+  void rollbackToPreviousTimeStep() final override;
+
+  void rollbackToPreviousTimeStepFused() final override;
 
   double getMinNextTimeStepSize() const override;
 
@@ -596,27 +607,36 @@ public:
       const int cellDescriptionsIndex,
       const int element) override final;
 
-  double updateTimeStepSizesFused(
-          const int cellDescriptionsIndex,
-          const int element) override final;
+  /**
+   * Required by the fusedTimeStep routine.
+   * Further, used by the other startNewTimeStepFused
+   * routine.
+   */
+  double startNewTimeStepFused(
+      const int cellDescriptionsIndex,
+      const int element,
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch) final override;
 
   double updateTimeStepSizes(
         const int cellDescriptionsIndex,
         const int element) override final;
 
+  double updateTimeStepSizesFused(
+          const int cellDescriptionsIndex,
+          const int element) override final;
+
   void zeroTimeStepSizes(
       const int cellDescriptionsIndex,
       const int solverElement) const override final;
 
-  /**
-   * Rolls the solver time step data back to the
-   * previous time step for a cell description.
-   * Note that the newest time step
-   * data is lost in this process.
-   */
   void rollbackToPreviousTimeStep(
       const int cellDescriptionsIndex,
-      const int element);
+      const int element) const final override;
+
+  void rollbackToPreviousTimeStepFused(
+        const int cellDescriptionsIndex,
+        const int element) const final override;
 
   void adjustSolution(
       const int cellDescriptionsIndex,
@@ -625,6 +645,8 @@ public:
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
@@ -633,7 +655,8 @@ public:
 
   void updateSolution(
       const int cellDescriptionsIndex,
-      const int element) final override;
+      const int element,
+      const bool backupPreviousSolution) final override;
 
   /**
    * TODO(Dominic): Update docu.
