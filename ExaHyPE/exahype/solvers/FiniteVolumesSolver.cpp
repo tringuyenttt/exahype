@@ -797,14 +797,14 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
 
   //    std::cout << "[pre] solution:" << std::endl;
   //    printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
-  //  if (cellDescriptionsIndex==468) {
-  //    std::cout << "[pre] solution:" << std::endl;
-  //    printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
-  //
-  //    ADERDGSolver::CellDescription& aderPatch =
-  //        ADERDGSolver::getCellDescription(cellDescriptionsIndex,cellDescription.getSolverNumber());
-  //    logDebug("updateSolution(...)","aderPatch="<<aderPatch.toString());
-  //  }
+//  if (cellDescriptionsIndex==2516) {
+//    std::cout << "[pre] solution:" << std::endl;
+//    printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
+//
+//    ADERDGSolver::CellDescription& aderPatch =
+//        ADERDGSolver::getCellDescription(cellDescriptionsIndex,cellDescription.getSolverNumber());
+//    std::cout << "aderPatch="<<aderPatch.toString() << std::endl;
+//  }
 
   // TODO(Dominic): Hotfix on master branch. This will not
   // be necessary in the future.
@@ -833,8 +833,10 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
       cellDescription.getTimeStamp()+cellDescription.getTimeStepSize(),
       cellDescription.getTimeStepSize());
 
-  //  std::cout << "[post] solution:" << std::endl;
-  //  printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
+//  if (cellDescriptionsIndex==2516) {
+//    std::cout << "[post] solution:" << std::endl;
+//    printFiniteVolumesSolution(cellDescription); // TODO(Dominic): remove
+//  }
   validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution");
 }
 
