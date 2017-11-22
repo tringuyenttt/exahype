@@ -117,6 +117,7 @@ config = {
            "useSourceOrNCP"        : (l_commandLineArguments.useSource or l_commandLineArguments.useNCP),
            "nPointSources"         : l_commandLineArguments.usePointSources,
            "usePointSources"       : l_commandLineArguments.usePointSources >= 0,
+           "useMaterialParam"      : False, #TODO JM
            "noTimeAveraging"       : l_commandLineArguments.noTimeAveraging,
            "codeNamespace"         : l_commandLineArguments.namespace,
            "pathToOutputDirectory" : os.path.join(os.path.dirname(__file__),pathFromHereToExaHyPERoot,l_commandLineArguments.pathToApplication,l_commandLineArguments.pathToOptKernel),

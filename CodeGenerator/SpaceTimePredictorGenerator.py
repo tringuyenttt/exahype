@@ -29,6 +29,7 @@ class SpaceTimePredictorGenerator:
     m_filename_picard       = 'picard.cpp'
     m_filename_predictor    = 'predictor.cpp'
     m_filename_extrapolator = 'extrapolatedPredictor.cpp'
+    m_filename_linear       = 'spaceTimePredictorLinear.cpp'
     
     m_filename_asm_picard   = 'asm_picard' 
 
@@ -39,7 +40,7 @@ class SpaceTimePredictorGenerator:
 
     def generateCode(self):
         if(self.m_context['isLinear']):
-            pass #TODO JMG
+            TemplatingUtils.renderAsFile('spaceTimePredictorLinear_cpp.template', self.m_filename_linear, self.m_context)
         else:
             self.m_context['nDof_seq'] = range(0,self.m_context['nDof'])
             gemmName = 'gemm_'+str(self.m_context['nVar'])+'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])

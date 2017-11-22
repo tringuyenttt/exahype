@@ -35,7 +35,23 @@ namespace {{solverNamespace}} {
 namespace {{namespaceName}} {
 {% endfor %}
 {% if isLinear %}
-//TODO JMG
+  void spaceTimePredictorLinear(
+    {{solverName}}& solver,
+    double* restrict lQhbnd, 
+    double* restrict lFhbnd,
+    double* restrict lQi,
+    double* restrict lFi,
+    double* restrict lSi,   // for NCP or Source
+    double* restrict lQhi,
+    double* restrict lFhi,
+    double* restrict lShi,  // for NCP or Source
+    double* restrict gradQ, // for NCP or Source
+    double* restrict PSi,   // for pointSource
+    double* restrict PSderivatives, // for pointSource
+    const double* const restrict luh,
+    const tarch::la::Vector<DIMENSIONS, double>& inverseDx,
+    const double dt
+  );
 {% else %}
   void picardLoopNonlinear(
     {{solverName}}& solver,
