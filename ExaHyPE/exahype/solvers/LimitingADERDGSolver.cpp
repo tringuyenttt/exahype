@@ -1633,9 +1633,11 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursBasedOnLimiterStatus
     // of solver and limiter domain:
     else if (
         (solverPatch1.getLimiterStatus()>=_solver->getMinimumLimiterStatusForActiveFVPatch() &&
-         solverPatch2.getLimiterStatus() <_solver->getMinimumLimiterStatusForActiveFVPatch())
+         solverPatch2.getLimiterStatus() <_solver->getMinimumLimiterStatusForActiveFVPatch() &&
+         solverPatch2.getLimiterStatus() > 0)
         ||
-        (solverPatch1.getLimiterStatus() <_solver->getMinimumLimiterStatusForActiveFVPatch() &&
+        (solverPatch1.getLimiterStatus() > 0                                                 &&
+         solverPatch1.getLimiterStatus() <_solver->getMinimumLimiterStatusForActiveFVPatch() &&
          solverPatch2.getLimiterStatus()>=_solver->getMinimumLimiterStatusForActiveFVPatch())
     ) {
       assertion2(limiterElement1!=exahype::solvers::Solver::NotFound,solverPatch1.toString(),solverPatch2.toString());
@@ -1653,7 +1655,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursBasedOnLimiterStatus
       logError("mergeNeighboursBasedOnLimiterStatus(...)","Neighbours cannot communicate. " <<
           std::endl << "cell1=" << solverPatch1.toString() <<
           std::endl << ".cell2=" << solverPatch1.toString());
-      abort();
+      std::terminate();
     }
 
   // On the other levels, we work with the ADER-DG solver only
