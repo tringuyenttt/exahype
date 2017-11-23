@@ -56,7 +56,9 @@ int exahype::runners::Runner::runAsWorker(
         switch (repository.continueToIterate()) {
           case exahype::repositories::Repository::Continue:
             {
-              repository.iterate();
+             preProcessTimeStepInSharedMemoryEnvironment();
+
+             repository.iterate();
               logInfo("runAsWorker(...)",
                 "\tmemoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB");
 
