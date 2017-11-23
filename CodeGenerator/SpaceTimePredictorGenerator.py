@@ -29,6 +29,7 @@ class SpaceTimePredictorGenerator:
     m_filename_picard       = 'picard.cpp'
     m_filename_predictor    = 'predictor.cpp'
     m_filename_extrapolator = 'extrapolatedPredictor.cpp'
+    m_filename_linear       = 'spaceTimePredictorLinear.cpp'
     
     m_filename_asm_picard   = 'asm_picard' 
 
@@ -38,26 +39,29 @@ class SpaceTimePredictorGenerator:
 
 
     def generateCode(self):
-        self.m_context['nDof_seq'] = range(0,self.m_context['nDof'])
-        gemmName = 'gemm_'+str(self.m_context['nVar'])+'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])
-        self.m_context['gemm_rhs_x'] = gemmName+'_rhs_x'
-        self.m_context['gemm_rhs_y'] = gemmName+'_rhs_y'
-        self.m_context['gemm_rhs_z'] = gemmName+'_rhs_z'
-        self.m_context['gemm_gradQ_x'] = gemmName+'_gradQ_x'
-        self.m_context['gemm_gradQ_y'] = gemmName+'_gradQ_y'
-        self.m_context['gemm_gradQ_z'] = gemmName+'_gradQ_z'
-        self.m_context['gemm_lqi']   = gemmName+'_lqi'
-        
-        TemplatingUtils.renderAsFile('spaceTimePredictor_picard_cpp.template', self.m_filename_picard, self.m_context)
-        if(self.m_context['noTimeAveraging']):  
-            TemplatingUtils.renderAsFile('spaceTimePredictor_extrapolator_noTimeAveraging_cpp.template', self.m_filename_extrapolator, self.m_context)
+        if(self.m_context['isLinear']):
+            TemplatingUtils.renderAsFile('spaceTimePredictorLinear_cpp.template', self.m_filename_linear, self.m_context)
         else:
-            TemplatingUtils.renderAsFile('spaceTimePredictor_predictor_cpp.template', self.m_filename_predictor, self.m_context)
-            TemplatingUtils.renderAsFile('spaceTimePredictor_extrapolator_cpp.template', self.m_filename_extrapolator, self.m_context)
-        
-        # generates gemms
-        if(self.m_context['useLibxsmm']):
-            self.generateGemms()
+            self.m_context['nDof_seq'] = range(0,self.m_context['nDof'])
+            gemmName = 'gemm_'+str(self.m_context['nVar'])+'_'+str(self.m_context['nDof'])+'_'+str(self.m_context['nDof'])
+            self.m_context['gemm_rhs_x'] = gemmName+'_rhs_x'
+            self.m_context['gemm_rhs_y'] = gemmName+'_rhs_y'
+            self.m_context['gemm_rhs_z'] = gemmName+'_rhs_z'
+            self.m_context['gemm_gradQ_x'] = gemmName+'_gradQ_x'
+            self.m_context['gemm_gradQ_y'] = gemmName+'_gradQ_y'
+            self.m_context['gemm_gradQ_z'] = gemmName+'_gradQ_z'
+            self.m_context['gemm_lqi']   = gemmName+'_lqi'
+            
+            TemplatingUtils.renderAsFile('spaceTimePredictor_picard_cpp.template', self.m_filename_picard, self.m_context)
+            if(self.m_context['noTimeAveraging']):  
+                TemplatingUtils.renderAsFile('spaceTimePredictor_extrapolator_noTimeAveraging_cpp.template', self.m_filename_extrapolator, self.m_context)
+            else:
+                TemplatingUtils.renderAsFile('spaceTimePredictor_predictor_cpp.template', self.m_filename_predictor, self.m_context)
+                TemplatingUtils.renderAsFile('spaceTimePredictor_extrapolator_cpp.template', self.m_filename_extrapolator, self.m_context)
+            
+            # generates gemms
+            if(self.m_context['useLibxsmm']):
+                self.generateGemms()
 
     def generateGemms(self):
         l_matmulList = []
