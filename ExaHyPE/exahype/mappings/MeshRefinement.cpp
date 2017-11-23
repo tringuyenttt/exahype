@@ -132,7 +132,10 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   #ifdef Parallel
   exahype::mappings::MeshRefinement::IsFirstIteration = false;
 
-  peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
+  if (tarch::parallel::Node::getInstance().getRank()==
+      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+    peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
+  }
   #endif
 }
 
@@ -720,8 +723,6 @@ void exahype::mappings::MeshRefinement::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
-
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     solver->sendMeshUpdateFlagsToMaster(
@@ -745,7 +746,10 @@ void exahype::mappings::MeshRefinement::prepareSendToMaster(
       verticesEnumerator.getCellCenter(),
       verticesEnumerator.getLevel());
 
-  peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
+  if (tarch::parallel::Node::getInstance().getRank()!=
+      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
+    peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
+  }
 }
 
 void exahype::mappings::MeshRefinement::mergeWithMaster(
