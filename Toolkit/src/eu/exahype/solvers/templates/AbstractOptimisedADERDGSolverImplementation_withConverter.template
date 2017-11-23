@@ -27,8 +27,7 @@
   This may help identify a faulty optimised kernel.
   
   This implementation is not always maintained and might be deprecated.
-  
-  Doesn't work with linear
+
   Doesn't work with notimeavg
 */
 
@@ -74,7 +73,7 @@ void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* lQhbnd,double* 
   _profiler->start("spaceTimePredictor");
 {%- endif %}
 
-  constexpr bool useGeneric = true;
+  constexpr bool useGeneric = false;
   
 if(useGeneric) {
   
@@ -280,7 +279,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
   _profiler->start("riemannSolver");
 {%- endif %}
 
-constexpr bool useGeneric = true;
+constexpr bool useGeneric = false;
   
 if(useGeneric) {
   
@@ -362,7 +361,7 @@ void {{project}}::{{abstractSolver}}::deltaDistribution(const double t,const dou
 {%- if enableProfiler %}
   _profiler->start("deltaDistribution");
 {%- endif %}
-  constexpr bool useGeneric = true;
+  constexpr bool useGeneric = false;
   
   if(useGeneric) {
     double** tmp = new double*[2];
