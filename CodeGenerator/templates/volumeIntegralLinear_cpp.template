@@ -15,9 +15,10 @@
 
 #include <cstring>
 
+#include <tarch/la/Vector.h>
+
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
-
 
 void {{codeNamespace}}::volumeIntegral(double* restrict lduh, 
   const double* restrict const lFhi,
@@ -26,11 +27,12 @@ void {{codeNamespace}}::volumeIntegral(double* restrict lduh,
 ){
   // for linear non-conservative PDE, the volume integral is trivial, since it
   // only involves the element mass matrix, which later will cancel
-  memset(lduh, 0, sizeof(lduh)*{{nVar*(nDof**nDim)}});
+  memset(lduh, 0, {{nVar*(nDof**nDim)}}*sizeof(double));
 
-  for (int z=0; z<{{nDof3D}}; z++) {
-    for (int y=0; y<{{nDof}}; y++) {
-      for (int x=0; x<{{nDof}}; x++) {
+  for (int z = 0; z < {{nDof3D}}; z++) {
+    for (int y = 0; y < {{nDof}}; y++) {
+      for (int x = 0; x < {{nDof}}; x++) {
+        #pragma simd
         for (int n = 0; n < {{nVar}}; n++) {
             lduh[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVar}}+n] -= weights3[(z*{{nDof3D}}+y)*{{nDof}}+x] * 
                 (
@@ -48,4 +50,3 @@ void {{codeNamespace}}::volumeIntegral(double* restrict lduh,
     }
   }
 }
-

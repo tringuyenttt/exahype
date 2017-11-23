@@ -33,13 +33,13 @@ void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_rhs_y(const double* A, const dou
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_rhs_z(const double* A, const double* B, double* C);
 {% endif %}  
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lqi(const double* A, const double* B, double* C);
-{% endif %}
 {% if useNCP %}
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_x(const double* A, const double* B, double* C);
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_y(const double* A, const double* B, double* C);
 {% if nDim == 3 %} 
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_z(const double* A, const double* B, double* C);
 {% endif %}  
+{% endif %}
 
 // volume integral gemms
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_x(const double* A, const double* B, double* C);
@@ -54,4 +54,3 @@ void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_z(const double* A, const do
 {% endfor %}
 
 #endif //EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_
-

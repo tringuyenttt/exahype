@@ -63,4 +63,3 @@ namespace {{namespaceName}} {
 {% for namespaceName in codeNamespaceList %}
 }
 {% endfor %}
-

@@ -51,4 +51,3 @@ void {{codeNamespace}}::initQuadratureNodesAndWeights(const std::set<int>& order
 {% endfor %}
 
 }
-

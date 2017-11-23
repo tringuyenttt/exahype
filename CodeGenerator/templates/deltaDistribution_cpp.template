@@ -41,7 +41,7 @@ void {{codeNamespace}}::deltaDistribution(
   std::memset(PSi,0 , {{(nDof+1)*(nDof**nDim)*nVarPad}}*sizeof(double));
   
   //loop over all point sources
-  for (int m =0 ; m < {{nPointSources}} ; m++){
+  for (int p = 0 ; p < {{nPointSources}} ; p++) {
     std::memset(forceVectorSourceN, 0, {{(nDof+1)*(nDof**nDim)*nVarPad}}*sizeof(double));      
     //loop over all quadrature point
     for (int tl = 0; tl < {{nDof+1}}; tl++) { // time loop
@@ -52,24 +52,18 @@ void {{codeNamespace}}::deltaDistribution(
       else {
         tn = dt* nodes[tl-1] + t;
       }
+
+      for (int z = 0; z < {{nDof3D}}; z++) {   //z loop
 {% if nDim==3 %}
-      for (int z = 0; z < {{nDof}}; z++) {   //z loop
-        double node = nodes[z];       
-        x1[2] = center[2] + dx[2] * (node - 0.5);
-{% else %}  
-      const int z = 0;
+        x1[2] = center[2] + dx[2] * (nodes[z] - 0.5);
 {% endif %}
         for (int y = 0; y < {{nDof}}; y++) {  //y loop
-
-          double node = nodes[y];      
-
-          x1[1] = center[1] + dx[1] * (node - 0.5);
-          for (int x = 0; x < {{nDof}}; x++) {  //x loop
-            double node = nodes[x];      
-            x1[0] = center[0] + dx[0] * (node - 0.5);
+          x1[1] = center[1] + dx[1] * (nodes[y] - 0.5);
+          for (int x = 0; x < {{nDof}}; x++) {  //x loop   
+            x1[0] = center[0] + dx[0] * (nodes[x] - 0.5);
 
             // get the source vector located at x0 = (x,y,z) and at tn = t; and at the quadrature nodes tn
-            solver.{{solverName}}::pointSource(x1, tn, dt, &forceVectorSourceN[(((tl*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}], &x0[0], m);
+            solver.{{solverName}}::pointSource(x1, tn, dt, &forceVectorSourceN[(((tl*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}], x0, p);
 
             // position the source inside the dG cell
             const double xRef[{{nDim}}] = {
@@ -99,9 +93,7 @@ void {{codeNamespace}}::deltaDistribution(
             }  // endif xRef inside the domain
           }// x loop
         }// y loop
-{% if nDim==3 %}
       }// z loop
-{% endif %}
     }// time loop
   }
 }
