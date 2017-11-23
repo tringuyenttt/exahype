@@ -1,4 +1,3 @@
-#!/bin/env python
 ##
 # @file This file is part of the ExaHyPE project.
 # @author ExaHyPE Group (exahype@lists.lrz.de)
@@ -15,9 +14,15 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
+#
+# @section DESCRIPTION
+#
+# Generate the deltaDistribution kernel
+#
+# Call user function pointSource
+#
 
 
-import Backend
 import TemplatingUtils
 
 
@@ -25,7 +30,7 @@ class DeltaDistributionGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename = 'deltaDistribution.cpp'
+    m_filename = "deltaDistribution.cpp"
 
     
     def __init__(self, i_config):
@@ -33,5 +38,4 @@ class DeltaDistributionGenerator:
 
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile('deltaDistribution_cpp.template', self.m_filename, self.m_context)
-
+        TemplatingUtils.renderAsFile("deltaDistribution_cpp.template", self.m_filename, self.m_context)

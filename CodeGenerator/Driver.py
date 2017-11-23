@@ -23,12 +23,14 @@
 # @note
 # requires python3
 
+
 import argparse
 import os
 import sys
 
 import CodeGenArgumentParser
 import Backend
+
 
 # --------------------------------------------------------
 # Configuration parameters
@@ -139,5 +141,3 @@ Backend.generateComputeKernels()
 
 if config['runtimeDebug']: 
     Backend.printRuntimes() #print runtimes of generators
-
-
