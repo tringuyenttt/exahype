@@ -591,11 +591,13 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   if (localCell.isInitialised() &&
       !_localState.isInvolvedInJoinOrFork() ) {
+    // Abusing the cell descriptions index
     localCell.mergeWithMasterMetadata(
         receivedMasterCell.getCellDescriptionsIndex(),
         _localState.getAlgorithmSection());
   }
 
+  // Abusing the cell descriptions index
   MetadataHeap::getInstance().deleteData(receivedMasterCell.getCellDescriptionsIndex());
 }
 
