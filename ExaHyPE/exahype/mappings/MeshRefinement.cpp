@@ -113,7 +113,6 @@ void exahype::mappings::MeshRefinement::beginIteration(
   }
 
   #ifdef Parallel
-  peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
       exit(-1);
   }
@@ -131,11 +130,6 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
 
   #ifdef Parallel
   exahype::mappings::MeshRefinement::IsFirstIteration = false;
-
-  if (tarch::parallel::Node::getInstance().getRank()==
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
-  }
   #endif
 }
 
@@ -745,11 +739,6 @@ void exahype::mappings::MeshRefinement::prepareSendToMaster(
       localCell.getCellDescriptionsIndex(),
       verticesEnumerator.getCellCenter(),
       verticesEnumerator.getLevel());
-
-  if (tarch::parallel::Node::getInstance().getRank()!=
-      tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-    peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
-  }
 }
 
 void exahype::mappings::MeshRefinement::mergeWithMaster(
