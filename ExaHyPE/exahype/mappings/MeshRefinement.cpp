@@ -552,6 +552,15 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
     }
   }
 
+  // Send global solver data
+  for (auto& solver : exahype::solvers::RegisteredSolvers) {
+    solver->sendDataToWorker(
+        worker,
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getLevel());
+  }
+
+  // Send metadata
   exahype::sendMasterWorkerCommunicationMetadata(
       worker,
       fineGridCell.getCellDescriptionsIndex(),
@@ -573,6 +582,15 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  // Receive global solver data from master
+  for (auto& solver : exahype::solvers::RegisteredSolvers) {
+    solver->mergeWithMasterData(
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        receivedVerticesEnumerator.getCellCenter(),
+        receivedVerticesEnumerator.getLevel());
+  }
+
+  // Receive metadata
   receivedCell.setCellDescriptionsIndex(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
   const int receivedMetadataIndex =

@@ -1,4 +1,4 @@
-#include "exahype/adapters/MeshRefinementAndPlotGrid2VTKGridVisualiser_3.h"
+#include "exahype/adapters/MeshRefinementAndPlotGrid2VTKGridVisualiser_2.h"
 
 #include <sstream>
 
@@ -10,49 +10,49 @@
 #endif
 
 
-int exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::_snapshotCounter = 0;
+int exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::_snapshotCounter = 0;
 
 
 
-peano::CommunicationSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::communicationSpecification() const {
-  return peano::CommunicationSpecification::getPessimisticSpecification(true);
+peano::CommunicationSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::communicationSpecification() const {
+  return peano::CommunicationSpecification::getPessimisticSpecification();
 }
 
 
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::touchVertexLastTimeSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 
 
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::touchVertexFirstTimeSpecification(int level) const { 
+peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::touchVertexFirstTimeSpecification(int level) const { 
   return peano::MappingSpecification(peano::MappingSpecification::WholeTree,peano::MappingSpecification::Serial,true);
 }
 
 
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::enterCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::enterCellSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 
 
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::leaveCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::WholeTree,peano::MappingSpecification::Serial,true);
 }
 
 
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::ascendSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::ascendSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 
 
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::descendSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::descendSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 
 
-std::map<tarch::la::Vector<DIMENSIONS,double> , int, tarch::la::VectorCompare<DIMENSIONS> >  exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::_vertex2IndexMap;
+std::map<tarch::la::Vector<DIMENSIONS,double> , int, tarch::la::VectorCompare<DIMENSIONS> >  exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::_vertex2IndexMap;
 
 
-exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::MeshRefinementAndPlotGrid2VTKGridVisualiser_3():
+exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::MeshRefinementAndPlotGrid2VTKGridVisualiser_2():
   _vtkWriter(0),
   _vertexWriter(0),
   _cellWriter(0),
@@ -63,12 +63,12 @@ exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::MeshRefinement
 }
 
 
-exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::~MeshRefinementAndPlotGrid2VTKGridVisualiser_3() {
+exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::~MeshRefinementAndPlotGrid2VTKGridVisualiser_2() {
 }
 
 
 #if defined(SharedMemoryParallelisation)
-exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::MeshRefinementAndPlotGrid2VTKGridVisualiser_3(const MeshRefinementAndPlotGrid2VTKGridVisualiser_3&  masterThread):
+exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::MeshRefinementAndPlotGrid2VTKGridVisualiser_2(const MeshRefinementAndPlotGrid2VTKGridVisualiser_2&  masterThread):
   _vtkWriter(masterThread._vtkWriter),
   _vertexWriter(masterThread._vertexWriter),
   _cellWriter(masterThread._cellWriter),
@@ -80,7 +80,7 @@ exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::MeshRefinement
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWithWorkerThread(const MeshRefinementAndPlotGrid2VTKGridVisualiser_3& workerThread) {
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::mergeWithWorkerThread(const MeshRefinementAndPlotGrid2VTKGridVisualiser_2& workerThread) {
 }
 #endif
 
@@ -88,7 +88,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWith
 
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::plotVertex(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::plotVertex(
   const exahype::Vertex&                 fineGridVertex,
   const tarch::la::Vector<DIMENSIONS,double>&  fineGridX
 ) {
@@ -111,7 +111,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::plotVerte
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::createHangingVertex(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::createHangingVertex(
       exahype::Vertex&     fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                fineGridH,
@@ -125,7 +125,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::createHan
 
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::destroyHangingVertex(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::destroyHangingVertex(
       const exahype::Vertex&   fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -137,7 +137,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::destroyHa
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::createInnerVertex(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::createInnerVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -149,7 +149,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::createInn
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::createBoundaryVertex(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::createBoundaryVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -161,7 +161,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::createBou
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::destroyVertex(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::destroyVertex(
       const exahype::Vertex&   fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -173,7 +173,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::destroyVe
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::createCell(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::createCell(
       exahype::Cell&                 fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -185,7 +185,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::createCel
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::destroyCell(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::destroyCell(
       const exahype::Cell&           fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -198,7 +198,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::destroyCe
 
 
 #ifdef Parallel
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWithNeighbour(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::mergeWithNeighbour(
   exahype::Vertex&  vertex,
   const exahype::Vertex&  neighbour,
   int                                           fromRank,
@@ -209,7 +209,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWith
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::prepareSendToNeighbour(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::prepareSendToNeighbour(
       exahype::Vertex&  vertex,
       int                                           toRank,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -219,7 +219,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::prepareSe
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::prepareCopyToRemoteNode(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::prepareCopyToRemoteNode(
       exahype::Vertex&  localVertex,
       int                                           toRank,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -229,7 +229,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::prepareCo
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::prepareCopyToRemoteNode(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::prepareCopyToRemoteNode(
       exahype::Cell&  localCell,
       int                                           toRank,
       const tarch::la::Vector<DIMENSIONS,double>&   cellCentre,
@@ -239,7 +239,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::prepareCo
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::mergeWithRemoteDataDueToForkOrJoin(
   exahype::Vertex&  localVertex,
   const exahype::Vertex&  masterOrWorkerVertex,
   int                                       fromRank,
@@ -250,7 +250,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWith
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::mergeWithRemoteDataDueToForkOrJoin(
   exahype::Cell&  localCell,
   const exahype::Cell&  masterOrWorkerCell,
   int                                       fromRank,
@@ -261,7 +261,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWith
 }
 
 
-bool exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::prepareSendToWorker(
+bool exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::prepareSendToWorker(
   exahype::Cell&                 fineGridCell,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -275,7 +275,7 @@ bool exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::prepareSe
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::prepareSendToMaster(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::prepareSendToMaster(
       exahype::Cell&                       localCell,
       exahype::Vertex *                    vertices,
       const peano::grid::VertexEnumerator&       verticesEnumerator, 
@@ -287,7 +287,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::prepareSe
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWithMaster(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::mergeWithMaster(
   const exahype::Cell&           workerGridCell,
   exahype::Vertex * const        workerGridVertices,
   const peano::grid::VertexEnumerator& workerEnumerator,
@@ -305,7 +305,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWith
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::receiveDataFromMaster(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::receiveDataFromMaster(
       exahype::Cell&                        receivedCell, 
       exahype::Vertex *                     receivedVertices,
       const peano::grid::VertexEnumerator&        receivedVerticesEnumerator,
@@ -320,7 +320,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::receiveDa
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWithWorker(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::mergeWithWorker(
       exahype::Cell&           localCell, 
       const exahype::Cell&     receivedMasterCell,
       const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
@@ -330,7 +330,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWith
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWithWorker(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::mergeWithWorker(
       exahype::Vertex&        localVertex,
       const exahype::Vertex&  receivedMasterVertex,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -341,7 +341,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::mergeWith
 #endif
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::touchVertexFirstTime(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::touchVertexFirstTime(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -360,7 +360,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::touchVert
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::touchVertexLastTime(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::touchVertexLastTime(
       exahype::Vertex&         fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -372,7 +372,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::touchVert
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::enterCell(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::enterCell(
       exahype::Cell&                 fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -384,7 +384,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::enterCell
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::leaveCell(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::leaveCell(
       exahype::Cell&           fineGridCell,
       exahype::Vertex * const  fineGridVertices,
       const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
@@ -419,7 +419,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::leaveCell
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::beginIteration(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::beginIteration(
   exahype::State&  solverState
 ) {
   assertion( _vtkWriter==0 );
@@ -437,7 +437,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::beginIter
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::endIteration(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::endIteration(
   exahype::State&  solverState
 ) {
   _vertexWriter->close();
@@ -478,7 +478,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::endIterat
 
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::descend(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::descend(
   exahype::Cell * const          fineGridCells,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -489,7 +489,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::descend(
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3::ascend(
+void exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2::ascend(
   exahype::Cell * const    fineGridCells,
   exahype::Vertex * const  fineGridVertices,
   const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,

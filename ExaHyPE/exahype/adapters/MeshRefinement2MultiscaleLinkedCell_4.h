@@ -1,15 +1,11 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_MeshRefinementAndPlotGrid2VTKGridVisualiser_3_H_
-#define EXAHYPE_ADAPTERS_MeshRefinementAndPlotGrid2VTKGridVisualiser_3_H_
+#ifndef EXAHYPE_ADAPTERS_MeshRefinement2MultiscaleLinkedCell_4_H_
+#define EXAHYPE_ADAPTERS_MeshRefinement2MultiscaleLinkedCell_4_H_
 
 
-#include "tarch/la/Vector.h"
-#include "tarch/la/VectorCompare.h"
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
-#include "tarch/plotter/griddata/unstructured/vtk/VTKTextFileWriter.h"
-#include "tarch/plotter/griddata/unstructured/vtk/VTKBinaryFileWriter.h"
 
 #include "peano/MappingSpecification.h"
 #include "peano/CommunicationSpecification.h"
@@ -19,58 +15,24 @@
 #include "exahype/Cell.h"
 #include "exahype/State.h"
 
-#include <map>
-
 
 namespace exahype {
       namespace adapters {
-        class MeshRefinementAndPlotGrid2VTKGridVisualiser_3;
+        class MeshRefinement2MultiscaleLinkedCell_4;
       } 
 }
 
 
 /**
- * This is an adapter plotting a vtk grid file. Please set
+ * This is an adapter providing a multiscale linked-cell data structure
  *
- * grid   filename
+ * CellDescriptionsIndex   Name of the index used for the cell indices within the vertex and 
+ *          the cell
  *
  * @author Tobias Weinzierl
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.1 $
  */
-class exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3 {
-  private:
-    /**
-     * One big map mapping vertices to indices. The procedure using this map is 
-     * straightforward. Whenever we encounter a vertex, the object does a 
-     * lookup whether this vertex already has been plotted. If not, it plots it 
-     * and adds an entry.
-     * 
-     * @see plotVertex(const tarch::la::Vector<DIMENSIONS,double>&  x)
-     */
-    static std::map<tarch::la::Vector<DIMENSIONS,double> , int, tarch::la::VectorCompare<DIMENSIONS> >  _vertex2IndexMap;
-    
-    #if defined(Debug) || defined(Asserts)    
-    typedef  tarch::plotter::griddata::unstructured::vtk::VTKTextFileWriter         UsedWriter;
-    #else
-    typedef  tarch::plotter::griddata::unstructured::vtk::VTKBinaryFileWriter       UsedWriter;
-    #endif
-
-    UsedWriter*                                                                     _vtkWriter;
-    tarch::plotter::griddata::unstructured::UnstructuredGridWriter::VertexWriter*   _vertexWriter;
-    tarch::plotter::griddata::unstructured::UnstructuredGridWriter::CellWriter*     _cellWriter;
-    
-    tarch::plotter::griddata::Writer::VertexDataWriter*                             _vertexTypeWriter;
-    tarch::plotter::griddata::Writer::VertexDataWriter*                             _vertexRefinementControlWriter;
-    tarch::plotter::griddata::Writer::VertexDataWriter*                             _vertexAdjacentCellsHeight;
-
-    tarch::plotter::griddata::Writer::CellDataWriter*                               _cellStateWriter;
-    
-    static int _snapshotCounter;
-    
-    void plotVertex(
-      const exahype::Vertex&                 fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS,double>&  fineGridX
-    );
+class exahype::adapters::MeshRefinement2MultiscaleLinkedCell_4 {
   public:
     peano::MappingSpecification   touchVertexLastTimeSpecification(int level) const;
     peano::MappingSpecification   touchVertexFirstTimeSpecification(int level) const;
@@ -78,19 +40,18 @@ class exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3 {
     peano::MappingSpecification   leaveCellSpecification(int level) const;
     peano::MappingSpecification   ascendSpecification(int level) const;
     peano::MappingSpecification   descendSpecification(int level) const;
-
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    MeshRefinementAndPlotGrid2VTKGridVisualiser_3();
+    MeshRefinement2MultiscaleLinkedCell_4();
 
     #if defined(SharedMemoryParallelisation)
-    MeshRefinementAndPlotGrid2VTKGridVisualiser_3(const MeshRefinementAndPlotGrid2VTKGridVisualiser_3& masterThread);
+    MeshRefinement2MultiscaleLinkedCell_4(const MeshRefinement2MultiscaleLinkedCell_4& masterThread);
     #endif
 
-    virtual ~MeshRefinementAndPlotGrid2VTKGridVisualiser_3();
+    virtual ~MeshRefinement2MultiscaleLinkedCell_4();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const MeshRefinementAndPlotGrid2VTKGridVisualiser_3& workerThread);
+    void mergeWithWorkerThread(const MeshRefinement2MultiscaleLinkedCell_4& workerThread);
     #endif
 
     void createInnerVertex(
@@ -115,6 +76,86 @@ class exahype::adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_3 {
     );
 
 
+    /**
+     * @todo Only half of the documentation
+     * @todo Enumeration has changed
+     *
+     * In an adaptive grid, not all of the $2^d$ adjacent cells exist for hanging
+     * vertices. Since each vertex is supposed to hold the adjacent vertices in
+     * order to fill the ghostlayers of the cellDescriptiones appropriately, the adjacent
+     * indices of hanging vertices need to be filled by the data of the vertices
+     * on the next coarser grid. This filling is implemented in this method.
+     *
+     * !!! The idea
+     * Each vertex holds $2^d$ indices. In the vertices they are numbered from 0
+     * to $2^d-1$. However, in this method they are considered to exist in a
+     * n-dimensional array. In 2d this would look like
+     *
+     * (0,1)|(1,1)
+     * -----v-----
+     * (0,0)|(1,0)
+     *
+     * The linearization looks as follow:
+     *
+     *   1  |  0
+     * -----v-----
+     *   3  |  2
+     *
+     * In the following the term "fine grid" refers to the $4^d$ vertices
+     * belonging to the $3^d$ fine grid cells which overlap with the coars grid
+     * cell.
+     *
+     * On the coarse grid cell we again consider the vertices being arranged in a
+     * n-dimensional array:
+     *
+     * (0,1)-----(1,1)
+     *   |          |
+     *   |          |
+     *   |          |
+     * (0,0)-----(1,0)
+     *
+     * Each of them hold again the $2^d$ adjacent indices, while those which refer
+     * to a refined cell are set to -1. A hanging vertex therefore gets the
+     * adjacent indices from the nearest coarse grid vertex. If they coincide the
+     * data can just be used directly. If not, it depends on which boundary of the
+     * coarse grid cell the hanging vertex resides. Here the (single) index
+     * outside of the coarse grid cell is assigned for all indices of the hanging
+     * vertex pointing in the direction of this neighboring coarse grid cell.
+     *
+     * !!! The algorithm
+     * It gets a hanging vertex and performs a loop over the $2^d$ adjacent-cellDescription-
+     * indices.
+     * In each loop iteration it computes the n-dimensional index of the coarse
+     * grid vertex (fromCoarseGridVertex) from which the data has to be copied.
+     * For each dimension d with $0\le d <n$:
+     *  - If the fine grid position of the hanging vertex in dimension $d$ is 0 set
+     *    $fromCoarseGridVertex(d)$ to 0. If it is equals 3 then set
+     *    $fromCoarseGridVertex(d)$ to 1. By this we ensure that we always choose
+     *    the nearest coarse grid vertex in dimension $d$. If the hanging vertex
+     *    resides in a corner of the fine grid this approach always chooses the
+     *    coarse grid vertex that is located on the same position.
+     *  - If the fine grid position of the hanging vertex in dimension $d$ is
+     *    neither 0 nor 3 then the value of $fromCoarseGridVertex(d)$ depends on
+     *    the adjacent-cellDescription-index $k$ that has to be set currently. $k(d)$ can
+     *    either be 0 or 1. If $k(d)$ is 0 than we want to get data from the
+     *    in this dimension "lower" coarse grid vertex, so we set
+     *    $fromCoarseGridVertex(d)$ to 0 as well. In the case of $k(d)=1$ we set
+     *    $fromCoarseGridVertex(d)$ to 1, accordingly. This actually doesn't
+     *    matter since the appropriate adjacent-cellDescription-indices of the to coarse
+     *    grid vertices have to be the same, since they are pointing to the same
+     *    adjacent cell.
+     * The determination of the correct adjacent-cellDescription-index of the coarse grid
+     * vertex (coarseGridVertexAdjacentCellDescriptionIndex) is done in a similar way. So,
+     * for the adjacent-cellDescription-index $k$ on the hanging vertex:
+     *  - As stated before, if the fine and coarse grid vertices coincide we can
+     *    just copy the adjacent-cellDescription-index. Therefore, if the fine grid position
+     *    of the hanging vertex in dimension $d$ is equal to 0 or to 3, we set
+     *    $coarseGridVertexAdjacentCellDescriptionIndex(d)$ to $k(d)$.
+     *  - Otherwise, we just set $coarseGridVertexAdjacentCellDescriptionIndex(d)$ to the
+     *    inverted $k(d)$. I.e. if $k(d) = 0$ we set
+     *    $coarseGridVertexAdjacentCellDescriptionIndex(d)$ to 1 and the other way around.
+     *
+     */
     void createHangingVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
