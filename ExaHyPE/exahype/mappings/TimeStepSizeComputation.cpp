@@ -123,20 +123,6 @@ void exahype::mappings::TimeStepSizeComputation::beginIteration(
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
 
-void exahype::mappings::TimeStepSizeComputation::reconstructStandardTimeSteppingData(
-    exahype::solvers::Solver* solver) {
-  switch(solver->getType()) {
-    case exahype::solvers::Solver::Type::ADERDG:
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->reconstructStandardTimeSteppingData();
-      break;
-    case exahype::solvers::Solver::Type::LimitingADERDG:
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->reconstructStandardTimeSteppingData();
-      break;
-    case exahype::solvers::Solver::Type::FiniteVolumes:
-      break;
-  }
-}
-
 void exahype::mappings::TimeStepSizeComputation::weighMinNextPredictorTimeStepSize(
     exahype::solvers::Solver* solver) {
   exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
@@ -241,24 +227,6 @@ void exahype::mappings::TimeStepSizeComputation::endIteration(
   }
 
   logTraceOutWith1Argument("endIteration(State)", state);
-}
-
-void exahype::mappings::TimeStepSizeComputation::reconstructStandardTimeSteppingData(
-    exahype::solvers::Solver* solver,
-    const int cellDescriptionsIndex,
-    const int element) {
-  switch(solver->getType()) {
-    case exahype::solvers::Solver::Type::ADERDG:
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-      reconstructStandardTimeSteppingData(cellDescriptionsIndex,element);
-      break;
-    case exahype::solvers::Solver::Type::LimitingADERDG:
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-      reconstructStandardTimeSteppingData(cellDescriptionsIndex,element);
-      break;
-    case exahype::solvers::Solver::Type::FiniteVolumes:
-      break;
-  }
 }
 
 void exahype::mappings::TimeStepSizeComputation::enterCell(

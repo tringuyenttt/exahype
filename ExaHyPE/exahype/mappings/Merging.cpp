@@ -25,10 +25,7 @@
 
 peano::CommunicationSpecification
 exahype::mappings::Merging::communicationSpecification() const {
-  if (
-      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
-  ) {
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     return peano::CommunicationSpecification(
           peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
           peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
@@ -122,10 +119,7 @@ void exahype::mappings::Merging::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  if (
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
-    ) {
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     _localState = solverState;
 
     exahype::solvers::initialiseTemporaryVariables(_temporaryVariables);
@@ -141,8 +135,7 @@ void exahype::mappings::Merging::beginIteration(
 
   #ifdef Parallel
   if (
-      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
+      exahype::State::isFirstIterationOfBatchOrNoBatch()
       &&
       _localState.getMergeMode()!=exahype::records::State::MergeMode::MergeNothing
   ) {
@@ -166,10 +159,7 @@ void exahype::mappings::Merging::endIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("endIteration(State)", solverState);
 
-  if (
-    exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-    exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch
-  ) {
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     exahype::solvers::deleteTemporaryVariables(_temporaryVariables);
   }
 
@@ -501,8 +491,7 @@ void exahype::mappings::Merging::dropNeighbourData(
 // MASTER->WORKER
 ///////////////////////////////////////
 bool exahype::mappings::Merging::broadcastTimeStepData() const {
-  return (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-          exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
+  return  exahype::State::isFirstIterationOfBatchOrNoBatch()
           &&
           (_localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepData ||
           _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData ||
@@ -510,8 +499,7 @@ bool exahype::mappings::Merging::broadcastTimeStepData() const {
 }
 
 bool exahype::mappings::Merging::broadcastFaceData() const {
-  return (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-          exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch)
+  return  exahype::State::isFirstIterationOfBatchOrNoBatch()
           &&
           (_localState.getMergeMode()==exahype::records::State::MergeMode::MergeFaceData ||
           _localState.getMergeMode()==exahype::records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData);

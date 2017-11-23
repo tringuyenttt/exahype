@@ -213,6 +213,7 @@ class exahype::Parser {
 
   MPILoadBalancingType getMPILoadBalancingType() const;
   std::string getMPIConfiguration() const;
+  std::string getSharedMemoryConfiguration() const;
   int getMPIBufferSize() const;
   int getMPITimeOut() const;
   bool getMPIMasterWorkerCommunication() const;
@@ -403,6 +404,9 @@ class exahype::Parser {
    * Always returns a valid value (or default if not specified).
    */
   double getNodePoolAnsweringTimeout() const;
+
+  int getRanksPerNode();
+  int getNumberOfBackgroundTasks();
 };
 
 #endif

@@ -148,13 +148,13 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
        * Standard mode. As soon as we run out of primary nodes, we switch it to
        * DeployingAlsoSecondaryRanks.
        */
-      DeployingIdlePrimaryRanks=11,
+      DeployingIdlePrimaryRanks=6,
       /**
        * If this flag is set, we also deploy secondary nodes for a fixed number
        * of sweeps. Afterwards (or as soon as absolutely no entries are left 
        * anymore), we switch into NoNodesLeft.
        */
-      DeployingAlsoSecondaryRanksFirstSweep=10,
+      DeployingAlsoSecondaryRanksFirstSweep=5,
       DeployingAlsoSecondaryRanksLastSweep=1,
       /**
        * We do not hand out any nodes anymore.
@@ -213,7 +213,17 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
 
     NodePoolState _nodePoolState;
 
+    /**
+     * If a node has got rid of too much work, noone else should have the 
+     * opportunity to reassign it more work again
+     */ 
     std::set<int> _rankBlackList;
+
+    /**
+     * If secondary ranks from a particular node have been activated, requests
+     * from this node should have higher priority.
+     */
+    std::set<int> _rankPriorityList;
 
     int getNumberOfIdlePrimaryRanks() const;
 
@@ -237,7 +247,7 @@ class mpibalancing::SFCDiffusionNodePoolStrategy: public tarch::parallel::NodePo
      * Called in diffusion phase. Just ensure that noone grabs now ranks from 
      * the master's node. That would be an oscillation.
      */
-    void haveReservedSecondaryRank(int masterRank);
+    void haveReservedSecondaryRank(int masterRank, int workerRank);
 
     int deployIdlePrimaryRank(int forMaster);
     int deployIdleSecondaryRank(int forMaster);

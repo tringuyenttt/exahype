@@ -67,6 +67,7 @@
 
 #include "peano/performanceanalysis/SpeedupLaws.h"
 
+#include "peano/datatraversal/TaskSet.h"
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
@@ -82,8 +83,6 @@ exahype::runners::Runner::~Runner() {}
 
 void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   #ifdef Parallel
-  const std::string RanksPerNode = "ranks-per-node";
-
   const std::string configuration = _parser.getMPIConfiguration();
 
   if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
@@ -98,13 +97,13 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on FCFS answering strategy");
     }
     else if (configuration.find( "fair" )!=std::string::npos ) {
-      int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,RanksPerNode));
+      int ranksPerNode = _parser.getRanksPerNode();
       if (ranksPerNode<=0) {
-        logError( "initDistributedMemoryConfiguration()", "please inform fair balancing how many ranks per node you use through value \"" << RanksPerNode << ":XXX\". Read value " << ranksPerNode << " is invalid" );
+        logError( "initDistributedMemoryConfiguration()", "please inform fair balancing how many ranks per node you use through value \"" << _parser.getRanksPerNode() << ":XXX\". Read value " << ranksPerNode << " is invalid" );
         ranksPerNode = 1;
       }
       if ( ranksPerNode>tarch::parallel::Node::getInstance().getNumberOfNodes() ) {
-        logWarning( "initDistributedMemoryConfiguration()", "value \"" << RanksPerNode << ":XXX\" exceeds total rank count. Reset to 1" );
+        logWarning( "initDistributedMemoryConfiguration()", "value \"" << _parser.getRanksPerNode() << ":XXX\" exceeds total rank count. Reset to 1" );
         ranksPerNode = 1;
       }
       tarch::parallel::NodePool::getInstance().setStrategy(
@@ -113,13 +112,13 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       logInfo("initDistributedMemoryConfiguration()", "load balancing relies on fair answering strategy with " << ranksPerNode << " rank(s) per node") ;
     }
     else if (configuration.find( "sfc-diffusion" )!=std::string::npos ) {
-      int ranksPerNode = static_cast<int>(exahype::Parser::getValueFromPropertyString(configuration,RanksPerNode));
+      int ranksPerNode = _parser.getRanksPerNode();
       if (ranksPerNode<=0) {
         logError( "initDistributedMemoryConfiguration()", "please inform SFC balancing how many ranks per node you use through value \"RanksPerNode:XXX\". Read value " << ranksPerNode << " is invalid" );
         ranksPerNode = 1;
       }
       if ( ranksPerNode>tarch::parallel::Node::getInstance().getNumberOfNodes() ) {
-        logWarning( "initDistributedMemoryConfiguration()", "value \"" << RanksPerNode << ":XXX\" exceeds total rank count. Reset to 1" );
+        logWarning( "initDistributedMemoryConfiguration()", "value \"" << _parser.getRanksPerNode() << ":XXX\" exceeds total rank count. Reset to 1" );
         ranksPerNode = 1;
       }
       if (tarch::parallel::Node::getInstance().getNumberOfNodes() % ranksPerNode != 0) {
@@ -132,7 +131,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         primaryRanksPerNode = 1;
       }
       if ( ranksPerNode<primaryRanksPerNode ) {
-        logWarning( "initDistributedMemoryConfiguration()", "value " << RanksPerNode << " is smaller than primary-ranks-per-node. Reset to 1" );
+        logWarning( "initDistributedMemoryConfiguration()", "value " << _parser.getRanksPerNode() << " is smaller than primary-ranks-per-node. Reset to 1" );
         primaryRanksPerNode = 1;
       }
       tarch::parallel::NodePool::getInstance().setStrategy(
@@ -241,22 +240,31 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   const int numberOfThreads = _parser.getNumberOfThreads();
   tarch::multicore::Core::getInstance().configure(numberOfThreads);
 
+  tarch::multicore::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
+
   switch (_parser.getMulticoreOracleType()) {
   case Parser::MulticoreOracleType::Dummy:
     logInfo("initSharedMemoryConfiguration()",
         "use dummy shared memory oracle");
     peano::datatraversal::autotuning::Oracle::getInstance().setOracle(
       new peano::datatraversal::autotuning::OracleForOnePhaseDummy(
-         true, //   bool useMultithreading                  = true,
-         0, //   int  grainSizeOfUserDefinedRegions      = 0,
-         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
-         #ifdef SharedOMP // Pipelining does not pay off for OpenMP (yet)
+         true,  //   bool useMultithreading                  = true,
+         0,     //   int  grainSizeOfUserDefinedRegions      = 0,
+/*
+         #if defined(SharedOMP) // Pipelining does not pay off for OpenMP (yet)
+         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::DoNotSplit,
+         false, //  bool pipelineDescendProcessing          = false,
+         false,  //   bool pipelineAscendProcessing           = false,
+         #elif defined(SharedTBBInvade)
+         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::DoNotSplit,
          false, //  bool pipelineDescendProcessing          = false,
          false,  //   bool pipelineAscendProcessing           = false,
          #else
-         true, //  bool pipelineDescendProcessing          = true,
-         true, //   bool pipelineAscendProcessing           = true,
-         #endif
+*/
+         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
+         true, //  bool pipelineDescendProcessing
+         true, //   bool pipelineAscendProcessing
+//         #endif
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
          1, //   int  smallestProblemSizeForEnterLeaveCell = tarch::la::aPowI(DIMENSIONS,9/2),
@@ -315,7 +323,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
 
   #if  defined(SharedTBBInvade)
-  double localData[3] = { 1.0, 1.0, 0.0 };
+  double localData[3] = { 0.0, 1.0, 1.0 };
   SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
   logInfo( "initSharedMemoryConfiguration()", "initialised local shared memory region with dummies" );
 
@@ -756,6 +764,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       bool plot = exahype::plotters::startPlottingIfAPlotterIsActive(
           solvers::Solver::getMinSolverTimeStampOfAllSolvers());
 
+      preProcessTimeStepInSharedMemoryEnvironment();
+
       if (exahype::State::fuseADERDGPhases()) {
         int numberOfStepsToRun = 1;
         if (plot) {
@@ -806,56 +816,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 }
 
 
-void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
-  #if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis) && !defined(Parallel)
-  if (sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize::hasLearnedSinceLastQuery()) {
-    static int dumpCounter = -1;
-    dumpCounter++;
-    peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics( _parser.getMulticorePropertiesFile() + "-dump-" + std::to_string(dumpCounter) );
-  }
-  #endif
-
-  #if  defined(SharedTBBInvade)
-  static tarch::timing::Watch                     invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
-  static peano::performanceanalysis::SpeedupLaws  amdahlsLaw;
-
-  // adopt my local performance model
-  invasionWatch.stopTimer();
-  amdahlsLaw.addMeasurement(
-    tarch::multicore::Core::getInstance().getNumberOfThreads(),
-    invasionWatch.getCalendarTime()
-  );
-  amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
-
-  // share local performance model with other ranks running on same node
-  /*
-  int myIndexWithinSharedUserData;
-  int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
-  assertionEquals(ranksOnThisNode,6);
-
-  for (int k=0; k<ranksOnThisNode; k++) {
-    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
-    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
-    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
-  }
-  */
-  
-  //
-  //
-  //
-  double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
-  SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
-
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "ranksOnThisNode=" << ranksOnThisNode );
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[0]=" << localData[0] );
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[1]=" << localData[1] );
-  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[2]=" << localData[2] );
-
-  assertion2( amdahlsLaw.getSerialTime()>=0.0,           amdahlsLaw.getSerialTime(),            amdahlsLaw.toString() );
-  assertion2( amdahlsLaw.getSerialCodeFraction()>=0.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
-  assertion2( amdahlsLaw.getSerialCodeFraction()<=1.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
-  assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
-
+void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
+  #if defined(SharedTBBInvade)
   // get data from the other guys
   int myIndexWithinSharedUserData;
   int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
@@ -877,36 +839,69 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
     logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
   }
 
-  assertionNumericalEquals6(
-    t1[myIndexWithinSharedUserData], amdahlsLaw.getSerialTime(),
-    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
-    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
-  );
-  assertionNumericalEquals6(
-    f[myIndexWithinSharedUserData],  amdahlsLaw.getSerialCodeFraction(),
-    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
-    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
-  );
-  assertionNumericalEquals6(
-    s[myIndexWithinSharedUserData],  amdahlsLaw.getStartupCostPerThread(),
-    t1[myIndexWithinSharedUserData], f[myIndexWithinSharedUserData], s[myIndexWithinSharedUserData],
-    amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread()
-  );
-
   // ask for an optimal number of cores for local rank
   int optimalNumberOfThreads = std::max(
     peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
       myIndexWithinSharedUserData,
       t1,f,s,
-      SHMInvadeRoot::get_max_available_cores()
+      SHMInvadeRoot::get_max_available_cores(),
+      tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
     ),
     2
     );
-  logInfo(
-    "postProcessTimeStepInSharedMemoryEnvironment()",
-    "try to use " << optimalNumberOfThreads << " threads" );
 
-  tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
+  if (_parser.getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) {
+  }
+  else if (_parser.getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) {
+    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
+  }
+  #endif
+}
+
+
+void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
+  #if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis) && !defined(Parallel)
+  if (sharedmemoryoracles::OracleForOnePhaseWithShrinkingGrainSize::hasLearnedSinceLastQuery()) {
+    static int dumpCounter = -1;
+    dumpCounter++;
+    peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics( _parser.getMulticorePropertiesFile() + "-dump-" + std::to_string(dumpCounter) );
+  }
+  #endif
+
+  #if  defined(SharedTBBInvade)
+  static tarch::timing::Watch                     invasionWatch("exahype::Runner", "postProcessTimeStepInSharedMemoryEnvironment()", false);
+  static peano::performanceanalysis::SpeedupLaws  amdahlsLaw;
+
+  // adopt my local performance model
+  invasionWatch.stopTimer();
+  amdahlsLaw.addMeasurement(
+    tarch::multicore::Core::getInstance().getNumberOfThreads(),
+    invasionWatch.getCalendarTime()
+  );
+  amdahlsLaw.relaxAmdahlsLawWithThreadStartupCost();
+  
+  //
+  //
+  //
+  double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
+  SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
+
+  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "ranksOnThisNode=" << ranksOnThisNode );
+  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[0]=" << localData[0] );
+  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[1]=" << localData[1] );
+  logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[2]=" << localData[2] );
+
+  assertion2( amdahlsLaw.getSerialTime()>=0.0,           amdahlsLaw.getSerialTime(),            amdahlsLaw.toString() );
+  assertion2( amdahlsLaw.getSerialCodeFraction()>=0.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
+  assertion2( amdahlsLaw.getSerialCodeFraction()<=1.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
+  assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
+
+  if (_parser.getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) {
+  }
+  else if (_parser.getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) {
+    tarch::multicore::Core::getInstance().configure( 1 );
+  }
+
   invasionWatch.startTimer();
   #endif
 }

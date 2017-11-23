@@ -382,8 +382,14 @@ exahype::Parser::MPILoadBalancingType exahype::Parser::getMPILoadBalancingType()
   return result;
 }
 
+
 std::string exahype::Parser::getMPIConfiguration() const {
   return getTokenAfter("distributed-memory", "configure");
+}
+
+
+std::string exahype::Parser::getSharedMemoryConfiguration() const {
+  return getTokenAfter("shared-memory", "configure");
 }
 
 
@@ -1345,6 +1351,27 @@ bool exahype::Parser::ParserView::isValueValidBool(
     return false;
   }
 }
+
+
+int exahype::Parser::getRanksPerNode() {
+  const std::string RanksPerNode = "ranks-per-node";
+
+  return static_cast<int>(exahype::Parser::getValueFromPropertyString(getMPIConfiguration(),RanksPerNode));
+}
+
+
+int exahype::Parser::getNumberOfBackgroundTasks() {
+  const std::string Search = "background-tasks";
+
+  int result = static_cast<int>(exahype::Parser::getValueFromPropertyString(getSharedMemoryConfiguration(),Search));
+  if (result<1) {
+    logWarning("getNumberOfBackgroundTasks()", "invalid number of background tasks (background-tasks field in configuration) " <<
+      "set or no number at all. Use default (1)");
+    result = 1;
+  }
+  return result;
+}
+
 
 bool exahype::Parser::ParserView::isValueValidString(
     const std::string& key) const {

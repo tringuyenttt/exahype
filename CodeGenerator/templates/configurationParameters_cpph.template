@@ -20,6 +20,9 @@ namespace {{namespaceName}} {
   
   constexpr int getNumberOfParameter()       {return {{nPar}};}
   
+  constexpr int getNumberOfData()            {return {{nData}};}
+  constexpr int getNumberOfDataPadded()      {return {{nDataPad}};}
+  
   constexpr int getBasisSize()               {return {{nDof}};}
   constexpr int getBasisSizePadded()         {return {{nDofPad}};}
   
@@ -28,15 +31,16 @@ namespace {{namespaceName}} {
   constexpr bool isLinear()                  {return {{isLinearCText}};}
 
 {% if isLinear %}  
-  //TODO JMG initialize correct size for linear case
+  constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**nDim)*(1+nDof)}};} // == lQi size
+  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(2*nDim+1)}};} // == lFi size
 {% else %}
-  constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**(nDim+1))}};} // == lQh size
-  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == lFh size
+  constexpr int getTempSpaceTimeUnknownsSize()      {return {{nDataPad*(nDof**(nDim+1))}};} // == lQi size
+  constexpr int getTempSpaceTimeFluxUnknowns0Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == lFi size
+{% endif %}
 {% if useNCP %}
   constexpr int getTempSpaceTimeFluxUnknowns1Size() {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} // == gradQ size
 {% else %}
   constexpr int getTempSpaceTimeFluxUnknowns1Size() {return -1;} // == gradQ size, unused because !useNCP so -1 to not allocate
-{% endif %}
 {% endif %}
 {% if noTimeAveraging %}
   constexpr int getTempUnknownsSize()               {return -1;} // == lQhi size, unused because noTimeAveraging so -1 to not allocate
@@ -45,8 +49,8 @@ namespace {{namespaceName}} {
   constexpr int getTempUnknownsSize()               {return {{nDataPad*(nDof**nDim)}};}  // == lQhi size
   constexpr int getTempFluxUnknownsSize()           {return {{nVarPad*(nDof**nDim)*(nDim+1)}};} // == lFhi size
 {% endif %}
-{% if usePointSource %}
-  constexpr int getTempPointForceSourcesSize()      {return {{nVarPad*(nDof**(nDim+1))*(nDim+1)}};} //same size as lFh
+{% if usePointSources %}
+  constexpr int getTempPointForceSourcesSize()      {return {{(nDof+1) * (nDof ** nDim) * nVarPad}};} // == PSi (and forceVectorSourceN) size
 {% else%}
   constexpr int getTempPointForceSourcesSize()      {return -1;} //unused, not allocated
 {% endif %}
