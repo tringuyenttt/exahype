@@ -26,7 +26,7 @@ void {{codeNamespace}}::riemannSolver(
   const double* restrict const lQhbndL,
   const double* restrict const lQhbndR,
   const double dt,
-  const int normalNonZero
+  const int direction
 {% if useDeepProfiler %}
   , exahype::profilers::Profiler* profiler
 {% endif %}
@@ -60,12 +60,12 @@ void {{codeNamespace}}::riemannSolver(
 #ifdef USE_IPO
   #pragma forceinline recursive
 #endif
-  solver.{{solverName}}::eigenvalues(&QavL[0], normalNonZero, &lambdaL[0]);
+  solver.{{solverName}}::eigenvalues(&QavL[0], direction, &lambdaL[0]);
   double lambdaR[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
 #ifdef USE_IPO
   #pragma forceinline recursive
 #endif
-  solver.{{solverName}}::eigenvalues(&QavR[0], normalNonZero, &lambdaR[0]);
+  solver.{{solverName}}::eigenvalues(&QavR[0], direction, &lambdaR[0]);
   
   double smax = 0.;
   for (int ivar = 0; ivar < {{nVar}}; ivar++) {
@@ -101,7 +101,7 @@ void {{codeNamespace}}::riemannSolver(
     #pragma simd
     for(int n=0; n < {{nVar}}; n++) {
        Qavg[n] = 0.5 * (lQhbndL[n+{{nDataPad}}*ij] + lQhbndR[n+{{nDataPad}}*ij]);
-       gradQ[n+{{nVar}}*normalNonZero] = lQhbndR[n+{{nDataPad}}*ij] - lQhbndL[n+{{nDataPad}}*ij];
+       gradQ[n+{{nVar}}*direction] = lQhbndR[n+{{nDataPad}}*ij] - lQhbndL[n+{{nDataPad}}*ij];
     }
 #ifdef USE_IPO
     #pragma forceinline recursive
