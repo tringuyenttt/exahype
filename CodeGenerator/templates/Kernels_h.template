@@ -121,12 +121,12 @@ namespace {{namespaceName}} {
 
   void riemannSolver( 
     {{solverName}}& solver,
-    double* restrict lFhbndL,
-    double* restrict lFhbndR,
-    const double* restrict const lQhbndL,
-    const double* restrict const lQhbndR,
+    double* restrict FL,
+    double* restrict FR,
+    const double* restrict const QL,
+    const double* restrict const QR,
     const double dt,
-    const int normalNonZero
+    const int direction
 {% if useDeepProfiler %}
     , exahype::profilers::Profiler* profiler
 {% endif %}

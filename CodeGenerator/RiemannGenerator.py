@@ -40,8 +40,8 @@ class RiemannGenerator:
 
     def generateCode(self):        
         if(self.m_context['isLinear']):
-        #TODO JMG implement correct linear case
-            TemplatingUtils.renderAsFile('riemannSolverNonLinear_cpp.template', self.m_filename, self.m_context)
+            # render template
+            TemplatingUtils.renderAsFile('riemannSolverLinear_cpp.template', self.m_filename, self.m_context)
         else:            
             # render template
             TemplatingUtils.renderAsFile('riemannSolverNonLinear_cpp.template', self.m_filename, self.m_context)
