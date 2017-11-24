@@ -34,6 +34,7 @@
 
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
+#include "tarch/multicore/AffinityTools.h"
 
 #include "peano/parallel/JoinDataBufferPool.h"
 #include "peano/parallel/JoinDataBufferPool.h"
@@ -239,6 +240,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
   const int numberOfThreads = _parser.getNumberOfThreads();
   tarch::multicore::Core::getInstance().configure(numberOfThreads);
+  tarch::multicore::logThreadAffinities();
 
   tarch::multicore::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
 
@@ -826,10 +828,6 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
   std::vector<double>  f;
   std::vector<double>  s;
   for (int k=0; k<ranksOnThisNode; k++) {
-    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,0)>1e-12 );
-    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,1)>=0.0 );
-    assertion( SHMController::getSingleton()->getSharedUserData<double>(k,2)>=0.0 );
-
     t1.push_back( SHMController::getSingleton()->getSharedUserData<double>(k,0) );
     f.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,1) );
     s.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,2) );
@@ -854,6 +852,7 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
   }
   else if (_parser.getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) {
     tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
+    tarch::multicore::logThreadAffinities();
   }
   #endif
 }
