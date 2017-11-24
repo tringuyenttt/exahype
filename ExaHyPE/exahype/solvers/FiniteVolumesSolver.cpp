@@ -167,7 +167,7 @@ bool exahype::solvers::FiniteVolumesSolver::isComputingTimeStepSize(
       break;
   }
 
-  return false;
+  return result;
 }
 
 bool exahype::solvers::FiniteVolumesSolver::isMerging(
