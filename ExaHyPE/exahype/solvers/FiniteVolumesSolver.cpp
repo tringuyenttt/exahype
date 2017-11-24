@@ -750,7 +750,7 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolution(
           solution,
           cellDescription.getOffset()+0.5*cellDescription.getSize(),
           cellDescription.getSize(),
-          cellDescription.getTimeStamp()+cellDescription.getTimeStepSize(),
+          cellDescription.getTimeStamp(),
           cellDescription.getTimeStepSize());
 
     for (int i=0; i<getDataPerPatch()+getGhostDataPerPatch(); i++) {
