@@ -350,6 +350,49 @@ private:
    */
   int computeMinimumLimiterStatusForRefinement(int level) const;
 
+  /**
+   * Ensure that the time step data of the limiter is
+   * consistent with the one of the solver.
+   */
+  void ensureLimiterTimeStepDataIsConsistent() const;
+
+  /**
+   * Returns the index of the limiter patch corresponding to
+   * the solver patch with index \p solverElement.
+   * Both patches link to the same ::LimitingADERDGSolver.
+   * If no limiter patch is found, this function
+   * returns exahype::solvers::Solver::NotFound.
+   */
+  int tryGetLimiterElementFromSolverElement(
+      const int cellDescriptionsIndex,
+      const int solverElement) const {
+    SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
+    return _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
+  }
+
+  /**
+   * If a limiter patch is allocated for the solver patch,
+   * ensure that it's time step data is consistent
+   * with the solver patch's time step data.
+   */
+  void ensureLimiterPatchTimeStepDataIsConsistent(
+        const int cellDescriptionsIndex,
+        const int solverElement) const;
+
+  /**
+   * Copies the time stamp and the time step sizes from the solver patch
+   * to the limiter patch.
+   */
+  static void copyTimeStepDataFromSolverPatch(
+      const SolverPatch& solverPatch, const int cellDescriptionsIndex, const int limiterElement);
+
+  /**
+   * Copies the time stamp and the time step sizes from the solver patch
+   * to the limiter patch.
+   */
+  static void copyTimeStepDataFromSolverPatch(
+      const SolverPatch& solverPatch, LimiterPatch& limiterPatch);
+
 #ifdef Parallel
 
   /**
@@ -533,21 +576,19 @@ public:
           const int cellDescriptionsIndex,
           const int element) override;
 
-  void reconstructStandardTimeSteppingData() {
-    _solver->reconstructStandardTimeSteppingData();
-    _limiter->setMinTimeStamp(_solver->getMinCorrectorTimeStamp());
-    _limiter->setMinTimeStepSize(_solver->getMinCorrectorTimeStepSize());
-  }
-
   /**
    * We always override the limiter time step
    * data by the ADER-DG one before a solution update.
    */
   void startNewTimeStep() final override;
 
-  void updateTimeStepSizesFused() final override;
+  void startNewTimeStepFused(
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch) final override;
 
   void updateTimeStepSizes() final override;
+
+  void updateTimeStepSizesFused() final override;
 
   void zeroTimeStepSizes() final override;
 
@@ -574,9 +615,13 @@ public:
    * Roll back the time step data to the
    * ones of the previous time step.
    */
-  void rollbackToPreviousTimeStep();
+  void rollbackToPreviousTimeStep() final override;
 
-  void reconstructStandardTimeSteppingDataAfterRollback();
+  /**
+   * Same as LimitingADERDGSolver::rollbackToPreviousTimeStep
+   * but for the fused time stepping scheme.
+   */
+  void rollbackToPreviousTimeStepFused() final override;
 
   void updateNextMinCellSize(double minCellSize) override;
   void updateNextMaxCellSize(double maxCellSize) override;
@@ -586,7 +631,7 @@ public:
   double getMaxCellSize() const override;
 
   bool isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const override ;
+      const int cellDescriptionsIndex) const override;
 
   /**
    * Returns the index of the solver patch registered for the solver with
@@ -611,43 +656,6 @@ public:
       const int solverNumber) const {
     return _limiter->tryGetElement(cellDescriptionsIndex,solverNumber);
   }
-
-  /**
-   * Returns the index of the limiter patch corresponding to
-   * the solver patch with index \p solverElement.
-   * Both patches link to the same ::LimitingADERDGSolver.
-   * If no limiter patch is found, this function
-   * returns exahype::solvers::Solver::NotFound.
-   */
-  int tryGetLimiterElementFromSolverElement(
-      const int cellDescriptionsIndex,
-      const int solverElement) const {
-    SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-    return _limiter->tryGetElement(cellDescriptionsIndex,solverPatch.getSolverNumber());
-  }
-
-  /**
-   * If a limiter patch is allocated for the solver patch,
-   * ensure that it's time step data is consistent
-   * with the solver patch's time step data.
-   */
-  void ensureLimiterPatchTimeStepDataIsConsistent(
-        const int cellDescriptionsIndex,
-        const int solverElement) const;
-
-  /**
-   * Copies the time stamp and the time step sizes from the solver patch
-   * to the limiter patch.
-   */
-  static void copyTimeStepDataFromSolverPatch(
-      const SolverPatch& solverPatch, const int cellDescriptionsIndex, const int limiterElement);
-
-  /**
-   * Copies the time stamp and the time step sizes from the solver patch
-   * to the limiter patch.
-   */
-  static void copyTimeStepDataFromSolverPatch(
-      const SolverPatch& solverPatch, LimiterPatch& limiterPatch);
 
   /**
    * Looks up the limiter patch for the given solver patch.
@@ -825,6 +833,12 @@ public:
       const int cellDescriptionsIndex,
       const int element) final override;
 
+  double startNewTimeStepFused(
+        const int cellDescriptionsIndex,
+        const int element,
+        const bool isFirstIterationOfBatch,
+        const bool isLastIterationOfBatch) final override;
+
   double updateTimeStepSizesFused(
       const int cellDescriptionsIndex,
       const int element) final override;
@@ -837,26 +851,25 @@ public:
       const int cellDescriptionsIndex,
       const int solverElement) const final override;
 
-  void reconstructStandardTimeSteppingData(
-      const int cellDescriptionsIndex,
-      const int element) const;
-
  /**
    * Rollback to the previous time step, i.e,
    * overwrite the time step size and time stamp
    * fields of the solver and limiter patches
    * by the values used in the previous iteration.
+   *
+   * TODO(Dominic): Move into solver
    */
   void rollbackToPreviousTimeStep(
       const int cellDescriptionsIndex,
-      const int solverElement);
+      const int solverElement) const final override;
 
-  /**
-   * TODO(Dominic): Docu
+  /*
+   * Same as LimitingADERDGSolver::rollbackToPreviousTimeStep
+   * but for the fused time stepping scheme.
    */
-  void reconstructStandardTimeSteppingDataAfterRollback(
+  void rollbackToPreviousTimeStepFused(
       const int cellDescriptionsIndex,
-      const int element) const;
+      const int solverElement) const final override;
 
   /**
    * TODO(Dominic): I need the whole limiter recomputation
@@ -873,6 +886,8 @@ public:
   UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
+      const bool isFirstIterationOfBatch,
+      const bool isLastIterationOfBatch,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
@@ -891,7 +906,8 @@ public:
    */
   void updateSolution(
       const int cellDescriptionsIndex,
-      const int element) final override;
+      const int element,
+      const bool backupPreviousSolution) final override;
 
   /**
    * Determine the new cell-local min max values.

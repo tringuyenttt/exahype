@@ -44,10 +44,7 @@ bool exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = false;
 
 peano::CommunicationSpecification
 exahype::mappings::Sending::communicationSpecification() const {
-  if (
-      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::NoBatch
-  ) {
+  if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     return peano::CommunicationSpecification(
         peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
         peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAfterProcessingOfLocalSubtreeSendStateAfterLastTouchVertexLastTime,
@@ -109,8 +106,7 @@ tarch::logging::Log exahype::mappings::Sending::_log(
 
 bool exahype::mappings::Sending::reduceTimeStepData() const {
   return
-      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+      exahype::State::isLastIterationOfBatchOrNoBatch()
       &&
       (_localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepData ||
       _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
@@ -131,16 +127,12 @@ bool exahype::mappings::Sending::reduceFaceData() const {
   return
       sendFaceData()
       &&
-      (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-      exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch);
+      exahype::State::isLastIterationOfBatchOrNoBatch();
 }
 
 void exahype::mappings::Sending::beginIteration(
     exahype::State& solverState) {
-  if (
-       exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-       exahype::State::getBatchState()==exahype::State::BatchState::FirstIterationOfBatch
-     ) {
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     _localState = solverState;
   }
 
@@ -166,8 +158,7 @@ void exahype::mappings::Sending::beginIteration(
 void exahype::mappings::Sending::endIteration(
     exahype::State& solverState) {
   if (
-    (exahype::State::getBatchState()==exahype::State::BatchState::NoBatch ||
-    exahype::State::getBatchState()==exahype::State::BatchState::LastIterationOfBatch)
+    exahype::State::isLastIterationOfBatchOrNoBatch()
     &&
     _localState.getSendMode()!=exahype::records::State::SendMode::SendNothing
   ) {

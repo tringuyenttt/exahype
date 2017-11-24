@@ -111,25 +111,22 @@ bool exahype::mappings::Reinitialisation::performLocalRecomputation(
       ==exahype::solvers::LimiterDomainChange::Irregular;
 }
 
-bool exahype::mappings::Reinitialisation::performGlobalRecomputation(
-    exahype::solvers::Solver* solver) {
-  return
-      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-      &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-      ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-}
-
 void exahype::mappings::Reinitialisation::endIteration(
     exahype::State& solverState) {
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( performLocalRecomputation(solver) ) {
+    if (
+        performLocalRecomputation(solver) &&
+        exahype::State::fuseADERDGPhases()==true
+    ) {
+      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+      limitingADERDGSolver->rollbackToPreviousTimeStepFused();
+    } else if (
+        performLocalRecomputation(solver) &&
+        exahype::State::fuseADERDGPhases()==false
+    ) {
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
       limitingADERDGSolver->rollbackToPreviousTimeStep();
-      if (!exahype::State::fuseADERDGPhases()) {
-        limitingADERDGSolver->reconstructStandardTimeSteppingDataAfterRollback();
-      }
     }
   }
 }
@@ -156,18 +153,12 @@ void exahype::mappings::Reinitialisation::enterCell(
         if( performLocalRecomputation( solver ) ) {
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
 
-          limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
-          if (!exahype::State::fuseADERDGPhases()) {
-            limitingADERDGSolver->reconstructStandardTimeSteppingDataAfterRollback(fineGridCell.getCellDescriptionsIndex(),element);
+          if (exahype::State::fuseADERDGPhases()) {
+            limitingADERDGSolver->rollbackToPreviousTimeStepFused(fineGridCell.getCellDescriptionsIndex(),element);
+          } else {
+            limitingADERDGSolver->rollbackToPreviousTimeStep(fineGridCell.getCellDescriptionsIndex(),element);
           }
           limitingADERDGSolver->reinitialiseSolversLocally(fineGridCell.getCellDescriptionsIndex(),element);
-        }
-        else if ( performGlobalRecomputation( solver ) ) {
-          auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-
-          // TODO(Dominc): Add to docu: Rollback is performed here in GlobalRollback mapping
-          limitingADERDGSolver->reinitialiseSolversGlobally(fineGridCell.getCellDescriptionsIndex(),element);
-          limitingADERDGSolver->determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
         }
       }
     endpfor

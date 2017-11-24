@@ -217,10 +217,10 @@ void exahype::mappings::LocalRecomputation::endIteration(
         exahype::mappings::TimeStepSizeComputation::
         reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
       }
-      solver->startNewTimeStep();
-      if (!exahype::State::fuseADERDGPhases()) {
-        exahype::mappings::TimeStepSizeComputation::
-        reconstructStandardTimeSteppingData(solver);
+      if (exahype::State::fuseADERDGPhases()) {
+        solver->startNewTimeStepFused(true,true);
+      } else {
+        solver->startNewTimeStep();
       }
 
       logDebug("endIteration(state)","updatedTimeStepSize="<<solver->getMinTimeStepSize());
@@ -260,21 +260,20 @@ void exahype::mappings::LocalRecomputation::enterCell(
       ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         limitingADERDG->recomputeSolutionLocally(
-            fineGridCell.getCellDescriptionsIndex(), element);
+            fineGridCell.getCellDescriptionsIndex(),element);
 
+        double admissibleTimeStepSize = std::numeric_limits<double>::max();
         if (exahype::State::fuseADERDGPhases()) {
           limitingADERDG->recomputePredictorLocally(
-              fineGridCell.getCellDescriptionsIndex(), element,
+              fineGridCell.getCellDescriptionsIndex(),element,
               _predictionTemporaryVariables);
-        }
-
-        double admissibleTimeStepSize =
-            solver->startNewTimeStep(
-                fineGridCell.getCellDescriptionsIndex(),element);
-
-        if (!exahype::State::fuseADERDGPhases()) {
-          exahype::mappings::TimeStepSizeComputation::
-          reconstructStandardTimeSteppingData(solver,fineGridCell.getCellDescriptionsIndex(),element);
+          admissibleTimeStepSize = limitingADERDG->startNewTimeStepFused(
+              fineGridCell.getCellDescriptionsIndex(),element,
+              exahype::State::isFirstIterationOfBatchOrNoBatch(),
+              exahype::State::isLastIterationOfBatchOrNoBatch());
+        } else {
+          admissibleTimeStepSize = limitingADERDG->startNewTimeStep(
+              fineGridCell.getCellDescriptionsIndex(),element);
         }
 
         _minTimeStepSizes[solverNumber] = std::min(
@@ -288,7 +287,7 @@ void exahype::mappings::LocalRecomputation::enterCell(
       }
       else if (
           element!=exahype::solvers::Solver::NotFound &&
-          performGlobalRecomputation( solver )
+          performGlobalRecomputation( solver ) // TODO(Dominic): Move to finalise mesh refinement
       ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         // TODO(Dominic): Here, we update the solver min and max
