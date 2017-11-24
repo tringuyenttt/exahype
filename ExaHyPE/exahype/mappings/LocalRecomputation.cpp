@@ -174,15 +174,6 @@ bool exahype::mappings::LocalRecomputation::performLocalRecomputation(
       ==exahype::solvers::LimiterDomainChange::Irregular;
 }
 
-bool exahype::mappings::LocalRecomputation::performGlobalRecomputation(
-    exahype::solvers::Solver* solver) {
-  return
-      solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-      &&
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getLimiterDomainChange()
-      ==exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-}
-
 void exahype::mappings::LocalRecomputation::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
@@ -283,14 +274,6 @@ void exahype::mappings::LocalRecomputation::enterCell(
         _maxCellSizes[solverNumber] = std::max(
             fineGridVerticesEnumerator.getCellSize()[0],_maxCellSizes[solverNumber]);
 
-        limitingADERDG->determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
-      }
-      else if (
-          element!=exahype::solvers::Solver::NotFound &&
-          performGlobalRecomputation( solver ) // TODO(Dominic): Move to finalise mesh refinement
-      ) {
-        auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-        // TODO(Dominic): Here, we update the solver min and max
         limitingADERDG->determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
       }
     endpfor
