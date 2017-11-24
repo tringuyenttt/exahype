@@ -44,7 +44,7 @@ void exahype::mappings::TimeStepSizeComputation::prepareLocalTimeStepVariables()
 peano::CommunicationSpecification
 exahype::mappings::TimeStepSizeComputation::communicationSpecification() const {
   return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+      peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeDescendIntoLocalSubtree,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,
       true);
 }
