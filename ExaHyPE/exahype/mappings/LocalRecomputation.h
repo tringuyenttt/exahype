@@ -150,11 +150,6 @@ class exahype::mappings::LocalRecomputation {
    */
   static bool performLocalRecomputation(exahype::solvers::Solver* solver);
 
-  /**
-   * \return if we perform a global recomputation for this solver.
-   */
-  static bool performGlobalRecomputation(exahype::solvers::Solver* solver);
-
   #ifdef Parallel
   /**
    * TODO(Dominic): Add docu.
