@@ -21,7 +21,8 @@
  #include "exahype/mappings/PreProcessing.h"
  #include "exahype/mappings/FinaliseMeshRefinement.h"
  #include "exahype/mappings/LocalRollback.h"
- #include "exahype/adapters/FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3.h"
+ #include "exahype/mappings/PostProcessing.h"
+ #include "exahype/adapters/FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_4.h"
 
 
 
@@ -44,12 +45,14 @@ class exahype::adapters::FinaliseMeshRefinementOrLocalRollback {
     typedef mappings::PreProcessing Mapping0;
     typedef mappings::FinaliseMeshRefinement Mapping1;
     typedef mappings::LocalRollback Mapping2;
-    typedef adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3 Mapping3;
+    typedef mappings::PostProcessing Mapping3;
+    typedef adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_4 Mapping4;
 
      Mapping0  _map2PreProcessing;
      Mapping1  _map2FinaliseMeshRefinement;
      Mapping2  _map2LocalRollback;
-     Mapping3  _map2FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3;
+     Mapping3  _map2PostProcessing;
+     Mapping4  _map2FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_4;
 
 
   public:

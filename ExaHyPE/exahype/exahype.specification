@@ -91,6 +91,7 @@ adapter:
   name: FinaliseMeshRefinement
   merge-with-user-defined-mapping: PreProcessing
   merge-with-user-defined-mapping: FinaliseMeshRefinement // sends time step data up to the master
+  merge-with-user-defined-mapping: PostProcessing
   merge-with-predefined-mapping:   MultiscaleLinkedCell(CellDescriptionsIndex) // (createInner/BoundaryVertex,enterCell,avoidfinegridraces)
   
 adapter:
@@ -98,6 +99,7 @@ adapter:
   merge-with-user-defined-mapping: PreProcessing
   merge-with-user-defined-mapping: FinaliseMeshRefinement  // sends time step data up to the master
   merge-with-user-defined-mapping: LocalRollback
+  merge-with-user-defined-mapping: PostProcessing
   merge-with-predefined-mapping:   MultiscaleLinkedCell(CellDescriptionsIndex) // (createInner/BoundaryVertex,enterCell,avoidfinegridraces)
   
 // Adapter for 1 phase time stepping
