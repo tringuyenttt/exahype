@@ -832,9 +832,9 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     f.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,1) );
     s.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,2) );
 
-    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
-    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
-    logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
+    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
+    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
+    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
   }
 
   // ask for an optimal number of cores for local rank
@@ -851,8 +851,15 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
   if (_parser.getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) {
   }
   else if (_parser.getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) {
-    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads );
+    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, false );
     tarch::multicore::logThreadAffinities();
+  }
+  else if (_parser.getSharedMemoryConfiguration().find("invade-throughout-computation")!=std::string::npos) {
+    tarch::multicore::Core::getInstance().configure( 2, true );
+    tarch::multicore::logThreadAffinities();
+  }
+  else {
+    logError( "preProcessTimeStepInSharedMemoryEnvironment()", "none or no valid invasion statement found in configuration " << _parser.getSharedMemoryConfiguration() );
   }
   #endif
 }
@@ -895,10 +902,8 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   assertion2( amdahlsLaw.getSerialCodeFraction()<=1.0,   amdahlsLaw.getSerialCodeFraction(),    amdahlsLaw.toString() );
   assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
 
-  if (_parser.getSharedMemoryConfiguration().find("no-invade")!=std::string::npos) {
-  }
-  else if (_parser.getSharedMemoryConfiguration().find("invade-between-time-steps")!=std::string::npos) {
-    tarch::multicore::Core::getInstance().configure( 1 );
+  if (_parser.getSharedMemoryConfiguration().find("no-invade")==std::string::npos) {
+    tarch::multicore::Core::getInstance().configure( 1, false );
   }
 
   invasionWatch.startTimer();
