@@ -192,27 +192,12 @@ void exahype::State::switchToPredictionAndFusedTimeSteppingInitialisationContext
 }
 
 void exahype::State::switchToFusedTimeStepContext() {
-  if (EnableMasterWorkerCommunication) {
-    if (EnableNeighbourCommunication) {
-      _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndMergeFaceData);
-      _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
-    } else { //!EnableNeighbourCommunication
-      _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
-      _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
-    }
-  } else { // !EnableMasterWorkerCommunication
-    if (EnableNeighbourCommunication) {
-      _stateData.setMergeMode(records::State::MergeMode::MergeFaceData);
-      _stateData.setSendMode (records::State::SendMode::SendFaceData);
-    } else { //!EnableNeighbourCommunication
-      _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
-      _stateData.setSendMode (records::State::SendMode::SendNothing);
-    }
-  }
+  _stateData.setMergeMode(records::State::MergeMode::MergeFaceData);
+  _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
 }
 
 void exahype::State::switchToPredictionRerunContext() {
-  _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepDataAndDropFaceData);
+  _stateData.setMergeMode(records::State::MergeMode::DropFaceData);
   _stateData.setSendMode (records::State::SendMode::SendFaceData);
 }
 
@@ -222,7 +207,7 @@ void exahype::State::switchToNeighbourDataMergingContext() {
 }
 
 void exahype::State::switchToPredictionContext() {
-  _stateData.setMergeMode(records::State::MergeMode::BroadcastAndMergeTimeStepData);
+  _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
   _stateData.setSendMode (records::State::SendMode::SendFaceData);
 }
 
@@ -251,7 +236,7 @@ void exahype::State::switchToLimiterStatusSpreadingFusedTimeSteppingContext() {
   _stateData.setSendMode (records::State::SendMode::SendNothing);
 }
 
-void exahype::State::switchToReinitialisationContext() {
+void exahype::State::switchToLocalRollbackContext() {
   // We are merging a limiter status but we do not use the merging and sending mappings. So, we can use any value here.
   _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
   _stateData.setSendMode (records::State::SendMode::SendNothing);
@@ -262,9 +247,14 @@ void exahype::State::switchToRecomputeSolutionAndTimeStepSizeComputationContext(
   _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
 }
 
-void exahype::State::switchToLocalRecomputationAndTimeStepSizeComputationContext() {
-  _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
-  _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
+void exahype::State::switchToPredictionAndLocalRecomputationContext() {
+  if (fuseADERDGPhases()) {
+    _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
+    _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);
+  } else {
+    _stateData.setMergeMode(records::State::MergeMode::MergeNothing);
+    _stateData.setSendMode (records::State::SendMode::ReduceAndMergeTimeStepData);
+  }
 }
 
 void exahype::State::switchToNeighbourDataDroppingContext() {

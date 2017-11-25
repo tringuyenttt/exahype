@@ -159,27 +159,22 @@ class exahype::dastgen::State {
   enum AlgorithmSection {
    	/*
    	 * The runner is currently 
-   	 * performing a normal ADER-DG time step.
+   	 * performing a normal ADER-DG / FV / ... time step.
    	 */
    	TimeStepping,
    	
-   	/*
-   	 * The runner is currently 
-   	 * performing limiter status spreading.
-   	 * All those LimitingADERDGSolvers become
-   	 * active that have either requested a mesh update
-   	 * or a local or global recomputation.
-   	 */
-   	LimiterStatusSpreading,
    	
-   	/**
-   	 * The runner performs mesh refinement according to the
-   	 * user's refinement criterion or the regular limiter status
-   	 * flagging, i.e. the LimiterStatus updates caused by a 
-   	 * regularly moving limiter domain or since
-   	 * a global recomputation is necessary.
+   	/*
+   	 * Currently performing mesh refinement. Only
+   	 * relevant for merging metadata.
    	 */
    	MeshRefinement,
+   	
+   	/*
+   	 * Currently performing limiter status spreading. Only
+   	 * relevant for merging metadata.
+   	 */
+   	LimiterStatusSpreading,
    	
    	/**
    	 * In this section, the runner overlaps the 
@@ -187,27 +182,11 @@ class exahype::dastgen::State {
    	 * mesh refinement with operations that
    	 * must be performed for a local or global
    	 * recomputation. 
+   	 * 
+   	 * This marks the end point of the side branch.
+     * Triggers a send for all registered solvers.
    	 */
-   	MeshRefinementOrLocalOrGlobalRecomputation,
-   	
-    /**
-     * This marks an end point of the side branch.
-     * It is sure here that no solver performs
-     * a global recomputation or has performed mesh refinement
-     * 
-     * Triggers a send for all registered solvers.
-     */
-    LocalRecomputationAllSend,
-    
-    /**
-     * In this section, the  runner
-     * triggers operations for solvers that
-     * have performed mesh refinement or
-     * which perform a global recomputation.
-     * 
-     * Triggers a send for all registered solvers.
-     */
-    MeshRefinementOrGlobalRecomputationAllSend,
+   	MeshRefinementOrLocalOrGlobalRecomputationAllSend,
    	
    	/**
    	 * In this section, all solver have to drop

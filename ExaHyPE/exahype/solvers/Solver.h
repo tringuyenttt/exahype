@@ -635,7 +635,21 @@ class exahype::solvers::Solver {
    * TODO(Dominic): Rename. Name can be confused with
    * oneSolverHasNotAttainedStableState.
    */
-  static bool stabilityConditionOfOneSolverWasViolated();
+  static bool oneSolverViolatedStabilityCondition();
+
+  /**
+   * Weights the min next predictor time step size
+   * by the user's safety factor for the fused time stepping
+   * algorithm.
+   */
+  static void weighMinNextPredictorTimeStepSize(exahype::solvers::Solver* solver);
+
+  /**
+   * Reinitialises the corrector and predictor time step sizes of an ADER-DG solver
+   * with stable time step sizes if we detect a-posteriori that the CFL condition was
+   * harmed by the estimated predictor time step size used in the last iteration.
+   */
+  static void reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(exahype::solvers::Solver* solver);
 
  /**
   * Some solvers can deploy data conversion into the background. How this is
@@ -1054,9 +1068,7 @@ class exahype::solvers::Solver {
    * a local recomputation.
    *
    */
-  virtual bool isBroadcasting(const exahype::records::State::AlgorithmSection& section) const = 0;
   virtual bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const = 0;
-  virtual bool isComputingTimeStepSize(const exahype::records::State::AlgorithmSection& section) const = 0;
   /**
    * \return true if this solvers is using the Merging mapping functionalities
    * like broadcasting time step data or merging neighbour data in the

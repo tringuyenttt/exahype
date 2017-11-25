@@ -1,7 +1,7 @@
-#include "exahype/adapters/NeighbourDataMerging.h"
+#include "exahype/adapters/Merging.h"
 
 
-peano::CommunicationSpecification   exahype::adapters::NeighbourDataMerging::communicationSpecification() const {
+peano::CommunicationSpecification   exahype::adapters::Merging::communicationSpecification() const {
   return peano::CommunicationSpecification::getMinimalSpecification()
     &  _map2Merging.communicationSpecification()
     &  _map2PostProcessing.communicationSpecification()
@@ -10,7 +10,7 @@ peano::CommunicationSpecification   exahype::adapters::NeighbourDataMerging::com
 }
 
 
-peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::touchVertexLastTimeSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::Merging::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2Merging.touchVertexLastTimeSpecification(level)
     &  _map2PostProcessing.touchVertexLastTimeSpecification(level)
@@ -19,7 +19,7 @@ peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::touchVert
 }
 
 
-peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::touchVertexFirstTimeSpecification(int level) const { 
+peano::MappingSpecification   exahype::adapters::Merging::touchVertexFirstTimeSpecification(int level) const { 
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2Merging.touchVertexFirstTimeSpecification(level)
     &  _map2PostProcessing.touchVertexFirstTimeSpecification(level)
@@ -28,7 +28,7 @@ peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::touchVert
 }
 
 
-peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::enterCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::Merging::enterCellSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2Merging.enterCellSpecification(level)
     &  _map2PostProcessing.enterCellSpecification(level)
@@ -37,7 +37,7 @@ peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::enterCell
 }
 
 
-peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::leaveCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::Merging::leaveCellSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2Merging.leaveCellSpecification(level)
     &  _map2PostProcessing.leaveCellSpecification(level)
@@ -46,7 +46,7 @@ peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::leaveCell
 }
 
 
-peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::ascendSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::Merging::ascendSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2Merging.ascendSpecification(level)
     &  _map2PostProcessing.ascendSpecification(level)
@@ -55,7 +55,7 @@ peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::ascendSpe
 }
 
 
-peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::descendSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::Merging::descendSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2Merging.descendSpecification(level)
     &  _map2PostProcessing.descendSpecification(level)
@@ -64,16 +64,16 @@ peano::MappingSpecification   exahype::adapters::NeighbourDataMerging::descendSp
 }
 
 
-exahype::adapters::NeighbourDataMerging::NeighbourDataMerging() {
+exahype::adapters::Merging::Merging() {
 }
 
 
-exahype::adapters::NeighbourDataMerging::~NeighbourDataMerging() {
+exahype::adapters::Merging::~Merging() {
 }
 
 
 #if defined(SharedMemoryParallelisation)
-exahype::adapters::NeighbourDataMerging::NeighbourDataMerging(const NeighbourDataMerging&  masterThread):
+exahype::adapters::Merging::Merging(const Merging&  masterThread):
   _map2Merging(masterThread._map2Merging) , 
   _map2PostProcessing(masterThread._map2PostProcessing) 
 
@@ -81,7 +81,7 @@ exahype::adapters::NeighbourDataMerging::NeighbourDataMerging(const NeighbourDat
 }
 
 
-void exahype::adapters::NeighbourDataMerging::mergeWithWorkerThread(const NeighbourDataMerging& workerThread) {
+void exahype::adapters::Merging::mergeWithWorkerThread(const Merging& workerThread) {
   _map2Merging.mergeWithWorkerThread(workerThread._map2Merging);
   _map2PostProcessing.mergeWithWorkerThread(workerThread._map2PostProcessing);
 
@@ -89,7 +89,7 @@ void exahype::adapters::NeighbourDataMerging::mergeWithWorkerThread(const Neighb
 #endif
 
 
-void exahype::adapters::NeighbourDataMerging::createHangingVertex(
+void exahype::adapters::Merging::createHangingVertex(
       exahype::Vertex&     fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                fineGridH,
@@ -105,7 +105,7 @@ void exahype::adapters::NeighbourDataMerging::createHangingVertex(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::destroyHangingVertex(
+void exahype::adapters::Merging::destroyHangingVertex(
       const exahype::Vertex&   fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -120,7 +120,7 @@ void exahype::adapters::NeighbourDataMerging::destroyHangingVertex(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::createInnerVertex(
+void exahype::adapters::Merging::createInnerVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -135,7 +135,7 @@ void exahype::adapters::NeighbourDataMerging::createInnerVertex(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::createBoundaryVertex(
+void exahype::adapters::Merging::createBoundaryVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -150,7 +150,7 @@ void exahype::adapters::NeighbourDataMerging::createBoundaryVertex(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::destroyVertex(
+void exahype::adapters::Merging::destroyVertex(
       const exahype::Vertex&   fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -165,7 +165,7 @@ void exahype::adapters::NeighbourDataMerging::destroyVertex(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::createCell(
+void exahype::adapters::Merging::createCell(
       exahype::Cell&                 fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -180,7 +180,7 @@ void exahype::adapters::NeighbourDataMerging::createCell(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::destroyCell(
+void exahype::adapters::Merging::destroyCell(
       const exahype::Cell&           fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -196,7 +196,7 @@ void exahype::adapters::NeighbourDataMerging::destroyCell(
 
 
 #ifdef Parallel
-void exahype::adapters::NeighbourDataMerging::mergeWithNeighbour(
+void exahype::adapters::Merging::mergeWithNeighbour(
   exahype::Vertex&  vertex,
   const exahype::Vertex&  neighbour,
   int                                           fromRank,
@@ -210,7 +210,7 @@ void exahype::adapters::NeighbourDataMerging::mergeWithNeighbour(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::prepareSendToNeighbour(
+void exahype::adapters::Merging::prepareSendToNeighbour(
   exahype::Vertex&  vertex,
   int                                           toRank,
   const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -223,7 +223,7 @@ void exahype::adapters::NeighbourDataMerging::prepareSendToNeighbour(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::prepareCopyToRemoteNode(
+void exahype::adapters::Merging::prepareCopyToRemoteNode(
   exahype::Vertex&  localVertex,
   int                                           toRank,
   const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -236,7 +236,7 @@ void exahype::adapters::NeighbourDataMerging::prepareCopyToRemoteNode(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::prepareCopyToRemoteNode(
+void exahype::adapters::Merging::prepareCopyToRemoteNode(
   exahype::Cell&  localCell,
       int                                           toRank,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -249,7 +249,7 @@ void exahype::adapters::NeighbourDataMerging::prepareCopyToRemoteNode(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::adapters::Merging::mergeWithRemoteDataDueToForkOrJoin(
   exahype::Vertex&  localVertex,
   const exahype::Vertex&  masterOrWorkerVertex,
   int                                       fromRank,
@@ -263,7 +263,7 @@ void exahype::adapters::NeighbourDataMerging::mergeWithRemoteDataDueToForkOrJoin
 }
 
 
-void exahype::adapters::NeighbourDataMerging::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::adapters::Merging::mergeWithRemoteDataDueToForkOrJoin(
   exahype::Cell&  localCell,
   const exahype::Cell&  masterOrWorkerCell,
   int                                       fromRank,
@@ -277,7 +277,7 @@ void exahype::adapters::NeighbourDataMerging::mergeWithRemoteDataDueToForkOrJoin
 }
 
 
-bool exahype::adapters::NeighbourDataMerging::prepareSendToWorker(
+bool exahype::adapters::Merging::prepareSendToWorker(
   exahype::Cell&                 fineGridCell,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -295,7 +295,7 @@ bool exahype::adapters::NeighbourDataMerging::prepareSendToWorker(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::prepareSendToMaster(
+void exahype::adapters::Merging::prepareSendToMaster(
   exahype::Cell&                       localCell,
   exahype::Vertex *                    vertices,
   const peano::grid::VertexEnumerator&       verticesEnumerator, 
@@ -310,7 +310,7 @@ void exahype::adapters::NeighbourDataMerging::prepareSendToMaster(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::mergeWithMaster(
+void exahype::adapters::Merging::mergeWithMaster(
   const exahype::Cell&           workerGridCell,
   exahype::Vertex * const        workerGridVertices,
   const peano::grid::VertexEnumerator& workerEnumerator,
@@ -331,7 +331,7 @@ void exahype::adapters::NeighbourDataMerging::mergeWithMaster(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::receiveDataFromMaster(
+void exahype::adapters::Merging::receiveDataFromMaster(
       exahype::Cell&                        receivedCell, 
       exahype::Vertex *                     receivedVertices,
       const peano::grid::VertexEnumerator&        receivedVerticesEnumerator,
@@ -349,7 +349,7 @@ void exahype::adapters::NeighbourDataMerging::receiveDataFromMaster(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::mergeWithWorker(
+void exahype::adapters::Merging::mergeWithWorker(
   exahype::Cell&           localCell, 
   const exahype::Cell&     receivedMasterCell,
   const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
@@ -362,7 +362,7 @@ void exahype::adapters::NeighbourDataMerging::mergeWithWorker(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::mergeWithWorker(
+void exahype::adapters::Merging::mergeWithWorker(
   exahype::Vertex&        localVertex,
   const exahype::Vertex&  receivedMasterVertex,
   const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -376,7 +376,7 @@ void exahype::adapters::NeighbourDataMerging::mergeWithWorker(
 #endif
 
 
-void exahype::adapters::NeighbourDataMerging::touchVertexFirstTime(
+void exahype::adapters::Merging::touchVertexFirstTime(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -391,7 +391,7 @@ void exahype::adapters::NeighbourDataMerging::touchVertexFirstTime(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::touchVertexLastTime(
+void exahype::adapters::Merging::touchVertexLastTime(
       exahype::Vertex&         fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -406,7 +406,7 @@ void exahype::adapters::NeighbourDataMerging::touchVertexLastTime(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::enterCell(
+void exahype::adapters::Merging::enterCell(
       exahype::Cell&                 fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -421,7 +421,7 @@ void exahype::adapters::NeighbourDataMerging::enterCell(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::leaveCell(
+void exahype::adapters::Merging::leaveCell(
       exahype::Cell&           fineGridCell,
       exahype::Vertex * const  fineGridVertices,
       const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
@@ -436,7 +436,7 @@ void exahype::adapters::NeighbourDataMerging::leaveCell(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::beginIteration(
+void exahype::adapters::Merging::beginIteration(
   exahype::State&  solverState
 ) {
   _map2Merging.beginIteration( solverState );
@@ -445,7 +445,7 @@ void exahype::adapters::NeighbourDataMerging::beginIteration(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::endIteration(
+void exahype::adapters::Merging::endIteration(
   exahype::State&  solverState
 ) {
   _map2Merging.endIteration( solverState );
@@ -456,7 +456,7 @@ void exahype::adapters::NeighbourDataMerging::endIteration(
 
 
 
-void exahype::adapters::NeighbourDataMerging::descend(
+void exahype::adapters::Merging::descend(
   exahype::Cell * const          fineGridCells,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -470,7 +470,7 @@ void exahype::adapters::NeighbourDataMerging::descend(
 }
 
 
-void exahype::adapters::NeighbourDataMerging::ascend(
+void exahype::adapters::Merging::ascend(
   exahype::Cell * const    fineGridCells,
   exahype::Vertex * const  fineGridVertices,
   const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,

@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_NeighbourDataMerging_H_
-#define EXAHYPE_ADAPTERS_NeighbourDataMerging_H_
+#ifndef EXAHYPE_ADAPTERS_Merging_H_
+#define EXAHYPE_ADAPTERS_Merging_H_
 
 
 #include "tarch/logging/Log.h"
@@ -25,7 +25,7 @@
 
 namespace exahype {
       namespace adapters {
-        class NeighbourDataMerging;
+        class Merging;
       } 
 }
 
@@ -37,7 +37,7 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::NeighbourDataMerging {
+class exahype::adapters::Merging {
   private:
     typedef mappings::Merging Mapping0;
     typedef mappings::PostProcessing Mapping1;
@@ -55,16 +55,16 @@ class exahype::adapters::NeighbourDataMerging {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    NeighbourDataMerging();
+    Merging();
 
     #if defined(SharedMemoryParallelisation)
-    NeighbourDataMerging(const NeighbourDataMerging& masterThread);
+    Merging(const Merging& masterThread);
     #endif
 
-    virtual ~NeighbourDataMerging();
+    virtual ~Merging();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const NeighbourDataMerging& workerThread);
+    void mergeWithWorkerThread(const Merging& workerThread);
     #endif
 
     void createInnerVertex(

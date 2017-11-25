@@ -1,113 +1,113 @@
-#include "exahype/adapters/LocalRecomputationAndTimeStepSizeComputation.h"
+#include "exahype/adapters/PredictionOrLocalRecomputation.h"
 
 
-peano::CommunicationSpecification   exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::communicationSpecification() const {
+peano::CommunicationSpecification   exahype::adapters::PredictionOrLocalRecomputation::communicationSpecification() const {
   return peano::CommunicationSpecification::getMinimalSpecification()
     &  _map2PreProcessing.communicationSpecification()
     &  _map2LocalRecomputation.communicationSpecification()
-    &  _map2TimeStepSizeComputation.communicationSpecification()
+    &  _map2Prediction.communicationSpecification()
     &  _map2Sending.communicationSpecification()
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::touchVertexLastTimeSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::PredictionOrLocalRecomputation::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2PreProcessing.touchVertexLastTimeSpecification(level)
     &  _map2LocalRecomputation.touchVertexLastTimeSpecification(level)
-    &  _map2TimeStepSizeComputation.touchVertexLastTimeSpecification(level)
+    &  _map2Prediction.touchVertexLastTimeSpecification(level)
     &  _map2Sending.touchVertexLastTimeSpecification(level)
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::touchVertexFirstTimeSpecification(int level) const { 
+peano::MappingSpecification   exahype::adapters::PredictionOrLocalRecomputation::touchVertexFirstTimeSpecification(int level) const { 
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2PreProcessing.touchVertexFirstTimeSpecification(level)
     &  _map2LocalRecomputation.touchVertexFirstTimeSpecification(level)
-    &  _map2TimeStepSizeComputation.touchVertexFirstTimeSpecification(level)
+    &  _map2Prediction.touchVertexFirstTimeSpecification(level)
     &  _map2Sending.touchVertexFirstTimeSpecification(level)
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::enterCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::PredictionOrLocalRecomputation::enterCellSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2PreProcessing.enterCellSpecification(level)
     &  _map2LocalRecomputation.enterCellSpecification(level)
-    &  _map2TimeStepSizeComputation.enterCellSpecification(level)
+    &  _map2Prediction.enterCellSpecification(level)
     &  _map2Sending.enterCellSpecification(level)
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::leaveCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::PredictionOrLocalRecomputation::leaveCellSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2PreProcessing.leaveCellSpecification(level)
     &  _map2LocalRecomputation.leaveCellSpecification(level)
-    &  _map2TimeStepSizeComputation.leaveCellSpecification(level)
+    &  _map2Prediction.leaveCellSpecification(level)
     &  _map2Sending.leaveCellSpecification(level)
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::ascendSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::PredictionOrLocalRecomputation::ascendSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2PreProcessing.ascendSpecification(level)
     &  _map2LocalRecomputation.ascendSpecification(level)
-    &  _map2TimeStepSizeComputation.ascendSpecification(level)
+    &  _map2Prediction.ascendSpecification(level)
     &  _map2Sending.ascendSpecification(level)
 
   ;
 }
 
 
-peano::MappingSpecification   exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::descendSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::PredictionOrLocalRecomputation::descendSpecification(int level) const {
   return peano::MappingSpecification::getMinimalSpecification()
     &  _map2PreProcessing.descendSpecification(level)
     &  _map2LocalRecomputation.descendSpecification(level)
-    &  _map2TimeStepSizeComputation.descendSpecification(level)
+    &  _map2Prediction.descendSpecification(level)
     &  _map2Sending.descendSpecification(level)
 
   ;
 }
 
 
-exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::LocalRecomputationAndTimeStepSizeComputation() {
+exahype::adapters::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation() {
 }
 
 
-exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::~LocalRecomputationAndTimeStepSizeComputation() {
+exahype::adapters::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputation() {
 }
 
 
 #if defined(SharedMemoryParallelisation)
-exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::LocalRecomputationAndTimeStepSizeComputation(const LocalRecomputationAndTimeStepSizeComputation&  masterThread):
+exahype::adapters::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation(const PredictionOrLocalRecomputation&  masterThread):
   _map2PreProcessing(masterThread._map2PreProcessing) , 
   _map2LocalRecomputation(masterThread._map2LocalRecomputation) , 
-  _map2TimeStepSizeComputation(masterThread._map2TimeStepSizeComputation) , 
+  _map2Prediction(masterThread._map2Prediction) , 
   _map2Sending(masterThread._map2Sending) 
 
 {
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithWorkerThread(const LocalRecomputationAndTimeStepSizeComputation& workerThread) {
+void exahype::adapters::PredictionOrLocalRecomputation::mergeWithWorkerThread(const PredictionOrLocalRecomputation& workerThread) {
   _map2PreProcessing.mergeWithWorkerThread(workerThread._map2PreProcessing);
   _map2LocalRecomputation.mergeWithWorkerThread(workerThread._map2LocalRecomputation);
-  _map2TimeStepSizeComputation.mergeWithWorkerThread(workerThread._map2TimeStepSizeComputation);
+  _map2Prediction.mergeWithWorkerThread(workerThread._map2Prediction);
   _map2Sending.mergeWithWorkerThread(workerThread._map2Sending);
 
 }
 #endif
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::createHangingVertex(
+void exahype::adapters::PredictionOrLocalRecomputation::createHangingVertex(
       exahype::Vertex&     fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                fineGridH,
@@ -118,14 +118,14 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::createHang
 ) {
   _map2PreProcessing.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LocalRecomputation.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2TimeStepSizeComputation.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2Prediction.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2Sending.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::destroyHangingVertex(
+void exahype::adapters::PredictionOrLocalRecomputation::destroyHangingVertex(
       const exahype::Vertex&   fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -136,13 +136,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::destroyHan
 ) {
   _map2PreProcessing.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LocalRecomputation.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2TimeStepSizeComputation.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2Prediction.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2Sending.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::createInnerVertex(
+void exahype::adapters::PredictionOrLocalRecomputation::createInnerVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -153,13 +153,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::createInne
 ) {
   _map2PreProcessing.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LocalRecomputation.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2TimeStepSizeComputation.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2Prediction.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2Sending.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::createBoundaryVertex(
+void exahype::adapters::PredictionOrLocalRecomputation::createBoundaryVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -170,13 +170,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::createBoun
 ) {
   _map2PreProcessing.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LocalRecomputation.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2TimeStepSizeComputation.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2Prediction.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2Sending.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::destroyVertex(
+void exahype::adapters::PredictionOrLocalRecomputation::destroyVertex(
       const exahype::Vertex&   fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -187,13 +187,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::destroyVer
 ) {
   _map2PreProcessing.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LocalRecomputation.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2TimeStepSizeComputation.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2Prediction.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2Sending.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::createCell(
+void exahype::adapters::PredictionOrLocalRecomputation::createCell(
       exahype::Cell&                 fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -204,13 +204,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::createCell
 ) {
   _map2PreProcessing.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2LocalRecomputation.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2TimeStepSizeComputation.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2Prediction.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2Sending.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::destroyCell(
+void exahype::adapters::PredictionOrLocalRecomputation::destroyCell(
       const exahype::Cell&           fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -221,14 +221,14 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::destroyCel
 ) {
   _map2PreProcessing.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2LocalRecomputation.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2TimeStepSizeComputation.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2Prediction.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2Sending.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
 
 #ifdef Parallel
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithNeighbour(
+void exahype::adapters::PredictionOrLocalRecomputation::mergeWithNeighbour(
   exahype::Vertex&  vertex,
   const exahype::Vertex&  neighbour,
   int                                           fromRank,
@@ -238,13 +238,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithN
 ) {
    _map2PreProcessing.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
    _map2LocalRecomputation.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
-   _map2TimeStepSizeComputation.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
+   _map2Prediction.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
    _map2Sending.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::prepareSendToNeighbour(
+void exahype::adapters::PredictionOrLocalRecomputation::prepareSendToNeighbour(
   exahype::Vertex&  vertex,
   int                                           toRank,
   const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -253,13 +253,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::prepareSen
 ) {
    _map2PreProcessing.prepareSendToNeighbour( vertex, toRank, x, h, level );
    _map2LocalRecomputation.prepareSendToNeighbour( vertex, toRank, x, h, level );
-   _map2TimeStepSizeComputation.prepareSendToNeighbour( vertex, toRank, x, h, level );
+   _map2Prediction.prepareSendToNeighbour( vertex, toRank, x, h, level );
    _map2Sending.prepareSendToNeighbour( vertex, toRank, x, h, level );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::prepareCopyToRemoteNode(
+void exahype::adapters::PredictionOrLocalRecomputation::prepareCopyToRemoteNode(
   exahype::Vertex&  localVertex,
   int                                           toRank,
   const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -268,13 +268,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::prepareCop
 ) {
    _map2PreProcessing.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
    _map2LocalRecomputation.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
-   _map2TimeStepSizeComputation.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
+   _map2Prediction.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
    _map2Sending.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::prepareCopyToRemoteNode(
+void exahype::adapters::PredictionOrLocalRecomputation::prepareCopyToRemoteNode(
   exahype::Cell&  localCell,
       int                                           toRank,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -283,13 +283,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::prepareCop
 ) {
    _map2PreProcessing.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
    _map2LocalRecomputation.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
-   _map2TimeStepSizeComputation.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
+   _map2Prediction.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
    _map2Sending.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::adapters::PredictionOrLocalRecomputation::mergeWithRemoteDataDueToForkOrJoin(
   exahype::Vertex&  localVertex,
   const exahype::Vertex&  masterOrWorkerVertex,
   int                                       fromRank,
@@ -299,13 +299,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithR
 ) {
    _map2PreProcessing.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
    _map2LocalRecomputation.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
-   _map2TimeStepSizeComputation.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
+   _map2Prediction.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
    _map2Sending.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::adapters::PredictionOrLocalRecomputation::mergeWithRemoteDataDueToForkOrJoin(
   exahype::Cell&  localCell,
   const exahype::Cell&  masterOrWorkerCell,
   int                                       fromRank,
@@ -315,13 +315,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithR
 ) {
    _map2PreProcessing.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
    _map2LocalRecomputation.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
-   _map2TimeStepSizeComputation.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
+   _map2Prediction.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
    _map2Sending.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
 
 }
 
 
-bool exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::prepareSendToWorker(
+bool exahype::adapters::PredictionOrLocalRecomputation::prepareSendToWorker(
   exahype::Cell&                 fineGridCell,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -334,14 +334,14 @@ bool exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::prepareSen
   bool result = false;
    result |= _map2PreProcessing.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
    result |= _map2LocalRecomputation.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
-   result |= _map2TimeStepSizeComputation.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
+   result |= _map2Prediction.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
    result |= _map2Sending.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
 
   return result;
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::prepareSendToMaster(
+void exahype::adapters::PredictionOrLocalRecomputation::prepareSendToMaster(
   exahype::Cell&                       localCell,
   exahype::Vertex *                    vertices,
   const peano::grid::VertexEnumerator&       verticesEnumerator, 
@@ -352,13 +352,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::prepareSen
 ) {
    _map2PreProcessing.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
    _map2LocalRecomputation.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-   _map2TimeStepSizeComputation.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+   _map2Prediction.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
    _map2Sending.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithMaster(
+void exahype::adapters::PredictionOrLocalRecomputation::mergeWithMaster(
   const exahype::Cell&           workerGridCell,
   exahype::Vertex * const        workerGridVertices,
   const peano::grid::VertexEnumerator& workerEnumerator,
@@ -375,13 +375,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithM
 ) {
    _map2PreProcessing.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
    _map2LocalRecomputation.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
-   _map2TimeStepSizeComputation.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
+   _map2Prediction.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
    _map2Sending.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::receiveDataFromMaster(
+void exahype::adapters::PredictionOrLocalRecomputation::receiveDataFromMaster(
       exahype::Cell&                        receivedCell, 
       exahype::Vertex *                     receivedVertices,
       const peano::grid::VertexEnumerator&        receivedVerticesEnumerator,
@@ -395,13 +395,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::receiveDat
 ) {
    _map2PreProcessing.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
    _map2LocalRecomputation.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
-   _map2TimeStepSizeComputation.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
+   _map2Prediction.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
    _map2Sending.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithWorker(
+void exahype::adapters::PredictionOrLocalRecomputation::mergeWithWorker(
   exahype::Cell&           localCell, 
   const exahype::Cell&     receivedMasterCell,
   const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
@@ -410,13 +410,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithW
 ) {
    _map2PreProcessing.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
    _map2LocalRecomputation.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
-   _map2TimeStepSizeComputation.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
+   _map2Prediction.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
    _map2Sending.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithWorker(
+void exahype::adapters::PredictionOrLocalRecomputation::mergeWithWorker(
   exahype::Vertex&        localVertex,
   const exahype::Vertex&  receivedMasterVertex,
   const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -425,14 +425,14 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::mergeWithW
 ) {
    _map2PreProcessing.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
    _map2LocalRecomputation.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
-   _map2TimeStepSizeComputation.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
+   _map2Prediction.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
    _map2Sending.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
 
 }
 #endif
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::touchVertexFirstTime(
+void exahype::adapters::PredictionOrLocalRecomputation::touchVertexFirstTime(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -443,13 +443,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::touchVerte
 ) {
   _map2PreProcessing.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LocalRecomputation.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2TimeStepSizeComputation.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2Prediction.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2Sending.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::touchVertexLastTime(
+void exahype::adapters::PredictionOrLocalRecomputation::touchVertexLastTime(
       exahype::Vertex&         fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -460,13 +460,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::touchVerte
 ) {
   _map2PreProcessing.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LocalRecomputation.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2TimeStepSizeComputation.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2Prediction.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2Sending.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::enterCell(
+void exahype::adapters::PredictionOrLocalRecomputation::enterCell(
       exahype::Cell&                 fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -477,13 +477,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::enterCell(
 ) {
   _map2PreProcessing.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2LocalRecomputation.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2TimeStepSizeComputation.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2Prediction.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2Sending.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::leaveCell(
+void exahype::adapters::PredictionOrLocalRecomputation::leaveCell(
       exahype::Cell&           fineGridCell,
       exahype::Vertex * const  fineGridVertices,
       const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
@@ -494,29 +494,29 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::leaveCell(
 ) {
   _map2PreProcessing.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2LocalRecomputation.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2TimeStepSizeComputation.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2Prediction.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2Sending.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::beginIteration(
+void exahype::adapters::PredictionOrLocalRecomputation::beginIteration(
   exahype::State&  solverState
 ) {
   _map2PreProcessing.beginIteration( solverState );
   _map2LocalRecomputation.beginIteration( solverState );
-  _map2TimeStepSizeComputation.beginIteration( solverState );
+  _map2Prediction.beginIteration( solverState );
   _map2Sending.beginIteration( solverState );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::endIteration(
+void exahype::adapters::PredictionOrLocalRecomputation::endIteration(
   exahype::State&  solverState
 ) {
   _map2PreProcessing.endIteration( solverState );
   _map2LocalRecomputation.endIteration( solverState );
-  _map2TimeStepSizeComputation.endIteration( solverState );
+  _map2Prediction.endIteration( solverState );
   _map2Sending.endIteration( solverState );
 
 }
@@ -524,7 +524,7 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::endIterati
 
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::descend(
+void exahype::adapters::PredictionOrLocalRecomputation::descend(
   exahype::Cell * const          fineGridCells,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -534,13 +534,13 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::descend(
 ) {
   _map2PreProcessing.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
   _map2LocalRecomputation.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
-  _map2TimeStepSizeComputation.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
+  _map2Prediction.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
   _map2Sending.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
 
 }
 
 
-void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::ascend(
+void exahype::adapters::PredictionOrLocalRecomputation::ascend(
   exahype::Cell * const    fineGridCells,
   exahype::Vertex * const  fineGridVertices,
   const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
@@ -550,7 +550,7 @@ void exahype::adapters::LocalRecomputationAndTimeStepSizeComputation::ascend(
 ) {
   _map2PreProcessing.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
   _map2LocalRecomputation.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
-  _map2TimeStepSizeComputation.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
+  _map2Prediction.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
   _map2Sending.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
 
 }

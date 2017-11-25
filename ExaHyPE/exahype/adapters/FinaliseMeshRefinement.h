@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_LocalRecomputationAndTimeStepSizeComputation_H_
-#define EXAHYPE_ADAPTERS_LocalRecomputationAndTimeStepSizeComputation_H_
+#ifndef EXAHYPE_ADAPTERS_FinaliseMeshRefinement_H_
+#define EXAHYPE_ADAPTERS_FinaliseMeshRefinement_H_
 
 
 #include "tarch/logging/Log.h"
@@ -19,15 +19,14 @@
 
 
  #include "exahype/mappings/PreProcessing.h"
- #include "exahype/mappings/LocalRecomputation.h"
- #include "exahype/mappings/TimeStepSizeComputation.h"
- #include "exahype/mappings/Sending.h"
+ #include "exahype/mappings/FinaliseMeshRefinement.h"
+ #include "exahype/adapters/FinaliseMeshRefinement2MultiscaleLinkedCell_2.h"
 
 
 
 namespace exahype {
       namespace adapters {
-        class LocalRecomputationAndTimeStepSizeComputation;
+        class FinaliseMeshRefinement;
       } 
 }
 
@@ -39,17 +38,15 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::LocalRecomputationAndTimeStepSizeComputation {
+class exahype::adapters::FinaliseMeshRefinement {
   private:
     typedef mappings::PreProcessing Mapping0;
-    typedef mappings::LocalRecomputation Mapping1;
-    typedef mappings::TimeStepSizeComputation Mapping2;
-    typedef mappings::Sending Mapping3;
+    typedef mappings::FinaliseMeshRefinement Mapping1;
+    typedef adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_2 Mapping2;
 
      Mapping0  _map2PreProcessing;
-     Mapping1  _map2LocalRecomputation;
-     Mapping2  _map2TimeStepSizeComputation;
-     Mapping3  _map2Sending;
+     Mapping1  _map2FinaliseMeshRefinement;
+     Mapping2  _map2FinaliseMeshRefinement2MultiscaleLinkedCell_2;
 
 
   public:
@@ -61,16 +58,16 @@ class exahype::adapters::LocalRecomputationAndTimeStepSizeComputation {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    LocalRecomputationAndTimeStepSizeComputation();
+    FinaliseMeshRefinement();
 
     #if defined(SharedMemoryParallelisation)
-    LocalRecomputationAndTimeStepSizeComputation(const LocalRecomputationAndTimeStepSizeComputation& masterThread);
+    FinaliseMeshRefinement(const FinaliseMeshRefinement& masterThread);
     #endif
 
-    virtual ~LocalRecomputationAndTimeStepSizeComputation();
+    virtual ~FinaliseMeshRefinement();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const LocalRecomputationAndTimeStepSizeComputation& workerThread);
+    void mergeWithWorkerThread(const FinaliseMeshRefinement& workerThread);
     #endif
 
     void createInnerVertex(

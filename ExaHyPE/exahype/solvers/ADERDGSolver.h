@@ -1307,6 +1307,9 @@ public:
   /** \copydoc Solver::updateTimeStepSizesFused
    *
    * Does advance the predictor time stamp in time.
+   *
+   * We further reset the stability condition was violated condition
+   * to false for the ADER-DG solver.
    */
   void updateTimeStepSizesFused() override;
 
@@ -1390,8 +1393,6 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
 
   bool isSending(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isComputingTimeStepSize(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isBroadcasting(const exahype::records::State::AlgorithmSection& section) const override;
   bool isMerging(const exahype::records::State::AlgorithmSection& section) const override;
   bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const override;
   bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const override;

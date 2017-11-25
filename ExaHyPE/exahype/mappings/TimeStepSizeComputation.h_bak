@@ -225,10 +225,7 @@ class exahype::mappings::TimeStepSizeComputation {
   void endIteration(exahype::State& solverState);
 #ifdef Parallel
   /**
-   * This routine is called on the worker.
-   *
-   * Send the local array of minimal time step sizes up to the master. This is
-   * one MPI_Send on the whole array.
+   * Nop.
    */
   void prepareSendToMaster(
       exahype::Cell& localCell, exahype::Vertex* vertices,
@@ -239,14 +236,7 @@ class exahype::mappings::TimeStepSizeComputation {
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * Through the result of this routine, we can skip worker-master data
-   * transfer as all other mappings return false. Such a skip is advantageous
-   * if the runner has decided to trigger multiple grid traversals in one
-   * batch. This in turn automatically disables the load balancing.
-   *
-   * Our strategy thus is as follows: If we may skip the reduction, i.e. the
-   * user has enabled this optimisation in the ExaHyPE spec file, then we
-   * return false if load balancing is disabled.
+   * Nop.
    */
   bool prepareSendToWorker(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -258,8 +248,7 @@ class exahype::mappings::TimeStepSizeComputation {
       int worker);
 
   /**
-   * This routine is called on the master.
-   * TODO(Dominic): Docu.
+   * Nop.
    */
   void mergeWithMaster(
       const exahype::Cell& workerGridCell,

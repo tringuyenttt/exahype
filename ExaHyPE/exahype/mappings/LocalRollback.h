@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#ifndef EXAHYPE_MAPPINGS_Reinitialisation_H_
-#define EXAHYPE_MAPPINGS_Reinitialisation_H_
+#ifndef EXAHYPE_MAPPINGS_LocalRollback_H_
+#define EXAHYPE_MAPPINGS_LocalRollback_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -29,7 +29,7 @@
 
 namespace exahype {
 namespace mappings {
-class Reinitialisation;
+class LocalRollback;
 }
 }
 
@@ -37,14 +37,11 @@ class Reinitialisation;
  * This mapping is part of three mappings (+adapters) which together perform the limiter
  * status spreading the recomputation of troubled cells (and their direct) neighbours.
  *
- * This mapping is shared by both algorithmic sections
- * LocalRecomputation and APosterioriRefinement.
- *
- * \see exahype::mappings::SolutionRecomputation for more details.
+ * \see exahype::mappings::LocalRecomputation for more details.
  *
  * @author Dominic Charrier
  */
-class exahype::mappings::Reinitialisation {
+class exahype::mappings::LocalRollback {
  private:
   /**
    * Logging device for the trace macros.
@@ -293,25 +290,25 @@ class exahype::mappings::Reinitialisation {
     /**
      * Nop
      */
-    Reinitialisation();
+    LocalRollback();
 
   #if defined(SharedMemoryParallelisation)
     /**
      * Nop.
      */
-    Reinitialisation(const Reinitialisation& masterThread);
+    LocalRollback(const LocalRollback& masterThread);
   #endif
 
     /**
      * Nop.
      */
-    virtual ~Reinitialisation();
+    virtual ~LocalRollback();
 
   #if defined(SharedMemoryParallelisation)
     /**
      * Nop.
      */
-    void mergeWithWorkerThread(const Reinitialisation& workerThread);
+    void mergeWithWorkerThread(const LocalRollback& workerThread);
   #endif
 
     /**

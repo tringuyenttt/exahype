@@ -193,11 +193,9 @@ bool exahype::solvers::LimitingADERDGSolver::isSending(
   switch (section) {
     case exahype::records::State::AlgorithmSection::TimeStepping:
     case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-    case exahype::records::State::AlgorithmSection::LocalRecomputationAllSend:
       isSending = true;
       break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputationAllSend:
       isSending |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
       isSending |= getMeshUpdateRequest();
       assertion(getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate || getMeshUpdateRequest());
@@ -207,23 +205,6 @@ bool exahype::solvers::LimitingADERDGSolver::isSending(
   }
 
   return isSending;
-}
-
-bool exahype::solvers::LimitingADERDGSolver::isComputingTimeStepSize(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isComputingTimeStepSize = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isComputingTimeStepSize |= getMeshUpdateRequest();
-      assertion(getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate || getMeshUpdateRequest());
-      break;
-    default:
-      break;
-  }
-
-  return isComputingTimeStepSize;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::isMerging(
@@ -240,25 +221,6 @@ bool exahype::solvers::LimitingADERDGSolver::isMerging(
   }
 
   return isMerging;
-}
-
-bool exahype::solvers::LimitingADERDGSolver::isBroadcasting(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isBroadcasting = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-      isBroadcasting = true;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinement:
-      isBroadcasting = getMeshUpdateRequest();
-      assertion(getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate || getMeshUpdateRequest());
-      break;
-    default:
-      break;
-  }
-
-  return isBroadcasting;
 }
 
 bool exahype::solvers::LimitingADERDGSolver::isPerformingPrediction(

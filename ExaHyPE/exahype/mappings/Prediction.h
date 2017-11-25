@@ -57,7 +57,7 @@ namespace exahype {
  * <h2>MPI</h2>
  *
  * For a valid computation of the space-time prediction, we need to know the
- * correct time step on each rank. We thus distribute the all solvers among the
+ * correct time step on each rank. We thus distribute time step data among the
  * ranks when we start them up. See prepareSendToWorker() and the corresponding
  * receiveDataFromMaster().
  *
@@ -79,16 +79,6 @@ namespace exahype {
  * per grid traversal (unverified).
  *
  * @author Dominic E. Charrier and Tobias Weinzierl
- *
- * @developers:
- * TODO(Dominic): Need to propagate face data
- * from master to worker (prolongation).
- * Correct face data on Ancestor and Descendant is
- * made available by the functions provided in this mapping.
- * This mapping should therefore be merged with the
- * space-time predictor mapping.
- * Need to propagate face data from worker to master
- * (erasing,joins).
  */
 class exahype::mappings::Prediction {
 private:
@@ -292,11 +282,46 @@ private:
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
+#ifdef Parallel
+  /**
+    * This routine is called on the master.
+    *
+    * Broadcast time step data to the workers.
+    */
+   bool prepareSendToWorker(
+       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+       exahype::Vertex* const coarseGridVertices,
+       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+       exahype::Cell& coarseGridCell,
+       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+       int worker);
+
+   /**
+    * Receive kick-off message from master
+    *
+    * Counterpart of prepareSendToWorker(). This operation is called once when
+    * we receive data from the master node.
+    *
+    * \see prepareSendToWorker(...)
+    */
+   void receiveDataFromMaster(
+       exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
+       const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+       exahype::Vertex* const receivedCoarseGridVertices,
+       const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
+       exahype::Cell& receivedCoarseGridCell,
+       exahype::Vertex* const workersCoarseGridVertices,
+       const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
+       exahype::Cell& workersCoarseGridCell,
+       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
   //
   // Below all methods are nop.
   //
   //===================================
-#ifdef Parallel
+
+
   /*
    * Nop
    */
@@ -304,32 +329,6 @@ private:
                               const tarch::la::Vector<DIMENSIONS, double>& x,
                               const tarch::la::Vector<DIMENSIONS, double>& h,
                               int level);
-
-  /*
-   * Nop
-   */
-  bool prepareSendToWorker(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      int worker);
-
-  /**
-   * Nop
-   */
-  void receiveDataFromMaster(
-      exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
-      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-      exahype::Vertex* const receivedCoarseGridVertices,
-      const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
-      exahype::Cell& receivedCoarseGridCell,
-      exahype::Vertex* const workersCoarseGridVertices,
-      const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
-      exahype::Cell& workersCoarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
 
   /**

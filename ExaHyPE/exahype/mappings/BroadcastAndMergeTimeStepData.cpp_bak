@@ -158,8 +158,6 @@ bool exahype::mappings::BroadcastAndMergeTimeStepData::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
-  logDebug("prepareSendToWorker(...)","MergeMode="<<_localState.getMergeMode()<<", SendMode="<<_localState.getSendMode());
-
   // Send global solver data
   for (auto& solver : exahype::solvers::RegisteredSolvers) {
     solver->sendDataToWorker(

@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_FinaliseMeshRefinementAndReinitialisation_H_
-#define EXAHYPE_ADAPTERS_FinaliseMeshRefinementAndReinitialisation_H_
+#ifndef EXAHYPE_ADAPTERS_FinaliseMeshRefinementOrLocalRollback_H_
+#define EXAHYPE_ADAPTERS_FinaliseMeshRefinementOrLocalRollback_H_
 
 
 #include "tarch/logging/Log.h"
@@ -18,17 +18,16 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/FinaliseMeshRefinement.h"
  #include "exahype/mappings/PreProcessing.h"
- #include "exahype/mappings/Reinitialisation.h"
- #include "exahype/mappings/PostProcessing.h"
- #include "exahype/adapters/FinaliseMeshRefinementAndReinitialisation2MultiscaleLinkedCell_4.h"
+ #include "exahype/mappings/FinaliseMeshRefinement.h"
+ #include "exahype/mappings/LocalRollback.h"
+ #include "exahype/adapters/FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3.h"
 
 
 
 namespace exahype {
       namespace adapters {
-        class FinaliseMeshRefinementAndReinitialisation;
+        class FinaliseMeshRefinementOrLocalRollback;
       } 
 }
 
@@ -40,19 +39,17 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::FinaliseMeshRefinementAndReinitialisation {
+class exahype::adapters::FinaliseMeshRefinementOrLocalRollback {
   private:
-    typedef mappings::FinaliseMeshRefinement Mapping0;
-    typedef mappings::PreProcessing Mapping1;
-    typedef mappings::Reinitialisation Mapping2;
-    typedef mappings::PostProcessing Mapping3;
-    typedef adapters::FinaliseMeshRefinementAndReinitialisation2MultiscaleLinkedCell_4 Mapping4;
+    typedef mappings::PreProcessing Mapping0;
+    typedef mappings::FinaliseMeshRefinement Mapping1;
+    typedef mappings::LocalRollback Mapping2;
+    typedef adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3 Mapping3;
 
-     Mapping0  _map2FinaliseMeshRefinement;
-     Mapping1  _map2PreProcessing;
-     Mapping2  _map2Reinitialisation;
-     Mapping3  _map2PostProcessing;
-     Mapping4  _map2FinaliseMeshRefinementAndReinitialisation2MultiscaleLinkedCell_4;
+     Mapping0  _map2PreProcessing;
+     Mapping1  _map2FinaliseMeshRefinement;
+     Mapping2  _map2LocalRollback;
+     Mapping3  _map2FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3;
 
 
   public:
@@ -64,16 +61,16 @@ class exahype::adapters::FinaliseMeshRefinementAndReinitialisation {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    FinaliseMeshRefinementAndReinitialisation();
+    FinaliseMeshRefinementOrLocalRollback();
 
     #if defined(SharedMemoryParallelisation)
-    FinaliseMeshRefinementAndReinitialisation(const FinaliseMeshRefinementAndReinitialisation& masterThread);
+    FinaliseMeshRefinementOrLocalRollback(const FinaliseMeshRefinementOrLocalRollback& masterThread);
     #endif
 
-    virtual ~FinaliseMeshRefinementAndReinitialisation();
+    virtual ~FinaliseMeshRefinementOrLocalRollback();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const FinaliseMeshRefinementAndReinitialisation& workerThread);
+    void mergeWithWorkerThread(const FinaliseMeshRefinementOrLocalRollback& workerThread);
     #endif
 
     void createInnerVertex(

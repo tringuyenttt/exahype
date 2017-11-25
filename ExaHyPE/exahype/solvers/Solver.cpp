@@ -495,7 +495,7 @@ bool exahype::solvers::Solver::oneSolverHasNotAttainedStableState() {
   return false;
 }
 
-bool exahype::solvers::Solver::stabilityConditionOfOneSolverWasViolated() {
+bool exahype::solvers::Solver::oneSolverViolatedStabilityCondition() {
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     switch (solver->getType()) {
       case Type::ADERDG:
@@ -512,6 +512,73 @@ bool exahype::solvers::Solver::stabilityConditionOfOneSolverWasViolated() {
     }
   }
   return false;
+}
+
+
+void exahype::solvers::Solver::weighMinNextPredictorTimeStepSize(
+    exahype::solvers::Solver* solver) {
+  exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
+
+  switch(solver->getType()) {
+    case exahype::solvers::Solver::Type::ADERDG:
+      aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
+      break;
+    case exahype::solvers::Solver::Type::LimitingADERDG:
+      aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
+      break;
+    case exahype::solvers::Solver::Type::FiniteVolumes:
+      break;
+  }
+
+  if (aderdgSolver!=nullptr) {
+    const double stableTimeStepSize = aderdgSolver->getMinNextPredictorTimeStepSize();
+
+    const double timeStepSizeWeight = exahype::State::getTimeStepSizeWeightForPredictionRerun();
+    aderdgSolver->updateMinNextPredictorTimeStepSize(
+        timeStepSizeWeight * stableTimeStepSize);
+    aderdgSolver->setMinPredictorTimeStepSize(
+        timeStepSizeWeight * stableTimeStepSize); // This will be propagated to the corrector
+  }
+}
+
+
+void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(
+    exahype::solvers::Solver* solver) {
+  exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
+
+  switch(solver->getType()) {
+    case exahype::solvers::Solver::Type::ADERDG:
+      aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
+      break;
+    case exahype::solvers::Solver::Type::LimitingADERDG:
+      aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
+      break;
+    case exahype::solvers::Solver::Type::FiniteVolumes:
+      break;
+  }
+
+  if (aderdgSolver!=nullptr) {
+    const double stableTimeStepSize = aderdgSolver->getMinNextPredictorTimeStepSize();
+    double usedTimeStepSize         = aderdgSolver->getMinPredictorTimeStepSize();
+
+    if (tarch::la::equals(usedTimeStepSize,0.0)) {
+      usedTimeStepSize = stableTimeStepSize; // TODO(Dominic): Still necessary?
+    }
+
+    bool usedTimeStepSizeWasInstable = usedTimeStepSize > stableTimeStepSize;
+    aderdgSolver->setStabilityConditionWasViolated(usedTimeStepSizeWasInstable);
+
+    const double timeStepSizeWeight = exahype::State::getTimeStepSizeWeightForPredictionRerun();
+    if (usedTimeStepSizeWasInstable) {
+      aderdgSolver->updateMinNextPredictorTimeStepSize(
+          timeStepSizeWeight * stableTimeStepSize);
+      aderdgSolver->setMinPredictorTimeStepSize(
+          timeStepSizeWeight * stableTimeStepSize); // This will be propagated to the corrector
+    } else {
+      aderdgSolver->updateMinNextPredictorTimeStepSize(
+          0.5 * (usedTimeStepSize + timeStepSizeWeight * stableTimeStepSize));
+    }
+  }
 }
 
 std::string exahype::solvers::Solver::toString() const {

@@ -149,25 +149,12 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
 bool exahype::solvers::FiniteVolumesSolver::isSending(
     const exahype::records::State::AlgorithmSection& section) const {
   return
-      section==exahype::records::State::AlgorithmSection::TimeStepping ||
-      section==exahype::records::State::AlgorithmSection::PredictionRerunAllSend ||
-      section==exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend ||
-      section==exahype::records::State::AlgorithmSection::LocalRecomputationAllSend;
-}
-
-bool exahype::solvers::FiniteVolumesSolver::isComputingTimeStepSize(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool result = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      result |= getMeshUpdateRequest();
-      break;
-    default:
-      break;
-  }
-
-  return result;
+      section==exahype::records::State::AlgorithmSection::TimeStepping
+      ||
+      section==exahype::records::State::AlgorithmSection::PredictionRerunAllSend
+      ||
+      (exahype::State::FuseADERDGPhases &&
+      section==exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputationAllSend);
 }
 
 bool exahype::solvers::FiniteVolumesSolver::isMerging(
@@ -175,12 +162,6 @@ bool exahype::solvers::FiniteVolumesSolver::isMerging(
   return
       section==exahype::records::State::AlgorithmSection::TimeStepping ||
       section==exahype::records::State::AlgorithmSection::PredictionRerunAllSend;
-}
-
-bool exahype::solvers::FiniteVolumesSolver::isBroadcasting(
-    const exahype::records::State::AlgorithmSection& section) const {
-  return
-      section==exahype::records::State::AlgorithmSection::TimeStepping;
 }
 
 bool exahype::solvers::FiniteVolumesSolver::isPerformingPrediction(

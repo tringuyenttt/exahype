@@ -27,8 +27,6 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
-#include "exahype/mappings/TimeStepSizeComputation.h"
-
 tarch::logging::Log exahype::mappings::LocalRecomputation::_log(
     "exahype::mappings::LocalRecomputation");
 
@@ -189,12 +187,10 @@ void exahype::mappings::LocalRecomputation::endIteration(
       solver->updateNextMinCellSize(_minCellSizes[solverNumber]);
       solver->updateNextMaxCellSize(_maxCellSizes[solverNumber]);
       if (tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
-        assertion4(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
-            solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString(),
-            exahype::records::State::toString(_localState.getAlgorithmSection()));
-        assertion4(solver->getNextMaxCellSize()>0,
-            solver->getNextMaxCellSize(),_maxCellSizes[solverNumber],solver->toString(),
-            exahype::records::State::toString(_localState.getAlgorithmSection()));
+        assertion3(solver->getNextMinCellSize()<std::numeric_limits<double>::max(),
+            solver->getNextMinCellSize(),_minCellSizes[solverNumber],solver->toString());
+        assertion3(solver->getNextMaxCellSize()>0,
+            solver->getNextMaxCellSize(),_maxCellSizes[solverNumber],solver->toString());
       }
 
       solver->updateMinNextTimeStepSize(_minTimeStepSizes[solverNumber]);
@@ -205,7 +201,7 @@ void exahype::mappings::LocalRecomputation::endIteration(
           && tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
           #endif
       ) {
-        exahype::mappings::TimeStepSizeComputation::
+        exahype::solvers::Solver::
         reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
       }
       if (exahype::State::fuseADERDGPhases()) {

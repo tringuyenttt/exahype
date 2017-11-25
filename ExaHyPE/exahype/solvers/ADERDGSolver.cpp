@@ -643,6 +643,8 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
     break;
   }
 
+  _stabilityConditionWasViolated = false;
+
   _minCellSize     = _nextMinCellSize;
   _maxCellSize     = _nextMaxCellSize;
   _nextMinCellSize = std::numeric_limits<double>::max();
@@ -837,34 +839,14 @@ bool exahype::solvers::ADERDGSolver::isSending(
   switch (section) {
     case exahype::records::State::AlgorithmSection::TimeStepping:
     case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-    case exahype::records::State::AlgorithmSection::LocalRecomputationAllSend:
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputationAllSend:
       isUsingSending = true;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isUsingSending |= getMeshUpdateRequest();
       break;
     default:
       break;
   }
 
   return isUsingSending;
-}
-
-bool exahype::solvers::ADERDGSolver::isComputingTimeStepSize(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isUsingSharedMapping = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isUsingSharedMapping |= getMeshUpdateRequest();
-      break;
-    default:
-      break;
-  }
-
-  return isUsingSharedMapping;
 }
 
 bool exahype::solvers::ADERDGSolver::isMerging(
@@ -874,7 +856,7 @@ bool exahype::solvers::ADERDGSolver::isMerging(
   switch (section) {
     case exahype::records::State::AlgorithmSection::TimeStepping:
     case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isUsingMerging = true; // every solver drops neighbour data here
+      isUsingMerging = true; // every solver drops neighbour data here if the State says so
       break;
     default:
       break;
@@ -883,40 +865,27 @@ bool exahype::solvers::ADERDGSolver::isMerging(
   return isUsingMerging;
 }
 
-bool exahype::solvers::ADERDGSolver::isBroadcasting(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isUsingBroadcastAndMergeTimeStepData = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-      isUsingBroadcastAndMergeTimeStepData = true;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinement:
-      isUsingBroadcastAndMergeTimeStepData |= getMeshUpdateRequest();
-      break;
-    default:
-      break;
-  }
-
-  return isUsingBroadcastAndMergeTimeStepData;
-}
-
 bool exahype::solvers::ADERDGSolver::isPerformingPrediction(
     const exahype::records::State::AlgorithmSection& section) const {
-  bool isUsingPrediction = false;
+  bool isPerformingPrediction = false;
 
   switch (section) {
     case exahype::records::State::AlgorithmSection::TimeStepping:
-      isUsingPrediction = true;
+      isPerformingPrediction = true;
+      break;
+    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputationAllSend:
+      isPerformingPrediction = exahype::State::fuseADERDGPhases() &&
+                               getMeshUpdateRequest();
       break;
     case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isUsingPrediction = getStabilityConditionWasViolated();
+      isPerformingPrediction = !getMeshUpdateRequest() &&
+                               getStabilityConditionWasViolated();
       break;
     default:
       break;
   }
 
-  return isUsingPrediction;
+  return isPerformingPrediction;
 }
 
 bool exahype::solvers::ADERDGSolver::isMergingMetadata(
@@ -3780,10 +3749,10 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   // Thus it does not equal MAX_DOUBLE.
 
   int index=0;
-  _minNextTimeStepSize  = std::min( _minNextTimeStepSize, message[index++] );
-  _nextMinCellSize               = std::min( _nextMinCellSize, message[index++] );
-  _nextMaxCellSize               = std::max( _nextMaxCellSize, message[index++] );
-  _nextMeshUpdateRequest        |= (message[index++]) > 0 ? true : false;
+  _minNextTimeStepSize   = std::min( _minNextTimeStepSize, message[index++] );
+  _nextMinCellSize       = std::min( _nextMinCellSize, message[index++] );
+  _nextMaxCellSize       = std::max( _nextMaxCellSize, message[index++] );
+  _nextMeshUpdateRequest |= (message[index++]) > 0 ? true : false;
 
   if (true || tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {

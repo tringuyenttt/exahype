@@ -18,9 +18,6 @@ state:
   dastgen-file: State.def
   
 event-mapping:
-  name: TimeStepSizeComputation
-  
-event-mapping:
   name: SolutionUpdate
 
 event-mapping: // -DEC: consider to move the computation of boundary extrapolated values out of the space-time predictor mapping
@@ -31,9 +28,6 @@ event-mapping:
  
 event-mapping:
   name: Merging
-  
-event-mapping:
-  name: BroadcastAndMergeTimeStepData
 
 event-mapping:
   name: Sending
@@ -52,7 +46,7 @@ event-mapping:
   name: LimiterStatusSpreading
 
 event-mapping:
-  name: Reinitialisation
+  name: LocalRollback
   
 event-mapping:
   name: LocalRecomputation
@@ -94,19 +88,16 @@ adapter:
 //   merge-with-predefined-mapping: VTKGridVisualiser(grid)
 
 adapter:
-  name: FinaliseMeshRefinementAndTimeStepSizeComputation
-  merge-with-user-defined-mapping: FinaliseMeshRefinement
+  name: FinaliseMeshRefinement
   merge-with-user-defined-mapping: PreProcessing
-  merge-with-user-defined-mapping: TimeStepSizeComputation
-  merge-with-user-defined-mapping: Sending  // send only time data; post-processing done directly
+  merge-with-user-defined-mapping: FinaliseMeshRefinement // sends time step data up to the master
   merge-with-predefined-mapping:   MultiscaleLinkedCell(CellDescriptionsIndex) // (createInner/BoundaryVertex,enterCell,avoidfinegridraces)
   
 adapter:
-  name: FinaliseMeshRefinementAndReinitialisation
-  merge-with-user-defined-mapping: FinaliseMeshRefinement
+  name: FinaliseMeshRefinementOrLocalRollback
   merge-with-user-defined-mapping: PreProcessing
-  merge-with-user-defined-mapping: Reinitialisation
-  merge-with-user-defined-mapping: PostProcessing
+  merge-with-user-defined-mapping: FinaliseMeshRefinement  // sends time step data up to the master
+  merge-with-user-defined-mapping: LocalRollback
   merge-with-predefined-mapping:   MultiscaleLinkedCell(CellDescriptionsIndex) // (createInner/BoundaryVertex,enterCell,avoidfinegridraces)
   
 // Adapter for 1 phase time stepping
@@ -115,7 +106,7 @@ adapter:
   // needs corrector time step size
   merge-with-user-defined-mapping: Merging  // Merging must start new time step in ; pre-processing done directly
   merge-with-user-defined-mapping: SolutionUpdate
-  merge-with-user-defined-mapping: Sending
+  merge-with-user-defined-mapping: Sending // post=processing done directly
  
 adapter: 
   name: PlotAndFusedTimeStep
@@ -124,7 +115,7 @@ adapter:
   merge-with-user-defined-mapping: Plot
   // merge-with-user-defined-mapping: AugmentedAMRTreePlot2d 
   merge-with-user-defined-mapping: SolutionUpdate
-  merge-with-user-defined-mapping: Sending
+  merge-with-user-defined-mapping: Sending  // post=processing done directly
   
 adapter:
   name: PredictionRerun
@@ -139,10 +130,10 @@ adapter:
   merge-with-user-defined-mapping: LimiterStatusSpreading
 
 adapter: 
-  name: LocalRecomputationAndTimeStepSizeComputation
+  name: PredictionOrLocalRecomputation
   merge-with-user-defined-mapping: PreProcessing
-  merge-with-user-defined-mapping: LocalRecomputation      // This advances in time for local recomp.
-  merge-with-user-defined-mapping: TimeStepSizeComputation // This recomputes the time step size for mesh ref and global recomp.
+  merge-with-user-defined-mapping: LocalRecomputation // This advances in time for local recomp.
+  merge-with-user-defined-mapping: Prediction         // only for solvers who requested mesh refinement if fused time stepping
   merge-with-user-defined-mapping: Sending // Send time step data (and face data for fused); post-processing done directly
   
 adapter:
@@ -153,7 +144,7 @@ adapter:
  
 // Additional adapters for 4 phase time stepping
 adapter: 
-  name: NeighbourDataMerging
+  name: Merging
   merge-with-user-defined-mapping: Merging
   merge-with-user-defined-mapping: PostProcessing 
 
@@ -166,14 +157,12 @@ adapter:
 adapter:
   name: Prediction
   merge-with-user-defined-mapping: PreProcessing 
-  merge-with-user-defined-mapping: BroadcastAndMergeTimeStepData // In contrast to the rerun adapter, this one does not need to drop face data
   merge-with-user-defined-mapping: Prediction     // DEC: after predictor we can start the face data exchange
   merge-with-user-defined-mapping: Sending        // send only face data; post-processing done directly
 
 adapter:
   name: PredictionAndPlot
-  merge-with-user-defined-mapping: PreProcessing 
-  merge-with-user-defined-mapping: BroadcastAndMergeTimeStepData
+  merge-with-user-defined-mapping: PreProcessing
   merge-with-user-defined-mapping: Prediction
   merge-with-user-defined-mapping: Plot           // send only face data; post-processing done directly
   merge-with-user-defined-mapping: Sending

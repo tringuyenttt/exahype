@@ -115,9 +115,8 @@ bool exahype::mappings::Sending::reduceTimeStepData() const {
 bool exahype::mappings::Sending::sendFaceData() const {
   return
       (_localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::TimeStepping ||
-      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::LocalRecomputationAllSend ||
-      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend ||
-      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::PredictionRerunAllSend)
+      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::PredictionRerunAllSend ||
+      _localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputationAllSend)
       &&
       (_localState.getSendMode()==exahype::records::State::SendMode::SendFaceData ||
       _localState.getSendMode()==exahype::records::State::SendMode::ReduceAndMergeTimeStepDataAndSendFaceData);

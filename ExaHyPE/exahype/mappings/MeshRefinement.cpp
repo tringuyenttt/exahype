@@ -512,7 +512,7 @@ void exahype::mappings::MeshRefinement::mergeWithNeighbour(
   }
   vertex.mergeOnlyWithNeighbourMetadata(
       fromRank,fineGridX,fineGridH,level,
-      _localState.getAlgorithmSection());
+      );
 
   logTraceOut("mergeWithNeighbour(...)");
 }
@@ -609,7 +609,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
     // Abusing the cell descriptions index
     localCell.mergeWithMasterMetadata(
         receivedMasterCell.getCellDescriptionsIndex(),
-        _localState.getAlgorithmSection());
+        exahype::State::Records::AlgorithmSection::MeshRefinement);
   }
 
   // Abusing the cell descriptions index
@@ -770,7 +770,7 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
         fineGridVerticesEnumerator.getLevel(),
-        _localState.getAlgorithmSection());
+        exahype::State::Records::AlgorithmSection::MeshRefinement);
   } else {
     exahype::dropMetadata(
         worker,

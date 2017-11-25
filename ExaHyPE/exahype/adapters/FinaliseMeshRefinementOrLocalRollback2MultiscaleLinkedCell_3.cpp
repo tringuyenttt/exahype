@@ -1,4 +1,4 @@
-#include "exahype/adapters/FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4.h"
+#include "exahype/adapters/FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3.h"
 
 #include <sstream>
 
@@ -10,60 +10,60 @@
 #include "exahype/VertexOperations.h"
 
 
-peano::CommunicationSpecification   exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::communicationSpecification() const {
+peano::CommunicationSpecification   exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::communicationSpecification() const {
   return peano::CommunicationSpecification::getMinimalSpecification();
 }
 
 
-peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::touchVertexLastTimeSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 
-peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::touchVertexFirstTimeSpecification(int level) const { 
+peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::touchVertexFirstTimeSpecification(int level) const { 
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 
-peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::enterCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::enterCellSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::WholeTree,peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 
-peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::leaveCellSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 
-peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::ascendSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::ascendSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 
-peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::descendSpecification(int level) const {
+peano::MappingSpecification   exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::descendSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 
-exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4() {
+exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3() {
 }
 
 
-exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::~FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4() {
+exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::~FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3() {
 }
 
 
 #if defined(SharedMemoryParallelisation)
-exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4(const FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4&  masterThread) {
+exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3(const FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3&  masterThread) {
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::mergeWithWorkerThread(const FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4& workerThread) {
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::mergeWithWorkerThread(const FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3& workerThread) {
 }
 #endif
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::createHangingVertex(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::createHangingVertex(
   exahype::Vertex&     fineGridVertex,
   const tarch::la::Vector<DIMENSIONS,double>&                fineGridX,
   const tarch::la::Vector<DIMENSIONS,double>&                fineGridH,
@@ -85,7 +85,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::destroyHangingVertex(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::destroyHangingVertex(
   const exahype::Vertex&   fineGridVertex,
   const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
   const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -97,7 +97,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::createInnerVertex(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::createInnerVertex(
   exahype::Vertex&               fineGridVertex,
   const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
   const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -112,7 +112,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::createBoundaryVertex(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::createBoundaryVertex(
   exahype::Vertex&               fineGridVertex,
   const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
   const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -127,7 +127,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::destroyVertex(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::destroyVertex(
       const exahype::Vertex&   fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -139,7 +139,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::createCell(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::createCell(
   exahype::Cell&                 fineGridCell,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -151,7 +151,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::destroyCell(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::destroyCell(
   const exahype::Cell&           fineGridCell,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -165,7 +165,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 
 
 #ifdef Parallel
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::mergeWithNeighbour(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::mergeWithNeighbour(
   exahype::Vertex&  vertex,
   const exahype::Vertex&  neighbour,
   int                                           fromRank,
@@ -183,7 +183,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::prepareSendToNeighbour(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::prepareSendToNeighbour(
       exahype::Vertex&  vertex,
       int                                           toRank,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -193,7 +193,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::prepareCopyToRemoteNode(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::prepareCopyToRemoteNode(
       exahype::Vertex&  localVertex,
       int                                           toRank,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -203,7 +203,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::prepareCopyToRemoteNode(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::prepareCopyToRemoteNode(
       exahype::Cell&  localCell,
       int                                           toRank,
       const tarch::la::Vector<DIMENSIONS,double>&   cellCentre,
@@ -213,7 +213,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::mergeWithRemoteDataDueToForkOrJoin(
   exahype::Vertex&  localVertex,
   const exahype::Vertex&  masterOrWorkerVertex,
   int                                       fromRank,
@@ -224,7 +224,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::mergeWithRemoteDataDueToForkOrJoin(
   exahype::Cell&  localCell,
   const exahype::Cell&  masterOrWorkerCell,
   int                                       fromRank,
@@ -235,7 +235,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-bool exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::prepareSendToWorker(
+bool exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::prepareSendToWorker(
   exahype::Cell&                 fineGridCell,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -249,7 +249,7 @@ bool exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::prepareSendToMaster(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::prepareSendToMaster(
       exahype::Cell&                       localCell,
       exahype::Vertex *                    vertices,
       const peano::grid::VertexEnumerator&       verticesEnumerator, 
@@ -261,7 +261,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::mergeWithMaster(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::mergeWithMaster(
   const exahype::Cell&           workerGridCell,
   exahype::Vertex * const        workerGridVertices,
   const peano::grid::VertexEnumerator& workerEnumerator,
@@ -288,7 +288,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::receiveDataFromMaster(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::receiveDataFromMaster(
       exahype::Cell&                        receivedCell, 
       exahype::Vertex *                     receivedVertices,
       const peano::grid::VertexEnumerator&        receivedVerticesEnumerator,
@@ -303,7 +303,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::mergeWithWorker(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::mergeWithWorker(
       exahype::Cell&           localCell, 
       const exahype::Cell&     receivedMasterCell,
       const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
@@ -313,7 +313,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::mergeWithWorker(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::mergeWithWorker(
       exahype::Vertex&        localVertex,
       const exahype::Vertex&  receivedMasterVertex,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -331,7 +331,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 #endif
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::touchVertexFirstTime(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::touchVertexFirstTime(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -343,7 +343,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::touchVertexLastTime(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::touchVertexLastTime(
       exahype::Vertex&         fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -355,7 +355,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::enterCell(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::enterCell(
   exahype::Cell&                 fineGridCell,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -379,7 +379,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::leaveCell(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::leaveCell(
       exahype::Cell&           fineGridCell,
       exahype::Vertex * const  fineGridVertices,
       const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
@@ -391,21 +391,21 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::beginIteration(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::beginIteration(
   exahype::State&  solverState
 ) {
   multiscalelinkedcell::HangingVertexBookkeeper::getInstance().beginIteration();
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::endIteration(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::endIteration(
   exahype::State&  solverState
 ) {
   multiscalelinkedcell::HangingVertexBookkeeper::getInstance().endIteration();
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::descend(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::descend(
   exahype::Cell * const          fineGridCells,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -416,7 +416,7 @@ void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multisc
 }
 
 
-void exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4::ascend(
+void exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3::ascend(
   exahype::Cell * const    fineGridCells,
   exahype::Vertex * const  fineGridVertices,
   const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,

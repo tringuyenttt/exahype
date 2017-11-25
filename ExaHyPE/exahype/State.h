@@ -241,11 +241,11 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    */
   void switchToLimiterStatusSpreadingFusedTimeSteppingContext();
 
-  void switchToReinitialisationContext();
+  void switchToLocalRollbackContext();
 
   void switchToRecomputeSolutionAndTimeStepSizeComputationContext();
 
-  void switchToLocalRecomputationAndTimeStepSizeComputationContext();
+  void switchToPredictionAndLocalRecomputationContext();
 
   void switchToNeighbourDataDroppingContext();
 

@@ -25,8 +25,6 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
-#include "exahype/mappings/TimeStepSizeComputation.h"
-
 tarch::logging::Log exahype::mappings::SolutionUpdate::_log(
     "exahype::mappings::SolutionUpdate");
 
@@ -168,7 +166,7 @@ void exahype::mappings::SolutionUpdate::enterCell(
     return;
   }
 
-  assertion1(_localState.getAlgorithmSection()==exahype::records::State::AlgorithmSection::TimeStepping,_localState.getAlgorithmSection());
+  assertionEquals(_localState.getAlgorithmSection(),exahype::records::State::AlgorithmSection::TimeStepping);
 
   if (fineGridCell.isInitialised()) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
@@ -238,15 +236,14 @@ void exahype::mappings::SolutionUpdate::beginIteration(
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     _localState = solverState;
+    assertionEquals(_localState.getAlgorithmSection(),exahype::records::State::AlgorithmSection::TimeStepping);
 
-    if (_localState.getAlgorithmSection()==exahype::records::State::TimeStepping) {
-      for (auto* solver : exahype::solvers::RegisteredSolvers) {
-        solver->setNextMeshUpdateRequest();
-        solver->setNextAttainedStableState();
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      solver->setNextMeshUpdateRequest();
+      solver->setNextAttainedStableState();
 
-        if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->setNextLimiterDomainChange();
-        }
+      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->setNextLimiterDomainChange();
       }
     }
 
@@ -315,7 +312,7 @@ void exahype::mappings::SolutionUpdate::endIteration(
         exahype::State::isLastIterationOfBatchOrNoBatch() &&
         tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
     ) {
-      exahype::mappings::TimeStepSizeComputation::
+      exahype::solvers::Solver::
       reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
     }
     if (exahype::State::fuseADERDGPhases()) {

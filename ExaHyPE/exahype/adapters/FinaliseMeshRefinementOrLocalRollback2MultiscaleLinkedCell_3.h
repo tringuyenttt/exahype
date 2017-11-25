@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4_H_
-#define EXAHYPE_ADAPTERS_FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4_H_
+#ifndef EXAHYPE_ADAPTERS_FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3_H_
+#define EXAHYPE_ADAPTERS_FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3_H_
 
 
 #include "tarch/logging/Log.h"
@@ -18,7 +18,7 @@
 
 namespace exahype {
       namespace adapters {
-        class FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4;
+        class FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3;
       } 
 }
 
@@ -32,7 +32,7 @@ namespace exahype {
  * @author Tobias Weinzierl
  * @version $Revision: 1.1 $
  */
-class exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4 {
+class exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3 {
   public:
     peano::MappingSpecification   touchVertexLastTimeSpecification(int level) const;
     peano::MappingSpecification   touchVertexFirstTimeSpecification(int level) const;
@@ -42,16 +42,16 @@ class exahype::adapters::FinaliseMeshRefinementAndTimeStepSizeComputation2Multis
     peano::MappingSpecification   descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4();
+    FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3();
 
     #if defined(SharedMemoryParallelisation)
-    FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4(const FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4& masterThread);
+    FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3(const FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3& masterThread);
     #endif
 
-    virtual ~FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4();
+    virtual ~FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const FinaliseMeshRefinementAndTimeStepSizeComputation2MultiscaleLinkedCell_4& workerThread);
+    void mergeWithWorkerThread(const FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_3& workerThread);
     #endif
 
     void createInnerVertex(
