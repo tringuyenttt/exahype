@@ -41,7 +41,9 @@ void {{codeNamespace}}::picardLoopNonlinear(
 #ifdef __INTEL_COMPILER
   __assume_aligned(lQi, ALIGNMENT);
   __assume_aligned(rhs, ALIGNMENT);
+{% if useFlux %}
   __assume_aligned(lFi, ALIGNMENT);
+{% endif %}
   __assume_aligned(FLCoeff, ALIGNMENT); // == F0
   __assume_aligned(Kxi, ALIGNMENT);
   __assume_aligned(iK1_T, ALIGNMENT);
@@ -90,7 +92,8 @@ void {{codeNamespace}}::picardLoopNonlinear(
 
   for (int iter = 0; iter < MaxIterations; iter++) {
     for (int i = 0; i < {{nDof}}; i++) {  // time DOF
-    
+
+{% if useFlux %}    
       // Compute the fluxes
       for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
         // Call PDE fluxes
@@ -118,6 +121,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
         profiler->start("spaceTimePredictor");
 {% endif %}
       }
+{% endif %} {# useFlux #}
 
       // Compute the contribution of the initial condition uh to the right-hand side (rhs)
       for (int jkl = 0; jkl < {{nDof**nDim}}; jkl++) {
@@ -139,6 +143,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
       ijk_=i*{{nDof*nDof3D}};
       for (int j = 0; j < {{nDof3D}}; j++) {
         for (int k = 0; k < {{nDof}}; k++) {
+{% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
 {% if useLibxsmm %}
           #pragma vector aligned
@@ -161,6 +166,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
             }
           }
 {% endif %}
+{% endif %} {# useFlux #}
 {% if useNCP %}
 {% if useLibxsmm %}
 #ifdef USE_IPO
@@ -187,6 +193,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
       ijk_=i*{{nDof*nDof3D}};
       for (int j = 0; j < {{nDof3D}}; j++) {
         for (int k = 0; k < {{nDof}}; k++) {
+{% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
 {% if useLibxsmm %}
           #pragma vector aligned
@@ -209,10 +216,8 @@ void {{codeNamespace}}::picardLoopNonlinear(
             }
           }
 {% endif %}
+{% endif %} {# useFlux #}
 {% if useNCP %}
-          /*
-          
-          */
 {% if useLibxsmm %}
 #ifdef USE_IPO
           #pragma forceinline
@@ -239,6 +244,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
       ijk_=i*{{nDof*nDof}};
       for (int j = 0; j < {{nDof}}; j++) {
         for (int k = 0; k < {{nDof}}; k++) {
+{% if useFlux %}
           const double updateSize = weights3[ijk_] * dtBydx;
 {% if useLibxsmm %}
           #pragma vector aligned
@@ -261,6 +267,7 @@ void {{codeNamespace}}::picardLoopNonlinear(
             }
           }
 {% endif %}
+{% endif %} {# useFlux #}
 {% if useNCP %}
 {% if useLibxsmm %}
 #ifdef USE_IPO

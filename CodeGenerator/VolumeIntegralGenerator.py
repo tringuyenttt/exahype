@@ -56,7 +56,7 @@ class VolumeIntegralGenerator:
                 TemplatingUtils.renderAsFile("volumeIntegralNonLinear_cpp.template", self.m_filename, self.m_context)
             
             # generates gemms
-            if(self.m_context["useLibxsmm"]):
+            if(self.m_context["useLibxsmm"] and self.m_context["useFlux"]): #no gemm if no flux
                 self.generateNonlinearGemms() 
 
 
