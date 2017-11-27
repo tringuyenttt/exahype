@@ -857,6 +857,10 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     tarch::multicore::Core::getInstance().configure( 2, true );
     tarch::multicore::logThreadAffinities();
   }
+  else if (_parser.getSharedMemoryConfiguration().find("invade-at-time-step-startup-plus-throughout-computation")!=std::string::npos) {
+    tarch::multicore::Core::getInstance().configure( optimalNumberOfThreads, true );
+    tarch::multicore::logThreadAffinities();
+  }
   else {
     logError( "preProcessTimeStepInSharedMemoryEnvironment()", "none or no valid invasion statement found in configuration " << _parser.getSharedMemoryConfiguration() );
   }
