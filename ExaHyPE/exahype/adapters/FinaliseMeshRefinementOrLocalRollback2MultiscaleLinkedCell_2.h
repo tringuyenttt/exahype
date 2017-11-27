@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6_H_
-#define EXAHYPE_ADAPTERS_MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6_H_
+#ifndef EXAHYPE_ADAPTERS_FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2_H_
+#define EXAHYPE_ADAPTERS_FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2_H_
 
 
 #include "tarch/logging/Log.h"
@@ -18,7 +18,7 @@
 
 namespace exahype {
       namespace adapters {
-        class MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6;
+        class FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2;
       } 
 }
 
@@ -32,7 +32,7 @@ namespace exahype {
  * @author Tobias Weinzierl
  * @version $Revision: 1.1 $
  */
-class exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6 {
+class exahype::adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2 {
   public:
     peano::MappingSpecification   touchVertexLastTimeSpecification(int level) const;
     peano::MappingSpecification   touchVertexFirstTimeSpecification(int level) const;
@@ -42,16 +42,16 @@ class exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6 {
     peano::MappingSpecification   descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6();
+    FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2();
 
     #if defined(SharedMemoryParallelisation)
-    MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6(const MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6& masterThread);
+    FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2(const FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2& masterThread);
     #endif
 
-    virtual ~MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6();
+    virtual ~FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6& workerThread);
+    void mergeWithWorkerThread(const FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2& workerThread);
     #endif
 
     void createInnerVertex(

@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_PredictionAndPlot_H_
-#define EXAHYPE_ADAPTERS_PredictionAndPlot_H_
+#ifndef EXAHYPE_ADAPTERS_BroadcastGlobalDataAndMergeNeighbourMessages_H_
+#define EXAHYPE_ADAPTERS_BroadcastGlobalDataAndMergeNeighbourMessages_H_
 
 
 #include "tarch/logging/Log.h"
@@ -18,16 +18,13 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/PreProcessing.h"
- #include "exahype/mappings/Prediction.h"
- #include "exahype/mappings/Plot.h"
- #include "exahype/mappings/Sending.h"
+ #include "exahype/mappings/BroadcastGlobalDataAndMergeNeighbourMessages.h"
 
 
 
 namespace exahype {
       namespace adapters {
-        class PredictionAndPlot;
+        class BroadcastGlobalDataAndMergeNeighbourMessages;
       } 
 }
 
@@ -39,17 +36,11 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::PredictionAndPlot {
+class exahype::adapters::BroadcastGlobalDataAndMergeNeighbourMessages {
   private:
-    typedef mappings::PreProcessing Mapping0;
-    typedef mappings::Prediction Mapping1;
-    typedef mappings::Plot Mapping2;
-    typedef mappings::Sending Mapping3;
+    typedef mappings::BroadcastGlobalDataAndMergeNeighbourMessages Mapping0;
 
-     Mapping0  _map2PreProcessing;
-     Mapping1  _map2Prediction;
-     Mapping2  _map2Plot;
-     Mapping3  _map2Sending;
+     Mapping0  _map2BroadcastGlobalDataAndMergeNeighbourMessages;
 
 
   public:
@@ -61,16 +52,16 @@ class exahype::adapters::PredictionAndPlot {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    PredictionAndPlot();
+    BroadcastGlobalDataAndMergeNeighbourMessages();
 
     #if defined(SharedMemoryParallelisation)
-    PredictionAndPlot(const PredictionAndPlot& masterThread);
+    BroadcastGlobalDataAndMergeNeighbourMessages(const BroadcastGlobalDataAndMergeNeighbourMessages& masterThread);
     #endif
 
-    virtual ~PredictionAndPlot();
+    virtual ~BroadcastGlobalDataAndMergeNeighbourMessages();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const PredictionAndPlot& workerThread);
+    void mergeWithWorkerThread(const BroadcastGlobalDataAndMergeNeighbourMessages& workerThread);
     #endif
 
     void createInnerVertex(

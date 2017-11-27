@@ -522,33 +522,33 @@ public:
   /**
    * Wire through to the ADER-DG solver.
    */
-  void updateNextMeshUpdateRequest(const bool& meshUpdateRequest) override;
-  bool getNextMeshUpdateRequest() const override;
-  bool getMeshUpdateRequest() const override;
-  void setNextMeshUpdateRequest() override;
+  void updateNextMeshUpdateRequest(const bool& meshUpdateRequest) final override;
+  bool getNextMeshUpdateRequest() const final override;
+  bool getMeshUpdateRequest() const final override;
+  void setNextMeshUpdateRequest() final override;
 
   /**
    * Wire through to the ADER-DG solver.
    */
-  void updateNextAttainedStableState(const bool& attainedStableState) override;
-  bool getNextAttainedStableState() const override;
-  bool getAttainedStableState() const override;
-  void setNextAttainedStableState() override;
+  void updateNextAttainedStableState(const bool& attainedStableState) final override;
+  bool getNextAttainedStableState() const final override;
+  bool getAttainedStableState() const final override;
+  void setNextAttainedStableState() final override;
 
   /*
    * A time stamp minimised over all the ADERDG and FV solver
    * patches.
    */
-  double getMinTimeStamp() const override;
+  double getMinTimeStamp() const final override;
 
   /**
    * Run over all solvers and identify the minimal time step size.
    */
-  double getMinTimeStepSize() const override;
+  double getMinTimeStepSize() const final override;
 
-  double getMinNextTimeStepSize() const override;
+  double getMinNextTimeStepSize() const final override;
 
-  void updateMinNextTimeStepSize(double value) override;
+  void updateMinNextTimeStepSize(double value) final override;
 
   /**
    * \copydoc ::exahype::solvers::Solver::initSolver
@@ -563,16 +563,16 @@ public:
       const double timeStamp,
       const tarch::la::Vector<DIMENSIONS,double>& domainOffset,
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
-      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
+      const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) final override;
 
-  bool isSending(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isMerging(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isSending(const exahype::records::State::AlgorithmSection& section) const final override;
+  bool isMerging(const exahype::records::State::AlgorithmSection& section) const final override;
+  bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const final override;
+  bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const final override;
 
   void synchroniseTimeStepping(
           const int cellDescriptionsIndex,
-          const int element) override;
+          const int element) final override;
 
   /**
    * We always override the limiter time step
@@ -621,15 +621,15 @@ public:
    */
   void rollbackToPreviousTimeStepFused() final override;
 
-  void updateNextMinCellSize(double minCellSize) override;
-  void updateNextMaxCellSize(double maxCellSize) override;
-  double getNextMinCellSize() const override;
-  double getNextMaxCellSize() const override;
-  double getMinCellSize() const override;
-  double getMaxCellSize() const override;
+  void updateNextMinCellSize(double minCellSize) final override;
+  void updateNextMaxCellSize(double maxCellSize) final override;
+  double getNextMinCellSize() const final override;
+  double getNextMaxCellSize() const final override;
+  double getMinCellSize() const final override;
+  double getMaxCellSize() const final override;
 
   bool isValidCellDescriptionIndex(
-      const int cellDescriptionsIndex) const override;
+      const int cellDescriptionsIndex) const final override;
 
   /**
    * Returns the index of the solver patch registered for the solver with
@@ -639,7 +639,7 @@ public:
    */
   int tryGetElement(
       const int cellDescriptionsIndex,
-      const int solverNumber) const override {
+      const int solverNumber) const final override {
     return _solver->tryGetElement(cellDescriptionsIndex,solverNumber);
   }
 
@@ -680,7 +680,7 @@ public:
     */
   SubcellPosition computeSubcellPositionOfCellOrAncestor(
       const int cellDescriptionsIndex,
-      const int element) const override;
+      const int element) const final override;
 
   ///////////////////////////////////
   // MODIFY CELL DESCRIPTION
@@ -781,7 +781,7 @@ public:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const bool initialGrid,
-      const int solverNumber) override;
+      const int solverNumber) final override;
 
   UpdateStateInEnterCellResult updateStateInEnterCell(
       exahype::Cell& fineGridCell,
@@ -792,7 +792,7 @@ public:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       const bool initialGrid,
-      const int solverNumber) override;
+      const int solverNumber) final override;
 
   bool updateStateInLeaveCell(
       exahype::Cell& fineGridCell,
@@ -802,13 +802,13 @@ public:
       exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) override;
+      const int solverNumber) final override;
 
   bool attainedStableState(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int solverNumber) const override;
+      const int solverNumber) const final override;
 
   void finaliseStateUpdates(
       exahype::Cell& fineGridCell,
@@ -818,14 +818,14 @@ public:
       exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber) override;
+      const int solverNumber) final override;
 
   ///////////////////////////////////
   // CELL-LOCAL
   //////////////////////////////////
   bool evaluateRefinementCriterionAfterSolutionUpdate(
       const int cellDescriptionsIndex,
-      const int element) override;
+      const int element) final override;
 
   double startNewTimeStep(
       const int cellDescriptionsIndex,
@@ -1092,28 +1092,28 @@ public:
 
   void preProcess(
       const int cellDescriptionsIndex,
-      const int element) const override;
+      const int element) const final override;
 
   void postProcess(
       const int cellDescriptionsIndex,
-      const int element) override;
+      const int element) final override;
 
   void prolongateDataAndPrepareDataRestriction(
       const int cellDescriptionsIndex,
-      const int element) override;
+      const int element) final override;
 
   void restrictToNextParent(
         const int fineGridCellDescriptionsIndex,
         const int fineGridElement,
         const int coarseGridCellDescriptionsIndex,
-        const int coarseGridElement) const override;
+        const int coarseGridElement) const final override;
 
   void restrictToTopMostParent(
       const int cellDescriptionsIndex,
       const int element,
       const int parentCellDescriptionsIndex,
       const int parentElement,
-      const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) override;
+      const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) final override;
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -1124,7 +1124,7 @@ public:
       const int                                 cellDescriptionsIndex2,
       const int                                 element2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2) const override;
+      const tarch::la::Vector<DIMENSIONS, int>& pos2) const final override;
 
   void mergeNeighbours(
       const int                                 cellDescriptionsIndex1,
@@ -1133,7 +1133,7 @@ public:
       const int                                 element2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2,
-      double**                                  tempFaceUnknowns) override;
+      double**                                  tempFaceUnknowns) final override;
 
   /**
    * Merge solver boundary data (and other values) of two adjacent
@@ -1209,7 +1209,7 @@ public:
       const int                                 element,
       const tarch::la::Vector<DIMENSIONS, int>& posCell,
       const tarch::la::Vector<DIMENSIONS, int>& posBoundary,
-      double**                                  tempFaceUnknowns) override;
+      double**                                  tempFaceUnknowns) final override;
 
   /**
    * Merge solver boundary data (and other values) of a
@@ -1259,14 +1259,14 @@ public:
       const tarch::la::Vector<DIMENSIONS,int>& src,
       const tarch::la::Vector<DIMENSIONS,int>& dest,
       const int cellDescriptionsIndex,
-      const int solverNumber) const override;
+      const int solverNumber) const final override;
 
   void mergeWithNeighbourMetadata(
       const exahype::MetadataHeap::HeapEntries& neighbourMetadata,
       const tarch::la::Vector<DIMENSIONS, int>& src,
       const tarch::la::Vector<DIMENSIONS, int>& dest,
       const int                                 cellDescriptionsIndex,
-      const int                                 element) const override;
+      const int                                 element) const final override;
 
   void sendDataToNeighbour(
       const int                                     toRank,
@@ -1275,7 +1275,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
+      const int                                     level) final override;
 
   /**
    * Send data or empty data to the neighbour data based
@@ -1312,7 +1312,7 @@ public:
   void sendEmptyDataToNeighbour(
       const int                                     toRank,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 
   void mergeWithNeighbourData(
       const int                                    fromRank,
@@ -1323,7 +1323,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
       double**                                     tempFaceUnknowns,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
+      const int                                    level) final override;
 
   /**
    * Merge or drop received neighbour data based
@@ -1360,7 +1360,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 
 
   ///////////////////////////////////////
@@ -1399,92 +1399,94 @@ public:
   /////////////////////////////////////
   void prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
-      const int element) override;
+      const int element) final override;
 
   void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
-      const int element) override;
+      const int element) final override;
 
   void appendMasterWorkerCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,
       const int cellDescriptionsIndex,
-      const int solverNumber) const override;
+      const int solverNumber) const final override;
 
   void mergeWithMasterMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
-      const int                        element) override;
+      const int                        element) final override;
 
   void mergeWithWorkerMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
-      const int                        element) override;
+      const int                        element) final override;
 
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 
   void sendEmptyDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 
   void mergeWithWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 
   void dropWorkerOrMasterDataDueToForkOrJoin(
       const int                                     fromRank,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 
   ///////////////////////////////////
   // WORKER->MASTER
   ///////////////////////////////////
   bool hasToSendDataToMaster(
         const int cellDescriptionsIndex,
-        const int element) const override;
+        const int element) const final override;
 
   void sendDataToMaster(
       const int                                    masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      const int                                    level) const final override;
 
   void mergeWithWorkerData(
       const int                                    workerRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
+      const int                                    level) final override;
 
   void sendDataToMaster(
       const int                                     masterRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 
   void sendEmptyDataToMaster(
       const int                                     masterRank,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 
-  void mergeWithWorkerData(
-      const int                                    workerRank,
-      const exahype::MetadataHeap::HeapEntries&    workerMetadata,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+  void receiveDataFromMaster(
+      const int                                    masterRank,
+      std::deque<int>&                             heapIndices,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
+      const int                                    level) const final override;
 
-  void dropWorkerData(
-      const int                                     workerRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+  void mergeWithMasterData(
+      const MetadataHeap::HeapEntries&             masterMetadata,
+      std::deque<int>&                             heapIndices,
+      const int                                    cellDescriptionsIndex,
+      const int                                    element) const final override;
+
+  void dropMasterData(
+      std::deque<int>& heapIndices) const final override;
 
   ///////////////////////////////////
   // MASTER->WORKER
@@ -1492,24 +1494,24 @@ public:
   void sendDataToWorker(
       const                                        int workerRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      const int                                    level) const final override;
 
   void mergeWithMasterData(
       const                                        int masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) override;
+      const int                                    level) final override;
 
   void sendDataToWorker(
       const int                                     workerRank,
       const int                                     cellDescriptionsIndex,
       const int                                     element,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) override;
+      const int                                     level) final override;
 
   void sendEmptyDataToWorker(
       const int                                     workerRank,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 
   void mergeWithMasterData(
       const int                                     masterRank,
@@ -1517,17 +1519,17 @@ public:
       const int                                     cellDescriptionsIndex,
       const int                                     element,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 
   void dropMasterData(
       const int                                     masterRank,
       const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const int                                     level) const final override;
 #endif
 
-  std::string toString() const override;
+  std::string toString() const final override;
 
-  void toString (std::ostream& out) const override;
+  void toString (std::ostream& out) const final override;
 
   const std::unique_ptr<exahype::solvers::FiniteVolumesSolver>&
   getLimiter () const {

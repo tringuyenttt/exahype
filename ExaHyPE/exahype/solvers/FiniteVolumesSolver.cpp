@@ -963,7 +963,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
 #ifdef Parallel
 const int exahype::solvers::FiniteVolumesSolver::DataMessagesPerNeighbourCommunication    = 1;
 const int exahype::solvers::FiniteVolumesSolver::DataMessagesPerForkOrJoinCommunication   = 1;
-const int exahype::solvers::FiniteVolumesSolver::DataMessagesPerMasterWorkerCommunication = 1;
+const int exahype::solvers::FiniteVolumesSolver::DataMessagesPerMasterWorkerCommunication = 0;
 
 void exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(
     const int                                     toRank,
@@ -1508,27 +1508,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
       element,Heap::getInstance().getData(cellDescriptionsIndex).size());
 
-  // TODO(Dominic): Please implement.
-//  CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
-//
-//  if (cellDescription.getType()==CellDescription::Ancestor) {
-//    double* extrapolatedPredictor = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
-//    double* fluctuations          = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
-//
-//    logDebug("sendDataToMaster(...)","Face data of solver " << cellDescription.getSolverNumber() << " sent to rank "<<masterRank<<
-//        ", cell: "<< x << ", level: " << level);
-//
-//    // No inverted message order since we do synchronous data exchange.
-//    // Order: extrapolatedPredictor,fluctuations.
-//    DataHeap::getInstance().sendData(
-//        extrapolatedPredictor, getUnknownsPerCellBoundary(), masterRank, x, level,
-//        peano::heap::MessageType::MasterWorkerCommunication);
-//    DataHeap::getInstance().sendData(
-//        fluctuations, getUnknownsPerCellBoundary(), masterRank, x, level,
-//        peano::heap::MessageType::MasterWorkerCommunication);
-//  } else {
-    sendEmptyDataToMaster(masterRank,x,level);
-//  }
+  sendEmptyDataToMaster(masterRank,x,level);
 }
 
 void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
@@ -1545,9 +1525,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
   assertion1(element>=0,element);
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  // TODO(Dominic): Implementation is similar to ADER-DG code if someone wants to
-  // implement AMR for the pure finite volumes scheme
 
   dropWorkerData(workerRank,x,level);
 }
@@ -1642,18 +1619,6 @@ bool exahype::solvers::FiniteVolumesSolver::hasToSendDataToMaster(
   assertion1(element>=0,element);
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-//
-//  CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
-//
-//  if (cellDescription.getType()==CellDescription::Ancestor) {
-//    return true;
-//  } else if (cellDescription.getType()==CellDescription::EmptyAncestor) {
-//    #if defined(Debug) || defined(Asserts)
-//    exahype::solvers::Solver::SubcellPosition subcellPosition =
-//        computeSubcellPositionOfCellOrAncestor(cellDescriptionsIndex,element);
-//    assertion(subcellPosition.parentElement==exahype::solvers::Solver::NotFound);
-//    #endif
-//  }
 
   return false;
 }
@@ -1669,31 +1634,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
 
-  // TODO(Dominic): Please implement
-//  CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
-//  if (cellDescription.getType()==CellDescription::Descendant) {
-//    exahype::solvers::Solver::SubcellPosition subcellPosition =
-//        exahype::amr::computeSubcellPositionOfDescendant<CellDescription,Heap>(cellDescription);
-//    prolongateFaceDataToDescendant(cellDescription,subcellPosition);
-//
-//    double* extrapolatedPredictor = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
-//    double* fluctuations          = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
-//
-//    // No inverted message order since we do synchronous data exchange.
-//    // Order: extraplolatedPredictor,fluctuations.
-//    DataHeap::getInstance().sendData(
-//        extrapolatedPredictor, getUnknownsPerCellBoundary(), workerRank, x, level,
-//        peano::heap::MessageType::MasterWorkerCommunication);
-//    DataHeap::getInstance().sendData(
-//        fluctuations, getUnknownsPerCellBoundary(), workerRank, x, level,
-//        peano::heap::MessageType::MasterWorkerCommunication);
-//
-//    logDebug("sendDataToWorker(...)","Sent face data of solver " <<
-//             cellDescription.getSolverNumber() << " to rank "<< workerRank <<
-//             ", cell: "<< x << ", level: " << level);
-//  } else {
-    sendEmptyDataToWorker(workerRank,x,level);
-//  }
+  sendEmptyDataToWorker(workerRank,x,level);
 }
 
 void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToWorker(

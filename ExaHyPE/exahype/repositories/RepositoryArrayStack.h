@@ -21,15 +21,14 @@
  #include "exahype/adapters/FinaliseMeshRefinement.h" 
  #include "exahype/adapters/FinaliseMeshRefinementOrLocalRollback.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
- #include "exahype/adapters/PlotAndFusedTimeStep.h" 
  #include "exahype/adapters/PredictionRerun.h" 
+ #include "exahype/adapters/BroadcastGlobalDataAndDropNeighbourMessages.h" 
  #include "exahype/adapters/LimiterStatusSpreading.h" 
  #include "exahype/adapters/PredictionOrLocalRecomputation.h" 
  #include "exahype/adapters/GlobalRollback.h" 
- #include "exahype/adapters/Merging.h" 
+ #include "exahype/adapters/BroadcastGlobalDataAndMergeNeighbourMessages.h" 
  #include "exahype/adapters/SolutionUpdate.h" 
  #include "exahype/adapters/Prediction.h" 
- #include "exahype/adapters/PredictionAndPlot.h" 
 
 
 
@@ -60,15 +59,14 @@ class exahype::repositories::RepositoryArrayStack: public exahype::repositories:
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FinaliseMeshRefinement> _gridWithFinaliseMeshRefinement;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FinaliseMeshRefinementOrLocalRollback> _gridWithFinaliseMeshRefinementOrLocalRollback;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::FusedTimeStep> _gridWithFusedTimeStep;
-    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PlotAndFusedTimeStep> _gridWithPlotAndFusedTimeStep;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PredictionRerun> _gridWithPredictionRerun;
+    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::BroadcastGlobalDataAndDropNeighbourMessages> _gridWithBroadcastGlobalDataAndDropNeighbourMessages;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::LimiterStatusSpreading> _gridWithLimiterStatusSpreading;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PredictionOrLocalRecomputation> _gridWithPredictionOrLocalRecomputation;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::GlobalRollback> _gridWithGlobalRollback;
-    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Merging> _gridWithMerging;
+    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::BroadcastGlobalDataAndMergeNeighbourMessages> _gridWithBroadcastGlobalDataAndMergeNeighbourMessages;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::SolutionUpdate> _gridWithSolutionUpdate;
     peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::Prediction> _gridWithPrediction;
-    peano::grid::Grid<exahype::Vertex,exahype::Cell,exahype::State,VertexStack,CellStack,exahype::adapters::PredictionAndPlot> _gridWithPredictionAndPlot;
 
   
    exahype::records::RepositoryState               _repositoryState;
@@ -78,30 +76,28 @@ class exahype::repositories::RepositoryArrayStack: public exahype::repositories:
     tarch::timing::Measurement _measureFinaliseMeshRefinementCPUTime;
     tarch::timing::Measurement _measureFinaliseMeshRefinementOrLocalRollbackCPUTime;
     tarch::timing::Measurement _measureFusedTimeStepCPUTime;
-    tarch::timing::Measurement _measurePlotAndFusedTimeStepCPUTime;
     tarch::timing::Measurement _measurePredictionRerunCPUTime;
+    tarch::timing::Measurement _measureBroadcastGlobalDataAndDropNeighbourMessagesCPUTime;
     tarch::timing::Measurement _measureLimiterStatusSpreadingCPUTime;
     tarch::timing::Measurement _measurePredictionOrLocalRecomputationCPUTime;
     tarch::timing::Measurement _measureGlobalRollbackCPUTime;
-    tarch::timing::Measurement _measureMergingCPUTime;
+    tarch::timing::Measurement _measureBroadcastGlobalDataAndMergeNeighbourMessagesCPUTime;
     tarch::timing::Measurement _measureSolutionUpdateCPUTime;
     tarch::timing::Measurement _measurePredictionCPUTime;
-    tarch::timing::Measurement _measurePredictionAndPlotCPUTime;
 
     tarch::timing::Measurement _measureMeshRefinementCalendarTime;
     tarch::timing::Measurement _measureMeshRefinementAndPlotGridCalendarTime;
     tarch::timing::Measurement _measureFinaliseMeshRefinementCalendarTime;
     tarch::timing::Measurement _measureFinaliseMeshRefinementOrLocalRollbackCalendarTime;
     tarch::timing::Measurement _measureFusedTimeStepCalendarTime;
-    tarch::timing::Measurement _measurePlotAndFusedTimeStepCalendarTime;
     tarch::timing::Measurement _measurePredictionRerunCalendarTime;
+    tarch::timing::Measurement _measureBroadcastGlobalDataAndDropNeighbourMessagesCalendarTime;
     tarch::timing::Measurement _measureLimiterStatusSpreadingCalendarTime;
     tarch::timing::Measurement _measurePredictionOrLocalRecomputationCalendarTime;
     tarch::timing::Measurement _measureGlobalRollbackCalendarTime;
-    tarch::timing::Measurement _measureMergingCalendarTime;
+    tarch::timing::Measurement _measureBroadcastGlobalDataAndMergeNeighbourMessagesCalendarTime;
     tarch::timing::Measurement _measureSolutionUpdateCalendarTime;
     tarch::timing::Measurement _measurePredictionCalendarTime;
-    tarch::timing::Measurement _measurePredictionAndPlotCalendarTime;
 
 
   public:
@@ -152,30 +148,28 @@ class exahype::repositories::RepositoryArrayStack: public exahype::repositories:
     virtual void switchToFinaliseMeshRefinement();    
     virtual void switchToFinaliseMeshRefinementOrLocalRollback();    
     virtual void switchToFusedTimeStep();    
-    virtual void switchToPlotAndFusedTimeStep();    
     virtual void switchToPredictionRerun();    
+    virtual void switchToBroadcastGlobalDataAndDropNeighbourMessages();    
     virtual void switchToLimiterStatusSpreading();    
     virtual void switchToPredictionOrLocalRecomputation();    
     virtual void switchToGlobalRollback();    
-    virtual void switchToMerging();    
+    virtual void switchToBroadcastGlobalDataAndMergeNeighbourMessages();    
     virtual void switchToSolutionUpdate();    
     virtual void switchToPrediction();    
-    virtual void switchToPredictionAndPlot();    
 
     virtual bool isActiveAdapterMeshRefinement() const;
     virtual bool isActiveAdapterMeshRefinementAndPlotGrid() const;
     virtual bool isActiveAdapterFinaliseMeshRefinement() const;
     virtual bool isActiveAdapterFinaliseMeshRefinementOrLocalRollback() const;
     virtual bool isActiveAdapterFusedTimeStep() const;
-    virtual bool isActiveAdapterPlotAndFusedTimeStep() const;
     virtual bool isActiveAdapterPredictionRerun() const;
+    virtual bool isActiveAdapterBroadcastGlobalDataAndDropNeighbourMessages() const;
     virtual bool isActiveAdapterLimiterStatusSpreading() const;
     virtual bool isActiveAdapterPredictionOrLocalRecomputation() const;
     virtual bool isActiveAdapterGlobalRollback() const;
-    virtual bool isActiveAdapterMerging() const;
+    virtual bool isActiveAdapterBroadcastGlobalDataAndMergeNeighbourMessages() const;
     virtual bool isActiveAdapterSolutionUpdate() const;
     virtual bool isActiveAdapterPrediction() const;
-    virtual bool isActiveAdapterPredictionAndPlot() const;
 
      
     #ifdef Parallel

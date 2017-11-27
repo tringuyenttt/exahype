@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
  
-#ifndef EXAHYPE_MAPPINGS_SolutionUpdate_H_
-#define EXAHYPE_MAPPINGS_SolutionUpdate_H_
+#ifndef EXAHYPE_MAPPINGS_FusedTimeStep_H_
+#define EXAHYPE_MAPPINGS_FusedTimeStep_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -27,9 +27,11 @@
 #include "exahype/State.h"
 #include "exahype/Vertex.h"
 
+#include "exahype/solvers/TemporaryVariables.h"
+
 namespace exahype {
 namespace mappings {
-class SolutionUpdate;
+class FusedTimeStep;
 }
 }
 
@@ -55,12 +57,18 @@ class SolutionUpdate;
  *
  * @author Dominic Charrier Tobias Weinzierl
  */
-class exahype::mappings::SolutionUpdate {
+class exahype::mappings::FusedTimeStep {
 private:
   /**
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
+
+  /**
+   * This semaphore is used for locking the plotters'
+   * plotPatch function which is usually not thread-safe.
+   */
+  static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
 
   /**
    * Local copy of the state which
@@ -94,6 +102,45 @@ private:
   void prepareLocalTimeStepVariables();
 
   /**
+   * Initialises temporary variables
+   * in case we use fused time stepping.
+   *
+   * \note We parallelise over the domain
+   * (mapping is copied for each thread) and
+   * over the solvers registered on a cell.
+   *
+   * \note We need to initialise the temporary variables
+   * in this mapping and not in the solvers since the
+   * solvers in exahype::solvers::RegisteredSolvers
+   * are not copied for every thread.
+   */
+  void initialiseTemporaryVariables();
+
+  /**
+   * Deletes temporary variables
+   * in case we use fused time stepping.
+   *
+   * \note We need to initialise the temporary variables
+   * in this mapping and not in the solvers since the
+   * solvers in exahype::solvers::RegisteredSolvers
+   * are not copied for every thread.
+   */
+  void deleteTemporaryVariables();
+
+  /**
+   * Temporary variables for every registered
+   * ADERDGSolver and LimitingADERDGSolver which are required for performing
+   * the prediction.
+   */
+  exahype::solvers::PredictionTemporaryVariables _predictionTemporaryVariables;
+
+  /**
+   * Temporary variables for every registered solvers which are required
+   * for performing the neighbour data merging.
+   */
+  exahype::solvers::MergingTemporaryVariables _mergingTemporaryVariables;
+
+  /**
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */
@@ -104,19 +151,19 @@ private:
    * Run through the whole tree. Run concurrently on the fine grid.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
+  /**
+   * Run through the whole tree. Run concurrently on the fine grid.
+   */
+  peano::MappingSpecification leaveCellSpecification(int level) const;
+  /**
+   * Run through the whole tree. Avoid fine grid races.
+   */
+  peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
 
   /**
    * Nop.
    */
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
-  /**
-   * Nop.
-   */
-  peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
-  /**
-   * Nop.
-   */
-  peano::MappingSpecification leaveCellSpecification(int level) const;
   /**
    * Nop.
    */
@@ -132,6 +179,24 @@ private:
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**
+   * Delete temporary variables.
+   */
+  virtual ~FusedTimeStep();
+
+  #if defined(SharedMemoryParallelisation)
+  /**
+   * Prepare the temporary variables for
+   * the worker threads.
+   */
+  FusedTimeStep(const FusedTimeStep& masterThread);
+  /**
+   * Merge time step data and flags of the worker thread
+   * with the master thread.
+   */
+  void mergeWithWorkerThread(const FusedTimeStep& workerThread);
+  #endif
+
+  /**
    * If the fine grid cell functions as compute cell for a solver,
    * we update the solution of the solver within the fine grid cell
    * (at a given time).
@@ -142,11 +207,11 @@ private:
    *
    * <h2>ADER-DG<h2>
    * For ADER-DG solvers, we call the surfaceIntegral(...) routine before
-   * we call the solutionUpdate(...) routine of the solvers.
+   * we call the FusedTimeStep(...) routine of the solvers.
    *
    * <h2>Finite volumes<h2>
    * For finite volume solvers, we simply call the
-   * solutionUpdate(...) routine.
+   * FusedTimeStep(...) routine.
    */
   void enterCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -173,151 +238,22 @@ private:
    * Further update the global solver states (next)limiterDomainHasChanged
    * with values from the temporary variables.
    *
+   * Finish plotting if a plotter is active.
+   *
    * Further deallocates temporary variables.
    */
   void endIteration(exahype::State& solverState);
-
-  /**
-   * Delete the temporary variables.
-   */
-  virtual ~SolutionUpdate();
-
-#if defined(SharedMemoryParallelisation)
-  /**
-   * Prepare the temporary variables for
-   * the worker threads.
-   */
-  SolutionUpdate(const SolutionUpdate& masterThread);
-
-  /**
-   * Merge time step sizes computed by the individual threads.
-   */
-  void mergeWithWorkerThread(const SolutionUpdate& workerThread);
-#endif
-
 
   //
   // Below every method is nop.
   //
   // ==================================
 
-#ifdef Parallel
 
   /**
    * Nop.
    */
-  void mergeWithMaster(
-      const exahype::Cell& workerGridCell,
-      exahype::Vertex* const workerGridVertices,
-      const peano::grid::VertexEnumerator& workerEnumerator,
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      int worker, const exahype::State& workerState,
-      exahype::State& masterState);
-  /**
-   * Nop.
-   */
-  void prepareSendToMaster(
-      exahype::Cell& localCell, exahype::Vertex* vertices,
-      const peano::grid::VertexEnumerator& verticesEnumerator,
-      const exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
-  /**
-   * Nop.
-   */
-  void mergeWithNeighbour(exahype::Vertex& vertex,
-                          const exahype::Vertex& neighbour, int fromRank,
-                          const tarch::la::Vector<DIMENSIONS, double>& x,
-                          const tarch::la::Vector<DIMENSIONS, double>& h,
-                          int level);
-  /**
-   * Nop.
-   */
-  void prepareSendToNeighbour(exahype::Vertex& vertex, int toRank,
-                              const tarch::la::Vector<DIMENSIONS, double>& x,
-                              const tarch::la::Vector<DIMENSIONS, double>& h,
-                              int level);
-  /**
-   * Nop.
-   */
-  void prepareCopyToRemoteNode(exahype::Vertex& localVertex, int toRank,
-                               const tarch::la::Vector<DIMENSIONS, double>& x,
-                               const tarch::la::Vector<DIMENSIONS, double>& h,
-                               int level);
-  /**
-   * Nop.
-   */
-  void prepareCopyToRemoteNode(
-      exahype::Cell& localCell, int toRank,
-      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
-  /**
-   * Nop.
-   */
-  void mergeWithRemoteDataDueToForkOrJoin(
-      exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,
-      int fromRank, const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h, int level);
-  /**
-   * Nop.
-   */
-  void mergeWithRemoteDataDueToForkOrJoin(
-      exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
-      int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
-  /**
-   * Nop.
-   */
-  bool prepareSendToWorker(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      int worker);
-  /**
-   * Nop.
-   */
-  void receiveDataFromMaster(
-      exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
-      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-      exahype::Vertex* const receivedCoarseGridVertices,
-      const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
-      exahype::Cell& receivedCoarseGridCell,
-      exahype::Vertex* const workersCoarseGridVertices,
-      const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
-      exahype::Cell& workersCoarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-  /**
-   * Nop.
-   */
-  void mergeWithWorker(exahype::Cell& localCell,
-                       const exahype::Cell& receivedMasterCell,
-                       const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-                       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-                       int level);
-  /**
-   * Nop.
-   */
-  void mergeWithWorker(exahype::Vertex& localVertex,
-                       const exahype::Vertex& receivedMasterVertex,
-                       const tarch::la::Vector<DIMENSIONS, double>& x,
-                       const tarch::la::Vector<DIMENSIONS, double>& h,
-                       int level);
-#endif
-
-  /**
-   * Nop.
-   */
-  SolutionUpdate();
+  FusedTimeStep();
 
   /**
    * Nop.
@@ -395,7 +331,116 @@ private:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
+#ifdef Parallel
+  /**
+   * Nop.
+   */
+  void mergeWithNeighbour(exahype::Vertex& vertex,
+                          const exahype::Vertex& neighbour, int fromRank,
+                          const tarch::la::Vector<DIMENSIONS, double>& x,
+                          const tarch::la::Vector<DIMENSIONS, double>& h,
+                          int level);
+  /**
+   * Nop.
+   */
+  void prepareSendToNeighbour(exahype::Vertex& vertex, int toRank,
+                              const tarch::la::Vector<DIMENSIONS, double>& x,
+                              const tarch::la::Vector<DIMENSIONS, double>& h,
+                              int level);
+  /**
+   * Nop.
+   */
+  void prepareCopyToRemoteNode(exahype::Vertex& localVertex, int toRank,
+                               const tarch::la::Vector<DIMENSIONS, double>& x,
+                               const tarch::la::Vector<DIMENSIONS, double>& h,
+                               int level);
+  /**
+   * Nop.
+   */
+  void prepareCopyToRemoteNode(
+      exahype::Cell& localCell, int toRank,
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
+  /**
+   * Nop.
+   */
+  void mergeWithRemoteDataDueToForkOrJoin(
+      exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,
+      int fromRank, const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h, int level);
+  /**
+   * Nop.
+   */
+  void mergeWithRemoteDataDueToForkOrJoin(
+      exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
+      int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
+  /**
+   * Nop.
+   */
+  bool prepareSendToWorker(
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+      int worker);
+  /**
+   * Nop.
+   */
+  void mergeWithMaster(
+      const exahype::Cell& workerGridCell,
+      exahype::Vertex* const workerGridVertices,
+      const peano::grid::VertexEnumerator& workerEnumerator,
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+      int worker, const exahype::State& workerState,
+      exahype::State& masterState);
+  /**
+   * Nop.
+   */
+  void prepareSendToMaster(
+      exahype::Cell& localCell, exahype::Vertex* vertices,
+      const peano::grid::VertexEnumerator& verticesEnumerator,
+      const exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+  /**
+   * Nop.
+   */
+  void receiveDataFromMaster(
+      exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
+      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+      exahype::Vertex* const receivedCoarseGridVertices,
+      const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
+      exahype::Cell& receivedCoarseGridCell,
+      exahype::Vertex* const workersCoarseGridVertices,
+      const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
+      exahype::Cell& workersCoarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+  /**
+   * Nop.
+   */
+  void mergeWithWorker(exahype::Cell& localCell,
+                       const exahype::Cell& receivedMasterCell,
+                       const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+                       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+                       int level);
+  /**
+   * Nop.
+   */
+  void mergeWithWorker(exahype::Vertex& localVertex,
+                       const exahype::Vertex& receivedMasterVertex,
+                       const tarch::la::Vector<DIMENSIONS, double>& x,
+                       const tarch::la::Vector<DIMENSIONS, double>& h,
+                       int level);
+#endif
   /**
    * Nop.
    */

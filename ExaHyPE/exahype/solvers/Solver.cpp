@@ -581,6 +581,74 @@ void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSi
   }
 }
 
+void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
+      const exahype::solvers::SolverFlags& solverFlags,
+      const std::vector<double>& minTimeStepSizes,
+      const std::vector<double>& minCellSizes,
+      const std::vector<double>& maxCellSizes,
+      const bool isFirstIterationOfBatchOrNoBatch,
+      const bool isLastIterationOfBatchOrNoBatch,
+      const bool fusedTimeStepping) {
+  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
+    /*
+     * Update reduced quantities (over multiple batch iterations)
+     */
+    // mesh refinement events
+    solver->updateNextMeshUpdateRequest(solverFlags._meshUpdateRequest[solverNumber]);
+    solver->updateNextAttainedStableState(!solver->getNextMeshUpdateRequest());
+    if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+      limitingADERDGSolver->updateNextLimiterDomainChange(solverFlags._limiterDomainChange[solverNumber]);
+    }
+    // cell sizes (for AMR)
+    solver->updateNextMinCellSize(minCellSizes[solverNumber]);
+    solver->updateNextMaxCellSize(maxCellSizes[solverNumber]);
+
+    // time
+    assertion1(std::isfinite(minTimeStepSizes[solverNumber]),minTimeStepSizes[solverNumber]);
+    assertion1(minTimeStepSizes[solverNumber]>0.0,minTimeStepSizes[solverNumber]);
+    solver->updateMinNextTimeStepSize(minTimeStepSizes[solverNumber]);
+
+    /*
+     * Swap the current values with the next values (in last batch iteration)
+     */
+    // mesh update events
+    if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+      solver->setNextMeshUpdateRequest();
+      solver->setNextAttainedStableState();
+      if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+        limitingADERDGSolver->setNextLimiterDomainChange();
+        assertion(
+            limitingADERDGSolver->getLimiterDomainChange()
+            !=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
+            solver->getMeshUpdateRequest());
+      }
+    }
+
+    // time
+    // TODO(Dominic):
+    // only update the time step size in last iteration; just advance with old time step size otherwise
+    if (
+        fusedTimeStepping &&
+        isLastIterationOfBatchOrNoBatch &&
+        tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
+    ) {
+      exahype::solvers::Solver::
+      reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
+    }
+    if (exahype::State::fuseADERDGPhases()) {
+      solver->startNewTimeStepFused(
+          isFirstIterationOfBatchOrNoBatch,
+          isLastIterationOfBatchOrNoBatch);
+    } else {
+      solver->startNewTimeStep();
+    }
+  }
+}
+
 std::string exahype::solvers::Solver::toString() const {
   std::ostringstream stringstr;
   toString(stringstr);
@@ -607,7 +675,7 @@ void exahype::solvers::Solver::toString(std::ostream& out) const {
 
 #ifdef Parallel
 
-// Neighbours
+// Neighbours TODO(Dominic): Move in exahype::Vertex
 
 exahype::MetadataHeap::HeapEntries exahype::gatherNeighbourCommunicationMetadata(
     int cellDescriptionsIndex,
@@ -686,7 +754,7 @@ int exahype::receiveNeighbourCommunicationMetadata(
   return receivedMetadataIndex;
 }
 
-// Master<=>Worker
+// Master<=>Worker  TODO(Dominic): Move in exahype::Cell
 
 exahype::MetadataHeap::HeapEntries exahype::gatherMasterWorkerCommunicationMetadata(int cellDescriptionsIndex) {
   const int length =

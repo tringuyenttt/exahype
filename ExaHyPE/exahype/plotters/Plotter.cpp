@@ -536,6 +536,19 @@ void exahype::plotters::Plotter::finishedPlotting() {
   _isActive = false;
 }
 
+tarch::multicore::BooleanSemaphore exahype::plotters::SemaphoreForPlotting;
+
+void exahype::plotters::plotPatchIfAPlotterIsActive(
+    const int solverNumber,
+    const int cellDescriptionsIndex,
+    const int element) {
+  for (auto* plotter : exahype::plotters::RegisteredPlotters) {
+    if (plotter->plotDataFromSolver(solverNumber)) {
+      tarch::multicore::Lock lock(exahype::plotters::SemaphoreForPlotting);
+      plotter->plotPatch(cellDescriptionsIndex,element);
+    }
+  }
+}
 
 bool exahype::plotters::startPlottingIfAPlotterIsActive(double currentTimeStamp) {
   bool result = false;

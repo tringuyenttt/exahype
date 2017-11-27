@@ -1925,6 +1925,37 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
+    exahype::solvers::Solver* solver,
+    const int cellDescriptionsIndex,
+    const int element,
+    exahype::solvers::PredictionTemporaryVariables& temporaryVariables) {
+  exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
+
+  switch (solver->getType()) {
+    case exahype::solvers::Solver::Type::ADERDG:
+      aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
+      break;
+    case exahype::solvers::Solver::Type::LimitingADERDG:
+      aderdgSolver =
+          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
+      break;
+    case exahype::solvers::Solver::Type::FiniteVolumes:
+      break;
+  }
+
+  if (aderdgSolver!=nullptr) {
+    auto& cellDescription = aderdgSolver->getCellDescription(cellDescriptionsIndex,element);
+    aderdgSolver->performPredictionAndVolumeIntegral(
+        cellDescription,
+        temporaryVariables._tempSpaceTimeUnknowns    [cellDescription.getSolverNumber()],
+        temporaryVariables._tempSpaceTimeFluxUnknowns[cellDescription.getSolverNumber()],
+        temporaryVariables._tempUnknowns             [cellDescription.getSolverNumber()],
+        temporaryVariables._tempFluxUnknowns         [cellDescription.getSolverNumber()],
+        temporaryVariables._tempPointForceSources    [cellDescription.getSolverNumber()]);                                                 )
+  }
+}
+
+void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     CellDescription& cellDescription,
     double** tempSpaceTimeUnknowns,
     double** tempSpaceTimeFluxUnknowns,
@@ -4156,8 +4187,6 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
   assertion1(element>=0,element);
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  // TODO(Dominic): Add merges of min and max
 
   CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
   if (

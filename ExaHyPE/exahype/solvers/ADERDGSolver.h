@@ -788,6 +788,8 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2) const;
 
+
+
   /**
    * Construct an ADERDGSolver.
    *
@@ -1479,6 +1481,14 @@ public:
       const int cellDescriptionsIndex,
       const int element) override;
 
+  /*! Perform prediction and volume integral for an ADERDGSolver or LimitingADERDGSolver.
+   */
+  static void performPredictionAndVolumeIntegral(
+      exahype::solvers::Solver* solver,
+      const int cellDescriptionsIndex,
+      const int element,
+      exahype::solvers::PredictionTemporaryVariables& temporaryVariables);
+
   /**
    * Computes the space-time predictor quantities, extrapolates fluxes
    * and (space-time) predictor values to the boundary and
@@ -2117,18 +2127,20 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const override;
 
-  void mergeWithMasterData(
+  void receiveDataFromMaster(
       const int                                    masterRank,
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      std::deque<int>&                             heapIndices,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      const int                                    level) const final override;
+
+  void mergeWithMasterData(
+      const MetadataHeap::HeapEntries&             masterMetadata,
+      std::deque<int>&                             heapIndices,
+      const int                                    cellDescriptionsIndex,
+      const int                                    element) const final override;
 
   void dropMasterData(
-      const int                                    masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      std::deque<int>& heapIndices) const final override;
 #endif
 
   std::string toString() const override;

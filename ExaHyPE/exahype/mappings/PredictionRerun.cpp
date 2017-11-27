@@ -11,13 +11,15 @@
  * For the full license text, see LICENSE.txt
  **/
  
-#include "exahype/mappings/Prediction.h"
+#include "exahype/mappings/PredictionRerun.h"
+
+#include "tarch/multicore/Loop.h"
 
 #include "peano/utils/Loop.h"
 #include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/utils/Globals.h"
 
-#include "tarch/multicore/Loop.h"
+#include "peano/utils/UserInterface.h"
 
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
@@ -26,122 +28,88 @@
 
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 
-#include "peano/utils/UserInterface.h"
-
-tarch::multicore::BooleanSemaphore exahype::mappings::Prediction::SemaphoreForRestriction;
+#include "exahype/mappings/Prediction.h"
 
 peano::CommunicationSpecification
-exahype::mappings::Prediction::communicationSpecification() const {
+exahype::mappings::PredictionRerun::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime, // TODO(Dominic): Can relax?
+      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime, // TODO(Dominic): Can be relaxed?
       true);
 }
 
 peano::MappingSpecification
-exahype::mappings::Prediction::enterCellSpecification(int level) const {
+exahype::mappings::PredictionRerun::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 
 peano::MappingSpecification
-exahype::mappings::Prediction::leaveCellSpecification(int level) const {
+exahype::mappings::PredictionRerun::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 // The remaining specifications all are nop.
 peano::MappingSpecification
-exahype::mappings::Prediction::touchVertexLastTimeSpecification(int level) const {
+exahype::mappings::PredictionRerun::touchVertexLastTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 peano::MappingSpecification
-exahype::mappings::Prediction::touchVertexFirstTimeSpecification(int level) const {
+exahype::mappings::PredictionRerun::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 peano::MappingSpecification
-exahype::mappings::Prediction::ascendSpecification(int level) const {
+exahype::mappings::PredictionRerun::ascendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::AvoidCoarseGridRaces,true);
 }
 peano::MappingSpecification
-exahype::mappings::Prediction::descendSpecification(int level) const {
+exahype::mappings::PredictionRerun::descendSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::Nop,
       peano::MappingSpecification::AvoidCoarseGridRaces,true);
 }
 
-tarch::logging::Log exahype::mappings::Prediction::_log(
-    "exahype::mappings::Prediction");
+tarch::logging::Log exahype::mappings::PredictionRerun::_log(
+    "exahype::mappings::PredictionRerun");
 
-exahype::mappings::Prediction::Prediction() {}
+exahype::mappings::PredictionRerun::PredictionRerun() {}
 
-exahype::mappings::Prediction::~Prediction() {
+exahype::mappings::PredictionRerun::~PredictionRerun() {
   exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
 }
 
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::Prediction::Prediction(const Prediction& masterThread)
+exahype::mappings::PredictionRerun::PredictionRerun(const PredictionRerun& masterThread)
   : _localState(masterThread._localState) {
   exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
 }
 
-void exahype::mappings::Prediction::mergeWithWorkerThread(
-    const Prediction& workerThread) {
+void exahype::mappings::PredictionRerun::mergeWithWorkerThread(
+    const PredictionRerun& workerThread) {
 }
 #endif
 
-void exahype::mappings::Prediction::beginIteration(
+void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
   _localState = solverState;
 
   exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
 }
 
-void exahype::mappings::Prediction::endIteration(
+void exahype::mappings::PredictionRerun::endIteration(
     exahype::State& solverState) {
   exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
 }
 
-void exahype::mappings::Prediction::performPredictionAndProlongateData(
-    const exahype::Cell& fineGridCell,
-    exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::solvers::PredictionTemporaryVariables& temporaryVariables,
-    const exahype::State::Records::AlgorithmSection& algorithmSection) {
-  if (fineGridCell.isInitialised()) {
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
-
-    const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-    if (
-        solver->isPerformingPrediction(algorithmSection) &&
-        element!=exahype::solvers::Solver::NotFound
-    ) {
-      exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
-          solver,fineGridCell.getCellDescriptionsIndex(),element,temporaryVariables);
-
-      solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
-    }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
-  }
-}
-
-void exahype::mappings::Prediction::enterCell(
+void exahype::mappings::PredictionRerun::enterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -154,59 +122,15 @@ void exahype::mappings::Prediction::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   exahype::mappings::Prediction::performPredictionAndProlongateData(
-      fineGridCell,
-      fineGridVertices,fineGridVerticesEnumerator,
-      _predictionTemporaryVariables,
-      exahype::State::Records::AlgorithmSection::TimeStepping);
+        fineGridCell,
+        fineGridVertices,fineGridVerticesEnumerator,
+        _predictionTemporaryVariables,
+        exahype::State::Records::AlgorithmSection::PredictionRerunAllSend);
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
 
-void exahype::mappings::Prediction::restrictDataAndPostProcess(
-    const exahype::Cell&                             fineGridCell,
-    const exahype::Cell&                             coarseGridCell,
-    const exahype::State::Records::AlgorithmSection& algorithmSection) {
-  if (fineGridCell.isInitialised()) {
-    const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-    auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
-    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int fineGridElement = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-      if (
-          solver->isPerformingPrediction(algorithmSection) &&
-          fineGridElement!=exahype::solvers::Solver::NotFound
-      ) {
-        const int coarseGridElement = solver->tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-        if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
-          tarch::multicore::Lock lock(SemaphoreForRestriction);
-          solver->restrictToNextParent(
-              fineGridCell.getCellDescriptionsIndex(),fineGridElement,
-              coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
-          lock.free();
-        }
-
-        exahype::solvers::Solver::SubcellPosition subcellPosition =
-            solver->computeSubcellPositionOfCellOrAncestor(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-        if (subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
-            exahype::amr::onBoundaryOfParent(
-                subcellPosition.subcellIndex,subcellPosition.levelDifference)) {
-          tarch::multicore::Lock lock(SemaphoreForRestriction);
-          solver->restrictToTopMostParent(fineGridCell.getCellDescriptionsIndex(),
-                                          fineGridElement,
-                                          subcellPosition.parentCellDescriptionsIndex,
-                                          subcellPosition.parentElement,
-                                          subcellPosition.subcellIndex);
-          lock.free();
-        }
-
-        solver->postProcess(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-      }
-    endpfor
-    grainSize.parallelSectionHasTerminated();
-  }
-}
-
-void exahype::mappings::Prediction::leaveCell(
+void exahype::mappings::PredictionRerun::leaveCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -225,7 +149,7 @@ void exahype::mappings::Prediction::leaveCell(
 }
 
 #ifdef Parallel
-bool exahype::mappings::Prediction::prepareSendToWorker(
+bool exahype::mappings::PredictionRerun::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -241,7 +165,7 @@ bool exahype::mappings::Prediction::prepareSendToWorker(
   return true;
 }
 
-void exahype::mappings::Prediction::receiveDataFromMaster(
+void exahype::mappings::PredictionRerun::receiveDataFromMaster(
     exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
     const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
     exahype::Vertex* const receivedCoarseGridVertices,
@@ -257,7 +181,7 @@ void exahype::mappings::Prediction::receiveDataFromMaster(
         workersCoarseGridVerticesEnumerator.getLevel());
 }
 
-void exahype::mappings::Prediction::prepareSendToMaster(
+void exahype::mappings::PredictionRerun::prepareSendToMaster(
     exahype::Cell& localCell, exahype::Vertex* vertices,
     const peano::grid::VertexEnumerator& verticesEnumerator,
     const exahype::Vertex* const coarseGridVertices,
@@ -271,7 +195,7 @@ void exahype::mappings::Prediction::prepareSendToMaster(
       verticesEnumerator.getLevel());
 }
 
-void exahype::mappings::Prediction::mergeWithMaster(
+void exahype::mappings::PredictionRerun::mergeWithMaster(
     const exahype::Cell& workerGridCell,
     exahype::Vertex* const workerGridVertices,
     const peano::grid::VertexEnumerator& workerEnumerator,
@@ -290,7 +214,7 @@ void exahype::mappings::Prediction::mergeWithMaster(
       fineGridVerticesEnumerator.getLevel());
 }
 
-void exahype::mappings::Prediction::prepareSendToNeighbour(
+void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
@@ -302,49 +226,49 @@ void exahype::mappings::Prediction::prepareSendToNeighbour(
 //
 // ====================================
 
-void exahype::mappings::Prediction::mergeWithNeighbour(
+void exahype::mappings::PredictionRerun::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   // do nothing
 }
 
-void exahype::mappings::Prediction::prepareCopyToRemoteNode(
+void exahype::mappings::PredictionRerun::prepareCopyToRemoteNode(
     exahype::Vertex& localVertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   // do nothing
 }
 
-void exahype::mappings::Prediction::prepareCopyToRemoteNode(
+void exahype::mappings::PredictionRerun::prepareCopyToRemoteNode(
     exahype::Cell& localCell, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   // do nothing
 }
 
-void exahype::mappings::Prediction::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::mappings::PredictionRerun::mergeWithRemoteDataDueToForkOrJoin(
     exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,
     int fromRank, const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   // do nothing
 }
 
-void exahype::mappings::Prediction::mergeWithRemoteDataDueToForkOrJoin(
+void exahype::mappings::PredictionRerun::mergeWithRemoteDataDueToForkOrJoin(
     exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
     int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   // do nothing
 }
 
-void exahype::mappings::Prediction::mergeWithWorker(
+void exahype::mappings::PredictionRerun::mergeWithWorker(
     exahype::Cell& localCell, const exahype::Cell& receivedMasterCell,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   // do nothing
 }
 
-void exahype::mappings::Prediction::mergeWithWorker(
+void exahype::mappings::PredictionRerun::mergeWithWorker(
     exahype::Vertex& localVertex, const exahype::Vertex& receivedMasterVertex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
@@ -352,7 +276,7 @@ void exahype::mappings::Prediction::mergeWithWorker(
 }
 #endif
 
-void exahype::mappings::Prediction::createHangingVertex(
+void exahype::mappings::PredictionRerun::createHangingVertex(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -363,7 +287,7 @@ void exahype::mappings::Prediction::createHangingVertex(
   // do nothing
 }
 
-void exahype::mappings::Prediction::destroyHangingVertex(
+void exahype::mappings::PredictionRerun::destroyHangingVertex(
     const exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -374,7 +298,7 @@ void exahype::mappings::Prediction::destroyHangingVertex(
   // do nothing
 }
 
-void exahype::mappings::Prediction::createInnerVertex(
+void exahype::mappings::PredictionRerun::createInnerVertex(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -385,7 +309,7 @@ void exahype::mappings::Prediction::createInnerVertex(
   // do nothing
 }
 
-void exahype::mappings::Prediction::createBoundaryVertex(
+void exahype::mappings::PredictionRerun::createBoundaryVertex(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -396,7 +320,7 @@ void exahype::mappings::Prediction::createBoundaryVertex(
   // do nothing
 }
 
-void exahype::mappings::Prediction::destroyVertex(
+void exahype::mappings::PredictionRerun::destroyVertex(
     const exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -407,7 +331,7 @@ void exahype::mappings::Prediction::destroyVertex(
   // do nothing
 }
 
-void exahype::mappings::Prediction::createCell(
+void exahype::mappings::PredictionRerun::createCell(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -417,7 +341,7 @@ void exahype::mappings::Prediction::createCell(
   // do nothing
 }
 
-void exahype::mappings::Prediction::destroyCell(
+void exahype::mappings::PredictionRerun::destroyCell(
     const exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -428,7 +352,7 @@ void exahype::mappings::Prediction::destroyCell(
 }
 
 
-void exahype::mappings::Prediction::touchVertexFirstTime(
+void exahype::mappings::PredictionRerun::touchVertexFirstTime(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -439,7 +363,7 @@ void exahype::mappings::Prediction::touchVertexFirstTime(
   // do nothing
 }
 
-void exahype::mappings::Prediction::touchVertexLastTime(
+void exahype::mappings::PredictionRerun::touchVertexLastTime(
     exahype::Vertex& fineGridVertex,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
@@ -450,7 +374,7 @@ void exahype::mappings::Prediction::touchVertexLastTime(
   // do nothing
 }
 
-void exahype::mappings::Prediction::descend(
+void exahype::mappings::PredictionRerun::descend(
     exahype::Cell* const fineGridCells, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,
@@ -459,7 +383,7 @@ void exahype::mappings::Prediction::descend(
   // do nothing
 }
 
-void exahype::mappings::Prediction::ascend(
+void exahype::mappings::PredictionRerun::ascend(
     exahype::Cell* const fineGridCells, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Vertex* const coarseGridVertices,

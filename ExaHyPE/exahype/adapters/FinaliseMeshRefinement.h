@@ -18,10 +18,8 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/PreProcessing.h"
  #include "exahype/mappings/FinaliseMeshRefinement.h"
- #include "exahype/mappings/PostProcessing.h"
- #include "exahype/adapters/FinaliseMeshRefinement2MultiscaleLinkedCell_3.h"
+ #include "exahype/adapters/FinaliseMeshRefinement2MultiscaleLinkedCell_1.h"
 
 
 
@@ -41,15 +39,11 @@ namespace exahype {
  */
 class exahype::adapters::FinaliseMeshRefinement {
   private:
-    typedef mappings::PreProcessing Mapping0;
-    typedef mappings::FinaliseMeshRefinement Mapping1;
-    typedef mappings::PostProcessing Mapping2;
-    typedef adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_3 Mapping3;
+    typedef mappings::FinaliseMeshRefinement Mapping0;
+    typedef adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 Mapping1;
 
-     Mapping0  _map2PreProcessing;
-     Mapping1  _map2FinaliseMeshRefinement;
-     Mapping2  _map2PostProcessing;
-     Mapping3  _map2FinaliseMeshRefinement2MultiscaleLinkedCell_3;
+     Mapping0  _map2FinaliseMeshRefinement;
+     Mapping1  _map2FinaliseMeshRefinement2MultiscaleLinkedCell_1;
 
 
   public:

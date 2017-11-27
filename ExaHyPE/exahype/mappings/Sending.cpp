@@ -34,8 +34,6 @@
 
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 
-
-
 tarch::multicore::BooleanSemaphore exahype::mappings::Sending::_semaphoreForRestriction;
 
 #ifdef Parallel
@@ -221,40 +219,32 @@ void exahype::mappings::Sending::leaveCell(
         getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined12);
     pfor( solverNumber, 0, numberOfSolvers, grainSize.getGrainSize() )
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if ( solver->isSending(_localState.getAlgorithmSection()) ) {
-        const int fineGridElement = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-        if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
-          auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-          const int coarseGridElement =
-              solver->tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-          if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
-            tarch::multicore::Lock lock(_semaphoreForRestriction);
-            solver->restrictToNextParent(
-                fineGridCell.getCellDescriptionsIndex(),fineGridElement,
-                coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
-            lock.free();
-          }
-
-          if ( sendFaceData() ) {
-            exahype::solvers::Solver::SubcellPosition subcellPosition =
-                solver->computeSubcellPositionOfCellOrAncestor(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-            if (subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
-                exahype::amr::onBoundaryOfParent(
-                    subcellPosition.subcellIndex,subcellPosition.levelDifference)) {
-              tarch::multicore::Lock lock(_semaphoreForRestriction);
-              solver->restrictToTopMostParent(fineGridCell.getCellDescriptionsIndex(),
-                  fineGridElement,
-                  subcellPosition.parentCellDescriptionsIndex,
-                  subcellPosition.parentElement,
-                  subcellPosition.subcellIndex);
-              lock.free();
-            }
-          }
-
-          solver->postProcess(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-          // TODO(Dominic): Check if this still makes sense. All existing adapters must consider post-processing
+      const int fineGridElement = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+      if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
+        const int coarseGridElement = solver->tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
+        if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
+          tarch::multicore::Lock lock(_semaphoreForRestriction);
+          solver->restrictToNextParent(
+              fineGridCell.getCellDescriptionsIndex(),fineGridElement,
+              coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
+          lock.free();
         }
+
+        exahype::solvers::Solver::SubcellPosition subcellPosition =
+            solver->computeSubcellPositionOfCellOrAncestor(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
+        if (subcellPosition.parentElement!=exahype::solvers::Solver::NotFound &&
+            exahype::amr::onBoundaryOfParent(
+                subcellPosition.subcellIndex,subcellPosition.levelDifference)) {
+          tarch::multicore::Lock lock(_semaphoreForRestriction);
+          solver->restrictToTopMostParent(fineGridCell.getCellDescriptionsIndex(),
+                                          fineGridElement,
+                                          subcellPosition.parentCellDescriptionsIndex,
+                                          subcellPosition.parentElement,
+                                          subcellPosition.subcellIndex);
+          lock.free();
+        }
+
+        solver->postProcess(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
       }
     endpfor
     grainSize.parallelSectionHasTerminated();
@@ -273,79 +263,10 @@ void exahype::mappings::Sending::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   if (
-      vertex.hasToCommunicate(h) &&
       sendFaceData()
   ) {
-    dfor2(dest)
-      dfor2(src)
-      if ( vertex.hasToSendMetadata(toRank,src,dest) ) {
-        vertex.tryDecrementFaceDataExchangeCountersOfSource(src,dest);
-
-        #ifdef Asserts
-        logInfo("prepareSendToNeighbour(...)","to rank "<<toRank <<" vertex="<<x.toString()<<" src="<<src.toString()<<" dest="<<dest.toString());
-        #endif
-        if ( vertex.hasToSendDataToNeighbour(src,dest) ) {
-          sendSolverDataToNeighbour(
-              toRank,src,dest,
-              vertex.getCellDescriptionsIndex()[srcScalar],
-              vertex.getCellDescriptionsIndex()[destScalar],
-              x,level);
-        } else {
-          sendEmptySolverDataToNeighbour(toRank,src,dest,x,level);
-        }
-      }
-      enddforx
-    enddforx
+    vertex.sendToNeighbour(toRank,x,h,level);
   }
-}
-
-void exahype::mappings::Sending::sendEmptySolverDataToNeighbour(
-    const int                                     toRank,
-    const tarch::la::Vector<DIMENSIONS, int>&     src,
-    const tarch::la::Vector<DIMENSIONS, int>&     dest,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  for ( auto* solver : exahype::solvers::RegisteredSolvers ) {
-    if ( solver->isSending(_localState.getAlgorithmSection()) ) {
-      solver->sendEmptyDataToNeighbour(toRank,x,level);
-    }
-  }
-
-  logDebug("sendEmptySolverDataToNeighbour(...)","empty metadata sent to rank "<<toRank<<", x:"<<
-           x.toString() << ", level=" <<level);
-
-  exahype::sendNeighbourCommunicationMetadataSequenceWithInvalidEntries(
-      toRank,x,level);
-}
-
-void exahype::mappings::Sending::sendSolverDataToNeighbour(
-    const int                                    toRank,
-    const tarch::la::Vector<DIMENSIONS,int>&     src,
-    const tarch::la::Vector<DIMENSIONS,int>&     dest,
-    const int                                    srcCellDescriptionIndex,
-    const int                                    destCellDescriptionIndex,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level) const {
-  assertion(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(srcCellDescriptionIndex));
-  assertion(exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(srcCellDescriptionIndex));
-
-  for ( unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber ) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if ( solver->isSending(_localState.getAlgorithmSection()) ) {
-      const int element = solver->tryGetElement(srcCellDescriptionIndex,solverNumber);
-      if ( element!=exahype::solvers::Solver::NotFound ) {
-        solver->sendDataToNeighbour(toRank,srcCellDescriptionIndex,element,src,dest,x,level);
-      } else {
-        solver->sendEmptyDataToNeighbour(toRank,x,level);
-      }
-    }
-  }
-
-  logDebug("sendSolverDataToNeighbour(...)","metadata sent to rank "<<toRank<<", x:"<<
-           x.toString() << ", level=" <<level);
-
-  exahype::sendNeighbourCommunicationMetadata(
-      toRank,srcCellDescriptionIndex,src,dest,x,level);
 }
 
 ///////////////////////////////////////
@@ -362,65 +283,26 @@ void exahype::mappings::Sending::prepareSendToMaster(
   peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
 
   if ( reduceTimeStepData() ) {
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      if (solver->isSending(_localState.getAlgorithmSection())) {
-        solver->sendDataToMaster(
-            tarch::parallel::NodePool::getInstance().getMasterRank(),
-            verticesEnumerator.getCellCenter(),
-            verticesEnumerator.getLevel());
-      }
-    }
-  }
+    exahype::Cell::reduceGlobalDataToMaster(
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        coarseGridVerticesEnumerator.getCellCenter(),
+        coarseGridVerticesEnumerator.getLevel());
 
-  if (
-      reduceTimeStepData() ||
-      reduceFaceData()
-  ) {
-    if ( localCell.isInside() && localCell.isInitialised() ) {
+    if ( !reduceFaceData() ) {
       exahype::sendMasterWorkerCommunicationMetadata(
           tarch::parallel::NodePool::getInstance().getMasterRank(),
           localCell.getCellDescriptionsIndex(),
           verticesEnumerator.getCellCenter(),
           verticesEnumerator.getLevel());
+    }
+  }
 
-      if ( reduceFaceData() ) {
-        for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-          auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-          if ( solver->isSending(_localState.getAlgorithmSection()) ) {
-            const int element = solver->tryGetElement(localCell.getCellDescriptionsIndex(),solverNumber);
-            if ( element!=exahype::solvers::Solver::NotFound ) {
-              solver->sendDataToMaster(
-                  tarch::parallel::NodePool::getInstance().getMasterRank(),
-                  localCell.getCellDescriptionsIndex(),
-                  element,
-                  verticesEnumerator.getCellCenter(),
-                  verticesEnumerator.getLevel());
-            } else {
-              solver->sendEmptyDataToMaster(
-                  tarch::parallel::NodePool::getInstance().getMasterRank(),
-                  verticesEnumerator.getCellCenter(),
-                  verticesEnumerator.getLevel());
-            }
-          }
-        }
-      }
-    } else if ( localCell.isInside() && !localCell.isInitialised() ) {
-      exahype::sendMasterWorkerCommunicationMetadataSequenceWithInvalidEntries(
-          tarch::parallel::NodePool::getInstance().getMasterRank(),
-          verticesEnumerator.getCellCenter(),
-          verticesEnumerator.getLevel());
-
-      if ( reduceFaceData() ) {
-        for (auto solver : exahype::solvers::RegisteredSolvers) {
-          if (solver->isSending(_localState.getAlgorithmSection())) {
-            solver->sendEmptyDataToMaster(
-                tarch::parallel::NodePool::getInstance().getMasterRank(),
-                verticesEnumerator.getCellCenter(),
-                verticesEnumerator.getLevel());
-          }
-        }
-      }
-    } // else  do nothing
+  if ( reduceFaceData() ) {
+    localCell.reduceDataToMasterPerCell(
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        localCell.getCellDescriptionsIndex(),
+        verticesEnumerator.getCellCenter(),
+        verticesEnumerator.getLevel());
   }
 
   peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
@@ -439,83 +321,26 @@ void exahype::mappings::Sending::mergeWithMaster(
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
   if ( reduceTimeStepData() ) {
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      if ( solver->isSending(_localState.getAlgorithmSection()) ) {
-        solver->mergeWithWorkerData(
-                  worker,
-                  fineGridVerticesEnumerator.getCellCenter(),
-                  fineGridVerticesEnumerator.getLevel());
-      }
+    exahype::Cell::mergeWithGlobalDataFromWorker(
+        worker,
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getLevel());
+
+    if ( !reduceFaceData() ) {
+      fineGridCell.mergeWithWorkerMetadata(
+          worker,
+          fineGridVerticesEnumerator.getCellCenter(),
+          fineGridVerticesEnumerator.getLevel(),
+          _localState.getAlgorithmSection());
     }
   }
 
-  if (
-      reduceTimeStepData() ||
-      reduceFaceData()
-  ) {
-    if (workerGridCell.isInside() && fineGridCell.isInitialised()) {
-      const int receivedMetadataIndex =
-          exahype::receiveMasterWorkerCommunicationMetadata(
-              worker,fineGridVerticesEnumerator.getCellCenter(),
-              fineGridVerticesEnumerator.getLevel());
-      exahype::MetadataHeap::HeapEntries& receivedMetadata =
-          exahype::MetadataHeap::getInstance().getData(receivedMetadataIndex);
-
-      for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-        if ( solver->isSending(_localState.getAlgorithmSection()) ) {
-          const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-          const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-          if (
-             receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry &&
-             element!=exahype::solvers::Solver::NotFound
-          ) {
-            exahype::MetadataHeap::HeapEntries metadataPortion(
-                receivedMetadata.begin()+offset,
-                receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
-
-            if ( !reduceFaceData() ) {
-              solver->mergeWithWorkerMetadata(
-                  metadataPortion,
-                  fineGridCell.getCellDescriptionsIndex(),element);
-
-            } else {
-              solver->mergeWithWorkerData(
-                  worker,
-                  metadataPortion,
-                  fineGridCell.getCellDescriptionsIndex(),element,
-                  fineGridVerticesEnumerator.getCellCenter(),
-                  fineGridVerticesEnumerator.getLevel());
-            }
-          } else {
-            if ( reduceFaceData() ) {
-              solver->dropWorkerData(
-                  worker,
-                  fineGridVerticesEnumerator.getCellCenter(),
-                  fineGridVerticesEnumerator.getLevel());
-            }
-          }
-        }
-      }
-      exahype::MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
-    } else if ( workerGridCell.isInside() && !fineGridCell.isInitialised() ) {
-      exahype::dropMetadata(
-          worker,
-          peano::heap::MessageType::MasterWorkerCommunication,
-          fineGridVerticesEnumerator.getCellCenter(),
-          fineGridVerticesEnumerator.getLevel());
-
-      if ( reduceFaceData() ) {
-        for (auto solver : exahype::solvers::RegisteredSolvers) {
-          if (solver->isSending(_localState.getAlgorithmSection())) {
-            solver->dropWorkerData(
-                worker,
-                fineGridVerticesEnumerator.getCellCenter(),
-                fineGridVerticesEnumerator.getLevel());
-          }
-        }
-      }
-    } // else do nothing
+  if ( reduceFaceData() ) {
+    fineGridCell.mergeWithDataFromWorkerPerCell(
+        worker
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getCellSize(),
+        fineGridVerticesEnumerator.getLevel());
   }
 }
 

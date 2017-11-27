@@ -53,6 +53,109 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * The log device of this class.
    */
   static tarch::logging::Log _log;
+
+  /*! Helper routine for mergeNeighbours.
+   *
+   * TODO(Dominic): Add docu.
+   */
+  void mergeNeighboursDataAndMetadata(
+      double*** tempFaceUnknowns,
+      const tarch::la::Vector<DIMENSIONS,int>&  pos1,
+      const int pos1Scalar,
+      const tarch::la::Vector<DIMENSIONS,int>&  pos2,
+      const int pos2Scalar) const;
+
+  /*! Helper routine for mergeNeighbours.
+   *
+   * TODO(Dominic): Add docu.
+   */
+  void mergeWithBoundaryData(
+      double*** tempFaceUnknowns,
+      const tarch::la::Vector<DIMENSIONS,int>&  pos1,
+      const int pos1Scalar,
+      const tarch::la::Vector<DIMENSIONS,int>&  pos2,
+      const int pos2Scalar) const;
+
+  #ifdef Parallel
+
+  /*! Helper routine for sendToNeighbour
+   *
+   * Loop over all the solvers and check
+   * send out empty messages for the particular
+   * solver.
+   *
+   * \note Not thread-safe.
+   */
+  void sendEmptySolverDataToNeighbour(
+      const int                                     toRank,
+      const tarch::la::Vector<DIMENSIONS, int>&     src,
+      const tarch::la::Vector<DIMENSIONS, int>&     dest,
+      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const int                                     level) const;
+
+  /*! Helper routine for sendToNeighbour
+   *
+   * Loop over all the solvers and check
+   * if a cell description (ADERDGCellDescription,
+   * FiniteVolumesCellDescription,...) is registered
+   * for the solver type. If so, send
+   * out data or empty messages to the rank \p toRank that
+   * owns the neighbouring domain.
+   *
+   * If not so, send out empty messages for the particular
+   * solver.
+   *
+   * \note Not thread-safe.
+   */
+  void sendSolverDataToNeighbour(
+      const int                                    toRank,
+      const tarch::la::Vector<DIMENSIONS,int>&     src,
+      const tarch::la::Vector<DIMENSIONS,int>&     dest,
+      const int                                    srcCellDescriptionIndex,
+      const int                                    destCellDescriptionIndex,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) const;
+
+  /*! Helper routine for receiveNeighbourData.
+   *
+   * Iterates over the received metadata and
+   * drops the received neighbour data.
+   *
+   * \note Not thread-safe.
+   */
+  void dropNeighbourData(
+      const int fromRank,
+      const exahype::MetadataHeap::HeapEntries& receivedMetadata,
+      const int srcCellDescriptionIndex,
+      const int destCellDescriptionIndex,
+      const tarch::la::Vector<DIMENSIONS,int>& src,
+      const tarch::la::Vector<DIMENSIONS,int>& dest,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int level) const;
+
+  /*!
+   * ! Helper routine for receiveNeighbourData.
+   *
+   * Iterates over the received metadata and every time
+   * we find a valid entry, we call mergeWithNeighbourData
+   * on the solver corresponding to the metadata.
+   * if we want to receive the neighbour data
+   * or if we just want to drop it.
+   *
+   * \note Not thread-safe.
+   */
+  void mergeWithNeighbourData(
+      const int fromRank,
+      const exahype::MetadataHeap::HeapEntries& receivedMetadata,
+      double*** tempFaceUnknowns,
+      const int srcCellDescriptionIndex,
+      const int destCellDescriptionIndex,
+      const tarch::la::Vector<DIMENSIONS,int>& src,
+      const tarch::la::Vector<DIMENSIONS,int>& dest,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int level) const;
+  #endif
+
  public:
   /**
    * Default Constructor
@@ -173,6 +276,70 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
           const tarch::la::Vector<DIMENSIONS,int>& pos1,
           const tarch::la::Vector<DIMENSIONS,int>& pos2,
           bool state) const;
+
+  /*!Solve Riemann problems on all interior faces that are adjacent
+   * to this vertex and impose boundary conditions on faces that
+   * belong to the boundary.
+   *
+   * This is done for all cell descriptions
+   * belonging to the cells that are an interior face.
+   *
+   * The routine itself runs the loop over the faces. The actual
+   * functionality is outsourced to solveRiemannProblemAtInterface().
+   *
+   * The function ensures implicitly that interior faces
+   * do not align with MPI boundaries. In this case, no operation
+   * is performed.
+   *
+   * This method sets the riemannSolvePerformed flag on a cell description
+   * if boundary conditions have been imposed for this cell description.
+   * This method sets the riemannSolvePerformed flag on both cell descriptions
+   * (per solver) for interior faces if a Riemann solve has been performed for
+   * both cell descriptions.
+   *
+   * \note The function itself is not thread-safe.
+   * Thread-safety of this function must be ensured by setting
+   * touchVertexFirstTimeSpecification()
+   * to peano::MappingSpecification::AvoidFineGridRaces.
+   *
+   * <h2>Shared Memory</h2>
+   *
+   * The AvoidFineGridRaces multithreading touchVertexFirstTime
+   * specification prevents that more than one threads write data for
+   * the same face of the grid at the same time.
+   *
+   * The specification is realised by touching the vertices in
+   * a red-black (X and O in the figure below) manner:
+   * We might first process the X-vertices in parallel
+   * and then the O-vertices.
+   * In each step, faces adjacent to the vertices,
+   * do not overlap and race conditions can thus
+   * not occur.
+   *
+   *     |    |
+   *     |    |
+   * ----O----X-----
+   *     |    |
+   *     |    |
+   * ----X----O-----
+   *     |    |
+   *     |    |
+   *
+   * TODO(Dominic): It might be useful to introduce a multithreading specification
+   * "AvoidFineGridRacesOnlyRed" that processes only the red
+   * vertices and not the black ones. In fact, the second sweep over the black vertices only
+   * finds the riemannSolvePerfomed flags set and does nothing in
+   * our current implementation.
+   *
+   * <h2>Limiter identification</h2>
+   * Each ADER-DG solver analyses the local min and max values within a cell.
+   * This information however is not stored in the cell but on the 2d faces
+   * of a cell.
+   */
+  void mergeNeighbours(
+      double*** tempFaceUnknowns,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
 
 #ifdef Parallel
@@ -426,6 +593,32 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS,int>& dest,
       const int value) const;
 
+  /*! Send face data to neighbouring remote ranks.
+   *
+   * Look up facewise neighbours. If we find a remote boundary,
+   * send face data of every registered solver to the remote rank.
+   *
+   * \param[in] x     position of the vertex.
+   * \param[in] h     extents of adjacent cells.
+   * \param[in] level level this vertex is residing.
+  */
+  void sendToNeighbour(
+      int toRank,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      const int                                    level) const;
+
+  /*! Receive data from remote ranks at all remote boundary faces adjacent to this vertex.
+   *
+   * TODO(Dominic): Add docu.
+   */
+  void receiveNeighbourData(
+      int fromRank,
+      bool mergeWithReceivedData,
+      double*** tempFaceUnknowns,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      int level) const;
 #endif
 };
 

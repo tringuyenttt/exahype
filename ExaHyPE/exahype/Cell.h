@@ -16,9 +16,14 @@
 
 #include "exahype/State.h"
 
-#include "exahype/records/Cell.h"
+#include <deque>
+
 #include "peano/grid/Cell.h"
 #include "peano/grid/VertexEnumerator.h"
+
+#include "peano/utils/Globals.h"
+
+#include "exahype/records/Cell.h"
 
 #include "exahype/records/ADERDGCellDescription.h"
 #include "exahype/records/FiniteVolumesCellDescription.h"
@@ -43,6 +48,28 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   typedef class peano::grid::Cell<exahype::records::Cell> Base;
 
   static tarch::logging::Log _log;
+
+  #ifdef Parallel
+  /**
+   * Heap index for tempoarily storing metadata between
+   * the calls of Mapping::receiveDataFromMaster and Mapping::mergeWithWorker.
+   */
+  int _receivedMetadataHeapIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
+
+  /**
+   * Heap index for temporarily storing metadata between
+   * Mapping::receiveDataFromMaster and Mapping::mergeWithWorker.
+   */
+  std::deque<int> _receivedDataHeapIndices;
+
+  /**
+   * \return true if the cell is inside and the
+   * cell size does belong to a grid level that is
+   * occupied by a solver.
+   */
+  bool hasToCommunicate(
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize ) const;
+  #endif
 
  public:
   /**
@@ -148,72 +175,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
         const exahype::Vertex* const verticesAroundCell,
         const peano::grid::VertexEnumerator& verticesEnumerator);
 
-  #ifdef Parallel
-  /**
-   * Returns true if the cell corresponding
-   * to the vertices \p verticesAroundCell
-   * is neighbour to a remote rank
-   * via one of the faces.
-   */
-  static bool isAdjacentToRemoteRank(
-      exahype::Vertex* const verticesAroundCell,
-      const peano::grid::VertexEnumerator& verticesEnumerator);
-
-  /**
-   * Count the listings of remote ranks sharing a vertex
-   * adjacent to the face \p faceIndex of a cell with this rank.
-   * In case all vertices adjacent to the face are inside of the domain,
-   * this value is either 0 or 2^{d-1}.
-   *
-   * If we count 2^{d-1} listings, we directly know that this rank
-   * shares a whole face with a remote rank.
-   * If we count 0 listings, we do not have
-   * a remote rank adjacent to this face.
-   *
-   * We know from the result of this function how
-   * many vertices will try to exchange neighbour information
-   * at this face.
-   *
-   * <h2>Boundary vertices</h2>
-   * Boundary vertices are ignored by the counting since they are
-   * skipped in all merging and sending routines;
-   * see method exahype::Vertex::hasToCommunicate.
-   * This introduces further values for
-   * the counted listings:
-   *
-   * 2^{d-2} - two vertices belong to the boundary.
-   * 2^{d-3} - (only in 3d) three vertices belong to the boundary. This might
-   *           happen in a corner of the domain if the bounding
-   *           box is not scaled.
-   *
-   * @developers:
-   * TODO(Dominic): We currently check for uniqueness of the
-   * remote rank. This might however not be necessary.
-   */
-  static int countListingsOfRemoteRankAtFace(
-      const int faceIndex,
-      exahype::Vertex* const verticesAroundCell,
-      const peano::grid::VertexEnumerator& verticesEnumerator);
-
-  /**
-   * Receives metadata from a worker and merges it with all
-   * solvers registered on the cell.
-   */
-  void mergeWithWorkerMetadata(
-      const int                                   workerRank,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int                                   level,
-      const exahype::records::State::AlgorithmSection& section) const;
-
-  /**
-   * Receives metadata from the master and merges it with all
-   * solvers registered on the cell.
-   */
-  void mergeWithMasterMetadata(
-      const int                                   receivedMetadataIndex,
-      const exahype::records::State::AlgorithmSection& section) const;
-  #endif
-
   /**
    * Computes the barycentre of a face of a cell.
    *
@@ -316,6 +277,204 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * @TODO bug
    */
   bool isInitialised() const;
+
+
+  #ifdef Parallel
+  /**
+   * Returns true if the cell corresponding
+   * to the vertices \p verticesAroundCell
+   * is neighbour to a remote rank
+   * via one of the faces.
+   */
+  static bool isAdjacentToRemoteRank(
+      exahype::Vertex* const verticesAroundCell,
+      const peano::grid::VertexEnumerator& verticesEnumerator);
+
+  /**
+   * Count the listings of remote ranks sharing a vertex
+   * adjacent to the face \p faceIndex of a cell with this rank.
+   * In case all vertices adjacent to the face are inside of the domain,
+   * this value is either 0 or 2^{d-1}.
+   *
+   * If we count 2^{d-1} listings, we directly know that this rank
+   * shares a whole face with a remote rank.
+   * If we count 0 listings, we do not have
+   * a remote rank adjacent to this face.
+   *
+   * We know from the result of this function how
+   * many vertices will try to exchange neighbour information
+   * at this face.
+   *
+   * <h2>Boundary vertices</h2>
+   * Boundary vertices are ignored by the counting since they are
+   * skipped in all merging and sending routines;
+   * see method exahype::Vertex::hasToCommunicate.
+   * This introduces further values for
+   * the counted listings:
+   *
+   * 2^{d-2} - two vertices belong to the boundary.
+   * 2^{d-3} - (only in 3d) three vertices belong to the boundary. This might
+   *           happen in a corner of the domain if the bounding
+   *           box is not scaled.
+   *
+   * @developers:
+   * TODO(Dominic): We currently check for uniqueness of the
+   * remote rank. This might however not be necessary.
+   */
+  static int countListingsOfRemoteRankAtFace(
+      const int faceIndex,
+      exahype::Vertex* const verticesAroundCell,
+      const peano::grid::VertexEnumerator& verticesEnumerator);
+
+  /**
+   * Receives metadata from the master and merges it with all
+   * solvers registered on the cell.
+   */
+  void mergeWithMasterMetadata(
+      const int                                   receivedMetadataIndex,
+      const exahype::records::State::AlgorithmSection& section) const;
+
+  // MASTER->WORKER
+
+  /*! Broadcast data per cell to a worker.
+   *
+   * Loop over all solvers and send data down
+   * to the worker if the respective solver
+   * has registered a patch at this cell which
+   * requires such a send.
+   * In all other cases, send a zero-length
+   * message.
+   *
+   * \param[in] worker the worker rank.
+   * \param[in] cellCentre centre of this cell.
+   * \param[in] cellSize   size of this cell.
+   * \param[in] level      grid level this cell is residing at.
+   */
+  void broadcastDataToWorkerPerCell(
+    const int worker,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const int                                  level) const;
+
+  /*! Receive cell-wise heap data from the master.
+   *
+   * \note Must be called on the "receivedCell" in "Mapping::receiveDataFromMaster".
+   *
+   * \param[in] cellCentrie centre of the received cell.
+   * \param[in] level grid level the received cell resides at.
+   *
+   */
+  void receiveDataFromMasterPerCell(
+      const int                                   master,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+
+  /*! Merge received heap data with the local cell.
+   *
+   * In Peano's two-step receive-from-master process,
+   * we first receive data in "Mapping::receiveDataFromMaster".
+   * We store received heap data in the fields _receivedDataHeapIndex and
+   * _receivedHeapDataIndices of the "receivedCell".
+   *
+   * In the second and last step, we then pass the "receivedCell"
+   * to the "localCell" in "Mapping::mergeWithWorker".
+   * Here, we pick up the previously received heap data, merge
+   * it with the "localCell", and then delete the heap data associated
+   * with the "receivedCell".
+   *
+   * \note Must be called on the "localCell" in "Mapping::mergeWithWorker".
+   *
+   * \param[in] receivedCell a cell received from the master which we also use to store heap indices.
+   * \param[in] cellSize size of either cell.
+   */
+  void mergeWithMasterDataPerCell(
+      const Cell&                                 receivedCell,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize );
+
+  /*!
+   * Send data such global solver and plotter
+   * time step data down to a worker.
+   */
+  static void broadcastGlobalDataToWorker(
+      const int                                   worker,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+
+  /*!
+   * Merge with global data such as global solver and plotter
+   * time step data sent down from the master.
+   */
+  static void mergeWithGlobalDataFromMaster(
+      const int                                   master,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+
+  // WORKER->MASTER
+
+
+  /**
+   * Receives metadata from a worker and merges it with all
+   * solvers registered on the cell.
+   */
+  void mergeWithWorkerMetadata(
+      const int                                   workerRank,
+      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const int                                   level,
+      const exahype::records::State::AlgorithmSection& section) const;
+
+
+  /**
+   * Reduce metadata and face data to the master
+   * In contrast to the two-step broadcast merging
+   * process, reductions are a single-step process.
+   *
+   * \param[in] master     the master rank.
+   * \param[in] cellCentre centre of this cell.
+   * \param[in] cellSize   size of this cell.
+   * \param[in] level      grid level this cell is residing at.
+   */
+  void reduceDataToMasterPerCell(
+      const int                                   master,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const int                                   level) const;
+
+  /**
+   * Merge metadata and face data from the worker.
+   * In contrast to the two-step broadcast merging
+   * process, reductions are a single-step process.
+   *
+   * \param[in] worker     the worker rank.
+   * \param[in] cellCentre centre of this cell.
+   * \param[in] cellSize   size of this cell.
+   * \param[in] level      grid level this cell is residing at.
+   */
+  void mergeWithDataFromWorkerPerCell(
+      const int                                   worker,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const int                                   level) const;
+
+  // global
+
+  /*!
+   * Send data such global solver
+   * time step data up to the master.
+   */
+  static void reduceGlobalDataToMaster(
+    const int                                   master,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const int                                   level);
+
+  /*!
+   * Merge with global data such as global solver
+   * time step data sent up from the master.
+   */
+  static void mergeWithGlobalDataFromWorker(
+      const int                                   worker,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+  #endif
 };
 
 #endif

@@ -937,18 +937,20 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level) const override;
 
+  void receiveDataFromMaster(
+        const int                                    masterRank,
+        std::deque<int>&                             heapIndices,
+        const tarch::la::Vector<DIMENSIONS, double>& x,
+        const int                                    level) const final override;
+
   void mergeWithMasterData(
-      const int                                     masterRank,
-      const exahype::MetadataHeap::HeapEntries&     masterMetadata,
-      const int                                     cellDescriptionsIndex,
-      const int                                     element,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      const MetadataHeap::HeapEntries&             masterMetadata,
+      std::deque<int>&                             heapIndices,
+      const int                                    cellDescriptionsIndex,
+      const int                                    element) const final override;
 
   void dropMasterData(
-      const int                                     masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
-      const int                                     level) const override;
+      std::deque<int>& heapIndices) const final override;
 #endif
 
   void validateNoNansInFiniteVolumesSolution(CellDescription& cellDescription,const int cellDescriptionsIndex,const char* methodTrace) const;

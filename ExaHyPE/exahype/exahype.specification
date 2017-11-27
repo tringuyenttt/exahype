@@ -19,6 +19,9 @@ state:
   
 event-mapping:
   name: SolutionUpdate
+  
+event-mapping:
+  name: FusedTimeStep
 
 event-mapping: // -DEC: consider to move the computation of boundary extrapolated values out of the space-time predictor mapping
   name: Prediction
@@ -27,16 +30,13 @@ event-mapping:
   name: LoadBalancing
  
 event-mapping:
-  name: Merging
+  name: BroadcastGlobalDataAndDropNeighbourMessages
+  
+event-mapping:
+  name: BroadcastGlobalDataAndMergeNeighbourMessages
 
 event-mapping:
   name: Sending
-
-event-mapping:
-  name: PreProcessing
-
-event-mapping:
-  name: PostProcessing
  
 event-mapping:
   name: Plot
@@ -66,20 +66,16 @@ event-mapping:
   
 adapter:
   name: MeshRefinement
-  merge-with-user-defined-mapping: PreProcessing
   merge-with-user-defined-mapping: MeshRefinement          // (createInner/BoundaryVertex,enterCell,serial)
   merge-with-user-defined-mapping: LoadBalancing
-  merge-with-user-defined-mapping: PostProcessing
   merge-with-predefined-mapping:   MultiscaleLinkedCell(CellDescriptionsIndex) // (createInner/BoundaryVertex,enterCell,avoidfinegridraces)
 
 adapter:
   name: MeshRefinementAndPlotGrid
-  merge-with-user-defined-mapping: PreProcessing
   merge-with-user-defined-mapping: MeshRefinement           //(createInner/BoundaryVertex,enterCell,serial)
   merge-with-predefined-mapping:   VTKGridVisualiser(grid)
   merge-with-user-defined-mapping: AugmentedAMRTreePlot2d
   merge-with-user-defined-mapping: LoadBalancing
-  merge-with-user-defined-mapping: PostProcessing
   merge-with-predefined-mapping:   MultiscaleLinkedCell(CellDescriptionsIndex)  // (createInner/BoundaryVertex,enterCell,avoidfinegridraces)
   
 // adapter:
@@ -89,82 +85,50 @@ adapter:
 
 adapter:
   name: FinaliseMeshRefinement
-  merge-with-user-defined-mapping: PreProcessing
   merge-with-user-defined-mapping: FinaliseMeshRefinement // sends time step data up to the master
-  merge-with-user-defined-mapping: PostProcessing
   merge-with-predefined-mapping:   MultiscaleLinkedCell(CellDescriptionsIndex) // (createInner/BoundaryVertex,enterCell,avoidfinegridraces)
   
 adapter:
   name: FinaliseMeshRefinementOrLocalRollback
-  merge-with-user-defined-mapping: PreProcessing
   merge-with-user-defined-mapping: FinaliseMeshRefinement  // sends time step data up to the master
-  merge-with-user-defined-mapping: LocalRollback
-  merge-with-user-defined-mapping: PostProcessing
+  merge-with-user-defined-mapping: LocalRollback           // does not send because 
   merge-with-predefined-mapping:   MultiscaleLinkedCell(CellDescriptionsIndex) // (createInner/BoundaryVertex,enterCell,avoidfinegridraces)
   
 // Adapter for 1 phase time stepping
 adapter: 
   name: FusedTimeStep
-  // needs corrector time step size
-  merge-with-user-defined-mapping: Merging  // Merging must start new time step in ; pre-processing done directly
-  merge-with-user-defined-mapping: SolutionUpdate
-  merge-with-user-defined-mapping: Sending // post=processing done directly
- 
-adapter: 
-  name: PlotAndFusedTimeStep
-  // needs corrector time step size
-  merge-with-user-defined-mapping: Merging // Merging must start new time step in touchVertexFirstTime
-  merge-with-user-defined-mapping: Plot
-  // merge-with-user-defined-mapping: AugmentedAMRTreePlot2d 
-  merge-with-user-defined-mapping: SolutionUpdate
-  merge-with-user-defined-mapping: Sending  // post=processing done directly
+  merge-with-user-defined-mapping: FusedTimeStep
   
 adapter:
-  name: PredictionRerun
-  merge-with-user-defined-mapping: PreProcessing 
-  merge-with-user-defined-mapping: Merging        // Has to drop the previously sent out face data 
-  merge-with-user-defined-mapping: Prediction     // DEC: after predictor we can start the face data exchange
-  merge-with-user-defined-mapping: Sending        // send only face data; post-processing done directly
+  name: PredictionRerun 
+  merge-with-user-defined-mapping: PredictionRerun
 
 // Additional adapters for limiter status spreading and recomputation
+adapter: 
+  name: BroadcastGlobalDataAndDropNeighbourMessages
+  merge-with-user-defined-mapping: BroadcastGlobalDataAndDropNeighbourMessages
+
 adapter:
   name: LimiterStatusSpreading
   merge-with-user-defined-mapping: LimiterStatusSpreading
 
 adapter: 
   name: PredictionOrLocalRecomputation
-  merge-with-user-defined-mapping: PreProcessing
-  merge-with-user-defined-mapping: LocalRecomputation // This advances in time for local recomp.
-  merge-with-user-defined-mapping: Prediction         // only for solvers who requested mesh refinement if fused time stepping
-  merge-with-user-defined-mapping: Sending // Send time step data (and face data for fused); post-processing done directly
+  merge-with-user-defined-mapping: PredictionOrLocalRecomputation // This advances in time for local recomp.
   
 adapter:
   name: GlobalRollback
-  merge-with-user-defined-mapping: PreProcessing
-  merge-with-user-defined-mapping: GlobalRollback
-  merge-with-user-defined-mapping: PostProcessing    
+  merge-with-user-defined-mapping: GlobalRollback    
  
 // Additional adapters for 4 phase time stepping
 adapter: 
-  name: Merging
-  merge-with-user-defined-mapping: Merging
-  merge-with-user-defined-mapping: PostProcessing 
+  name: BroadcastGlobalDataAndMergeNeighbourMessages
+  merge-with-user-defined-mapping: BroadcastGlobalDataAndMergeNeighbourMessages
 
 adapter:
   name: SolutionUpdate
-  merge-with-user-defined-mapping: PreProcessing
   merge-with-user-defined-mapping: SolutionUpdate
-  merge-with-user-defined-mapping: Sending // send only time step data
 
 adapter:
   name: Prediction
-  merge-with-user-defined-mapping: PreProcessing 
-  merge-with-user-defined-mapping: Prediction     // DEC: after predictor we can start the face data exchange
-  merge-with-user-defined-mapping: Sending        // send only face data; post-processing done directly
-
-adapter:
-  name: PredictionAndPlot
-  merge-with-user-defined-mapping: PreProcessing
   merge-with-user-defined-mapping: Prediction
-  merge-with-user-defined-mapping: Plot           // send only face data; post-processing done directly
-  merge-with-user-defined-mapping: Sending

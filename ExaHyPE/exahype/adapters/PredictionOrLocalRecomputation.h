@@ -18,10 +18,7 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/PreProcessing.h"
- #include "exahype/mappings/LocalRecomputation.h"
- #include "exahype/mappings/Prediction.h"
- #include "exahype/mappings/Sending.h"
+ #include "exahype/mappings/PredictionOrLocalRecomputation.h"
 
 
 
@@ -41,15 +38,9 @@ namespace exahype {
  */
 class exahype::adapters::PredictionOrLocalRecomputation {
   private:
-    typedef mappings::PreProcessing Mapping0;
-    typedef mappings::LocalRecomputation Mapping1;
-    typedef mappings::Prediction Mapping2;
-    typedef mappings::Sending Mapping3;
+    typedef mappings::PredictionOrLocalRecomputation Mapping0;
 
-     Mapping0  _map2PreProcessing;
-     Mapping1  _map2LocalRecomputation;
-     Mapping2  _map2Prediction;
-     Mapping3  _map2Sending;
+     Mapping0  _map2PredictionOrLocalRecomputation;
 
 
   public:

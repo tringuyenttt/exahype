@@ -1,7 +1,7 @@
 // This file is part of the Peano project. For conditions of distribution and 
 // use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_PlotAndFusedTimeStep_H_
-#define EXAHYPE_ADAPTERS_PlotAndFusedTimeStep_H_
+#ifndef EXAHYPE_ADAPTERS_BroadcastGlobalDataAndDropNeighbourMessages_H_
+#define EXAHYPE_ADAPTERS_BroadcastGlobalDataAndDropNeighbourMessages_H_
 
 
 #include "tarch/logging/Log.h"
@@ -18,16 +18,13 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/Merging.h"
- #include "exahype/mappings/Plot.h"
- #include "exahype/mappings/SolutionUpdate.h"
- #include "exahype/mappings/Sending.h"
+ #include "exahype/mappings/BroadcastGlobalDataAndDropNeighbourMessages.h"
 
 
 
 namespace exahype {
       namespace adapters {
-        class PlotAndFusedTimeStep;
+        class BroadcastGlobalDataAndDropNeighbourMessages;
       } 
 }
 
@@ -39,17 +36,11 @@ namespace exahype {
  * @author Peano Development Toolkit (PDT) by  Tobias Weinzierl
  * @version $Revision: 1.10 $
  */
-class exahype::adapters::PlotAndFusedTimeStep {
+class exahype::adapters::BroadcastGlobalDataAndDropNeighbourMessages {
   private:
-    typedef mappings::Merging Mapping0;
-    typedef mappings::Plot Mapping1;
-    typedef mappings::SolutionUpdate Mapping2;
-    typedef mappings::Sending Mapping3;
+    typedef mappings::BroadcastGlobalDataAndDropNeighbourMessages Mapping0;
 
-     Mapping0  _map2Merging;
-     Mapping1  _map2Plot;
-     Mapping2  _map2SolutionUpdate;
-     Mapping3  _map2Sending;
+     Mapping0  _map2BroadcastGlobalDataAndDropNeighbourMessages;
 
 
   public:
@@ -61,16 +52,16 @@ class exahype::adapters::PlotAndFusedTimeStep {
     peano::MappingSpecification         descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    PlotAndFusedTimeStep();
+    BroadcastGlobalDataAndDropNeighbourMessages();
 
     #if defined(SharedMemoryParallelisation)
-    PlotAndFusedTimeStep(const PlotAndFusedTimeStep& masterThread);
+    BroadcastGlobalDataAndDropNeighbourMessages(const BroadcastGlobalDataAndDropNeighbourMessages& masterThread);
     #endif
 
-    virtual ~PlotAndFusedTimeStep();
+    virtual ~BroadcastGlobalDataAndDropNeighbourMessages();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const PlotAndFusedTimeStep& workerThread);
+    void mergeWithWorkerThread(const BroadcastGlobalDataAndDropNeighbourMessages& workerThread);
     #endif
 
     void createInnerVertex(

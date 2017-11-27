@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
  
-#ifndef EXAHYPE_MAPPINGS_Prediction_H_
-#define EXAHYPE_MAPPINGS_Prediction_H_
+#ifndef EXAHYPE_MAPPINGS_PredictionRerun_H_
+#define EXAHYPE_MAPPINGS_PredictionRerun_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -33,54 +33,22 @@
 
 namespace exahype {
   namespace mappings {
-    class Prediction;
+    class PredictionRerun;
   }
 }
 
 /**
- * This mapping realises the space-time predictor
+ * In principle a copy of Prediction
+ * with two differences:
  *
- * We do run through all the cells and, per solver, run the space-time
- * prediction and the volume integral.
- * Most of the interesting stuff is done in enterCell().
- *
- * The other methods despite leaveCell(...) as well as MPI- and Shared-Mem-specific methods
- * perform no operation.
- *
- * This mapping's enterCell(...) and leaveCell(...) methods are further used to
- * prolongate coarse grid face unknowns down to fine grid cells and to
- * restrict coarse grid face unknowns up to coarse grid cells.
- *
- * As all state data is encoded in the global solver states and as all data
- * accesses are read-only, the mapping has no object attributes.
- *
- * <h2>MPI</h2>
- *
- * For a valid computation of the space-time prediction, we need to know the
- * correct time step on each rank. We thus distribute time step data among the
- * ranks when we start them up. See prepareSendToWorker() and the corresponding
- * receiveDataFromMaster().
- *
- * <h2>Shared Memory</h2>
- *
- * As the mapping accesses the state data in a read-only fashion, no special
- * attention is required here.
- *
- * <h2>Optimisations</h2>
- * We dedicate each thread a fixed size space-time predictor,
- * space-time volume flux, predictor, and volume flux
- * field. There is no need to store these massive
- * quantities on the heap for each cell as it was done
- * in the baseline code.
- * This massively reduces the memory footprint of
- * the method and might lead to a more
- * cache-friendly code since we reuse
- * the temporary variables multiple times
- * per grid traversal (unverified).
+ * - we drop incoming MPI messages from neighbouring ranks.
+ * - we only recompute the prediction for solvers which
+ *   encountered an unstable time step size
+ *   (according to the CFL criterion).
  *
  * @author Dominic E. Charrier and Tobias Weinzierl
  */
-class exahype::mappings::Prediction {
+class exahype::mappings::PredictionRerun {
 private:
   /**
    * Logging device for the trace macros.
@@ -104,73 +72,7 @@ private:
     */
    exahype::solvers::PredictionTemporaryVariables _predictionTemporaryVariables;
 
-  /**
-   * A semaphore for restrictions.
-   */
-  static tarch::multicore::BooleanSemaphore SemaphoreForRestriction;
  public:
-
-  /**
-   * This method first synchronises the time step sizes and time stamps, and
-   * then resets the Riemann solve flags and the face data exchange counter for all
-   * solvers for which a valid cell description was registered on this cell.
-   *
-   * Directly after, it runs through all solvers assigned to a cell and invoke the solver's
-   * spaceTimePredictor(...) as well as the solver's volumeIntegral(...) routines if
-   * the fine grid cell functions as a compute cell (Cell) for the solver.
-   * Please see the discussion in the class header.
-   *
-   * Furthermore, this method prolongates face data or prepares a
-   * restriction of face data.
-   *
-   * <h2>LimitingADERDGSolver</h2>
-   * We only perform a predictor computation if the cell description's limiter status is not
-   * set to Troubled.
-   * Cell descriptions with limiter status Troubled do not hold a valid ADER-DG solution and thus
-   * cannot provide these data.
-   * The other cells require time-extrapolated boundary-extrapolated solution values from their neighbours
-   * to compute the normal fluxes/fluctuations at the cell boundary.
-   *
-   * \see enterCellSpecification()
-   */
-  static void performPredictionAndProlongateData(
-      const exahype::Cell& fineGridCell,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::solvers::PredictionTemporaryVariables& temporaryVariables,
-      const exahype::State::Records::AlgorithmSection& algorithmSection);
-
-  /**
-   * This routine restricts face data from a
-   * cell description to a parent cell description if the fine grid cell
-   * associated with the cell description is adjacent to a boundary of the
-   * coarser grid cell associated with the parent cell description.
-   *
-   * We further restrict data (e.g. the limiter status) to the
-   * next parent if it exists. This operation is performed
-   * if we send face data or if we reduce time step data.
-   * In the first case, we might encounter a batch. We
-   * then still want to restrict that data up locally
-   * per rank. In the second case, we might run the nonfused
-   * time stepping scheme. Then, we are required to
-   * restrict the limiter status before we
-   * send out face data.
-   *
-   * Lastly, we call post-process on every solver.
-   *
-   * \note We use locks to make both operation thread-safe.
-   *
-   * <h2> Multicore parallelisation </h2>
-   *
-   * We face issues here with pfor as the ADER-DG solver can spawn background
-   * threads. See the documentation of peano::datatraversal::TasksSet for a
-   * remark on this.
-   */
-  static void restrictDataAndPostProcess(
-      const exahype::Cell&                             fineGridCell,
-      const exahype::Cell&                             coarseGridCell,
-      const exahype::State::Records::AlgorithmSection& algorithmSection);
-
   /**
    * Level for which we ask what to do. This value is negative
    * if we are on the fine grid level. In this case, the
@@ -196,24 +98,24 @@ private:
    * Initialise the temporary variables (of the master thread
    * in a shared memory build).
    */
-  Prediction();
+  PredictionRerun();
 
   /**
    * Delete the temporary variables (for
    * master and worker threads in a shared memory build).
    */
-  ~Prediction();
+  ~PredictionRerun();
 
   #if defined(SharedMemoryParallelisation)
   /**
    * Initialise the temporary variables of a
    * worker thread.
    */
-  Prediction(const Prediction& masterThread);
+  PredictionRerun(const PredictionRerun& masterThread);
   /**
    * Nop
    */
-  void mergeWithWorkerThread(const Prediction& workerThread);
+  void mergeWithWorkerThread(const PredictionRerun& workerThread);
   #endif
 
   /**
@@ -227,7 +129,10 @@ private:
   void beginIteration(exahype::State& solverState);
 
   /**
-   * \see performPredictionAndProlongateData
+   * \copydoc exahype::mappings::Prediction::enterCell
+   *
+   * \note Only for solvers which have used an instable
+   * time step size beforehand.
    */
   void enterCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -238,7 +143,10 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * \see restrictDataAndPostProcess
+   * \copydoc exahype::mappings::Prediction::leaveCell
+   *
+   * \note Only for solvers which have used an instable
+   * time step size beforehand.
    */
   void leaveCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -249,11 +157,8 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
 #ifdef Parallel
-  /**
-    * This routine is called on the master.
-    *
-    * Broadcast time step data to the workers.
-    */
+  /** \copydoc exahype::mappings::Prediction::prepareSendToNeighbour
+   */
    bool prepareSendToWorker(
        exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
        const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -263,13 +168,7 @@ private:
        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
        int worker);
 
-   /**
-    * Receive kick-off message from master
-    *
-    * Counterpart of prepareSendToWorker(). This operation is called once when
-    * we receive data from the master node.
-    *
-    * \see prepareSendToWorker(...)
+   /** \copydoc exahype::mappings::Prediction::prepareSendToNeighbour
     */
    void receiveDataFromMaster(
        exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
@@ -282,31 +181,22 @@ private:
        exahype::Cell& workersCoarseGridCell,
        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
-   /*! Send face data to a neighbouring rank.
-    *
+   /** \copydoc exahype::mappings::Prediction::prepareSendToNeighbour
     */
    void prepareSendToNeighbour(exahype::Vertex& vertex, int toRank,
                                const tarch::la::Vector<DIMENSIONS, double>& x,
                                const tarch::la::Vector<DIMENSIONS, double>& h,
                                int level);
 
-
-   /*! Merge metadata and face data sent from the worker.
+   /*! Drop incoming MPI messages for all(!) solvers.
     */
-   void mergeWithMaster(
-       const exahype::Cell& workerGridCell,
-       exahype::Vertex* const workerGridVertices,
-       const peano::grid::VertexEnumerator& workerEnumerator,
-       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-       exahype::Vertex* const coarseGridVertices,
-       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-       exahype::Cell& coarseGridCell,
-       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-       int worker, const exahype::State& workerState,
-       exahype::State& masterState);
+   void mergeWithNeighbour(exahype::Vertex& vertex,
+                           const exahype::Vertex& neighbour, int fromRank,
+                           const tarch::la::Vector<DIMENSIONS, double>& x,
+                           const tarch::la::Vector<DIMENSIONS, double>& h,
+                           int level);
 
-   /*! Send metadata and face data to the master.
+   /** \copydoc exahype::mappings::Prediction::prepareSendToMaster
     */
    void prepareSendToMaster(
        exahype::Cell& localCell, exahype::Vertex* vertices,
@@ -316,20 +206,19 @@ private:
        const exahype::Cell& coarseGridCell,
        const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
+   /** \copydoc exahype::mappings::Prediction::mergeWithWorker
+    */
+   void mergeWithWorker(exahype::Cell& localCell,
+                        const exahype::Cell& receivedMasterCell,
+                        const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+                        const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+                        int level);
+
   //
   // Below all methods are nop.
   //
   //===================================
 
-
-  /**
-   * Nop
-   */
-  void mergeWithNeighbour(exahype::Vertex& vertex,
-                          const exahype::Vertex& neighbour, int fromRank,
-                          const tarch::la::Vector<DIMENSIONS, double>& x,
-                          const tarch::la::Vector<DIMENSIONS, double>& h,
-                          int level);
 
   /**
    * Nop
@@ -366,11 +255,18 @@ private:
   /**
    * Nop
    */
-  void mergeWithWorker(exahype::Cell& localCell,
-                       const exahype::Cell& receivedMasterCell,
-                       const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-                       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-                       int level);
+  void mergeWithMaster(
+      const exahype::Cell& workerGridCell,
+      exahype::Vertex* const workerGridVertices,
+      const peano::grid::VertexEnumerator& workerEnumerator,
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+      int worker, const exahype::State& workerState,
+      exahype::State& masterState);
 
   /**
    * Nop

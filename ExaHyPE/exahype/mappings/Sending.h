@@ -121,46 +121,6 @@ public:
    */
   bool reduceFaceData() const;
 
-#ifdef Parallel
-/**
- * Loop over all the solvers and check
- * if a cell description (ADERDGCellDescription,
- * FiniteVolumesCellDescription,...) is registered
- * for the solver type. If so, send
- * out data or empty messages to the rank \p toRank that
- * owns the neighbouring domain.
- *
- * If not so, send out empty messages for the particular
- * solver.
- *
- * TODO(Dominic): Make messaging solver functionality?
- *
- * \note Not thread-safe.
- */
-void sendSolverDataToNeighbour(
-    const int                                    toRank,
-    const tarch::la::Vector<DIMENSIONS,int>&     src,
-    const tarch::la::Vector<DIMENSIONS,int>&     dest,
-    const int                                    srcCellDescriptionIndex,
-    const int                                    destCellDescriptionIndex,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level) const;
-
-/**
- * Loop over all the solvers and check
- * send out empty messages for the particular
- * solver.
- *
- * \note Not thread-safe.
- */
-void sendEmptySolverDataToNeighbour(
-    const int                                     toRank,
-    const tarch::la::Vector<DIMENSIONS,int>&      src,
-    const tarch::la::Vector<DIMENSIONS,int>&      dest,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const;
-#endif
-
  public:
   /**
    * Run through whole tree. Run concurrently on fine grid.

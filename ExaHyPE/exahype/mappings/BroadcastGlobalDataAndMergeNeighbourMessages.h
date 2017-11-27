@@ -13,8 +13,8 @@
  * @author Dominic E. Charrier, Tobias Weinzierl
  **/
 
-#ifndef EXAHYPE_MAPPINGS_Merging_H_
-#define EXAHYPE_MAPPINGS_Merging_H_
+#ifndef EXAHYPE_MAPPINGS_BroadcastGlobalDataAndMergeNeighbourMessages_H_
+#define EXAHYPE_MAPPINGS_BroadcastGlobalDataAndMergeNeighbourMessages_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -33,7 +33,7 @@
 
 namespace exahype {
   namespace mappings {
-    class Merging;
+    class BroadcastGlobalDataAndMergeNeighbourMessages;
   }
 }
 
@@ -57,16 +57,13 @@ namespace exahype {
  * with the solver ones. It further is used to reset the Riemann
  * solve flags on compute and helper cells.
  *
- * <h2>State flags</h2>
- * This mapping's behaviour depends on the state flag MergeMode.
- *
  * @author Dominic E. Charrier and Tobias Weinzierl
  */
-class exahype::mappings::Merging {
+class exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages {
 private:
   /**
    * A bunch of temporary variables to perform neighbour data
-   * merging for every solver on a patch.
+   * BroadcastGlobalDataAndMergeNeighbourMessages for every solver on a patch.
    */
   exahype::solvers::MergingTemporaryVariables _temporaryVariables;
 
@@ -75,152 +72,9 @@ private:
    */
   static tarch::logging::Log _log;
 
-  /**
-   * Local copy of the state.
-   */
-  exahype::State _localState;
-
-  #ifdef Debug // TODO(Dominic): Exclude shared memory etc.
-  /*
-   *  Counter for the boundary face solves for debugging purposes.
-   */
-  int _remoteBoundaryFaceMerges;
-  /*
-   *  Counter for the interior face solves for debugging purposes.
-   */
-  int _interiorFaceMerges;
-  /*
-   *  Counter for the boundary face solves for debugging purposes.
-   */
-  int _boundaryFaceMerges;
-  #endif
-
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  void mergeNeighboursDataAndMetadata(
-      exahype::Vertex& fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const int pos2Scalar);
-
-  /**
-   * TODO(Dominic): Add docu.
-   */
-  void mergeWithBoundaryData(exahype::Vertex& fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS,int>&  pos1,
-      const int pos1Scalar,
-      const tarch::la::Vector<DIMENSIONS,int>&  pos2,
-      const int pos2Scalar);
-
-  #ifdef Parallel
-  /**
-   * Iterates over the received metadata and every time
-   * we find a valid entry, we call mergeWithNeighbourData
-   * on the solver corresponding to the metadata.
-   * if we want to receive the neighbour data
-   * or if we just want to drop it.
-   * \note Not thread-safe.
-   */
-  void mergeWithNeighbourData(
-      const int fromRank,
-      const int srcCellDescriptionIndex,
-      const int destCellDescriptionIndex,
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int level,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata);
-
-  /**
-   * Iterates over the received metadata and
-   * drops the received neighbour data.
-   *
-   * \note Not thread-safe.
-   */
-  void dropNeighbourData(
-      const int fromRank,
-      const int srcCellDescriptionIndex,
-      const int destCellDescriptionIndex,
-      const tarch::la::Vector<DIMENSIONS,int>& src,
-      const tarch::la::Vector<DIMENSIONS,int>& dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int level,
-      const exahype::MetadataHeap::HeapEntries& receivedMetadata);
-
-  /**
-   * Check if we need to broadcast time step data.
-   */
-  bool broadcastTimeStepData() const;
-
-  /**
-   * Check if we need to send face data from
-   * master to worker.
-   */
-  bool broadcastFaceData() const;
-  #endif
-
 public:
 
   /**
-   * Call the touch vertex first time event on every vertex of
-   * the grid. Run in parallel but avoid fine grid races.
-   *
-   * <h2>Shared Memory</h2>
-   * The AvoidFineGridRaces multithreading specification prevents that
-   * more than one threads write data for the same face of the grid
-   * at the same time.
-   *
-   * The specification is realised by touching the vertices in
-   * a red-black (X and O in the figure below) manner:
-   * We might first process the X-vertices in parallel
-   * and then the O-vertices.
-   * In each step, faces adjacent to the vertices,
-   * do not overlap and race conditions can thus
-   * not occur.
-   *
-   *     |    |
-   *     |    |
-   * ----O----X-----
-   *     |    |
-   *     |    |
-   * ----X----O-----
-   *     |    |
-   *     |    |
-   *
-   * TODO(Dominic): It might be useful to introduce a multithreading specification
-   * "AvoidFineGridRacesOnlyRed" that processes only the red
-   * vertices and not the black ones. In fact, the second sweep over the black vertices only
-   * finds the riemannSolvePerfomed flags set and does nothing in
-   * our current implementation.
-   */
-  peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
-  /**
-   * Nop.
-   */
-  peano::MappingSpecification enterCellSpecification(int level) const;
-
-  /**
-   * Nop
-   */
-  peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
-  /**
-   * Nop
-   */
-  peano::MappingSpecification leaveCellSpecification(int level) const;
-
-  /**
-   * Nop
-   */
-  peano::MappingSpecification ascendSpecification(int level) const;
-
-  /**
-   * Nop
-   */
-  peano::MappingSpecification descendSpecification(int level) const;
-
-  /**.
    * The mapping does synchronise through synchroniseTimeStepping() invoked
    * on the solvers. Yet, no data is transported through the vertices, the
    * cell or the state object.
@@ -232,6 +86,20 @@ public:
    * Further let Peano handle heap data exchange internally.
    */
   peano::CommunicationSpecification communicationSpecification() const;
+
+  /**
+   * Run through the whole grid. Avoid fine grid races.
+   */
+  peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
+
+  /**
+   * Nop.
+   */
+  peano::MappingSpecification enterCellSpecification(int level) const;
+  peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
+  peano::MappingSpecification leaveCellSpecification(int level) const;
+  peano::MappingSpecification ascendSpecification(int level) const;
+  peano::MappingSpecification descendSpecification(int level) const;
 
   /**
    * Solve Riemann problems on all interior faces that are adjacent
@@ -276,48 +144,21 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
   /**
-   * Prolongates adjacency indices down from the
-   * coarse grid and performs a merge with boundary data
-   * if the indices indicate a domain boundary.
-   */
-  void createHangingVertex(
-      exahype::Vertex& fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
-
-  /**
-   * Synchronises the cell descriptions hosted on this cell if
-   * no neigbour merge is performed but the time step data
-   * should still be merged.
-   */
-  void enterCell(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
-  /**
    * TODO(Dominic): Add docu.
    */
-  Merging();
+  BroadcastGlobalDataAndMergeNeighbourMessages();
 
 #if defined(SharedMemoryParallelisation)
   /**
    * TODO(Dominic): Add docu.
    */
-  Merging(const Merging& masterThread);
+  BroadcastGlobalDataAndMergeNeighbourMessages(const BroadcastGlobalDataAndMergeNeighbourMessages& masterThread);
 #endif
 
   /**
    * Free previously allocated temporary variables.
    */
-  virtual ~Merging();
+  virtual ~BroadcastGlobalDataAndMergeNeighbourMessages();
 
   /**
    * Initialise temporary variables
@@ -342,7 +183,7 @@ public:
   /**
    * Nop.
    */
-  void mergeWithWorkerThread(const Merging& workerThread);
+  void mergeWithWorkerThread(const BroadcastGlobalDataAndMergeNeighbourMessages& workerThread);
 #endif
 
 
@@ -425,7 +266,7 @@ public:
    * If the overlapping cell holds cell
    * descriptions of type Descendant on the master (and worker) side,
    * we thus need to send data from the master rank to the worker rank.
-   * This operation is performed in the mapping Merging since
+   * This operation is performed in the mapping BroadcastGlobalDataAndMergeNeighbourMessages since
    * it is a top-down broadcast type operation.
    *
    * Ancestors are used for storing restricted
@@ -473,6 +314,17 @@ public:
       const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
       exahype::Cell& workersCoarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
+
+  /**
+   * Nop.
+   */
+  void mergeWithWorker(
+      exahype::Cell& localCell,
+      const exahype::Cell& receivedMasterCell,
+      const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      int level);
 
   //
   // Below all methods are nop.
@@ -546,20 +398,35 @@ public:
   /**
    * Nop.
    */
-  void mergeWithWorker(exahype::Cell& localCell,
-                       const exahype::Cell& receivedMasterCell,
-                       const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
-                       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-                       int level);
-  /**
-   * Nop.
-   */
   void mergeWithWorker(exahype::Vertex& localVertex,
                        const exahype::Vertex& receivedMasterVertex,
                        const tarch::la::Vector<DIMENSIONS, double>& x,
                        const tarch::la::Vector<DIMENSIONS, double>& h,
                        int level);
 #endif
+  /**
+   * Nop.
+   */
+  void createHangingVertex(
+      exahype::Vertex& fineGridVertex,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
+
+  /**
+   * Nop.
+   */
+  void enterCell(
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
   /**
    * Nop.
    */

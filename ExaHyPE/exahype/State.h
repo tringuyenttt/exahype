@@ -69,6 +69,54 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
 
  public:
   /**
+   * This enum is used to select certain solvers
+   * in mappings like PredictionRerun, MeshRefinement etc.
+   */
+  enum class AlgorithmSection {
+    /*
+     * The runner is currently
+     * performing a normal ADER-DG / FV / ... time step.
+     */
+    TimeStepping,
+
+
+    /*
+     * Currently performing mesh refinement. Only
+     * relevant for merging metadata.
+     */
+    MeshRefinement,
+
+    /*
+     * Currently performing limiter status spreading. Only
+     * relevant for merging metadata.
+     */
+    LimiterStatusSpreading,
+
+    /**
+     * In this section, the runner overlaps the
+     * operations that must be performed after the
+     * mesh refinement with operations that
+     * must be performed for a local or global
+     * recomputation.
+     *
+     * This marks the end point of the side branch.
+     * Triggers a send for all registered solvers.
+     */
+    PredictionOrLocalRecomputationAllSend,
+
+    /**
+     * In this section, all solver have to drop
+     * their messages. Then, the ADER-DG solvers which
+     * have violated the CFL condition with their
+     * estimated time step size are required
+     * to reurn the prediction.
+     * Finally, all solvers send out again their
+     * face data.
+     */
+    PredictionRerunAllSend
+  };
+
+  /**
    * A flag indicating we fuse the algorithmic
    * phases of all ADERDGSolver and
    * LimitingADERDGSolver instances.

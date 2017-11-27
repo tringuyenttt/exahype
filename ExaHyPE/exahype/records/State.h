@@ -33,7 +33,7 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   25/11/2017 17:10
+    * @date   27/11/2017 23:41
     */
    class exahype::records::State { 
       
@@ -41,23 +41,8 @@ namespace exahype {
          
          typedef exahype::records::StatePacked Packed;
          
-         enum AlgorithmSection {
-            TimeStepping = 0, MeshRefinement = 1, LimiterStatusSpreading = 2, MeshRefinementOrLocalOrGlobalRecomputationAllSend = 3, PredictionRerunAllSend = 4
-         };
-         
-         enum MergeMode {
-            MergeNothing = 0, BroadcastAndMergeTimeStepData = 1, MergeFaceData = 2, DropFaceData = 3, BroadcastAndMergeTimeStepDataAndMergeFaceData = 4, BroadcastAndMergeTimeStepDataAndDropFaceData = 5
-         };
-         
-         enum SendMode {
-            SendNothing = 0, ReduceAndMergeTimeStepData = 1, SendFaceData = 2, ReduceAndMergeTimeStepDataAndSendFaceData = 3
-         };
-         
          struct PersistentRecords {
             int _maxRefinementLevelAllowed;
-            MergeMode _mergeMode;
-            SendMode _sendMode;
-            AlgorithmSection _algorithmSection;
             bool _hasRefined;
             bool _hasTriggeredRefinementForNextIteration;
             bool _hasErased;
@@ -73,7 +58,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+            PersistentRecords(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
             
             
             inline int getMaxRefinementLevelAllowed() const 
@@ -92,66 +77,6 @@ namespace exahype {
  #endif 
  {
                _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-            }
-            
-            
-            
-            inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _mergeMode;
-            }
-            
-            
-            
-            inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _mergeMode = mergeMode;
-            }
-            
-            
-            
-            inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _sendMode;
-            }
-            
-            
-            
-            inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _sendMode = sendMode;
-            }
-            
-            
-            
-            inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _algorithmSection;
-            }
-            
-            
-            
-            inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _algorithmSection = algorithmSection;
             }
             
             
@@ -314,7 +239,7 @@ namespace exahype {
             /**
              * Generated
              */
-            State(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+            State(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
             
             /**
              * Generated
@@ -338,66 +263,6 @@ namespace exahype {
  #endif 
  {
                _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-            }
-            
-            
-            
-            inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._mergeMode;
-            }
-            
-            
-            
-            inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._mergeMode = mergeMode;
-            }
-            
-            
-            
-            inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._sendMode;
-            }
-            
-            
-            
-            inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._sendMode = sendMode;
-            }
-            
-            
-            
-            inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._algorithmSection;
-            }
-            
-            
-            
-            inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._algorithmSection = algorithmSection;
             }
             
             
@@ -544,36 +409,6 @@ namespace exahype {
             /**
              * Generated
              */
-            static std::string toString(const AlgorithmSection& param);
-            
-            /**
-             * Generated
-             */
-            static std::string getAlgorithmSectionMapping();
-            
-            /**
-             * Generated
-             */
-            static std::string toString(const MergeMode& param);
-            
-            /**
-             * Generated
-             */
-            static std::string getMergeModeMapping();
-            
-            /**
-             * Generated
-             */
-            static std::string toString(const SendMode& param);
-            
-            /**
-             * Generated
-             */
-            static std::string getSendModeMapping();
-            
-            /**
-             * Generated
-             */
             std::string toString() const;
             
             /**
@@ -647,23 +482,14 @@ namespace exahype {
     *
     * 		   build date: 09-02-2014 14:40
     *
-    * @date   25/11/2017 17:10
+    * @date   27/11/2017 23:41
     */
    class exahype::records::StatePacked { 
       
       public:
          
-         typedef exahype::records::State::MergeMode MergeMode;
-         
-         typedef exahype::records::State::SendMode SendMode;
-         
-         typedef exahype::records::State::AlgorithmSection AlgorithmSection;
-         
          struct PersistentRecords {
             int _maxRefinementLevelAllowed;
-            MergeMode _mergeMode;
-            SendMode _sendMode;
-            AlgorithmSection _algorithmSection;
             bool _isTraversalInverted;
             
             /** mapping of records:
@@ -685,7 +511,7 @@ namespace exahype {
             /**
              * Generated
              */
-            PersistentRecords(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+            PersistentRecords(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
             
             
             inline int getMaxRefinementLevelAllowed() const 
@@ -704,66 +530,6 @@ namespace exahype {
  #endif 
  {
                _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-            }
-            
-            
-            
-            inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _mergeMode;
-            }
-            
-            
-            
-            inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _mergeMode = mergeMode;
-            }
-            
-            
-            
-            inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _sendMode;
-            }
-            
-            
-            
-            inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _sendMode = sendMode;
-            }
-            
-            
-            
-            inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _algorithmSection;
-            }
-            
-            
-            
-            inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _algorithmSection = algorithmSection;
             }
             
             
@@ -944,7 +710,7 @@ namespace exahype {
             /**
              * Generated
              */
-            StatePacked(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+            StatePacked(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
             
             /**
              * Generated
@@ -968,66 +734,6 @@ namespace exahype {
  #endif 
  {
                _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-            }
-            
-            
-            
-            inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._mergeMode;
-            }
-            
-            
-            
-            inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._mergeMode = mergeMode;
-            }
-            
-            
-            
-            inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._sendMode;
-            }
-            
-            
-            
-            inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._sendMode = sendMode;
-            }
-            
-            
-            
-            inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               return _persistentRecords._algorithmSection;
-            }
-            
-            
-            
-            inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-               _persistentRecords._algorithmSection = algorithmSection;
             }
             
             
@@ -1192,36 +898,6 @@ namespace exahype {
             /**
              * Generated
              */
-            static std::string toString(const MergeMode& param);
-            
-            /**
-             * Generated
-             */
-            static std::string getMergeModeMapping();
-            
-            /**
-             * Generated
-             */
-            static std::string toString(const SendMode& param);
-            
-            /**
-             * Generated
-             */
-            static std::string getSendModeMapping();
-            
-            /**
-             * Generated
-             */
-            static std::string toString(const AlgorithmSection& param);
-            
-            /**
-             * Generated
-             */
-            static std::string getAlgorithmSectionMapping();
-            
-            /**
-             * Generated
-             */
             std::string toString() const;
             
             /**
@@ -1291,7 +967,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   25/11/2017 17:10
+       * @date   27/11/2017 23:41
        */
       class exahype::records::State { 
          
@@ -1299,23 +975,8 @@ namespace exahype {
             
             typedef exahype::records::StatePacked Packed;
             
-            enum AlgorithmSection {
-               TimeStepping = 0, MeshRefinement = 1, LimiterStatusSpreading = 2, MeshRefinementOrLocalOrGlobalRecomputationAllSend = 3, PredictionRerunAllSend = 4
-            };
-            
-            enum MergeMode {
-               MergeNothing = 0, BroadcastAndMergeTimeStepData = 1, MergeFaceData = 2, DropFaceData = 3, BroadcastAndMergeTimeStepDataAndMergeFaceData = 4, BroadcastAndMergeTimeStepDataAndDropFaceData = 5
-            };
-            
-            enum SendMode {
-               SendNothing = 0, ReduceAndMergeTimeStepData = 1, SendFaceData = 2, ReduceAndMergeTimeStepDataAndSendFaceData = 3
-            };
-            
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
-               MergeMode _mergeMode;
-               SendMode _sendMode;
-               AlgorithmSection _algorithmSection;
                #ifdef UseManualAlignment
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth __attribute__((aligned(VectorisationAlignment)));
                #else
@@ -1355,7 +1016,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -1374,66 +1035,6 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _algorithmSection = algorithmSection;
                }
                
                
@@ -1992,7 +1593,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               State(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                /**
                 * Generated
@@ -2016,66 +1617,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._algorithmSection = algorithmSection;
                }
                
                
@@ -2670,36 +2211,6 @@ namespace exahype {
                /**
                 * Generated
                 */
-               static std::string toString(const AlgorithmSection& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getAlgorithmSectionMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const MergeMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getMergeModeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const SendMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSendModeMapping();
-               
-               /**
-                * Generated
-                */
                std::string toString() const;
                
                /**
@@ -2773,23 +2284,14 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   25/11/2017 17:10
+       * @date   27/11/2017 23:41
        */
       class exahype::records::StatePacked { 
          
          public:
             
-            typedef exahype::records::State::MergeMode MergeMode;
-            
-            typedef exahype::records::State::SendMode SendMode;
-            
-            typedef exahype::records::State::AlgorithmSection AlgorithmSection;
-            
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
-               MergeMode _mergeMode;
-               SendMode _sendMode;
-               AlgorithmSection _algorithmSection;
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth;
                tarch::la::Vector<DIMENSIONS,double> _maxMeshWidth;
                double _numberOfInnerVertices;
@@ -2827,7 +2329,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -2846,66 +2348,6 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _algorithmSection = algorithmSection;
                }
                
                
@@ -3491,7 +2933,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               StatePacked(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                /**
                 * Generated
@@ -3515,66 +2957,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._algorithmSection = algorithmSection;
                }
                
                
@@ -4192,36 +3574,6 @@ namespace exahype {
    _persistentRecords._packedRecords0 = static_cast<short int>( subWorkerIsInvolvedInJoinOrFork ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const MergeMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getMergeModeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const SendMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSendModeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const AlgorithmSection& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getAlgorithmSectionMapping();
                
                /**
                 * Generated
@@ -4296,7 +3648,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   25/11/2017 17:10
+       * @date   27/11/2017 23:41
        */
       class exahype::records::State { 
          
@@ -4304,23 +3656,8 @@ namespace exahype {
             
             typedef exahype::records::StatePacked Packed;
             
-            enum AlgorithmSection {
-               TimeStepping = 0, MeshRefinement = 1, LimiterStatusSpreading = 2, MeshRefinementOrLocalOrGlobalRecomputationAllSend = 3, PredictionRerunAllSend = 4
-            };
-            
-            enum MergeMode {
-               MergeNothing = 0, BroadcastAndMergeTimeStepData = 1, MergeFaceData = 2, DropFaceData = 3, BroadcastAndMergeTimeStepDataAndMergeFaceData = 4, BroadcastAndMergeTimeStepDataAndDropFaceData = 5
-            };
-            
-            enum SendMode {
-               SendNothing = 0, ReduceAndMergeTimeStepData = 1, SendFaceData = 2, ReduceAndMergeTimeStepDataAndSendFaceData = 3
-            };
-            
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
-               MergeMode _mergeMode;
-               SendMode _sendMode;
-               AlgorithmSection _algorithmSection;
                #ifdef UseManualAlignment
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth __attribute__((aligned(VectorisationAlignment)));
                #else
@@ -4357,7 +3694,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -4376,66 +3713,6 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _algorithmSection = algorithmSection;
                }
                
                
@@ -4934,7 +4211,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+               State(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
                
                /**
                 * Generated
@@ -4958,66 +4235,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._algorithmSection = algorithmSection;
                }
                
                
@@ -5552,36 +4769,6 @@ namespace exahype {
                /**
                 * Generated
                 */
-               static std::string toString(const AlgorithmSection& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getAlgorithmSectionMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const MergeMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getMergeModeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const SendMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSendModeMapping();
-               
-               /**
-                * Generated
-                */
                std::string toString() const;
                
                /**
@@ -5655,23 +4842,14 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   25/11/2017 17:10
+       * @date   27/11/2017 23:41
        */
       class exahype::records::StatePacked { 
          
          public:
             
-            typedef exahype::records::State::MergeMode MergeMode;
-            
-            typedef exahype::records::State::SendMode SendMode;
-            
-            typedef exahype::records::State::AlgorithmSection AlgorithmSection;
-            
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
-               MergeMode _mergeMode;
-               SendMode _sendMode;
-               AlgorithmSection _algorithmSection;
                tarch::la::Vector<DIMENSIONS,double> _minMeshWidth;
                tarch::la::Vector<DIMENSIONS,double> _maxMeshWidth;
                double _numberOfInnerVertices;
@@ -5706,7 +4884,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -5725,66 +4903,6 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _algorithmSection = algorithmSection;
                }
                
                
@@ -6301,7 +5419,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
+               StatePacked(const int& maxRefinementLevelAllowed, const tarch::la::Vector<DIMENSIONS,double>& minMeshWidth, const tarch::la::Vector<DIMENSIONS,double>& maxMeshWidth, const double& numberOfInnerVertices, const double& numberOfBoundaryVertices, const double& numberOfOuterVertices, const double& numberOfInnerCells, const double& numberOfOuterCells, const double& numberOfInnerLeafVertices, const double& numberOfBoundaryLeafVertices, const double& numberOfOuterLeafVertices, const double& numberOfInnerLeafCells, const double& numberOfOuterLeafCells, const int& maxLevel, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted);
                
                /**
                 * Generated
@@ -6325,66 +5443,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._algorithmSection = algorithmSection;
                }
                
                
@@ -6937,36 +5995,6 @@ namespace exahype {
                /**
                 * Generated
                 */
-               static std::string toString(const MergeMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getMergeModeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const SendMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSendModeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const AlgorithmSection& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getAlgorithmSectionMapping();
-               
-               /**
-                * Generated
-                */
                std::string toString() const;
                
                /**
@@ -7037,7 +6065,7 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   25/11/2017 17:10
+       * @date   27/11/2017 23:41
        */
       class exahype::records::State { 
          
@@ -7045,23 +6073,8 @@ namespace exahype {
             
             typedef exahype::records::StatePacked Packed;
             
-            enum AlgorithmSection {
-               TimeStepping = 0, MeshRefinement = 1, LimiterStatusSpreading = 2, MeshRefinementOrLocalOrGlobalRecomputationAllSend = 3, PredictionRerunAllSend = 4
-            };
-            
-            enum MergeMode {
-               MergeNothing = 0, BroadcastAndMergeTimeStepData = 1, MergeFaceData = 2, DropFaceData = 3, BroadcastAndMergeTimeStepDataAndMergeFaceData = 4, BroadcastAndMergeTimeStepDataAndDropFaceData = 5
-            };
-            
-            enum SendMode {
-               SendNothing = 0, ReduceAndMergeTimeStepData = 1, SendFaceData = 2, ReduceAndMergeTimeStepDataAndSendFaceData = 3
-            };
-            
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
-               MergeMode _mergeMode;
-               SendMode _sendMode;
-               AlgorithmSection _algorithmSection;
                bool _hasRefined;
                bool _hasTriggeredRefinementForNextIteration;
                bool _hasErased;
@@ -7080,7 +6093,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -7099,66 +6112,6 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _algorithmSection = algorithmSection;
                }
                
                
@@ -7381,7 +6334,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               State(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               State(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                /**
                 * Generated
@@ -7405,66 +6358,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._algorithmSection = algorithmSection;
                }
                
                
@@ -7671,36 +6564,6 @@ namespace exahype {
                /**
                 * Generated
                 */
-               static std::string toString(const AlgorithmSection& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getAlgorithmSectionMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const MergeMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getMergeModeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const SendMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSendModeMapping();
-               
-               /**
-                * Generated
-                */
                std::string toString() const;
                
                /**
@@ -7774,23 +6637,14 @@ namespace exahype {
        *
        * 		   build date: 09-02-2014 14:40
        *
-       * @date   25/11/2017 17:10
+       * @date   27/11/2017 23:41
        */
       class exahype::records::StatePacked { 
          
          public:
             
-            typedef exahype::records::State::MergeMode MergeMode;
-            
-            typedef exahype::records::State::SendMode SendMode;
-            
-            typedef exahype::records::State::AlgorithmSection AlgorithmSection;
-            
             struct PersistentRecords {
                int _maxRefinementLevelAllowed;
-               MergeMode _mergeMode;
-               SendMode _sendMode;
-               AlgorithmSection _algorithmSection;
                bool _isTraversalInverted;
                
                /** mapping of records:
@@ -7815,7 +6669,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               PersistentRecords(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               PersistentRecords(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                
                inline int getMaxRefinementLevelAllowed() const 
@@ -7834,66 +6688,6 @@ namespace exahype {
  #endif 
  {
                   _maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _algorithmSection = algorithmSection;
                }
                
                
@@ -8143,7 +6937,7 @@ namespace exahype {
                /**
                 * Generated
                 */
-               StatePacked(const int& maxRefinementLevelAllowed, const MergeMode& mergeMode, const SendMode& sendMode, const AlgorithmSection& algorithmSection, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
+               StatePacked(const int& maxRefinementLevelAllowed, const bool& hasRefined, const bool& hasTriggeredRefinementForNextIteration, const bool& hasErased, const bool& hasTriggeredEraseForNextIteration, const bool& hasChangedVertexOrCellState, const bool& hasModifiedGridInPreviousIteration, const bool& isTraversalInverted, const bool& reduceStateAndCell, const bool& couldNotEraseDueToDecompositionFlag, const bool& subWorkerIsInvolvedInJoinOrFork);
                
                /**
                 * Generated
@@ -8167,66 +6961,6 @@ namespace exahype {
  #endif 
  {
                   _persistentRecords._maxRefinementLevelAllowed = maxRefinementLevelAllowed;
-               }
-               
-               
-               
-               inline MergeMode getMergeMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._mergeMode;
-               }
-               
-               
-               
-               inline void setMergeMode(const MergeMode& mergeMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._mergeMode = mergeMode;
-               }
-               
-               
-               
-               inline SendMode getSendMode() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._sendMode;
-               }
-               
-               
-               
-               inline void setSendMode(const SendMode& sendMode) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._sendMode = sendMode;
-               }
-               
-               
-               
-               inline AlgorithmSection getAlgorithmSection() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  return _persistentRecords._algorithmSection;
-               }
-               
-               
-               
-               inline void setAlgorithmSection(const AlgorithmSection& algorithmSection) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-                  _persistentRecords._algorithmSection = algorithmSection;
                }
                
                
@@ -8456,36 +7190,6 @@ namespace exahype {
    _persistentRecords._packedRecords0 = static_cast<short int>( subWorkerIsInvolvedInJoinOrFork ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
                }
                
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const MergeMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getMergeModeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const SendMode& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getSendModeMapping();
-               
-               /**
-                * Generated
-                */
-               static std::string toString(const AlgorithmSection& param);
-               
-               /**
-                * Generated
-                */
-               static std::string getAlgorithmSectionMapping();
                
                /**
                 * Generated

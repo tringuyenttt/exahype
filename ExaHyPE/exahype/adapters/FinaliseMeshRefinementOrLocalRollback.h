@@ -18,11 +18,9 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/PreProcessing.h"
  #include "exahype/mappings/FinaliseMeshRefinement.h"
  #include "exahype/mappings/LocalRollback.h"
- #include "exahype/mappings/PostProcessing.h"
- #include "exahype/adapters/FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_4.h"
+ #include "exahype/adapters/FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2.h"
 
 
 
@@ -42,17 +40,13 @@ namespace exahype {
  */
 class exahype::adapters::FinaliseMeshRefinementOrLocalRollback {
   private:
-    typedef mappings::PreProcessing Mapping0;
-    typedef mappings::FinaliseMeshRefinement Mapping1;
-    typedef mappings::LocalRollback Mapping2;
-    typedef mappings::PostProcessing Mapping3;
-    typedef adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_4 Mapping4;
+    typedef mappings::FinaliseMeshRefinement Mapping0;
+    typedef mappings::LocalRollback Mapping1;
+    typedef adapters::FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2 Mapping2;
 
-     Mapping0  _map2PreProcessing;
-     Mapping1  _map2FinaliseMeshRefinement;
-     Mapping2  _map2LocalRollback;
-     Mapping3  _map2PostProcessing;
-     Mapping4  _map2FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_4;
+     Mapping0  _map2FinaliseMeshRefinement;
+     Mapping1  _map2LocalRollback;
+     Mapping2  _map2FinaliseMeshRefinementOrLocalRollback2MultiscaleLinkedCell_2;
 
 
   public:
