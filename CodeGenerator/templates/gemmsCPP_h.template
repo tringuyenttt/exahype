@@ -27,11 +27,13 @@ void {{gemm_prefix}}_{{nData}}_{{nDof}}_{{nDof}}_volume(const double* A, const d
 {% if isLinear %}
 {% else %}
 // picard gemms
+{% if useFlux %}
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_rhs_x(const double* A, const double* B, double* C);
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_rhs_y(const double* A, const double* B, double* C);
 {% if nDim == 3 %} 
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_rhs_z(const double* A, const double* B, double* C);
-{% endif %}  
+{% endif %}
+{% endif %} {# useFlux #}
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lqi(const double* A, const double* B, double* C);
 {% if useNCP %}
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_x(const double* A, const double* B, double* C);
@@ -41,6 +43,7 @@ void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_gradQ_z(const double* A, const d
 {% endif %}  
 {% endif %}
 
+{% if useFlux %}
 // volume integral gemms
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_x(const double* A, const double* B, double* C);
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_y(const double* A, const double* B, double* C);
@@ -48,6 +51,7 @@ void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_y(const double* A, const do
 void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_z(const double* A, const double* B, double* C);
 {% endif %}
 {% endif %}
+{% endif %} {# useFlux #}
 
 {% for namespaceName in codeNamespaceList %}
 }

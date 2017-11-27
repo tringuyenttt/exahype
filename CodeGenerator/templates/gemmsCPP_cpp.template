@@ -22,6 +22,8 @@
 {% else %}
 #include "{{pathToOptKernel}}/asm_picard.c"
 
+{% if useFlux %}
 //volume integral gemms
 #include "{{pathToOptKernel}}/asm_volumeIntegral.c"
+{% endif %} {# useFlux #}
 {% endif %}

@@ -18,8 +18,7 @@
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
-
-{% if useLibxsmm %}
+{% if useLibxsmm and useFlux %}
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 {% endif %}
 
@@ -31,9 +30,12 @@ void {{codeNamespace}}::volumeIntegral(
 ) {
 
 #ifdef __INTEL_COMPILER
+{% if useFlux %}
   __assume_aligned(lFi, ALIGNMENT);
   __assume_aligned(Kxi_T, ALIGNMENT);
+{% endif %} {# useFlux #}
   __assume_aligned(weights1, ALIGNMENT);
+  __assume_aligned(weights3, ALIGNMENT);
   __assume_aligned(lduh, ALIGNMENT); //lduh should be aligned, see Solver.h
 {% if useSourceOrNCP %}
   __assume_aligned(lSi, ALIGNMENT);
