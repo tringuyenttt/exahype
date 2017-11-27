@@ -52,8 +52,9 @@ namespace {{namespaceName}} {
 {% else %}
   constexpr int getTempUnknownsSize()               {return {{nDataPad*(nDof**nDim)}};}  // == lQhi size
 {% if useFlux %}
-  constexpr int getTempFluxUnknownsSize()           {return -1;} // == lFhi size, unused because no flux
+  constexpr int getTempFluxUnknownsSize()           {return {{nVarPad*(nDof**nDim)}};} // == lFhi size
 {% else %}
+  constexpr int getTempFluxUnknownsSize()           {return -1;} // == lFhi size, unused because no flux
 {% endif %}
 {% endif %}
 {% if usePointSources %}
