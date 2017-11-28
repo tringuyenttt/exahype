@@ -742,15 +742,9 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     logInfo( "runAsMaster(...)", "initialised all data and computed first time step size" );
 
     bool plot = exahype::plotters::startPlottingIfAPlotterIsActive(
-        solvers::Solver::getMinSolverTimeStampOfAllSolvers());
+        solvers::Solver::getMinSolverTimeStampOfAllSolvers()); // has side effects
 
-    repository.getState().setAlgorithmSection(exahype::records::State::TimeStepping);
-    repository.getState().switchToPredictionContext();
-    if (plot) {
-      repository.switchToPredictionAndPlot();
-    } else {
-      repository.switchToPrediction();
-    }
+    repository.switchToPrediction();
     repository.iterate(1,false);
     logInfo("runAsMaster(...)","plotted initial solution (if specified) and computed first predictor");
 
@@ -763,7 +757,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     while ((solvers::Solver::getMinSolverTimeStampOfAllSolvers() < simulationEndTime) &&
         tarch::la::greater(solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers(), 0.0)) {
       bool plot = exahype::plotters::startPlottingIfAPlotterIsActive(
-          solvers::Solver::getMinSolverTimeStampOfAllSolvers());
+          solvers::Solver::getMinSolverTimeStampOfAllSolvers()); // has side effects
 
       preProcessTimeStepInSharedMemoryEnvironment();
 
@@ -803,8 +797,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       logWarning("runAsMaster(...)","Minimum solver time step size is zero (up to machine precision).");
     }
 
-    repository.getState().switchToNeighbourDataDroppingContext();
-    repository.switchToMerging();
+    repository.switchToBroadcastGlobalDataAndDropNeighbourMessages();
     repository.iterate(1,false);
 
     printStatistics();
@@ -1002,11 +995,9 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
 void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository& repository) {
   // We refine here using the previous solution (which is valid)
   logInfo("initialiseMesh(...)","create initial grid");
-  repository.getState().switchToUpdateMeshContext();
   createMesh(repository);
 
   logInfo("initialiseMesh(...)","finalise mesh refinement and compute first time step size");
-  repository.getState().switchToTimeStepSizeComputationContext();
   repository.switchToFinaliseMeshRefinement();
   repository.iterate();
 }
@@ -1014,12 +1005,8 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
 void exahype::runners::Runner::updateMeshAndSubdomains(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
   // 1. All solvers drop their MPI messages and broadcast time step data
-  assertion(repository.getState().getAlgorithmSection()==exahype::records::State::AlgorithmSection::TimeStepping);
-  repository.getState().switchToNeighbourDataDroppingContext();
-  repository.switchToMerging(); // TODO(Dominic): Rename to Merging
+  repository.switchToBroadcastGlobalDataAndDropNeighbourMessages();
   repository.iterate(1,false);
-
-  // TODO(Dominic): Try to move AlgorithmSection selection into characteristic mappings
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLimiterStatusSpreading()) {
@@ -1039,7 +1026,6 @@ void exahype::runners::Runner::updateMeshAndSubdomains(
   // 3. Perform a grid update for those solvers that requested refinement
   if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate()) {
     logInfo("updateMeshAndSubdomains(...)","perform mesh refinement");
-    repository.getState().switchToUpdateMeshContext(); // TODO(Dominic): Adjust context for MPI
     createMesh(repository);
   }
 
@@ -1047,8 +1033,7 @@ void exahype::runners::Runner::updateMeshAndSubdomains(
   // Further reinitialse solvers that reported an irregular limiter domain change
   logInfo("updateMeshAndSubdomains(...)","finalise mesh refinement (if applicable)");
   logInfo("updateMeshAndSubdomains(...)","reinitialise cells and send data to neigbours (if applicable)");
-  repository.getState().switchToLocalRollbackContext();
-  repository.switchToFinaliseMeshRefinementOrLocalRollback(); // TODO(Dominic): Why do I not compute the new time step size here?
+  repository.switchToFinaliseMeshRefinementOrLocalRollback();
   repository.iterate(1,false);
 
   // 5. Compute Prediction for solvers performing mesh update or
@@ -1061,9 +1046,7 @@ void exahype::runners::Runner::updateMeshAndSubdomains(
   // a local prediction as well. They are ready to sent here as well.)
   if (fusedTimeStepping ||
       exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
-    repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputationAllSend);
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
-    repository.getState().switchToPredictionAndLocalRecomputationContext();
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
     repository.iterate(1,false); // local recomputation: has now recomputed predictor in interface cells
   }
@@ -1198,11 +1181,7 @@ void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
    *predictor time step size.
    * 4. Compute the cell-local time step sizes
    */
-  repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::TimeStepping);
-  repository.getState().switchToFusedTimeStepContext();
-
   if (numberOfStepsToRun==0) {
-    repository.switchToPlotAndFusedTimeStep();
     repository.iterate(1,false);
   } else {
     repository.switchToFusedTimeStep();
@@ -1227,8 +1206,6 @@ void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
 
   if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
     logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
-    repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::PredictionRerunAllSend);
-    repository.getState().switchToPredictionRerunContext();
     repository.switchToPredictionRerun();
     repository.iterate(1,false);
   }
@@ -1240,13 +1217,9 @@ void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
 void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
     exahype::repositories::Repository& repository, bool plot) {
   // Only one time step (predictor vs. corrector) is used in this case.
-  repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::TimeStepping);
-
-  repository.getState().switchToNeighbourDataMergingContext();
-  repository.switchToMerging();  // Riemann -> face2face
+  repository.switchToBroadcastGlobalDataAndMergeNeighbourMessages();  // Riemann -> face2face
   repository.iterate(1,false);
 
-  repository.getState().switchToTimeStepSizeComputationContext();
   repository.switchToSolutionUpdate();  // Face to cell + Inside cell
   repository.iterate(1,false);
 
@@ -1268,18 +1241,7 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
 
   printTimeStepInfo(1,repository);
 
-  /*
-   * Compute current first predictor based on current time step size.
-   * Set current time step size as old time step size of next iteration.
-   * Compute the current time step size of the next iteration.
-   */
-  repository.getState().setAlgorithmSection(exahype::records::State::AlgorithmSection::TimeStepping);
-  repository.getState().switchToPredictionContext();
-  if (plot) {
-    repository.switchToPredictionAndPlot();
-  } else {
-    repository.switchToPrediction();   // Cell onto faces
-  }
+  repository.switchToPrediction(); // Cell onto faces
   repository.iterate(1,false);
 
   updateStatistics();
