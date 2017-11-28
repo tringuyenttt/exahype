@@ -149,6 +149,22 @@ void exahype::mappings::PredictionRerun::leaveCell(
 }
 
 #ifdef Parallel
+void exahype::mappings::PredictionRerun::mergeWithNeighbour(
+    exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
+  vertex.receiveNeighbourData(
+      fromRank,false /*no merge - just drop */,
+      nullptr,fineGridX,fineGridH,level);
+}
+
+void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
+    exahype::Vertex& vertex, int toRank,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
+  vertex.sendToNeighbour(toRank,x,h,level);
+}
+
 bool exahype::mappings::PredictionRerun::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -214,24 +230,10 @@ void exahype::mappings::PredictionRerun::mergeWithMaster(
       fineGridVerticesEnumerator.getLevel());
 }
 
-void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
-    exahype::Vertex& vertex, int toRank,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  vertex.sendToNeighbour(toRank,x,h,level);
-}
-
 //
 // Below all methods are nop.
 //
 // ====================================
-
-void exahype::mappings::PredictionRerun::mergeWithNeighbour(
-    exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
-  // do nothing
-}
 
 void exahype::mappings::PredictionRerun::prepareCopyToRemoteNode(
     exahype::Vertex& localVertex, int toRank,

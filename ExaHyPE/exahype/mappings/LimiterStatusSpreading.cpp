@@ -134,8 +134,6 @@ void exahype::mappings::LimiterStatusSpreading::beginIteration(
   }
 
   #ifdef Parallel
-  peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
-
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
       exit(-1);
   }
@@ -162,8 +160,6 @@ void exahype::mappings::LimiterStatusSpreading::endIteration(exahype::State& sol
 
   #ifdef Parallel
   exahype::mappings::LimiterStatusSpreading::IsFirstIteration = false;
-
-  peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
   #endif
 }
 
@@ -264,6 +260,7 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
+
   if (exahype::mappings::LimiterStatusSpreading::IsFirstIteration) {
     return;
   }
@@ -282,7 +279,6 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToNeighbour(
   logTraceInWith5Arguments("prepareSendToNeighbour(...)", vertex,
                            toRank, x, h, level);
 
-  // the limiter status is part of the metadata
   vertex.sendOnlyMetadataToNeighbour(toRank,x,h,level);
 
   logTraceOut("prepareSendToNeighbour(...)");
@@ -298,10 +294,12 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    solver->sendMeshUpdateFlagsToMaster(
-        tarch::parallel::NodePool::getInstance().getMasterRank(),
-        verticesEnumerator.getCellCenter(),
-        verticesEnumerator.getLevel());
+    if ( spreadLimiterStatus(solver) ) {
+      solver->sendMeshUpdateFlagsToMaster(
+          tarch::parallel::NodePool::getInstance().getMasterRank(),
+          verticesEnumerator.getCellCenter(),
+          verticesEnumerator.getLevel());
+    }
   }
 }
 
@@ -321,10 +319,12 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-    solver->mergeWithWorkerMeshUpdateFlags(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getLevel());
+    if ( spreadLimiterStatus(solver) ) {
+      solver->mergeWithWorkerMeshUpdateFlags(
+          worker,
+          fineGridVerticesEnumerator.getCellCenter(),
+          fineGridVerticesEnumerator.getLevel());
+    }
   }
 }
 
