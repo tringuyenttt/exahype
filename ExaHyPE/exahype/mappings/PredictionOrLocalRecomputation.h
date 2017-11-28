@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
  
-#ifndef EXAHYPE_MAPPINGS_LocalRecomputationOrPrediction_H_
-#define EXAHYPE_MAPPINGS_LocalRecomputationOrPrediction_H_
+#ifndef EXAHYPE_MAPPINGS_PredictionOrLocalRecomputation_H_
+#define EXAHYPE_MAPPINGS_PredictionOrLocalRecomputation_H_
 
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
@@ -33,7 +33,7 @@
 
 namespace exahype {
 namespace mappings {
-class LocalRecomputationOrPrediction;
+class PredictionOrLocalRecomputation;
 }
 }
 
@@ -54,7 +54,7 @@ class LocalRecomputationOrPrediction;
  * |                        |                        | Rollback the solution in troubled cells and their next two neighbours.
  * |                        | prepareSendToNeighbour | Based on the unified face-wise limiter status send interface values to the neighbours. |
  * ------------------------------------------------------------------------------------------------------
- * |LocalRecomputationOrPrediction      | mergeWithNeighbour     | Based on the unified face-wise limiter status receive or drop the interface values send by the neighbours.
+ * |PredictionOrLocalRecomputation      | mergeWithNeighbour     | Based on the unified face-wise limiter status receive or drop the interface values send by the neighbours.
  * |                        | touchVertexFirstTIme   | Based on the unified face-wise limiter status merge local direct neighbours.
  * |                        | enterCell              | Recompute the solution in the troubled cells (and their direct neighbours).
  * |                        |                        | Set the cell-wise limiter status to the unified face-wise limiter status.
@@ -63,12 +63,12 @@ class LocalRecomputationOrPrediction;
  * |                        |                        | evaluating the discrete maximum principle (DMP) and the physical admissibility detection (PAD).)
  * ------------------------------------------------------------------------
  *
- * This mapping is only used in the algorithmic section LocalRecomputationOrPrediction.
+ * This mapping is only used in the algorithmic section PredictionOrLocalRecomputation.
  * It is not used for in the algorithmic section APosterioriRefinement.
  *
  * @author Dominic Charrier
  */
-class exahype::mappings::LocalRecomputationOrPrediction {
+class exahype::mappings::PredictionOrLocalRecomputation {
  private:
   /**
    * Logging device for the trace macros.
@@ -279,13 +279,13 @@ class exahype::mappings::LocalRecomputationOrPrediction {
   /**
    * Copy the local state object over to the worker thread.
    */
-  LocalRecomputationOrPrediction(const LocalRecomputationOrPrediction& masterThread);
+  PredictionOrLocalRecomputation(const PredictionOrLocalRecomputation& masterThread);
   #endif
 
   /**
    * Free previously allocated temporary variables.
    */
-  virtual ~LocalRecomputationOrPrediction();
+  virtual ~PredictionOrLocalRecomputation();
 
 #ifdef Parallel
   /**
@@ -412,12 +412,12 @@ class exahype::mappings::LocalRecomputationOrPrediction {
   /**
    * Nop.
    */
-  void mergeWithWorkerThread(const LocalRecomputationOrPrediction& workerThread);
+  void mergeWithWorkerThread(const PredictionOrLocalRecomputation& workerThread);
 #endif
   /**
    * Nop
    */
-  LocalRecomputationOrPrediction();
+  PredictionOrLocalRecomputation();
 
   void createHangingVertex(
       exahype::Vertex& fineGridVertex,
