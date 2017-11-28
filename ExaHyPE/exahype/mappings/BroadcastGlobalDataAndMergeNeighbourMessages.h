@@ -88,6 +88,11 @@ public:
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**
+   * Run through whole tree. Run concurrently on fine grid cells.
+   */
+  peano::MappingSpecification enterCellSpecification(int level) const;
+
+  /**
    * Run through the whole grid. Avoid fine grid races.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
@@ -95,7 +100,6 @@ public:
   /**
    * Nop.
    */
-  peano::MappingSpecification enterCellSpecification(int level) const;
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
   peano::MappingSpecification leaveCellSpecification(int level) const;
   peano::MappingSpecification ascendSpecification(int level) const;
@@ -144,13 +148,20 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
 
   /**
-   * TODO(Dominic): Add docu.
+   * Reset the neighbour merge flags
+   * and MPI neighbour exchange counters.
    */
-  BroadcastGlobalDataAndMergeNeighbourMessages();
+  void enterCell(
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
 #if defined(SharedMemoryParallelisation)
   /**
-   * TODO(Dominic): Add docu.
+   * Initialise temporary variables on worker thread.
    */
   BroadcastGlobalDataAndMergeNeighbourMessages(const BroadcastGlobalDataAndMergeNeighbourMessages& masterThread);
 #endif
@@ -178,13 +189,6 @@ public:
    * In debug mode, prints the output of counters.
    */
   void endIteration(exahype::State& solverState);
-
-#if defined(SharedMemoryParallelisation)
-  /**
-   * Nop.
-   */
-  void mergeWithWorkerThread(const BroadcastGlobalDataAndMergeNeighbourMessages& workerThread);
-#endif
 
 
 #ifdef Parallel
@@ -404,6 +408,19 @@ public:
                        const tarch::la::Vector<DIMENSIONS, double>& h,
                        int level);
 #endif
+
+  /**
+   * Nop.
+   */
+  BroadcastGlobalDataAndMergeNeighbourMessages();
+
+#if defined(SharedMemoryParallelisation)
+  /**
+   * Nop.
+   */
+  void mergeWithWorkerThread(const BroadcastGlobalDataAndMergeNeighbourMessages& workerThread);
+#endif
+
   /**
    * Nop.
    */
@@ -415,18 +432,6 @@ public:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
-
-  /**
-   * Nop.
-   */
-  void enterCell(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-
   /**
    * Nop.
    */

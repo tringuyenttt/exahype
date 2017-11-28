@@ -31,18 +31,19 @@ exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::communicationSpe
       true);
 }
 
-/* All specifications are nop. */
-peano::MappingSpecification
-exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::touchVertexFirstTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-        peano::MappingSpecification::WholeTree,
-        peano::MappingSpecification::AvoidFineGridRaces,true);
-}
 peano::MappingSpecification
 exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
+}
+
+/* All specifications below are nop. */
+peano::MappingSpecification
+exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::touchVertexFirstTimeSpecification(int level) const {
+  return peano::MappingSpecification(
+        peano::MappingSpecification::Nop,
+        peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 peano::MappingSpecification
 exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::touchVertexLastTimeSpecification(int level) const {
@@ -83,6 +84,22 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::beginIterat
   #endif
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
+}
+
+void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::enterCell(
+    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  if ( fineGridCell.isInitialised() ) {
+    exahype::Cell::resetNeighbourMergeFlags(
+        fineGridCell.getCellDescriptionsIndex());
+    exahype::Cell::resetFaceDataExchangeCounters(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
+  }
 }
 
 #ifdef Parallel
@@ -238,17 +255,6 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::touchVertex
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
-  // do nothing
-}
-
-
-void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::enterCell(
-    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   // do nothing
 }
 

@@ -63,10 +63,14 @@ public:
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**
+   * Run through whole tree. Run concurrently on fine grid cells.
+   */
+  peano::MappingSpecification enterCellSpecification(int level) const;
+
+  /**
    * Nop.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
-  peano::MappingSpecification enterCellSpecification(int level) const;
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
   peano::MappingSpecification leaveCellSpecification(int level) const;
   peano::MappingSpecification ascendSpecification(int level) const;
@@ -76,6 +80,18 @@ public:
    * Validates that Peano's join buffers are empty.
    */
   void beginIteration(exahype::State& solverState);
+
+  /**
+   * Reset the neighbour merge flags
+   * and MPI neighbour exchange counters.
+   */
+  void enterCell(
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
 #ifdef Parallel
 
@@ -253,17 +269,6 @@ public:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
-
-  /**
-   * Nop.
-   */
-  void enterCell(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
    * Nop.
