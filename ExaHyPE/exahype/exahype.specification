@@ -49,7 +49,7 @@ event-mapping:
   name: LocalRollback
   
 event-mapping:
-  name: LocalRecomputation
+  name: PredictionOrLocalRecomputation
   
 event-mapping:
   name: GlobalRollback
