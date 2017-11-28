@@ -34,9 +34,6 @@ event-mapping:
   
 event-mapping:
   name: BroadcastGlobalDataAndMergeNeighbourMessages
-
-event-mapping:
-  name: Sending
  
 event-mapping:
   name: Plot
@@ -59,7 +56,7 @@ event-mapping:
   name: MeshRefinement
   
 event-mapping:
-  name: FinaliseMeshRefinement  
+  name: FinaliseMeshRefinement
 
 event-mapping:
   name: AugmentedAMRTreePlot2d

@@ -27,6 +27,8 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
+#include "exahype/mappings/Prediction.h"
+
 tarch::logging::Log exahype::mappings::PredictionOrLocalRecomputation::_log(
     "exahype::mappings::PredictionOrLocalRecomputation");
 

@@ -51,6 +51,8 @@ bool equalsIgnoreCase(std::string const& a, std::string const& b) {
 
 std::vector<exahype::plotters::Plotter*> exahype::plotters::RegisteredPlotters;
 
+tarch::multicore::BooleanSemaphore exahype::plotters::SemaphoreForPlotting;
+
 tarch::logging::Log exahype::plotters::Plotter::_log( "exahype::plotters::Plotter" );
 
 exahype::plotters::Plotter::Plotter(
@@ -535,8 +537,6 @@ void exahype::plotters::Plotter::finishedPlotting() {
   }
   _isActive = false;
 }
-
-tarch::multicore::BooleanSemaphore exahype::plotters::SemaphoreForPlotting;
 
 void exahype::plotters::plotPatchIfAPlotterIsActive(
     const int solverNumber,

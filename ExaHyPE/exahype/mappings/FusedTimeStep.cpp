@@ -25,6 +25,8 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
+#include "exahype/mappings/Prediction.h"
+
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log(
     "exahype::mappings::FusedTimeStep");
 
@@ -62,7 +64,7 @@ exahype::mappings::FusedTimeStep::communicationSpecification() const {
   }
 
   // worker->master
-  peano::CommunicationSpecification::ExchangeMasterWorkerData exchangeWorkerMasterData =
+  peano::CommunicationSpecification::ExchangeWorkerMasterData exchangeWorkerMasterData =
       peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange;
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     exchangeWorkerMasterData =
@@ -211,8 +213,6 @@ void exahype::mappings::FusedTimeStep::enterCell(
   logTraceInWith4Arguments("enterCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
 
   if (fineGridCell.isInitialised()) {
-    exahype::mappings::Plot::plotIfRequested(fineGridCell.getCellDescriptionsIndex());
-
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
     pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())

@@ -30,7 +30,7 @@ namespace exahype {
 
     extern std::vector<Plotter*> RegisteredPlotters;
 
-    tarch::multicore::BooleanSemaphore exahype::plotters::SemaphoreForPlotting;
+    extern tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
 
     /*! Plots a patch if a plotter is active for the corresponding solver.
      */

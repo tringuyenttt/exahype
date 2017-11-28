@@ -1503,7 +1503,7 @@ public:
    * \note Has no const modifier since kernels are not const functions yet.
    */
   void performPredictionAndVolumeIntegral(
-      exahype::records::ADERDGCellDescription& cellDescription,
+      CellDescription& cellDescription,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,

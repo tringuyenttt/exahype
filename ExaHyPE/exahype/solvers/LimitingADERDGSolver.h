@@ -565,8 +565,6 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) final override;
 
-  bool isSending(const exahype::State::AlgorithmSection& section) const final override;
-  bool isMerging(const exahype::State::AlgorithmSection& section) const final override;
   bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const final override;
   bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const final override;
 

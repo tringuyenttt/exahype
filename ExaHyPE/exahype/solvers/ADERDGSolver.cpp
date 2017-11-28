@@ -1910,14 +1910,14 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   }
 
   if (aderdgSolver!=nullptr) {
-    auto& cellDescription = aderdgSolver->getCellDescription(cellDescriptionsIndex,element);
-    aderdgSolver->performPredictionAndVolumeIntegral(
-        cellDescription,
-        temporaryVariables._tempSpaceTimeUnknowns    [cellDescription.getSolverNumber()],
-        temporaryVariables._tempSpaceTimeFluxUnknowns[cellDescription.getSolverNumber()],
-        temporaryVariables._tempUnknowns             [cellDescription.getSolverNumber()],
-        temporaryVariables._tempFluxUnknowns         [cellDescription.getSolverNumber()],
-        temporaryVariables._tempPointForceSources    [cellDescription.getSolverNumber()]);                                                 )
+    auto& cellDescription =  ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+//    aderdgSolver->performPredictionAndVolumeIntegral(
+//        cellDescription,
+//        temporaryVariables._tempSpaceTimeUnknowns    [cellDescription.getSolverNumber()],
+//        temporaryVariables._tempSpaceTimeFluxUnknowns[cellDescription.getSolverNumber()],
+//        temporaryVariables._tempUnknowns             [cellDescription.getSolverNumber()],
+//        temporaryVariables._tempFluxUnknowns         [cellDescription.getSolverNumber()],
+//        temporaryVariables._tempPointForceSources    [cellDescription.getSolverNumber()]);                                                 )
   }
 }
 

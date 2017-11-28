@@ -99,7 +99,7 @@ exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement() {}
 exahype::mappings::FinaliseMeshRefinement::~FinaliseMeshRefinement() {}
 
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const TimeStepSizeComputation& masterThread): {
+exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const FinaliseMeshRefinement& masterThread) {
   prepareLocalTimeStepVariables();
 }
 

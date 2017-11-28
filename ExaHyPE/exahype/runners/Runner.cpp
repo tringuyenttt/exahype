@@ -19,7 +19,6 @@
 
 #include "exahype/repositories/Repository.h"
 #include "exahype/repositories/RepositoryFactory.h"
-#include "exahype/mappings/Sending.h"
 #include "exahype/mappings/LoadBalancing.h"
 
 
@@ -215,11 +214,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
     if ( _parser.getSkipReductionInBatchedTimeSteps() ) {
       logInfo("initDistributedMemoryConfiguration()", "allow ranks to skip reduction" );
-      exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = true;
+      // TODO(Dominic): Unused
     }
     else {
       logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
-      exahype::mappings::Sending::SkipReductionInBatchedTimeSteps = false;
     }
 
     tarch::parallel::NodePool::getInstance().waitForAllNodesToBecomeIdle();
