@@ -375,8 +375,8 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     exahype::Cell::reduceGlobalDataToMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
-        coarseGridVerticesEnumerator.getCellCenter(),
-        coarseGridVerticesEnumerator.getLevel());
+        verticesEnumerator.getCellCenter(),
+        verticesEnumerator.getLevel());
 
     localCell.reduceDataToMasterPerCell(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
