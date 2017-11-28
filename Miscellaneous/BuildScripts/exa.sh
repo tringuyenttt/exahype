@@ -83,11 +83,21 @@ case $CMD in
 		;;
 	"clusterconfig"|"config")  # Load cluster specific settings. Usage: "eval $(exa config)" or "exa config iboga-gcc-tbb"
 		cdroot
-		# of course there is not much purpose in sourcing this as exa.sh is currently
-		# not be intended to be sourced. What we could do here is to echo the ENV
-		# so it can be used like "source <(exa config)" or similar.
-		echo source $BuildScripts/load-clusterconfig.sh $@
-		# Currently, users can at least "eval $(exa config)"
+		if [ -z $@ ]; then # $@ is empty
+			ClusterConfigDir=$(realpath "$BuildScripts/../ClusterConfigs")
+			echo "Available cluster configurations in $ClusterConfigDir:"
+			echo
+			for x in $(ls $ClusterConfigDir); do
+				echo ${x%.*}
+			done
+		else
+			# of course there is not much purpose in sourcing this as exa.sh is currently
+			# not be intended to be sourced. What we could do here is to echo the ENV
+			# so it can be used like "source <(exa config)" or similar.
+			echo source $BuildScripts/load-clusterconfig.sh $@
+			# Currently, users can at least "eval $(exa config something)"
+			# or just call "$(exa config something)" from their command line
+		fi
 		;;
 	"toolkit") # Run the toolkit for an application, without compiling
 		cdroot; getappname
