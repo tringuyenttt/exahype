@@ -110,9 +110,9 @@ bool exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::prepareSend
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
   exahype::Cell::broadcastGlobalDataToWorker(
-      worker,
-      coarseGridVerticesEnumerator.getCellCenter(),
-      coarseGridVerticesEnumerator.getLevel());
+        worker,
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getLevel());
 
   return false;
 }
@@ -129,8 +129,8 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::receiveData
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   exahype::Cell::mergeWithGlobalDataFromMaster(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
-      workersCoarseGridVerticesEnumerator.getCellCenter(),
-      workersCoarseGridVerticesEnumerator.getLevel());
+      receivedVerticesEnumerator.getCellCenter(),
+      receivedVerticesEnumerator.getLevel());
 }
 
 //

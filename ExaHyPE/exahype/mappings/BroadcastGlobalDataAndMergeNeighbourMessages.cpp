@@ -159,9 +159,9 @@ bool exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::prepareSen
   logTraceIn( "prepareSendToWorker(...)" );
 
   exahype::Cell::broadcastGlobalDataToWorker(
-      worker,
-      coarseGridVerticesEnumerator.getCellCenter(),
-      coarseGridVerticesEnumerator.getLevel());
+        worker,
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getLevel());
 
   fineGridCell.broadcastDataToWorkerPerCell(
       worker,
@@ -188,8 +188,8 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::receiveDat
 
   exahype::Cell::mergeWithGlobalDataFromMaster(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
-      workersCoarseGridVerticesEnumerator.getCellCenter(),
-      workersCoarseGridVerticesEnumerator.getLevel());
+      receivedVerticesEnumerator.getCellCenter(),
+      receivedVerticesEnumerator.getLevel());
 
   receivedCell.receiveDataFromMasterPerCell(
       tarch::parallel::NodePool::getInstance().getMasterRank(),

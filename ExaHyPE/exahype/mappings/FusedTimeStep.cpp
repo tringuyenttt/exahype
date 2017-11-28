@@ -318,8 +318,8 @@ bool exahype::mappings::FusedTimeStep::prepareSendToWorker(
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::broadcastGlobalDataToWorker(
         worker,
-        coarseGridVerticesEnumerator.getCellCenter(),
-        coarseGridVerticesEnumerator.getLevel());
+        fineGridVerticesEnumerator.getCellCenter(),
+        fineGridVerticesEnumerator.getLevel());
 
     fineGridCell.broadcastDataToWorkerPerCell(
         worker,
@@ -344,8 +344,8 @@ void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
-        workersCoarseGridVerticesEnumerator.getCellCenter(),
-        workersCoarseGridVerticesEnumerator.getLevel());
+        receivedVerticesEnumerator.getCellCenter(),
+        receivedVerticesEnumerator.getLevel());
 
     receivedCell.receiveDataFromMasterPerCell(
         tarch::parallel::NodePool::getInstance().getMasterRank(),

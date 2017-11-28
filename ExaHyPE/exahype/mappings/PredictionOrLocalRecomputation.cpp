@@ -551,8 +551,8 @@ bool exahype::mappings::PredictionOrLocalRecomputation::prepareSendToWorker(
     int worker) {
   exahype::Cell::broadcastGlobalDataToWorker(
       worker,
-      coarseGridVerticesEnumerator.getCellCenter(),
-      coarseGridVerticesEnumerator.getLevel());
+      fineGridVerticesEnumerator.getCellCenter(),
+      fineGridVerticesEnumerator.getLevel());
 
   return true;
 }
@@ -569,8 +569,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::receiveDataFromMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   exahype::Cell::mergeWithGlobalDataFromMaster(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
-      workersCoarseGridVerticesEnumerator.getCellCenter(),
-      workersCoarseGridVerticesEnumerator.getLevel());
+      receivedVerticesEnumerator.getCellCenter(),
+      receivedVerticesEnumerator.getLevel());
 }
 
 void exahype::mappings::PredictionOrLocalRecomputation::prepareSendToMaster(
