@@ -186,70 +186,20 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
   _solver->initSolver(timeStamp, domainOffset, domainSize, boundingBoxSize);
 }
 
-bool exahype::solvers::LimitingADERDGSolver::isSending(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isSending = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isSending = true;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputationAllSend:
-      isSending |= getLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular;
-      isSending |= getMeshUpdateRequest();
-      assertion(getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate || getMeshUpdateRequest());
-      break;
-    default:
-      break;
-  }
-
-  return isSending;
-}
-
-bool exahype::solvers::LimitingADERDGSolver::isMerging(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isMerging = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isMerging = true;
-      break;
-    default:
-      break;
-  }
-
-  return isMerging;
-}
-
 bool exahype::solvers::LimitingADERDGSolver::isPerformingPrediction(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isPerformingPrediction = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-      isPerformingPrediction = true;
-      break;
-    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isPerformingPrediction = _solver->getStabilityConditionWasViolated();
-      break;
-    default:
-      break;
-  }
-
-  return isPerformingPrediction;
+    const exahype::State::AlgorithmSection& section) const {
+  return _solver->isPerformingPrediction(section);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::isMergingMetadata(
-    const exahype::records::State::AlgorithmSection& section) const {
+    const exahype::State::AlgorithmSection& section) const {
   bool isMergingMetadata = false;
 
   switch (section) {
-    case exahype::records::State::AlgorithmSection::LimiterStatusSpreading:
+    case exahype::State::AlgorithmSection::LimiterStatusSpreading:
       isMergingMetadata = getLimiterDomainChange()!=LimiterDomainChange::Regular;
       break;
-    case exahype::records::State::AlgorithmSection::MeshRefinement:
+    case exahype::State::AlgorithmSection::MeshRefinement:
       isMergingMetadata = getMeshUpdateRequest();
       assertion( getLimiterDomainChange()!=LimiterDomainChange::IrregularRequiringMeshUpdate || getMeshUpdateRequest());
       break;
@@ -2396,22 +2346,26 @@ void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToWorker(
   // limiter is only active on the finest mesh level
 }
 
+void exahype::solvers::LimitingADERDGSolver::receiveDataFromMaster(
+      const int                                    masterRank,
+      std::deque<int>&                             receivedHeapDataIndices,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) const {
+  _solver->receiveDataFromMaster(masterRank,receivedHeapDataIndices,x,level);
+}
+
 void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
-    const int                                     masterRank,
     const exahype::MetadataHeap::HeapEntries&     masterMetadata,
+    std::deque<int>&                              receivedDataHeapIndices,
     const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
+    const int                                     element) const {
   _solver->mergeWithMasterData(
-      masterRank,masterMetadata,cellDescriptionsIndex,element,x,level);
+      masterMetadata,receivedDataHeapIndices,cellDescriptionsIndex,element);
 }
 
 void exahype::solvers::LimitingADERDGSolver::dropMasterData(
-    const int                                     masterRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  _solver->dropMasterData(masterRank,x,level);
+    std::deque<int>& receivedDataHeapIndices) const {
+  _solver->dropMasterData(receivedDataHeapIndices);
 }
 #endif
 

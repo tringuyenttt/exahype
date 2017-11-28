@@ -364,6 +364,14 @@ bool exahype::solvers::Solver::getAttainedStableState() const {
   return _attainedStableState;
 }
 
+void exahype::solvers::Solver::moveDataHeapArray(
+    const int fromIndex,const int toIndex,bool recycleFromArray) {
+  std::copy(
+      DataHeap::getInstance().getData(fromIndex).begin(),
+      DataHeap::getInstance().getData(fromIndex).end(),
+      DataHeap::getInstance().getData(toIndex).begin());
+  DataHeap::getInstance().deleteData(fromIndex,recycleFromArray);
+}
 
 double exahype::solvers::Solver::getMinSolverTimeStampOfAllSolvers() {
   double currentMinTimeStamp = std::numeric_limits<double>::max();

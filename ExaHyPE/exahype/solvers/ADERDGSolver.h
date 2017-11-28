@@ -1394,10 +1394,8 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
 
-  bool isSending(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isMerging(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
+  bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
 
   bool isValidCellDescriptionIndex(const int cellDescriptionsIndex) const override;
 
@@ -2129,13 +2127,13 @@ public:
 
   void receiveDataFromMaster(
       const int                                    masterRank,
-      std::deque<int>&                             heapIndices,
+      std::deque<int>&                             receivedDataHeapIndices,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const final override;
 
   void mergeWithMasterData(
       const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             heapIndices,
+      std::deque<int>&                             receivedDataHeapIndices,
       const int                                    cellDescriptionsIndex,
       const int                                    element) const final override;
 

@@ -146,31 +146,13 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
   _meshUpdateRequest = true; // for the initial mesh refinement
 }
 
-bool exahype::solvers::FiniteVolumesSolver::isSending(
-    const exahype::records::State::AlgorithmSection& section) const {
-  return
-      section==exahype::records::State::AlgorithmSection::TimeStepping
-      ||
-      section==exahype::records::State::AlgorithmSection::PredictionRerunAllSend
-      ||
-      (exahype::State::FuseADERDGPhases &&
-      section==exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputationAllSend);
-}
-
-bool exahype::solvers::FiniteVolumesSolver::isMerging(
-    const exahype::records::State::AlgorithmSection& section) const {
-  return
-      section==exahype::records::State::AlgorithmSection::TimeStepping ||
-      section==exahype::records::State::AlgorithmSection::PredictionRerunAllSend;
-}
-
 bool exahype::solvers::FiniteVolumesSolver::isPerformingPrediction(
-    const exahype::records::State::AlgorithmSection& section) const {
+    const exahype::State::AlgorithmSection& section) const {
   return false;
 }
 
 bool exahype::solvers::FiniteVolumesSolver::isMergingMetadata(
-    const exahype::records::State::AlgorithmSection& section) const {
+    const exahype::State::AlgorithmSection& section) const {
   return false;
 }
 
@@ -1491,10 +1473,7 @@ void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToMaster(
     const int                                     masterRank,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  for(int sends=0; sends<DataMessagesPerMasterWorkerCommunication; ++sends)
-    DataHeap::getInstance().sendData(
-        exahype::EmptyDataHeapMessage, masterRank, x, level,
-        peano::heap::MessageType::MasterWorkerCommunication);
+  // do nothing - limiter does not depend on solution from master for any tree cut
 }
 
 void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
@@ -1508,7 +1487,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToMaster(
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
       element,Heap::getInstance().getData(cellDescriptionsIndex).size());
 
-  sendEmptyDataToMaster(masterRank,x,level);
+  // do nothing - limiter does not depend on solution from master for any tree cut
 }
 
 void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
@@ -1526,7 +1505,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerData(
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
 
-  dropWorkerData(workerRank,x,level);
+  // do nothing - limiter does not depend on solution from master for any tree cut
 }
 
 void exahype::solvers::FiniteVolumesSolver::dropWorkerData(
@@ -1536,10 +1515,7 @@ void exahype::solvers::FiniteVolumesSolver::dropWorkerData(
   logDebug("dropWorkerData(...)","Dropping worker data from rank "<<workerRank<<
                ", cell: "<< x << ", level: " << level);
 
-  for(int receives=0; receives<DataMessagesPerMasterWorkerCommunication; ++receives)
-    DataHeap::getInstance().receiveData(
-        workerRank, x, level,
-        peano::heap::MessageType::MasterWorkerCommunication);
+  // do nothing - limiter does not depend on solution from master for any tree cut
 }
 
 ///////////////////////////////////
@@ -1634,44 +1610,35 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorker(
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
 
-  sendEmptyDataToWorker(workerRank,x,level);
+  // do nothing - limiter does not depend on solution from master for any tree cut
 }
 
 void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToWorker(
     const int                                     workerRank,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
-  for(int sends=0; sends<DataMessagesPerMasterWorkerCommunication; ++sends)
-    DataHeap::getInstance().sendData(
-        exahype::EmptyDataHeapMessage, workerRank, x, level,
-        peano::heap::MessageType::MasterWorkerCommunication);
+  // do nothing - limiter does not depend on solution from master for any tree cut
 }
 
-void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
-    const int                                     masterRank,
-    const exahype::MetadataHeap::HeapEntries&     masterMetadata,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
-  assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
-  assertion1(element>=0,element);
-  assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
-      element,Heap::getInstance().getData(cellDescriptionsIndex).size());
-
-  // TODO(Dominic): See ADER-DG solver if you want to implement AMR for the FV solver
-
-  dropMasterData(masterRank,x,level);
+void exahype::solvers::FiniteVolumesSolver::receiveDataFromMaster(
+     const int                                    masterRank,
+     std::deque<int>&                             receivedDataHeapIndices,
+     const tarch::la::Vector<DIMENSIONS, double>& x,
+     const int                                    level) const {
+  // do nothing - limiter does not depend on solution from master for any tree cut
 }
+
+ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterData(
+     const MetadataHeap::HeapEntries&             masterMetadata,
+     std::deque<int>&                             receivedDataHeapIndices,
+     const int                                    cellDescriptionsIndex,
+     const int                                    element) const {
+   // do nothing - limiter does not depend on solution from master for any tree cut
+ }
 
 void exahype::solvers::FiniteVolumesSolver::dropMasterData(
-    const int                                     masterRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-        const int                                     level) const {
-  for(int receives=0; receives<DataMessagesPerMasterWorkerCommunication; ++receives)
-    DataHeap::getInstance().receiveData(
-        masterRank, x, level,
-        peano::heap::MessageType::MasterWorkerCommunication);
+     std::deque<int>& heapIndices) const {
+  // do nothing - limiter does not depend on solution from master for any tree cut
 }
 #endif
 

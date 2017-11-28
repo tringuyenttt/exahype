@@ -551,6 +551,13 @@ class exahype::solvers::Solver {
   static const int NotFound;
 
   /**
+   * Moves a DataHeap array, i.e. copies the found
+   * data at "fromIndex" to the array at "toIndex" and
+   * deletes the "fromIndex" array afterwards.
+   */
+  static void moveDataHeapArray(const int fromIndex,const int toIndex,bool recycleFromArray);
+
+  /**
    * Run over all solvers and identify the minimal time stamp.
    */
   static double getMinSolverTimeStampOfAllSolvers();
@@ -1061,17 +1068,6 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) = 0;
 
   /**
-   * \return true if the solver is sending time step or neighbour data
-   * in the current algorithmic section.
-   * This depends usually on internal flags of the solver such as ones indicating
-   * a mesh update request or a limiter domain change during a previous time stepping
-   * iteration.
-   *
-   * \note Merging has not to be treated separately from computing.
-   */
-  virtual bool isSending(const exahype::records::State::AlgorithmSection& section) const = 0;
-
-  /**
    * \return true if the solver is computing in the current algorithmic section.
    * This depends usually on internal flags of the solver such as ones indicating
    * a mesh update request or a limiter domain change during a previous time stepping
@@ -1090,17 +1086,12 @@ class exahype::solvers::Solver {
    * a local recomputation.
    *
    */
-  virtual bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const = 0;
-  /**
-   * \return true if this solvers is using the Merging mapping functionalities
-   * like broadcasting time step data or merging neighbour data in the
-   * current algorithm section.
-   */
-  virtual bool isMerging(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const = 0;
+
   /**
    * \return true if this solver needs to merge metadata only(!) in the current algorithm section.
    */
-  virtual bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const = 0;
 
   /**
    * Copies the time stepping data from the global solver onto the patch's time
@@ -2137,7 +2128,7 @@ class exahype::solvers::Solver {
    */
   virtual void receiveDataFromMaster(
         const int                                    masterRank,
-        std::deque<int>&                             heapIndices,
+        std::deque<int>&                             receivedDataHeapIndices,
         const tarch::la::Vector<DIMENSIONS, double>& x,
         const int                                    level) const = 0;
 
@@ -2153,7 +2144,7 @@ class exahype::solvers::Solver {
    */
   virtual void mergeWithMasterData(
       const MetadataHeap::HeapEntries&             masterMetadata,
-      std::deque<int>&                             heapIndices,
+      std::deque<int>&                             receivedDataHeapIndices,
       const int                                    cellDescriptionsIndex,
       const int                                    element) const = 0;
 
