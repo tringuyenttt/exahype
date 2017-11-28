@@ -206,8 +206,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
         for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
           for (int n = 0; n < {{nVar}}; n++) {
             for (int y = 0; y < {{nDof}}; y++) {
-              fluxDerivative[l*{{nVarPad}}+n] += lFi[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}]*
-              dudx_T[l*{{nDofPad}}+y] * inverseDx[1] ;
+              fluxDerivative[l*{{nVarPad}}+n] += lFi[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] * dudx_T[l*{{nDofPad}}+y] * inverseDx[1] ;
               
             }
           }
@@ -225,18 +224,17 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
     //dflux3 dz
     for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
       std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
-      for (int l = 0; l < basisSize; l++) { // TODO use Libxsmm
-        for (int n = 0; n < numberOfVariables; n++) {
-          for (int z = 0; z < basisSize; z++) {
-            fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}]*
-             dudx_T[l*{{nDofPad}}+z] * inverseDx[2] ; 
+      for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
+        for (int n = 0; n < {{nVar}}; n++) {
+          for (int z = 0; z < {{nDof}}; z++) {
+            fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] * dudx_T[l*{{nDofPad}}+z] * inverseDx[2]; 
           }
         }
       }
       for (int l = 0; l < {{nDof}}; l++) {
         #pragma simd
         for (int n = 0; n < {{nVarPad}}; n++) {
-          lFi[(i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] =  fluxDerivative[l*{{nVarPad}}+n];
+          lFi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] =  fluxDerivative[l*{{nVarPad}}+n];
         }
       }
     }
@@ -274,7 +272,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       for (int z = 0; z < {{nDof}}; z++) {     
         for (int n = 0; n < {{nVar}}; n++) {// Skip parameters
           for (int l = 0; l < {{nDof}}; l++) {
-            gradQ[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}})] += lQi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * dudx_T[z*{{nDofPad}}+l] * inverseDx[2];
+            gradQ[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] += lQi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * dudx_T[z*{{nDofPad}}+l] * inverseDx[2];
           }
         }
       }
