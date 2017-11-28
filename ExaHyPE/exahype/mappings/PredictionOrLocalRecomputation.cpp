@@ -428,7 +428,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
       tarch::la::Vector<DIMENSIONS, int> src  = tarch::la::Vector<DIMENSIONS, int>(1) - mySrc;
 
       int destScalar = TWO_POWER_D - myDestScalar - 1;
-      int srcScalar  = TWO_POWER_D - mySrcScalar  - 1;
 
       if (vertex.hasToReceiveMetadata(fromRank,src,dest)) {
         const int receivedMetadataIndex =
