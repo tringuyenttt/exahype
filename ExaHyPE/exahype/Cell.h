@@ -332,7 +332,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    */
   void mergeWithMasterMetadata(
       const int                                   receivedMetadataIndex,
-      const exahype::records::State::AlgorithmSection& section) const;
+      const exahype::State::AlgorithmSection& section) const;
 
   // MASTER->WORKER
 
@@ -420,7 +420,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const int                                   workerRank,
       const tarch::la::Vector<DIMENSIONS,double>& x,
       const int                                   level,
-      const exahype::records::State::AlgorithmSection& section) const;
+      const exahype::State::AlgorithmSection& section) const;
 
 
   /**

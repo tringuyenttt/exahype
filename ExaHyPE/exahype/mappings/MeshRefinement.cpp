@@ -260,7 +260,7 @@ void exahype::mappings::MeshRefinement::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   fineGridVertex.mergeOnlyNeighboursMetadata(
-      exahype::records::State::AlgorithmSection::MeshRefinement,fineGridX,fineGridH);
+      exahype::State::AlgorithmSection::MeshRefinement,fineGridX,fineGridH);
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
@@ -609,7 +609,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
     // Abusing the cell descriptions index
     localCell.mergeWithMasterMetadata(
         receivedMasterCell.getCellDescriptionsIndex(),
-        exahype::State::Records::AlgorithmSection::MeshRefinement);
+        exahype::State::AlgorithmSection::MeshRefinement);
   }
 
   // Abusing the cell descriptions index
@@ -770,7 +770,7 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
         fineGridVerticesEnumerator.getLevel(),
-        exahype::State::Records::AlgorithmSection::MeshRefinement);
+        exahype::State::AlgorithmSection::MeshRefinement);
   } else {
     exahype::dropMetadata(
         worker,

@@ -114,7 +114,7 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::solvers::PredictionTemporaryVariables& temporaryVariables,
-    const exahype::State::Records::AlgorithmSection& algorithmSection) {
+    const exahype::State::AlgorithmSection& algorithmSection) {
   if (fineGridCell.isInitialised()) {
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex());
@@ -157,7 +157,7 @@ void exahype::mappings::Prediction::enterCell(
       fineGridCell,
       fineGridVertices,fineGridVerticesEnumerator,
       _predictionTemporaryVariables,
-      exahype::State::Records::AlgorithmSection::TimeStepping);
+      exahype::State::AlgorithmSection::TimeStepping);
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -165,7 +165,7 @@ void exahype::mappings::Prediction::enterCell(
 void exahype::mappings::Prediction::restrictDataAndPostProcess(
     const exahype::Cell&                             fineGridCell,
     const exahype::Cell&                             coarseGridCell,
-    const exahype::State::Records::AlgorithmSection& algorithmSection) {
+    const exahype::State::AlgorithmSection& algorithmSection) {
   if (fineGridCell.isInitialised()) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
@@ -219,7 +219,7 @@ void exahype::mappings::Prediction::leaveCell(
 
   exahype::mappings::Prediction::restrictDataAndPostProcess(
       fineGridCell,coarseGridCell,
-      exahype::State::Records::AlgorithmSection::TimeStepping);
+      exahype::State::AlgorithmSection::TimeStepping);
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

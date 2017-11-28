@@ -121,7 +121,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     _localState = solverState;
-    assertionEquals(_localState.getAlgorithmSection(),exahype::records::State::AlgorithmSection::TimeStepping);
 
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       solver->setNextMeshUpdateRequest();
@@ -282,7 +281,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
 
   exahype::mappings::Prediction::restrictDataAndPostProcess(
       fineGridCell,coarseGridCell,
-      exahype::State::Records::AlgorithmSection::TimeStepping);
+      exahype::State::AlgorithmSection::TimeStepping);
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

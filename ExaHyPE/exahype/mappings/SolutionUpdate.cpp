@@ -214,7 +214,7 @@ void exahype::mappings::SolutionUpdate::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  assertionEquals(_localState.getAlgorithmSection(),exahype::records::State::AlgorithmSection::TimeStepping);
+  assertionEquals(_localState.getAlgorithmSection(),exahype::State::AlgorithmSection::TimeStepping);
 
   exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       _solverFlags,_minTimeStepSizes,_minCellSizes,_maxCellSizes,
@@ -269,7 +269,7 @@ void exahype::mappings::SolutionUpdate::mergeWithMaster(
       worker,
       fineGridVerticesEnumerator.getCellCenter(),
       fineGridVerticesEnumerator.getLevel(),
-      exahype::State::Records::AlgorithmSection::TimeStepping);
+      exahype::State::AlgorithmSection::TimeStepping);
 }
 
 //

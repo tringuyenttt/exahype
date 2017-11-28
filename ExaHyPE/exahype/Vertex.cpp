@@ -61,7 +61,7 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Vertex::computeFaceBarycentre(
 }
 
 void exahype::Vertex::mergeOnlyNeighboursMetadata(
-    const exahype::records::State::AlgorithmSection& section,
+    const exahype::State::AlgorithmSection& section,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
   assertion(!isHangingNode());
@@ -544,7 +544,7 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     const int level,
-    const exahype::records::State::AlgorithmSection& section) const {
+    const exahype::State::AlgorithmSection& section) const {
   if ( hasToCommunicate(h) ) {
     dfor2(myDest)
       dfor2(mySrc)

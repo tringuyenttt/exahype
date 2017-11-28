@@ -179,7 +179,7 @@ void exahype::mappings::LimiterStatusSpreading::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   fineGridVertex.mergeOnlyNeighboursMetadata(
-      exahype::records::State::AlgorithmSection::LimiterStatusSpreading,fineGridX,fineGridH);
+      exahype::State::AlgorithmSection::LimiterStatusSpreading,fineGridX,fineGridH);
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }

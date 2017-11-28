@@ -303,7 +303,7 @@ void exahype::mappings::LocalRecomputationOrPrediction::leaveCell(
 
   exahype::mappings::Prediction::restrictDataAndPostProcess(
       fineGridCell,coarseGridCell,
-      exahype::State::Records::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputationAllSend);
+      exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend);
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
@@ -579,10 +579,14 @@ void exahype::mappings::LocalRecomputationOrPrediction::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  exahype::Cell::reduceGlobalDataToMaster(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      verticesEnumerator.getCellCenter(),
-      verticesEnumerator.getLevel());
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if ( performLocalRecomputation(solver) ) {
+      solver->sendDataToMaster(
+          tarch::parallel::NodePool::getInstance().getMasterRank(),
+          verticesEnumerator.getCellCenter(),
+          verticesEnumerator.getLevel());
+    }
+  }
 
   if ( exahype::State::fuseADERDGPhases() ) {
     localCell.reduceDataToMasterPerCell(
@@ -605,10 +609,14 @@ void exahype::mappings::LocalRecomputationOrPrediction::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
-  exahype::Cell::mergeWithGlobalDataFromWorker(
-      worker,
-      fineGridVerticesEnumerator.getCellCenter(),
-      fineGridVerticesEnumerator.getLevel());
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if ( performLocalRecomputation(solver) ) {
+      solver->mergeWithWorkerData(
+          worker,
+          fineGridVerticesEnumerator.getCellCenter(),
+          fineGridVerticesEnumerator.getLevel());
+    }
+  }
 
   if ( exahype::State::fuseADERDGPhases() ) {
     fineGridCell.mergeWithDataFromWorkerPerCell(

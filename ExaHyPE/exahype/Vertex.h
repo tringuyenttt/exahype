@@ -211,7 +211,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    * use it in combination with the Merging mapping.
    */
   void mergeOnlyNeighboursMetadata(
-      const exahype::records::State::AlgorithmSection& section,
+      const exahype::State::AlgorithmSection& section,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
@@ -464,7 +464,7 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       const int level,
-      const exahype::records::State::AlgorithmSection& section) const;
+      const exahype::State::AlgorithmSection& section) const;
 
   /**
    * Drops the metadata received from neighbouring ranks.

@@ -138,7 +138,7 @@ private:
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::solvers::PredictionTemporaryVariables& temporaryVariables,
-      const exahype::State::Records::AlgorithmSection& algorithmSection);
+      const exahype::State::AlgorithmSection& algorithmSection);
 
   /**
    * This routine restricts face data from a
@@ -169,7 +169,7 @@ private:
   static void restrictDataAndPostProcess(
       const exahype::Cell&                             fineGridCell,
       const exahype::Cell&                             coarseGridCell,
-      const exahype::State::Records::AlgorithmSection& algorithmSection);
+      const exahype::State::AlgorithmSection& algorithmSection);
 
   /**
    * Level for which we ask what to do. This value is negative

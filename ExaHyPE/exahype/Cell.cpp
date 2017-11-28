@@ -316,7 +316,7 @@ void exahype::Cell::mergeWithWorkerMetadata(
     const int                                   workerRank,
     const tarch::la::Vector<DIMENSIONS,double>& x,
     const int                                   level,
-    const exahype::records::State::AlgorithmSection& section) const {
+    const exahype::State::AlgorithmSection& section) const {
   const int receivedMetadataIndex =
       exahype::receiveMasterWorkerCommunicationMetadata(workerRank, x,level);
   exahype::MetadataHeap::HeapEntries& receivedMetadata =
@@ -348,7 +348,7 @@ void exahype::Cell::mergeWithWorkerMetadata(
 
 void exahype::Cell::mergeWithMasterMetadata(
     const int                                        receivedMetadataIndex,
-    const exahype::records::State::AlgorithmSection& section) const {
+    const exahype::State::AlgorithmSection& section) const {
   exahype::MetadataHeap::HeapEntries& receivedMetadata =
       MetadataHeap::getInstance().getData(receivedMetadataIndex);
   assertionEquals(receivedMetadata.size(),
@@ -509,13 +509,8 @@ void exahype::Cell::mergeWithGlobalDataFromMaster(
   }
 }
 
-_masterWorkerCommunicationCounter--;
-}
-
 
 // WORKER->MASTER
-
-
 
 // global
 

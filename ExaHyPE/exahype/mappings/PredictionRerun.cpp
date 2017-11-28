@@ -125,7 +125,7 @@ void exahype::mappings::PredictionRerun::enterCell(
         fineGridCell,
         fineGridVertices,fineGridVerticesEnumerator,
         _predictionTemporaryVariables,
-        exahype::State::Records::AlgorithmSection::PredictionRerunAllSend);
+        exahype::State::AlgorithmSection::PredictionRerunAllSend);
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -143,7 +143,7 @@ void exahype::mappings::PredictionRerun::leaveCell(
 
   exahype::mappings::Prediction::restrictDataAndPostProcess(
       fineGridCell,coarseGridCell,
-      exahype::State::Records::AlgorithmSection::TimeStepping);
+      exahype::State::AlgorithmSection::TimeStepping);
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
