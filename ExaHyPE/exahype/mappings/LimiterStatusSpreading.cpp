@@ -39,7 +39,7 @@ peano::CommunicationSpecification
 exahype::mappings::LimiterStatusSpreading::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::
-          MaskOutMasterWorkerDataAndStateExchange,
+          SendDataAndStateBeforeFirstTouchVertexFirstTime, // TODO(Dominic): Cannot mask out Master-Worker exchange - technically I should be able too. Probably the reduction stuff.
       peano::CommunicationSpecification::ExchangeWorkerMasterData::
           SendDataAndStateAfterLastTouchVertexLastTime,
       true);
