@@ -326,15 +326,56 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       exahype::Vertex* const verticesAroundCell,
       const peano::grid::VertexEnumerator& verticesEnumerator);
 
-  /**
-   * Receives metadata from the master and merges it with all
-   * solvers registered on the cell.
-   */
-  void mergeWithMasterMetadata(
-      const int                                   receivedMetadataIndex,
-      const exahype::State::AlgorithmSection& section) const;
-
   // MASTER->WORKER
+
+  /*!
+   * Send data such global solver and plotter
+   * time step data down to a worker.
+   */
+  static void broadcastGlobalDataToWorker(
+      const int                                   worker,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+
+  /*!
+   * Merge with global data such as global solver and plotter
+   * time step data sent down from the master.
+   */
+  static void mergeWithGlobalDataFromMaster(
+      const int                                   master,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
+
+  /*! Broadcast metadata down to the worker.
+   * This is done per cell.
+   */
+  void broadcastMetadataToWorkerPerCell(
+      const int                                   worker,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const int                                   level);
+
+  /*! Receive the metadata broadcasted down from the master.
+   * This is done per cell.
+   *
+   * \note must be called on the "receivedCell" in
+   * "Mapping::receiveDataFromMaster".
+   */
+  void receiveMetadataFromMasterPerCell(
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const int                                   level);
+
+  /*! Receives metadata from the master and merges it with all
+   * solvers registered on the cell.
+   *
+   * \note must be called on the "localCell" in
+   * "Mapping::mergeWithWorker".
+   */
+  void mergeWithMetadataFromMasterPerCell(
+      const Cell&                                 receivedCell,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const exahype::State::AlgorithmSection&     section);
 
   /*! Broadcast data per cell to a worker.
    *
@@ -391,36 +432,18 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const Cell&                                 receivedCell,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize );
 
-  /*!
-   * Send data such global solver and plotter
-   * time step data down to a worker.
-   */
-  static void broadcastGlobalDataToWorker(
-      const int                                   worker,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const int                                   level);
-
-  /*!
-   * Merge with global data such as global solver and plotter
-   * time step data sent down from the master.
-   */
-  static void mergeWithGlobalDataFromMaster(
-      const int                                   master,
-      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-      const int                                   level);
-
   // WORKER->MASTER
-
 
   /**
    * Receives metadata from a worker and merges it with all
    * solvers registered on the cell.
    */
-  void mergeWithWorkerMetadata(
+  void mergeWithMetadataFromWorkerPerCell(
       const int                                   workerRank,
-      const tarch::la::Vector<DIMENSIONS,double>& x,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const int                                   level,
-      const exahype::State::AlgorithmSection& section) const;
+      const exahype::State::AlgorithmSection&     section) const;
 
 
   /**

@@ -93,6 +93,22 @@ exahype::mappings::LimiterStatusSpreading::LimiterStatusSpreading(
 }
 #endif
 
+exahype::mappings::LimiterStatusSpreading::~LimiterStatusSpreading() {
+  exahype::solvers::deleteSolverFlags(_solverFlags);
+}
+
+#if defined(SharedMemoryParallelisation)
+void exahype::mappings::LimiterStatusSpreading::mergeWithWorkerThread(
+    const LimiterStatusSpreading& workerThread) {
+  for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
+    _solverFlags._meshUpdateRequest[i]  |= workerThread._solverFlags._meshUpdateRequest[i];
+    _solverFlags._limiterDomainChange[i] =
+        std::max ( _solverFlags._limiterDomainChange[i],
+                   workerThread._solverFlags._limiterDomainChange[i] );
+  }
+}
+#endif
+
 bool exahype::mappings::LimiterStatusSpreading::spreadLimiterStatus(exahype::solvers::Solver* solver) {
   return
       solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
@@ -279,8 +295,6 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
-
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
@@ -289,14 +303,6 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
         verticesEnumerator.getCellCenter(),
         verticesEnumerator.getLevel());
   }
-
-  exahype::sendMasterWorkerCommunicationMetadata(
-      tarch::parallel::NodePool::getInstance().getMasterRank(),
-      localCell.getCellDescriptionsIndex(),
-      verticesEnumerator.getCellCenter(),
-      verticesEnumerator.getLevel());
-
-  peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
 }
 
 void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
@@ -317,21 +323,6 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
 
     solver->mergeWithWorkerMeshUpdateFlags(
         worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getLevel());
-  }
-
-  // Merge cell states
-  if (fineGridCell.isInitialised()) {
-    fineGridCell.mergeWithWorkerMetadata(
-        worker,
-        fineGridVerticesEnumerator.getCellCenter(),
-        fineGridVerticesEnumerator.getLevel(),
-        exahype::State::AlgorithmSection::LimiterStatusSpreading);
-  } else {
-    exahype::dropMetadata(
-        worker,
-        peano::heap::MessageType::MasterWorkerCommunication,
         fineGridVerticesEnumerator.getCellCenter(),
         fineGridVerticesEnumerator.getLevel());
   }
@@ -401,24 +392,6 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithWorker(
 exahype::mappings::LimiterStatusSpreading::LimiterStatusSpreading() {
   // do nothing
 }
-
-exahype::mappings::LimiterStatusSpreading::~LimiterStatusSpreading() {
-  exahype::solvers::deleteSolverFlags(_solverFlags);
-}
-
-#if defined(SharedMemoryParallelisation)
-void exahype::mappings::LimiterStatusSpreading::mergeWithWorkerThread(
-    const LimiterStatusSpreading& workerThread) {
-  for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _solverFlags._meshUpdateRequest[i]  |= workerThread._solverFlags._meshUpdateRequest[i];
-    _solverFlags._limiterDomainChange[i] =
-        std::max ( _solverFlags._limiterDomainChange[i],
-                   workerThread._solverFlags._limiterDomainChange[i] );
-  }
-}
-#endif
-
-
 
 void exahype::mappings::LimiterStatusSpreading::touchVertexLastTime(
     exahype::Vertex& fineGridVertex,

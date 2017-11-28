@@ -263,9 +263,10 @@ void exahype::mappings::SolutionUpdate::mergeWithMaster(
       coarseGridVerticesEnumerator.getCellCenter(),
       coarseGridVerticesEnumerator.getLevel());
 
-  fineGridCell.mergeWithWorkerMetadata(
+  fineGridCell.mergeWithMetadataFromWorkerPerCell(
       worker,
       fineGridVerticesEnumerator.getCellCenter(),
+      fineGridVerticesEnumerator.getCellSize(),
       fineGridVerticesEnumerator.getLevel(),
       exahype::State::AlgorithmSection::TimeStepping);
 }
