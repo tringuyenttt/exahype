@@ -39,7 +39,7 @@ peano::CommunicationSpecification
 exahype::mappings::LimiterStatusSpreading::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::
-          SendDataAndStateBeforeFirstTouchVertexFirstTime,
+          MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::
           SendDataAndStateAfterLastTouchVertexLastTime,
       true);
@@ -87,8 +87,7 @@ exahype::mappings::LimiterStatusSpreading::descendSpecification(int level) const
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::LimiterStatusSpreading::LimiterStatusSpreading(
-    const LimiterStatusSpreading& masterThread)
-  : _localState(masterThread._localState) {
+    const LimiterStatusSpreading& masterThread) {
   exahype::solvers::initialiseSolverFlags(_solverFlags);
   exahype::solvers::prepareSolverFlags(_solverFlags);
 }
@@ -105,8 +104,6 @@ bool exahype::mappings::LimiterStatusSpreading::spreadLimiterStatus(exahype::sol
 void exahype::mappings::LimiterStatusSpreading::beginIteration(
   exahype::State& solverState
 ) {
-  _localState = solverState;
-
   exahype::solvers::initialiseSolverFlags(_solverFlags);
   exahype::solvers::prepareSolverFlags(_solverFlags);
 
@@ -257,7 +254,7 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithNeighbour(
 
   vertex.mergeOnlyWithNeighbourMetadata(
       fromRank,fineGridX,fineGridH,level,
-      _localState.getAlgorithmSection());
+      exahype::State::AlgorithmSection::LimiterStatusSpreading);
 
   logTraceOut("mergeWithNeighbour(...)");
 }
@@ -330,7 +327,7 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
         worker,
         fineGridVerticesEnumerator.getCellCenter(),
         fineGridVerticesEnumerator.getLevel(),
-        _localState.getAlgorithmSection());
+        exahype::State::AlgorithmSection::LimiterStatusSpreading);
   } else {
     exahype::dropMetadata(
         worker,

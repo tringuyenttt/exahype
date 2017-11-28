@@ -512,7 +512,7 @@ void exahype::mappings::MeshRefinement::mergeWithNeighbour(
   }
   vertex.mergeOnlyWithNeighbourMetadata(
       fromRank,fineGridX,fineGridH,level,
-      );
+      exahype::State::AlgorithmSection::LimiterStatusSpreading);
 
   logTraceOut("mergeWithNeighbour(...)");
 }

@@ -405,7 +405,7 @@ void exahype::mappings::FusedTimeStep::mergeWithMaster(
         fineGridVerticesEnumerator.getLevel());
 
     fineGridCell.mergeWithDataFromWorkerPerCell(
-        worker
+        worker,
         fineGridVerticesEnumerator.getCellCenter(),
         fineGridVerticesEnumerator.getCellSize(),
         fineGridVerticesEnumerator.getLevel());

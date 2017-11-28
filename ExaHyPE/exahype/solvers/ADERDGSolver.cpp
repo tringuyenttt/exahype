@@ -1911,13 +1911,13 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
 
   if (aderdgSolver!=nullptr) {
     auto& cellDescription =  ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
-//    aderdgSolver->performPredictionAndVolumeIntegral(
-//        cellDescription,
-//        temporaryVariables._tempSpaceTimeUnknowns    [cellDescription.getSolverNumber()],
-//        temporaryVariables._tempSpaceTimeFluxUnknowns[cellDescription.getSolverNumber()],
-//        temporaryVariables._tempUnknowns             [cellDescription.getSolverNumber()],
-//        temporaryVariables._tempFluxUnknowns         [cellDescription.getSolverNumber()],
-//        temporaryVariables._tempPointForceSources    [cellDescription.getSolverNumber()]);                                                 )
+    aderdgSolver->performPredictionAndVolumeIntegral(
+        cellDescription,
+        temporaryVariables._tempSpaceTimeUnknowns    [cellDescription.getSolverNumber()],
+        temporaryVariables._tempSpaceTimeFluxUnknowns[cellDescription.getSolverNumber()],
+        temporaryVariables._tempUnknowns             [cellDescription.getSolverNumber()],
+        temporaryVariables._tempFluxUnknowns         [cellDescription.getSolverNumber()],
+        temporaryVariables._tempPointForceSources    [cellDescription.getSolverNumber()]);
   }
 }
 
@@ -4152,9 +4152,15 @@ void exahype::solvers::ADERDGSolver::receiveDataFromMaster(
       (getDMPObservables() > 0) ? 2 : 0;
 
   for (int message=0; message < numberOfMessages; message++) {
-    const int heapIndex = DataHeap::getInstance().receiveData(
-        masterRank, x, level,
-        peano::heap::MessageType::MasterWorkerCommunication);
+    DataHeap::HeapEntries receivedData =
+        DataHeap::getInstance().receiveData(
+            masterRank, x, level,
+            peano::heap::MessageType::MasterWorkerCommunication);
+    const int heapIndex =
+        DataHeap::getInstance().createData(
+            receivedData.size(),receivedData.size(),DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+    std::copy_n (
+        receivedData.data(),receivedData.size(),DataHeap::getInstance().getData(heapIndex).data());
 
     receivedHeapDataIndices.push_back(heapIndex);
   }
@@ -4188,7 +4194,7 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     receivedHeapDataIndices.pop_front();
 
     if(getDMPObservables()>0) {
-      moveDataHeapArray(receivedHeapDataIndices.front(),cellDescription.getSolutionMin(),true));
+      moveDataHeapArray(receivedHeapDataIndices.front(),cellDescription.getSolutionMin(),true);
       receivedHeapDataIndices.pop_front();
       moveDataHeapArray(receivedHeapDataIndices.front(),cellDescription.getSolutionMax(),true);
       receivedHeapDataIndices.pop_front();

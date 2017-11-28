@@ -55,11 +55,6 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * Local copy of the state.
-   */
-  exahype::State _localState;
-
-  /**
    * Per solver a flag, indicating if has requested
    * a mesh update request or a limiter domain change.
    */
@@ -80,6 +75,9 @@ public:
    */
   static bool IsFirstIteration;
   #endif
+
+  peano::CommunicationSpecification communicationSpecification() const;
+
   /**
    * Avoid fine grid races to prevent data races (whole tree).
    */
@@ -96,8 +94,6 @@ public:
   peano::MappingSpecification leaveCellSpecification(int level) const;
   peano::MappingSpecification ascendSpecification(int level) const;
   peano::MappingSpecification descendSpecification(int level) const;
-
-  peano::CommunicationSpecification communicationSpecification() const;
 
 #if defined(SharedMemoryParallelisation)
   /**

@@ -22,6 +22,8 @@
 
 #include "kernels/KernelCalls.h"
 
+#include "exahype/plotters/Plotter.h"
+
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
@@ -475,7 +477,7 @@ void exahype::Cell::mergeWithMasterDataPerCell(
 
     // Reset data
     exahype::MetadataHeap::getInstance().deleteData(_receivedMetadataHeapIndex);
-    receivedCell._receivedMetadataHeapIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
+    _receivedMetadataHeapIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
     assertion( _receivedDataHeapIndices.empty() );
   }
 }
