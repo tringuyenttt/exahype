@@ -361,7 +361,7 @@ void exahype::Vertex::mergeNeighbours(
     double*** tempFaceUnknowns,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) const {
-  if ( tarch::la::oneGreater(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
+  if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
     dfor2(pos1)
       dfor2(pos2)
         if (hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,x,h)) { // Assumes that we have to valid indices
