@@ -193,6 +193,17 @@ case $CMD in
 		cdapp
 		make clean || fail "Cannot clean since toolkit did not run."
 		;;
+	"clean-at") # Clean all object files below some given path
+		for f in $@; do
+			if ! [[ -d $f ]] && [[ -e $f ]] && [[ -d $(dirname "$f") ]]; then
+				echo "Cleaning at $(dirname $f)"
+				subreq clean-at $(dirname "$f")
+			else
+				echo "Cleaning at $f"
+				find $f -type f -iname \*.o -delete -print
+			fi
+		done;
+		;;
 	"cheat") # show the environment variables available for driving the build
 		cdroot; cd $SCRIPTDIR;
 		cat cheat-sheet.txt
