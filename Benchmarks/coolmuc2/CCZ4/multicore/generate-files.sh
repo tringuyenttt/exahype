@@ -32,22 +32,21 @@ else
 fi
 prefix+="-$mesh"
 
-#for order in 3 5 7 9
-for order in 3
+for order in 3 5 7 9
+#for order in 3
 do
-  # SIMULATION END TIME
-  # T=(  0.00333333333334 0.00111111111112 0.00037037037038 0.000123456790124 0.0000411522633746  )            # p=3
-  # if (( order == 5 )); then
-    # T=( 0.00212121212122 0.000707070707072 0.0002356902357 0.0000785634118968 0.0000261878039657 )  # p=5; (2*3+1)/(2*order+1)*T_3 ceiled with sig. 1e-6
-  # fi
-  # if (( order == 7 )); then
-    # T=( 0.0015555555555587 0.0005185185185227 0.0001728395061773 0.0000576131687245 0.0000192043895748 ) # p=7
-  # fi
-  # if (( order == 9 )); then
-    # T=(0.0012280701754411 0.0004093567251495 0.0001364522417189 0.0000454840805720 0.0000151613601906 ) # p=9
-  # fi
-  # t=${T[i]}
-  t=0.03
+  SIMULATION END TIME
+  T=(  0.01  )            # p=3
+  if (( order == 5 )); then
+    T=( 0.0636 )  # p=5; (2*3+1)/(2*order+1)*T_3 ceiled with sig. 1e-6
+  fi
+  if (( order == 7 )); then
+    T=( 0.0046 ) # p=7
+  fi
+  if (( order == 9 )); then
+    T=( 0.0036  ) # p=9
+  fi
+  t=${T[i]}
   
   # Create script
   script=multicore/coolmuc.slurm-script
