@@ -3,41 +3,30 @@
 #include "tarch/logging/Log.h"
 
 
-InitialDataCode& InitialDataCode::getInstance() {
+InitialDataCode* InitialDataCode::getInstanceByName(const std::string& idname) {
+	if(idname == "AlfenWave") 	return new AnalyticalID<AlfenWaveCons>;
+	if(idname == "PizzaTOV")	return new pizzatov();
+	if(idname == "RNSID") 		return new rnsid();
+	return nullptr;
+}
+
+GlobalInitialData& GlobalInitialData::getInstance() {
+	static GlobalInitialData* me = nullptr;
+	if(!me) me = new GlobalInitialData(nullptr);
+	return *me;
+}
+
+bool GlobalInitialData::setIdByName(const std::string& name) {
 	static tarch::logging::Log _log("InitialDataCode");
-	static InitialDataCode* id = nullptr;
-	if(id) return *id;
-
-	if(1) {
-		logInfo("InitialDataCode", "Loading AlfenWaveCons Initial Data");
-		id = new AnalyticalID<AlfenWaveCons>;
-	}
-
-	if(0) {
-		logInfo("getInstance()", "Loading PizzaTOV Initial Data");
-		id = new pizzatov();
-	}
-	
-	if(0) {
-		logInfo("getInstance()", "Loading RNSID Initial Data");
-		id = new rnsid();
-	}
-	
-	return *id;
-	// then, some day do the job of GlobalID.cpp:
-	/*
-	if(idname == "Fortran") {
-		id = new fortranid();
+	if(id) logWarning("setIdByName()", "Have already set global initial data, now overwriting with "<< name << ".");
+	id = InitialDataCode::getInstanceByName(name);
+	if(id) {
+		logInfo("setIdByName()", "Successfully loaded "<< name << " Initial Data.");
 		return true;
-	} else if(idname == "PizzaTOV") {
-		id = new pizzatov();
-		return true;
-	} else if(idname == "RNSID") {
-		id = new rnsid();
-		return true;
+	} else {
+		logError("setIdByName()", "Requested Initial Data '"<< name << "' not known.");
+		return false;
 	}
-	return false; // no success
-	*/
 }
 
 #include "PDE/PDE.h"
@@ -48,7 +37,13 @@ constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 void InitialData(const double* x, double t, double* Q) {
 	for(int i=0;i<nVar;i++) Q[i] = 0.0; // Zeroize
 	
-	InitialDataCode::getInstance().Interpolate(x,t,Q);
+	if(GlobalInitialData::getInstance().id == nullptr) {
+		static tarch::logging::Log _log("InitialData");
+		logError("InitialData()", "Cannot access InitialData because no initial Data has been defined yet.");
+		std::abort();
+	}
+	
+	GlobalInitialData::getInitialDataCode().Interpolate(x,t,Q);
 	
 	  // also store the positions for debugging
 	GRMHD::AbstractGRMHDSolver_ADERDG::Variables var(Q);

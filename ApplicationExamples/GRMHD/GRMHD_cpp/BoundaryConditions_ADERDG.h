@@ -3,23 +3,10 @@
 #define GENERIC_BOUNDARY_CONDITIONS_WHICH_SHOULD_GO_SOMEWHERE_CENTRAL
 
 #include "GRMHDSolver_ADERDG_Variables.h" // just for GRMHD-specific variable names
+#include "InitialData/InitialData.h"
+#include "PDE/PDE.h"
+#include "RuntimeParameters.h"
 
-/** Helper class to parse key value strings */
-class StringMapView {
-   std::string base;
-   public:
-    StringMapView(std::string _base) : base(_base) {}
-    std::string getValueAsString(const std::string& key) const {
-	std::size_t startIndex = base.find(key);
-	startIndex = base.find(":", startIndex);
-	std::size_t endIndex = base.find_first_of("}, \n\r", startIndex + 1);
-	return base.substr(startIndex + 1, endIndex - startIndex - 1);
-    }
-    bool isValueValidString(const std::string& key) const {
-	std::size_t startIndex = base.find(key);
-	return (startIndex != std::string::npos);
-    }
-  };
 
 #define ADERDG_BOUNDARY_SIGNATURE \
   const double* const x,const double t,const double dt,const int faceIndex,const int d,\
@@ -104,8 +91,8 @@ public:
 	 ***************************************************************************/
 	
 	#define BC_FROM_SPECFILE_SIDE(name) \
-		if(constants.isValueValidString(#name)) { \
-			std::string val = constants.getValueAsString(#name);\
+		if(constants.is_string(#name)) { \
+			std::string val = constants.get_string(#name);\
 			name = parseFromString(val);\
 			if(name==nullptr) {\
 				logError("setFromSpecFile", "Boundary condition at " #name ": Invalid method: '" << val << "'");\
@@ -124,8 +111,7 @@ public:
 	 * 
 	 * @returns true in case of success, false otherwise
 	 **/
-	template<typename MapView>
-	bool setFromSpecFile(MapView constants) {
+	bool setFromMapView(const RuntimeParameters::MapView& constants) {
 		tarch::logging::Log _log("BoundaryCondition");
 		BC_FROM_SPECFILE_SIDE(left);
 		BC_FROM_SPECFILE_SIDE(right);
@@ -187,54 +173,33 @@ public:
 	 * Minkowski spacetime for GRMHD.
 	 **/
 	void vacuum(BOUNDARY_SIGNATURE) {
-		using namespace GRMHD::GRMHDSolver_ADERDG_Variables::shortcuts;
-		stateOut[rho] = 1e-10; // Some vacuum value
-		stateOut[vel+0] = 0;
-		stateOut[vel+1] = 0;
-		stateOut[vel+2] = 0;
-		stateOut[E] = 1.0; // or some reasonably vacuum value
-		stateOut[psi] = 0;
-
-		// Minkowski spacetime:
-		stateOut[lapse] = 1;
-		stateOut[shift+0] = 0;
-		stateOut[shift+1] = 0;
-		stateOut[shift+2] = 0;
-		stateOut[gij+0] = 1; // gxx
-		stateOut[gij+1] = 0; // gxy
-		stateOut[gij+2] = 0; // gxz
-		stateOut[gij+3] = 0; // gyx
-		stateOut[gij+4] = 1; // gyy
-		stateOut[gij+5] = 0; // gyz
-		stateOut[gij+6] = 1; // gzz
-		
+		VacuumInitialData foo(stateOut);
 		deriveAderdgFlux(BOUNDARY_CALL);
 	}
 	
 	/// Outflow / Copy BC
 	void outflow(BOUNDARY_SIGNATURE) {
-		for(int m=0; m<nVar; m++) {
-			stateOut[m] = stateIn[m];
-		}
-
+		NVARS(i) stateOut[i] = stateIn[i];
 		deriveAderdgFlux(BOUNDARY_CALL);
 	}
 	
 	/// Reflection/Hard wall BC, Currently WRONG.
 	void reflective(BOUNDARY_SIGNATURE) {
 		// First, copy state
-		for(int m=0; m<nVar; m++) {
-			stateOut[m] = stateIn[m];
-		}
+		NVARS(i) stateOut[i] = stateIn[i];
 		
-		using namespace GRMHD::GRMHDSolver_ADERDG_Variables::shortcuts;
+		SVEC::GRMHD::Shadow Q(stateOut);
 		
-		// second, flip the sign of the vectors in normal direction
-		stateOut[vel+d] *= -1;
-		stateOut[shift+d] *= -1;
+		// vectors: flip sign
+		Q.Si.lo(d) *= -1;
+		Q.Bmag.up(d) *= -1;
 		
-		// Third, flip the sign of the tensors in normal direction
-		// TODO: Look up how this is done correctly!!!!
+		// Note: ADM BC should never be used anywhere as
+		// ADM variables are parameters in this setup anyway!
+		
+		Q.beta.up(d) *= -1;
+		// Symmetric Tensors: flip sign of off-diagonal
+		DFOR(i) if(i != d) Q.gam.lo(i,d) *= -1;
 		
 		deriveAderdgFlux(BOUNDARY_CALL);
 	}
@@ -256,8 +221,9 @@ public:
 			const double xi = kernels::gaussLegendreNodes[order][i];
 			double ti = t + xi * dt;
 
-			solver->adjustPointSolution(x, ti, dt, Qgp);
-			//id->Interpolate(x, ti, Qgp);
+			// do *not* use adjustPointSolution, it only works if ti~0.
+			//solver->adjustPointSolution(x, ti, dt, Qgp);
+			InitialData(x, ti, Qgp);
 			solver->flux(Qgp, F);
 			
 			for(int m=0; m < nVar; m++) {
@@ -270,5 +236,7 @@ public:
 		// set exactly by time integration.
 	}
 };
+
+typedef BoundaryConditions<GRMHD::GRMHDSolver_ADERDG> BoundaryConditionsADERDG;
 
 #endif /* GENERIC_BOUNDARY_CONDITIONS_WHICH_SHOULD_GO_SOMEWHERE_CENTRAL */
