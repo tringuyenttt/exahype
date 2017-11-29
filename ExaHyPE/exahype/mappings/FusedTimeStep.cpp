@@ -212,7 +212,7 @@ void exahype::mappings::FusedTimeStep::enterCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   logTraceInWith4Arguments("enterCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
 
-  if (fineGridCell.isInitialised()) {
+  if ( fineGridCell.isInitialised() ) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
     pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())

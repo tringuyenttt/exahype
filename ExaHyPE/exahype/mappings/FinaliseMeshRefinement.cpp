@@ -145,7 +145,6 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       if ( solver->getMeshUpdateRequest() ) {
-        // finalise state updates
         solver->finaliseStateUpdates(
             fineGridCell,
             fineGridVertices,
@@ -161,7 +160,6 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         if ( element!=exahype::solvers::Solver::NotFound ) {
           // compute a new time step size
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
-
           if (exahype::State::fuseADERDGPhases()) {
             admissibleTimeStepSize = solver->updateTimeStepSizesFused(
                 fineGridCell.getCellDescriptionsIndex(),element);
@@ -185,7 +183,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
             const int element = exahype::solvers::RegisteredSolvers[solverNumber]->tryGetElement(
                 fineGridCell.getCellDescriptionsIndex(),solverNumber);
             if (element!=exahype::solvers::Solver::NotFound) {
-              static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
+              limitingADERDGSolver->
                   determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
             }
           }
