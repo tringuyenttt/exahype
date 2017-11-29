@@ -751,8 +751,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     logDebug("runAsMaster(...)","min solver time step size: " << solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers());
     while ((solvers::Solver::getMinSolverTimeStampOfAllSolvers() < simulationEndTime) &&
         tarch::la::greater(solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers(), 0.0)) {
-      bool plot = exahype::plotters::startPlottingIfAPlotterIsActive(
-          solvers::Solver::getMinSolverTimeStampOfAllSolvers()); // has side effects
+      bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(
+          solvers::Solver::getMinSolverTimeStampOfAllSolvers()); // has no side effects
 
       preProcessTimeStepInSharedMemoryEnvironment();
 

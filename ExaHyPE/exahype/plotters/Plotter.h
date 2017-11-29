@@ -35,6 +35,9 @@ namespace exahype {
     /*! Plots a patch if a plotter is active for the corresponding solver.
      */
     void plotPatchIfAPlotterIsActive(const int solverNumber,const int cellDescriptionsIndex,const int element);
+
+
+    bool checkWhetherPlotterBecomesActive(double currentTimeStamp);
     bool startPlottingIfAPlotterIsActive(double currentTimeStamp);
     void finishedPlotting();
     double getTimeOfNextPlot();

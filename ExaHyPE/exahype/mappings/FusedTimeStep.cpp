@@ -121,8 +121,14 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
+  logInfo("beginIteration(State)","batchState="<<static_cast<int>(exahype::State::getBatchState()));
+
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     _localState = solverState;
+
+    bool plot = exahype::plotters::startPlottingIfAPlotterIsActive(
+        solvers::Solver::getMinSolverTimeStampOfAllSolvers());
+    assertion(!plot || exahype::State::getBatchState()==exahype::State::BatchState::NoBatch);
 
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       solver->setNextMeshUpdateRequest();

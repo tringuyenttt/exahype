@@ -583,6 +583,15 @@ bool exahype::plotters::startPlottingIfAPlotterIsActive(double currentTimeStamp)
   return result;
 }
 
+bool exahype::plotters::checkWhetherPlotterBecomesActive(double currentTimeStamp) {
+  bool result = false;
+  for (const auto& p : RegisteredPlotters) {
+    result |=
+        ((p->getNextPlotTime() >= 0.0) &&
+        tarch::la::greaterEquals( currentTimeStamp, p->getNextPlotTime()) );
+  }
+  return result;
+}
 
 double exahype::plotters::getTimeOfNextPlot() {
   double result = std::numeric_limits<double>::max();
