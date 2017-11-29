@@ -367,22 +367,22 @@ exahype::plotters::Plotter::Plotter(
             postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
-      if (equalsIgnoreCase(_identifier, FiniteVolumesVertices2VTKAscii::getIdentifier() ) == 0) {
+      if (equalsIgnoreCase(_identifier, FiniteVolumesVertices2VTKAscii::getIdentifier() )) {
         _device = new FiniteVolumesVertices2VTKAscii(
             postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
-      if (equalsIgnoreCase(_identifier, FiniteVolumesVertices2VTKBinary::getIdentifier() ) == 0) {
+      if (equalsIgnoreCase(_identifier, FiniteVolumesVertices2VTKBinary::getIdentifier() )) {
         _device = new FiniteVolumesVertices2VTKBinary(
             postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
-      if (equalsIgnoreCase(_identifier, FiniteVolumesVertices2VTUAscii::getIdentifier() ) == 0) {
+      if (equalsIgnoreCase(_identifier, FiniteVolumesVertices2VTUAscii::getIdentifier() )) {
         _device = new FiniteVolumesVertices2VTUAscii(
             postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
       }
-      if (equalsIgnoreCase(_identifier, FiniteVolumesVertices2VTUBinary::getIdentifier() ) == 0) {
+      if (equalsIgnoreCase(_identifier, FiniteVolumesVertices2VTUBinary::getIdentifier() )) {
         _device = new FiniteVolumesVertices2VTUBinary(
             postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
