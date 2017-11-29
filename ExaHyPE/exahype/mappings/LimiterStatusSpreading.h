@@ -67,14 +67,12 @@ private:
   static bool spreadLimiterStatus(exahype::solvers::Solver* solver);
 
 public:
-  #ifdef Parallel
   /**
    * This variable is unset in LimiterStatusSpreading::beginIteration(...) in the first iteration
    * of LimiterStatusSpreading and then reset in
    * MeshRefinement::beginIteration(...) and Reinitialisaion::beginIteration().
    */
   static bool IsFirstIteration;
-  #endif
 
   peano::CommunicationSpecification communicationSpecification() const;
 

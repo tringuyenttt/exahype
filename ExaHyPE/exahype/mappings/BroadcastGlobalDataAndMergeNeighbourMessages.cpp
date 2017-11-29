@@ -134,6 +134,10 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( fineGridCell.isInitialised() ) {
+    exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVerticesEnumerator);
+
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex());
     exahype::Cell::resetFaceDataExchangeCounters(

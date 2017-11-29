@@ -26,9 +26,7 @@
 
 #include "exahype/VertexOperations.h"
 
-#ifdef Parallel
 bool exahype::mappings::LimiterStatusSpreading::IsFirstIteration = true;
-#endif
 
 tarch::logging::Log exahype::mappings::LimiterStatusSpreading::_log("exahype::mappings::LimiterStatusSpreading");
 
@@ -232,6 +230,11 @@ void exahype::mappings::LimiterStatusSpreading::enterCell(
       }
     }
 
+    if ( !IsFirstIteration ) {
+      exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+          fineGridCell.getCellDescriptionsIndex(),
+          fineGridVerticesEnumerator);
+    }
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex());
     exahype::Cell::resetFaceDataExchangeCounters(

@@ -46,6 +46,36 @@ exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {
   // Do not use it. This would overwrite persistent data.
 }
 
+void exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+    const int cellDescriptionsIndex,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
+  // ADER-DG
+  bool allNeighbourMergesHaveBeenPerformed = true;
+  for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
+    allNeighbourMergesHaveBeenPerformed &=
+        ( p.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
+          p.getNeighbourMergePerformed().all() ) &&
+        ( p.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor ||
+          p.getNeighbourMergePerformed().all() );
+
+    assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
+  }
+
+  // Finite-Volumes (loop body can be copied from ADER-DG loop)
+  for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
+    allNeighbourMergesHaveBeenPerformed &= p.getNeighbourMergePerformed().all();
+    assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
+  }
+
+  assertion( allNeighbourMergesHaveBeenPerformed );
+  if ( !allNeighbourMergesHaveBeenPerformed ) {
+    logError("validateThatAllNeighbourMergesHaveBeenPerformed(...)",
+             "Not all neighbour merges have been performed in cell="<<
+             fineGridVerticesEnumerator.toString());
+    std::terminate();
+  }
+}
+
 void exahype::Cell::resetNeighbourMergeFlags(
     const int cellDescriptionsIndex) {
   assertion(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex));

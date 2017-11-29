@@ -219,6 +219,10 @@ void exahype::mappings::FusedTimeStep::enterCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
+        exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+            fineGridCell.getCellDescriptionsIndex(),
+            fineGridVerticesEnumerator);
+
         exahype::plotters::plotPatchIfAPlotterIsActive(
             solverNumber,fineGridCell.getCellDescriptionsIndex(),element);
 

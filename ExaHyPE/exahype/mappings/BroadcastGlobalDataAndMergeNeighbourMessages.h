@@ -150,6 +150,10 @@ public:
   /**
    * Reset the neighbour merge flags
    * and MPI neighbour exchange counters.
+   *
+   * We cannot validate that all merges have been
+   * performed since we only consider MPI neighbour
+   * exchange but no local exchange in this mapping.
    */
   void enterCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,

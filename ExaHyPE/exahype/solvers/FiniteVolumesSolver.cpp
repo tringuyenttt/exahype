@@ -746,13 +746,6 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     const bool backupPreviousSolution) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
-  if (!cellDescription.getNeighbourMergePerformed().all()) {
-    logError("updateSolution(...)","Not all neighbour merges have been performed! cell="<<
-             cellDescription.toString());
-    std::terminate();
-  }
-
   double* newSolution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
   double* solution    = DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
   if (backupPreviousSolution) {

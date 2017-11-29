@@ -2254,19 +2254,6 @@ void exahype::solvers::ADERDGSolver::adjustSolution(
 void exahype::solvers::ADERDGSolver::updateSolution(
     CellDescription& cellDescription,
     const bool backupPreviousSolution) {
-  assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
-      cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
-
-  assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
-  if (
-      cellDescription.getType()!=CellDescription::Type::Cell &&
-      !cellDescription.getNeighbourMergePerformed().all()
-  ) {
-    logError("updateSolution(...)","Not all neighbour merges have been performed! cell="<<
-        cellDescription.toString());
-    std::terminate();
-  }
-
   if (cellDescription.getType()==CellDescription::Type::Cell &&
       cellDescription.getRefinementEvent()==CellDescription::None) {
     double* newSolution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();

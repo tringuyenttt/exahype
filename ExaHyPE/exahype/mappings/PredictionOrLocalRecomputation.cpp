@@ -282,6 +282,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
     endpfor
     grainSize.parallelSectionHasTerminated();
 
+    exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVerticesEnumerator);
+
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex());
     exahype::Cell::resetFaceDataExchangeCounters(

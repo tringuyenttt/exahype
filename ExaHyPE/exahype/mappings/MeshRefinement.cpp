@@ -389,6 +389,11 @@ void exahype::mappings::MeshRefinement::enterCell(
           }
         }
 
+        if ( !IsFirstIteration ) {
+          exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+              fineGridCell.getCellDescriptionsIndex(),
+              fineGridVerticesEnumerator);
+        }
         exahype::Cell::resetNeighbourMergeFlags(
             fineGridCell.getCellDescriptionsIndex());
       }
