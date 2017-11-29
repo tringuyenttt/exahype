@@ -973,8 +973,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
     const peano::heap::MessageType&               messageType,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) {
-  tarch::multicore::Lock lock(exahype::HeapSemaphore);
-
   const int receivedCellDescriptionsIndex =
       Heap::getInstance().createData(0,exahype::solvers::RegisteredSolvers.size());
   Heap::getInstance().receiveData(
