@@ -121,8 +121,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  logInfo("beginIteration(State)","batchState="<<static_cast<int>(exahype::State::getBatchState()));
-
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     _localState = solverState;
 
@@ -235,10 +233,6 @@ void exahype::mappings::FusedTimeStep::enterCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
-        exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
-            fineGridCell.getCellDescriptionsIndex(),
-            fineGridVerticesEnumerator);
-
         exahype::plotters::plotPatchIfAPlotterIsActive(
             solverNumber,fineGridCell.getCellDescriptionsIndex(),element);
 
@@ -252,8 +246,6 @@ void exahype::mappings::FusedTimeStep::enterCell(
                 _predictionTemporaryVariables._tempUnknowns             [solverNumber],
                 _predictionTemporaryVariables._tempFluxUnknowns         [solverNumber],
                 _predictionTemporaryVariables._tempPointForceSources    [solverNumber]);
-
-        std::cout << "refinement requested=" << result._refinementRequested << std::endl;
 
         solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
 
@@ -321,7 +313,11 @@ void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
+  logTraceInWith5Arguments( "prepareSendToNeighbour(...)", vertex, toRank, x, h, level );
+
   vertex.sendToNeighbour(toRank,x,h,level);
+
+  logTraceOut( "prepareSendToNeighbour(...)" );
 }
 
 // MASTER->WORKER

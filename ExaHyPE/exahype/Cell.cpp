@@ -54,7 +54,8 @@ void exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
   for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
     allNeighbourMergesHaveBeenPerformed &=
         ( p.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-          p.getNeighbourMergePerformed().all() ) &&
+          p.getNeighbourMergePerformed().all() )
+        &&
         ( p.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor ||
           p.getNeighbourMergePerformed().all() );
 
