@@ -213,6 +213,16 @@ void exahype::mappings::FusedTimeStep::enterCell(
   logTraceInWith4Arguments("enterCell(...)", fineGridCell,fineGridVerticesEnumerator.toString(),coarseGridCell, fineGridPositionOfCell);
 
   if ( fineGridCell.isInitialised() ) {
+    exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVerticesEnumerator);
+
+    exahype::Cell::resetNeighbourMergeFlags(
+        fineGridCell.getCellDescriptionsIndex());
+    exahype::Cell::resetFaceDataExchangeCounters(
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridVertices,fineGridVerticesEnumerator);
+
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined14);
     pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
@@ -251,12 +261,6 @@ void exahype::mappings::FusedTimeStep::enterCell(
       }
     endpfor
     grainSize.parallelSectionHasTerminated();
-
-    exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
-    exahype::Cell::resetFaceDataExchangeCounters(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -297,10 +301,14 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
+  logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
+
   vertex.receiveNeighbourData(
-      fromRank,true,
-      _mergingTemporaryVariables._tempFaceUnknowns,
-      fineGridX,fineGridH,level);
+        fromRank,true,
+        _mergingTemporaryVariables._tempFaceUnknowns,
+        fineGridX,fineGridH,level);
+
+  logTraceOut( "mergeWithNeighbour(...)" );
 }
 
 void exahype::mappings::FusedTimeStep::prepareSendToNeighbour(

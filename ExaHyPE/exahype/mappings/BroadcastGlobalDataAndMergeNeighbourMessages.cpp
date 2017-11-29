@@ -75,12 +75,12 @@ tarch::logging::Log exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessa
     "exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages");
 
 exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::~BroadcastGlobalDataAndMergeNeighbourMessages() {
-  exahype::solvers::deleteTemporaryVariables(_temporaryVariables);
+  exahype::solvers::deleteTemporaryVariables(_mergingTemporaryVariables);
 }
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::BroadcastGlobalDataAndMergeNeighbourMessages(const BroadcastGlobalDataAndMergeNeighbourMessages& masterThread) {
-  exahype::solvers::initialiseTemporaryVariables(_temporaryVariables);
+  exahype::solvers::initialiseTemporaryVariables(_mergingTemporaryVariables);
 }
 #endif
 
@@ -88,7 +88,7 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::beginItera
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  exahype::solvers::initialiseTemporaryVariables(_temporaryVariables);
+  exahype::solvers::initialiseTemporaryVariables(_mergingTemporaryVariables);
 
   #ifdef Parallel
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
@@ -103,7 +103,7 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::endIterati
     exahype::State& solverState) {
   logTraceInWith1Argument("endIteration(State)", solverState);
 
-  exahype::solvers::deleteTemporaryVariables(_temporaryVariables);
+  exahype::solvers::deleteTemporaryVariables(_mergingTemporaryVariables);
 
   logTraceOutWith1Argument("endIteration(State)", solverState);
 }
@@ -121,7 +121,7 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::touchVerte
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
-  fineGridVertex.mergeNeighbours(_temporaryVariables._tempFaceUnknowns,fineGridX,fineGridH);
+  fineGridVertex.mergeNeighbours(_mergingTemporaryVariables._tempFaceUnknowns,fineGridX,fineGridH);
 
   logTraceOutWith1Argument("touchVertexFirstTime(...)", fineGridVertex);
 }
@@ -161,7 +161,9 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::mergeWithN
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
   vertex.receiveNeighbourData(
-      fromRank,true,_temporaryVariables._tempFaceUnknowns,fineGridX,fineGridH,level);
+        fromRank,true,
+        _mergingTemporaryVariables._tempFaceUnknowns,
+        fineGridX,fineGridH,level);
 
   logTraceOut( "mergeWithNeighbour(...)" );
 }

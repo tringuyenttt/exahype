@@ -230,11 +230,6 @@ void exahype::mappings::LimiterStatusSpreading::enterCell(
       }
     }
 
-    if ( !IsFirstIteration ) {
-      exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
-          fineGridCell.getCellDescriptionsIndex(),
-          fineGridVerticesEnumerator);
-    }
     exahype::Cell::resetNeighbourMergeFlags(
         fineGridCell.getCellDescriptionsIndex());
     exahype::Cell::resetFaceDataExchangeCounters(
