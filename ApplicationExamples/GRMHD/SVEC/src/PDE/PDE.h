@@ -491,9 +491,10 @@ namespace SVEC {
 		*/
 		// NEW:
 		struct Cons2Prim : public GRMHD::DensitiedExtendable, public Hydro::Primitives::ShadowExtendable, public Parameters {
-			Cons2Prim(double* const V, const double* const Q_) :
+			Cons2Prim(double* const V, const double* const Q_, bool _crash_on_failure=true) :
 				GRMHD::DensitiedExtendable(Q_),
-				Hydro::Primitives::ShadowExtendable(V)
+				Hydro::Primitives::ShadowExtendable(V),
+				crash_on_failure(_crash_on_failure)
 				{ prepare(); perform(); followup(); }
 
 			// Quantities for computing the energy momentum tensor
@@ -508,7 +509,8 @@ namespace SVEC {
 				VelVel,		///< V^2 = v_i*v^i: Squared three velocity
 				ptot;		///< ptot = p_hydro + p_mag: Total pressure
 				
-			bool	failed; ///< Stores whether the C2P failed or not
+			bool	crash_on_failure, ///< whether to abort the program in case of c2p failure
+				failed; ///< Stores whether the C2P failed or not
 			
 			/// Reports about failed c2p. Pass your calling context as string.
 			void report_c2p(const char* const context);

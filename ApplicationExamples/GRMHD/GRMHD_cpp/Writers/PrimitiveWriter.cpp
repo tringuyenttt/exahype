@@ -43,7 +43,8 @@ void GRMHD::PrimitiveWriter::mapQuantities(
     double timeStamp
 ) {
 	for (int i=0; i<23; i++) outputQuantities[i] = -42;
-	Cons2Prim c2p(outputQuantities, Q);
+	constexpr bool force_crash = false;
+	Cons2Prim c2p(outputQuantities, Q, force_crash);
 	c2p.copyFullStateVector();
 	
 	// abuse the last output quantity to inform about the C2P status
