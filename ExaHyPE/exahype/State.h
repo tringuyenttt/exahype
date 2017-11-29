@@ -69,6 +69,54 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
 
  public:
   /**
+   * This enum is used to select certain solvers
+   * in mappings like PredictionRerun, MeshRefinement etc.
+   */
+  enum class AlgorithmSection {
+    /*
+     * The runner is currently
+     * performing a normal ADER-DG / FV / ... time step.
+     */
+    TimeStepping,
+
+
+    /*
+     * Currently performing mesh refinement. Only
+     * relevant for merging metadata.
+     */
+    MeshRefinement,
+
+    /*
+     * Currently performing limiter status spreading. Only
+     * relevant for merging metadata.
+     */
+    LimiterStatusSpreading,
+
+    /**
+     * In this section, the runner overlaps the
+     * operations that must be performed after the
+     * mesh refinement with operations that
+     * must be performed for a local or global
+     * recomputation.
+     *
+     * This marks the end point of the side branch.
+     * Triggers a send for all registered solvers.
+     */
+    PredictionOrLocalRecomputationAllSend,
+
+    /**
+     * In this section, all solver have to drop
+     * their messages. Then, the ADER-DG solvers which
+     * have violated the CFL condition with their
+     * estimated time step size are required
+     * to reurn the prediction.
+     * Finally, all solvers send out again their
+     * face data.
+     */
+    PredictionRerunAllSend
+  };
+
+  /**
    * A flag indicating we fuse the algorithmic
    * phases of all ADERDGSolver and
    * LimitingADERDGSolver instances.
@@ -177,81 +225,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    */
   void merge(const State& anotherState);
   ///@}
-
-  void setAlgorithmSection(const records::State::AlgorithmSection& section);
-
-  /**
-   * Return the algorithm section the runner is currently in.
-   */
-  records::State::AlgorithmSection getAlgorithmSection() const;
-
-  /**
-   * Return the merge mode that is currently active.
-   */
-  records::State::MergeMode getMergeMode() const;
-
-  /**
-   * Return the send mode that is currently active.
-   */
-  records::State::SendMode getSendMode() const;
-
-  /**
-   * Merging and Sending contexts.
-   * See both mappings for more details.
-   */
-  void switchToInitialConditionAndTimeStepSizeComputationContext();
-
-  void switchToPredictionAndFusedTimeSteppingInitialisationContext();
-
-  void switchToFusedTimeStepContext();
-
-  /**
-   * In a serial version, running the predictor is the same for optimistic time
-   * stepping and the non-fused algorithm. In the MPI case however a rerun in
-   * optimistic time stepping has to remove all old MPI messages from the queues
-   * and re-send the updated boundary values, so it is slightly different
-   */
-  void switchToPredictionRerunContext();
-
-  void switchToNeighbourDataMergingContext();
-
-  void switchToPredictionContext();
-
-  void switchToTimeStepSizeComputationContext();
-
-  void switchToUpdateMeshContext();
-
-  void switchToPostAMRContext();
-
-  /**
-   * Merge and synchronise the time step sizes over different
-   * ranks.
-   *
-   * TODO Time step size merging might not be necessary.
-   */
-  void switchToLimiterStatusSpreadingContext();
-
-  /**
-   * Additionally drop face data.
-   *
-   * Merge and synchronise the time step sizes over different
-   * ranks.
-   *
-   * TODO Time step size merging might not be necessary.
-   */
-  void switchToLimiterStatusSpreadingFusedTimeSteppingContext();
-
-  void switchToReinitialisationContext();
-
-  void switchToRecomputeSolutionAndTimeStepSizeComputationContext();
-
-  void switchToLocalRecomputationAndTimeStepSizeComputationContext();
-
-  void switchToNeighbourDataDroppingContext();
-
-  void setReinitTimeStepData(bool state);
-
-  bool reinitTimeStepData() const;
 
   /**
    * Has to be called after the iteration!

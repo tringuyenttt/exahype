@@ -643,6 +643,8 @@ void exahype::solvers::ADERDGSolver::updateTimeStepSizesFused() {
     break;
   }
 
+  _stabilityConditionWasViolated = false;
+
   _minCellSize     = _nextMinCellSize;
   _maxCellSize     = _nextMaxCellSize;
   _nextMinCellSize = std::numeric_limits<double>::max();
@@ -830,101 +832,34 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _meshUpdateRequest = true;
 }
 
-bool exahype::solvers::ADERDGSolver::isSending(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isUsingSending = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-    case exahype::records::State::AlgorithmSection::LocalRecomputationAllSend:
-      isUsingSending = true;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isUsingSending |= getMeshUpdateRequest();
-      break;
-    default:
-      break;
-  }
-
-  return isUsingSending;
-}
-
-bool exahype::solvers::ADERDGSolver::isComputingTimeStepSize(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isUsingSharedMapping = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrGlobalRecomputationAllSend:
-    case exahype::records::State::AlgorithmSection::MeshRefinementOrLocalOrGlobalRecomputation:
-      isUsingSharedMapping |= getMeshUpdateRequest();
-      break;
-    default:
-      break;
-  }
-
-  return isUsingSharedMapping;
-}
-
-bool exahype::solvers::ADERDGSolver::isMerging(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isUsingMerging = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isUsingMerging = true; // every solver drops neighbour data here
-      break;
-    default:
-      break;
-  }
-
-  return isUsingMerging;
-}
-
-bool exahype::solvers::ADERDGSolver::isBroadcasting(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isUsingBroadcastAndMergeTimeStepData = false;
-
-  switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-      isUsingBroadcastAndMergeTimeStepData = true;
-      break;
-    case exahype::records::State::AlgorithmSection::MeshRefinement:
-      isUsingBroadcastAndMergeTimeStepData |= getMeshUpdateRequest();
-      break;
-    default:
-      break;
-  }
-
-  return isUsingBroadcastAndMergeTimeStepData;
-}
-
 bool exahype::solvers::ADERDGSolver::isPerformingPrediction(
-    const exahype::records::State::AlgorithmSection& section) const {
-  bool isUsingPrediction = false;
+    const exahype::State::AlgorithmSection& section) const {
+  bool isPerformingPrediction = false;
 
   switch (section) {
-    case exahype::records::State::AlgorithmSection::TimeStepping:
-      isUsingPrediction = true;
+    case exahype::State::AlgorithmSection::TimeStepping:
+      isPerformingPrediction = true;
       break;
-    case exahype::records::State::AlgorithmSection::PredictionRerunAllSend:
-      isUsingPrediction = getStabilityConditionWasViolated();
+    case exahype::State::AlgorithmSection::PredictionRerunAllSend:
+      isPerformingPrediction = !getMeshUpdateRequest() &&
+                               getStabilityConditionWasViolated();
+      break;
+    case exahype::State::AlgorithmSection::PredictionOrLocalRecomputationAllSend:
+      isPerformingPrediction = getMeshUpdateRequest();
       break;
     default:
       break;
   }
 
-  return isUsingPrediction;
+  return isPerformingPrediction;
 }
 
 bool exahype::solvers::ADERDGSolver::isMergingMetadata(
-    const exahype::records::State::AlgorithmSection& section) const {
+    const exahype::State::AlgorithmSection& section) const {
   bool isMergingMetadata = false;
 
   switch (section) {
-    case exahype::records::State::AlgorithmSection::MeshRefinement:
+    case exahype::State::AlgorithmSection::MeshRefinement:
       isMergingMetadata = getMeshUpdateRequest();
       break;
     default:
@@ -1956,6 +1891,37 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 }
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
+    exahype::solvers::Solver* solver,
+    const int cellDescriptionsIndex,
+    const int element,
+    exahype::solvers::PredictionTemporaryVariables& temporaryVariables) {
+  exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
+
+  switch (solver->getType()) {
+    case exahype::solvers::Solver::Type::ADERDG:
+      aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
+      break;
+    case exahype::solvers::Solver::Type::LimitingADERDG:
+      aderdgSolver =
+          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
+      break;
+    case exahype::solvers::Solver::Type::FiniteVolumes:
+      break;
+  }
+
+  if (aderdgSolver!=nullptr) {
+    auto& cellDescription =  ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
+    aderdgSolver->performPredictionAndVolumeIntegral(
+        cellDescription,
+        temporaryVariables._tempSpaceTimeUnknowns    [cellDescription.getSolverNumber()],
+        temporaryVariables._tempSpaceTimeFluxUnknowns[cellDescription.getSolverNumber()],
+        temporaryVariables._tempUnknowns             [cellDescription.getSolverNumber()],
+        temporaryVariables._tempFluxUnknowns         [cellDescription.getSolverNumber()],
+        temporaryVariables._tempPointForceSources    [cellDescription.getSolverNumber()]);
+  }
+}
+
+void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     CellDescription& cellDescription,
     double** tempSpaceTimeUnknowns,
     double** tempSpaceTimeFluxUnknowns,
@@ -2288,19 +2254,6 @@ void exahype::solvers::ADERDGSolver::adjustSolution(
 void exahype::solvers::ADERDGSolver::updateSolution(
     CellDescription& cellDescription,
     const bool backupPreviousSolution) {
-  assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
-      cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
-
-  assertion1(cellDescription.getNeighbourMergePerformed().all(),cellDescription.toString());
-  if (
-      cellDescription.getType()!=CellDescription::Type::Cell &&
-      !cellDescription.getNeighbourMergePerformed().all()
-  ) {
-    logError("updateSolution(...)","Not all neighbour merges have been performed! cell="<<
-        cellDescription.toString());
-    std::terminate();
-  }
-
   if (cellDescription.getType()==CellDescription::Type::Cell &&
       cellDescription.getRefinementEvent()==CellDescription::None) {
     double* newSolution = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
@@ -3780,10 +3733,10 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEnt
   // Thus it does not equal MAX_DOUBLE.
 
   int index=0;
-  _minNextTimeStepSize  = std::min( _minNextTimeStepSize, message[index++] );
-  _nextMinCellSize               = std::min( _nextMinCellSize, message[index++] );
-  _nextMaxCellSize               = std::max( _nextMaxCellSize, message[index++] );
-  _nextMeshUpdateRequest        |= (message[index++]) > 0 ? true : false;
+  _minNextTimeStepSize   = std::min( _minNextTimeStepSize, message[index++] );
+  _nextMinCellSize       = std::min( _nextMinCellSize, message[index++] );
+  _nextMaxCellSize       = std::max( _nextMaxCellSize, message[index++] );
+  _nextMeshUpdateRequest |= (message[index++]) > 0 ? true : false;
 
   if (true || tarch::parallel::Node::getInstance().getRank()==
       tarch::parallel::Node::getInstance().getGlobalMasterRank()) {
@@ -4176,63 +4129,77 @@ void exahype::solvers::ADERDGSolver::sendEmptyDataToWorker(
         peano::heap::MessageType::MasterWorkerCommunication);
 }
 
+void exahype::solvers::ADERDGSolver::receiveDataFromMaster(
+      const int                                    masterRank,
+      std::deque<int>&                             receivedHeapDataIndices,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const int                                    level) const {
+  const int numberOfMessages =
+      DataMessagesPerMasterWorkerCommunication +
+      (getDMPObservables() > 0) ? 2 : 0;
+
+  for (int message=0; message < numberOfMessages; message++) {
+    DataHeap::HeapEntries receivedData =
+        DataHeap::getInstance().receiveData(
+            masterRank, x, level,
+            peano::heap::MessageType::MasterWorkerCommunication);
+    const int heapIndex =
+        DataHeap::getInstance().createData(
+            receivedData.size(),receivedData.size(),DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+    std::copy_n (
+        receivedData.data(),receivedData.size(),DataHeap::getInstance().getData(heapIndex).data());
+
+    receivedHeapDataIndices.push_back(heapIndex);
+  }
+
+  logDebug("mergeWithMasterData(...)","received "<<numberOfMessages<<" messages "
+           << " from rank "<<masterRank<< ", cell: "<< x << ", level: " << level);
+}
+
 void exahype::solvers::ADERDGSolver::mergeWithMasterData(
-    const int                                     masterRank,
-    const MetadataHeap::HeapEntries&              masterMetadata,
-    const int                                     cellDescriptionsIndex,
-    const int                                     element,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-    const int                                     level) const {
+    const MetadataHeap::HeapEntries& masterMetadata,
+    std::deque<int>&                 receivedHeapDataIndices,
+    const int                        cellDescriptionsIndex,
+    const int                        element) const {
   assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),cellDescriptionsIndex);
   assertion1(element>=0,element);
   assertion2(static_cast<unsigned int>(element)<Heap::getInstance().getData(cellDescriptionsIndex).size(),
              element,Heap::getInstance().getData(cellDescriptionsIndex).size());
 
-  // TODO(Dominic): Add merges of min and max
-
   CellDescription& cellDescription = Heap::getInstance().getData(cellDescriptionsIndex)[element];
   if (
-      cellDescription.getType()==CellDescription::Type::Descendant &&
-      cellDescription.getHasToHoldDataForMasterWorkerCommunication()
+      // cellDescription.getType()==CellDescription::Type::Cell
+      // || // TODO(Dominic): Turn back on for multi-solvers
+      (cellDescription.getType()==CellDescription::Type::Descendant &&
+      cellDescription.getHasToHoldDataForMasterWorkerCommunication())
   ) {
-    logDebug("mergeWithMasterData(...)","received face data for solver " <<
-             cellDescription.getSolverNumber() << " from rank "<<masterRank<<
-             ", cell: "<< x << ", level: " << level);
-
     // No inverted send and receives order since we do synchronous data exchange.
     // Order: extraplolatedPredictor,fluctuations
-    DataHeap::getInstance().receiveData(
-        cellDescription.getExtrapolatedPredictor(), masterRank, x, level,
-        peano::heap::MessageType::MasterWorkerCommunication);
-    DataHeap::getInstance().receiveData(
-        cellDescription.getFluctuation(), masterRank, x, level,
-        peano::heap::MessageType::MasterWorkerCommunication);
+    moveDataHeapArray(receivedHeapDataIndices.front(),cellDescription.getExtrapolatedPredictor(),true);
+    receivedHeapDataIndices.pop_front();
+    moveDataHeapArray(receivedHeapDataIndices.front(),cellDescription.getFluctuation(),true);
+    receivedHeapDataIndices.pop_front();
 
     if(getDMPObservables()>0) {
-      DataHeap::getInstance().receiveData(
-          cellDescription.getSolutionMin(), masterRank, x, level,
-          peano::heap::MessageType::MasterWorkerCommunication);
-      DataHeap::getInstance().receiveData(
-          cellDescription.getSolutionMax(), masterRank, x, level,
-          peano::heap::MessageType::MasterWorkerCommunication);
+      moveDataHeapArray(receivedHeapDataIndices.front(),cellDescription.getSolutionMin(),true);
+      receivedHeapDataIndices.pop_front();
+      moveDataHeapArray(receivedHeapDataIndices.front(),cellDescription.getSolutionMax(),true);
+      receivedHeapDataIndices.pop_front();
     }
   } else {
-    dropMasterData(masterRank,x,level);
+    dropMasterData(receivedHeapDataIndices);
   }
 }
 
 void exahype::solvers::ADERDGSolver::dropMasterData(
-    const int                                     masterRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
-        const int                                     level) const {
+    std::deque<int>& receivedHeapIndices) const {
   const int numberOfMessages =
       DataMessagesPerMasterWorkerCommunication +
       (getDMPObservables() > 0) ? 2 : 0;
 
-  for(int receives=0; receives<numberOfMessages; ++receives)
-    DataHeap::getInstance().receiveData(
-        masterRank, x, level,
-        peano::heap::MessageType::MasterWorkerCommunication);
+  for(int receives=0; receives<numberOfMessages; ++receives) {
+    receivedHeapIndices.pop_front();
+  }
 }
 #endif
 

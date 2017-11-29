@@ -31,6 +31,8 @@
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
 
+#include "exahype/solvers/TemporaryVariables.h"
+
 namespace exahype {
   namespace solvers {
     class ADERDGSolver;
@@ -788,6 +790,8 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2) const;
 
+
+
   /**
    * Construct an ADERDGSolver.
    *
@@ -1307,6 +1311,9 @@ public:
   /** \copydoc Solver::updateTimeStepSizesFused
    *
    * Does advance the predictor time stamp in time.
+   *
+   * We further reset the stability condition was violated condition
+   * to false for the ADER-DG solver.
    */
   void updateTimeStepSizesFused() override;
 
@@ -1389,12 +1396,8 @@ public:
       const tarch::la::Vector<DIMENSIONS,double>& domainSize,
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) override;
 
-  bool isSending(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isComputingTimeStepSize(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isBroadcasting(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isMerging(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const override;
-  bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const override;
+  bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const override;
+  bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const override;
 
   bool isValidCellDescriptionIndex(const int cellDescriptionsIndex) const override;
 
@@ -1478,6 +1481,14 @@ public:
       const int cellDescriptionsIndex,
       const int element) override;
 
+  /*! Perform prediction and volume integral for an ADERDGSolver or LimitingADERDGSolver.
+   */
+  static void performPredictionAndVolumeIntegral(
+      exahype::solvers::Solver* solver,
+      const int cellDescriptionsIndex,
+      const int element,
+      exahype::solvers::PredictionTemporaryVariables& temporaryVariables);
+
   /**
    * Computes the space-time predictor quantities, extrapolates fluxes
    * and (space-time) predictor values to the boundary and
@@ -1492,7 +1503,7 @@ public:
    * \note Has no const modifier since kernels are not const functions yet.
    */
   void performPredictionAndVolumeIntegral(
-      exahype::records::ADERDGCellDescription& cellDescription,
+      CellDescription& cellDescription,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
@@ -2116,18 +2127,20 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) const override;
 
-  void mergeWithMasterData(
+  void receiveDataFromMaster(
       const int                                    masterRank,
-      const MetadataHeap::HeapEntries&             masterMetadata,
-      const int                                    cellDescriptionsIndex,
-      const int                                    element,
+      std::deque<int>&                             receivedDataHeapIndices,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      const int                                    level) const final override;
+
+  void mergeWithMasterData(
+      const MetadataHeap::HeapEntries&             masterMetadata,
+      std::deque<int>&                             receivedDataHeapIndices,
+      const int                                    cellDescriptionsIndex,
+      const int                                    element) const final override;
 
   void dropMasterData(
-      const int                                    masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const override;
+      std::deque<int>& heapIndices) const final override;
 #endif
 
   std::string toString() const override;

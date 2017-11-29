@@ -18,13 +18,11 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/PreProcessing.h"
  #include "exahype/mappings/MeshRefinement.h"
- #include "exahype/adapters/MeshRefinementAndPlotGrid2VTKGridVisualiser_2.h"
+ #include "exahype/adapters/MeshRefinementAndPlotGrid2VTKGridVisualiser_1.h"
  #include "exahype/mappings/AugmentedAMRTreePlot2d.h"
  #include "exahype/mappings/LoadBalancing.h"
- #include "exahype/mappings/PostProcessing.h"
- #include "exahype/adapters/MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6.h"
+ #include "exahype/adapters/MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.h"
 
 
 
@@ -44,21 +42,17 @@ namespace exahype {
  */
 class exahype::adapters::MeshRefinementAndPlotGrid {
   private:
-    typedef mappings::PreProcessing Mapping0;
-    typedef mappings::MeshRefinement Mapping1;
-    typedef adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_2 Mapping2;
-    typedef mappings::AugmentedAMRTreePlot2d Mapping3;
-    typedef mappings::LoadBalancing Mapping4;
-    typedef mappings::PostProcessing Mapping5;
-    typedef adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6 Mapping6;
+    typedef mappings::MeshRefinement Mapping0;
+    typedef adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_1 Mapping1;
+    typedef mappings::AugmentedAMRTreePlot2d Mapping2;
+    typedef mappings::LoadBalancing Mapping3;
+    typedef adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4 Mapping4;
 
-     Mapping0  _map2PreProcessing;
-     Mapping1  _map2MeshRefinement;
-     Mapping2  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_2;
-     Mapping3  _map2AugmentedAMRTreePlot2d;
-     Mapping4  _map2LoadBalancing;
-     Mapping5  _map2PostProcessing;
-     Mapping6  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_6;
+     Mapping0  _map2MeshRefinement;
+     Mapping1  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1;
+     Mapping2  _map2AugmentedAMRTreePlot2d;
+     Mapping3  _map2LoadBalancing;
+     Mapping4  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4;
 
 
   public:

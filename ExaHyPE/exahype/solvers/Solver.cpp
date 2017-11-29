@@ -364,6 +364,14 @@ bool exahype::solvers::Solver::getAttainedStableState() const {
   return _attainedStableState;
 }
 
+void exahype::solvers::Solver::moveDataHeapArray(
+    const int fromIndex,const int toIndex,bool recycleFromArray) {
+  std::copy(
+      DataHeap::getInstance().getData(fromIndex).begin(),
+      DataHeap::getInstance().getData(fromIndex).end(),
+      DataHeap::getInstance().getData(toIndex).begin());
+  DataHeap::getInstance().deleteData(fromIndex,recycleFromArray);
+}
 
 double exahype::solvers::Solver::getMinSolverTimeStampOfAllSolvers() {
   double currentMinTimeStamp = std::numeric_limits<double>::max();
@@ -495,7 +503,7 @@ bool exahype::solvers::Solver::oneSolverHasNotAttainedStableState() {
   return false;
 }
 
-bool exahype::solvers::Solver::stabilityConditionOfOneSolverWasViolated() {
+bool exahype::solvers::Solver::oneSolverViolatedStabilityCondition() {
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     switch (solver->getType()) {
       case Type::ADERDG:
@@ -512,6 +520,140 @@ bool exahype::solvers::Solver::stabilityConditionOfOneSolverWasViolated() {
     }
   }
   return false;
+}
+
+
+void exahype::solvers::Solver::weighMinNextPredictorTimeStepSize(
+    exahype::solvers::Solver* solver) {
+  exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
+
+  switch(solver->getType()) {
+    case exahype::solvers::Solver::Type::ADERDG:
+      aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
+      break;
+    case exahype::solvers::Solver::Type::LimitingADERDG:
+      aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
+      break;
+    case exahype::solvers::Solver::Type::FiniteVolumes:
+      break;
+  }
+
+  if (aderdgSolver!=nullptr) {
+    const double stableTimeStepSize = aderdgSolver->getMinNextPredictorTimeStepSize();
+
+    const double timeStepSizeWeight = exahype::State::getTimeStepSizeWeightForPredictionRerun();
+    aderdgSolver->updateMinNextPredictorTimeStepSize(
+        timeStepSizeWeight * stableTimeStepSize);
+    aderdgSolver->setMinPredictorTimeStepSize(
+        timeStepSizeWeight * stableTimeStepSize); // This will be propagated to the corrector
+  }
+}
+
+
+void exahype::solvers::Solver::reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(
+    exahype::solvers::Solver* solver) {
+  exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
+
+  switch(solver->getType()) {
+    case exahype::solvers::Solver::Type::ADERDG:
+      aderdgSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
+      break;
+    case exahype::solvers::Solver::Type::LimitingADERDG:
+      aderdgSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver().get();
+      break;
+    case exahype::solvers::Solver::Type::FiniteVolumes:
+      break;
+  }
+
+  if (aderdgSolver!=nullptr) {
+    const double stableTimeStepSize = aderdgSolver->getMinNextPredictorTimeStepSize();
+    double usedTimeStepSize         = aderdgSolver->getMinPredictorTimeStepSize();
+
+    if (tarch::la::equals(usedTimeStepSize,0.0)) {
+      usedTimeStepSize = stableTimeStepSize; // TODO(Dominic): Still necessary?
+    }
+
+    bool usedTimeStepSizeWasInstable = usedTimeStepSize > stableTimeStepSize;
+    aderdgSolver->setStabilityConditionWasViolated(usedTimeStepSizeWasInstable);
+
+    const double timeStepSizeWeight = exahype::State::getTimeStepSizeWeightForPredictionRerun();
+    if (usedTimeStepSizeWasInstable) {
+      aderdgSolver->updateMinNextPredictorTimeStepSize(
+          timeStepSizeWeight * stableTimeStepSize);
+      aderdgSolver->setMinPredictorTimeStepSize(
+          timeStepSizeWeight * stableTimeStepSize); // This will be propagated to the corrector
+    } else {
+      aderdgSolver->updateMinNextPredictorTimeStepSize(
+          0.5 * (usedTimeStepSize + timeStepSizeWeight * stableTimeStepSize));
+    }
+  }
+}
+
+void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
+      const exahype::solvers::SolverFlags& solverFlags,
+      const std::vector<double>& minTimeStepSizes,
+      const std::vector<double>& minCellSizes,
+      const std::vector<double>& maxCellSizes,
+      const bool isFirstIterationOfBatchOrNoBatch,
+      const bool isLastIterationOfBatchOrNoBatch,
+      const bool fusedTimeStepping) {
+  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
+    /*
+     * Update reduced quantities (over multiple batch iterations)
+     */
+    // mesh refinement events
+    solver->updateNextMeshUpdateRequest(solverFlags._meshUpdateRequest[solverNumber]);
+    solver->updateNextAttainedStableState(!solver->getNextMeshUpdateRequest());
+    if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+      limitingADERDGSolver->updateNextLimiterDomainChange(solverFlags._limiterDomainChange[solverNumber]);
+    }
+    // cell sizes (for AMR)
+    solver->updateNextMinCellSize(minCellSizes[solverNumber]);
+    solver->updateNextMaxCellSize(maxCellSizes[solverNumber]);
+
+    // time
+    assertion1(std::isfinite(minTimeStepSizes[solverNumber]),minTimeStepSizes[solverNumber]);
+    assertion1(minTimeStepSizes[solverNumber]>0.0,minTimeStepSizes[solverNumber]);
+    solver->updateMinNextTimeStepSize(minTimeStepSizes[solverNumber]);
+
+    /*
+     * Swap the current values with the next values (in last batch iteration)
+     */
+    // mesh update events
+    if ( isLastIterationOfBatchOrNoBatch ) {
+      solver->setNextMeshUpdateRequest();
+      solver->setNextAttainedStableState();
+      if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+        limitingADERDGSolver->setNextLimiterDomainChange();
+        assertion(
+            limitingADERDGSolver->getLimiterDomainChange()
+            !=exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate ||
+            solver->getMeshUpdateRequest());
+      }
+    }
+
+    // time
+    // only update the time step size in last iteration; just advance with old time step size otherwise
+    if ( fusedTimeStepping ) {
+      if (
+          isLastIterationOfBatchOrNoBatch &&
+          tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
+      ) {
+        exahype::solvers::Solver::
+        reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
+      }
+
+      solver->startNewTimeStepFused(
+          isFirstIterationOfBatchOrNoBatch,
+          isLastIterationOfBatchOrNoBatch);
+    } else {
+      solver->startNewTimeStep();
+    }
+  }
 }
 
 std::string exahype::solvers::Solver::toString() const {
@@ -540,7 +682,7 @@ void exahype::solvers::Solver::toString(std::ostream& out) const {
 
 #ifdef Parallel
 
-// Neighbours
+// Neighbours TODO(Dominic): Move in exahype::Vertex
 
 exahype::MetadataHeap::HeapEntries exahype::gatherNeighbourCommunicationMetadata(
     int cellDescriptionsIndex,
@@ -619,7 +761,7 @@ int exahype::receiveNeighbourCommunicationMetadata(
   return receivedMetadataIndex;
 }
 
-// Master<=>Worker
+// Master<=>Worker  TODO(Dominic): Move in exahype::Cell
 
 exahype::MetadataHeap::HeapEntries exahype::gatherMasterWorkerCommunicationMetadata(int cellDescriptionsIndex) {
   const int length =

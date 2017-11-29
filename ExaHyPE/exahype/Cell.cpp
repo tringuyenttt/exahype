@@ -10,7 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
- 
+
 #include "exahype/Cell.h"
 #include "exahype/State.h"
 
@@ -21,6 +21,8 @@
 #include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 
 #include "kernels/KernelCalls.h"
+
+#include "exahype/plotters/Plotter.h"
 
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
@@ -36,12 +38,42 @@ exahype::Cell::Cell() : Base() {
 }
 
 exahype::Cell::Cell(const Base::DoNotCallStandardConstructor& value)
-    : Base(value) {
+: Base(value) {
 }
 
 exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {
   // This constructor is used to create a cell from persistent data.
   // Do not use it. This would overwrite persistent data.
+}
+
+void exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
+    const int cellDescriptionsIndex,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
+  // ADER-DG
+  bool allNeighbourMergesHaveBeenPerformed = true;
+  for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
+    allNeighbourMergesHaveBeenPerformed &=
+        ( p.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
+          p.getNeighbourMergePerformed().all() ) &&
+        ( p.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor ||
+          p.getNeighbourMergePerformed().all() );
+
+    assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
+  }
+
+  // Finite-Volumes (loop body can be copied from ADER-DG loop)
+  for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
+    allNeighbourMergesHaveBeenPerformed &= p.getNeighbourMergePerformed().all();
+    assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
+  }
+
+  assertion( allNeighbourMergesHaveBeenPerformed );
+  if ( !allNeighbourMergesHaveBeenPerformed ) {
+    logError("validateThatAllNeighbourMergesHaveBeenPerformed(...)",
+             "Not all neighbour merges have been performed in cell="<<
+             fineGridVerticesEnumerator.toString());
+    std::terminate();
+  }
 }
 
 void exahype::Cell::resetNeighbourMergeFlags(
@@ -67,7 +99,7 @@ void exahype::Cell::resetFaceDataExchangeCounters(
     const int cellDescriptionsIndex,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
-  #ifdef Parallel
+#ifdef Parallel
   assertion(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex));
 
   // ADER-DG
@@ -97,12 +129,12 @@ void exahype::Cell::resetFaceDataExchangeCounters(
       assertion(p.getFaceDataExchangeCounter(faceIndex)>0);
     }
   }
-  #endif
+#endif
 }
 
 std::bitset<DIMENSIONS_TIMES_TWO> exahype::Cell::determineInsideAndOutsideFaces(
-        const exahype::Vertex* const verticesAroundCell,
-        const peano::grid::VertexEnumerator& verticesEnumerator) {
+    const exahype::Vertex* const verticesAroundCell,
+    const peano::grid::VertexEnumerator& verticesEnumerator) {
   std::bitset<DIMENSIONS_TIMES_TWO> isInside;
 
   for (int direction=0; direction<DIMENSIONS; direction++) {
@@ -111,146 +143,17 @@ std::bitset<DIMENSIONS_TIMES_TWO> exahype::Cell::determineInsideAndOutsideFaces(
       isInside[faceIndex]=false;
 
       dfor2(v) // Loop over vertices.
-        if (v(direction) == orientation) {
-          isInside[faceIndex] =
-              isInside[faceIndex] ||
-              verticesAroundCell[ verticesEnumerator(v) ].isInside();
-        }
+      if (v(direction) == orientation) {
+        isInside[faceIndex] =
+            isInside[faceIndex] ||
+            verticesAroundCell[ verticesEnumerator(v) ].isInside();
+      }
       enddforx // v
     }
   }
 
   return isInside;
 }
-
-#ifdef Parallel
-bool exahype::Cell::isAdjacentToRemoteRank(
-    exahype::Vertex* const verticesAroundCell,
-    const peano::grid::VertexEnumerator& verticesEnumerator) {
-  tarch::la::Vector<DIMENSIONS,int> center(1);
-  dfor2(v) // Loop over vertices.
-    if (verticesAroundCell[ verticesEnumerator(v) ].isAdjacentToRemoteRank()) {
-      dfor2(a) // Loop over adjacent ranks. Does also include own rank.
-        if (tarch::la::countEqualEntries(v+a,center)==DIMENSIONS-1 && // offset in one direction from center=>face neighbour
-            verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]!=
-            tarch::parallel::Node::getInstance().getRank()) {
-          return true;
-        }
-      enddforx //a
-    }
-  enddforx // v
-
-  return false;
-}
-
-int exahype::Cell::countListingsOfRemoteRankAtFace(
-    const int faceIndex,
-    exahype::Vertex* const verticesAroundCell,
-    const peano::grid::VertexEnumerator& verticesEnumerator) {
-  int result = 0;
-
-  const int f = faceIndex % 2;   // "0" indicates a left face, "1" indicates a right face.
-  const int d = (faceIndex-f)/2; // The normal direction: 0: x, 1: y, 1: z.
-
-  tarch::la::Vector<DIMENSIONS,int> pos(1); // This is now the center, i.e., (1,1,...,1).
-  pos(d) = 2*f;                             // This is a shift from the center by one unit in direction d.
-
-  int faceNeighbourRank = -1; // This variable is introduced to make sure that the adjacent remote rank is unique.
-  // TODO(Dominic): Uniqueness is probably guaranteed by the SFC based DD.
-  dfor2(v) // Loop over vertices.
-    dfor2(a) // Loop over adjacent ranks. Does also include own rank.
-      if (tarch::la::equals(v+a,pos)                             &&
-          verticesAroundCell[ verticesEnumerator(v) ].isInside() &&
-          verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]!=
-          tarch::parallel::Node::getInstance().getRank()) {
-        // Increment
-        if (faceNeighbourRank==-1) {
-          faceNeighbourRank = verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar];
-        }
-        if (verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]==faceNeighbourRank) {
-          result++;
-        }
-      }
-    enddforx // a
-  enddforx // v
-
-  // result corresponds either to no connection, edge connection, or whole face connection.
-  // If the bounding box scaling is turned off, there might further be only a single inside point possible
-  // in 3d. result is then 1.
-  #ifdef Asserts
-  std::stringstream message;
-  message << std::endl;
-  dfor2(v)
-    message << "v="<<v.toString()<<": adjacentRanks="<<verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks().toString() << std::endl;
-  enddforx
-  #endif
-  assertion5(result==0||result==TWO_POWER_D_DIVIDED_BY_TWO/4||result==TWO_POWER_D_DIVIDED_BY_TWO/2||result==TWO_POWER_D_DIVIDED_BY_TWO,
-      result,pos.toString(),faceIndex,tarch::parallel::Node::getInstance().getRank(),message.str());
-  return result;
-}
-
-void exahype::Cell::mergeWithWorkerMetadata(
-    const int                                   workerRank,
-    const tarch::la::Vector<DIMENSIONS,double>& x,
-    const int                                   level,
-    const exahype::records::State::AlgorithmSection& section) const {
-  const int receivedMetadataIndex =
-      exahype::receiveMasterWorkerCommunicationMetadata(workerRank, x,level);
-  exahype::MetadataHeap::HeapEntries& receivedMetadata =
-      MetadataHeap::getInstance().getData(receivedMetadataIndex);
-  assertionEquals(receivedMetadata.size(),
-      exahype::MasterWorkerCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
-
-  if (isInitialised()) {
-    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
-      const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-      if (solver->isMergingMetadata(section) &&
-          element!=exahype::solvers::Solver::NotFound &&
-          receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
-        MetadataHeap::HeapEntries metadataPortion(
-            receivedMetadata.begin()+offset,
-            receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
-
-        solver->mergeWithWorkerMetadata(
-            metadataPortion,
-            getCellDescriptionsIndex(),element);
-      }
-    }
-  }
-
-  MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
-}
-
-void exahype::Cell::mergeWithMasterMetadata(
-    const int                                        receivedMetadataIndex,
-    const exahype::records::State::AlgorithmSection& section) const {
-  exahype::MetadataHeap::HeapEntries& receivedMetadata =
-      MetadataHeap::getInstance().getData(receivedMetadataIndex);
-  assertionEquals(receivedMetadata.size(),
-      exahype::MasterWorkerCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
-
-  if (isInitialised()) {
-    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
-      const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
-      if (solver->isMergingMetadata(section) &&
-          element!=exahype::solvers::Solver::NotFound &&
-          receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
-        MetadataHeap::HeapEntries metadataPortion(
-            receivedMetadata.begin()+offset,
-            receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
-
-        solver->mergeWithMasterMetadata(
-            metadataPortion,
-            getCellDescriptionsIndex(),element);
-      }
-    }
-  }
-}
-#endif
 
 tarch::la::Vector<DIMENSIONS,double> exahype::Cell::computeFaceBarycentre(
     const tarch::la::Vector<DIMENSIONS,double>& cellOffset,
@@ -277,10 +180,10 @@ void exahype::Cell::setupMetaData() {
 
 void exahype::Cell::shutdownMetaData() {
   assertion1(
-    exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(
-      _cellData.getCellDescriptionsIndex()
-    ),
-    toString());
+      exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(
+          _cellData.getCellDescriptionsIndex()
+      ),
+      toString());
 
   exahype::solvers::ADERDGSolver::Heap::getInstance().deleteData(_cellData.getCellDescriptionsIndex());
   exahype::solvers::FiniteVolumesSolver::Heap::getInstance().deleteData(_cellData.getCellDescriptionsIndex());
@@ -291,9 +194,9 @@ void exahype::Cell::shutdownMetaData() {
 bool exahype::Cell::isEmpty() const {
   if (_cellData.getCellDescriptionsIndex()!=multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
     assertion1( exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
-            _cellData.getCellDescriptionsIndex());
+                _cellData.getCellDescriptionsIndex());
     assertion1( exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
-        _cellData.getCellDescriptionsIndex());
+                _cellData.getCellDescriptionsIndex());
   }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
 
   return
@@ -304,9 +207,9 @@ bool exahype::Cell::isEmpty() const {
 bool exahype::Cell::isInitialised() const {
   if (_cellData.getCellDescriptionsIndex()!=multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
     assertion1( exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
-            _cellData.getCellDescriptionsIndex());
+                _cellData.getCellDescriptionsIndex());
     assertion1( exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
-        _cellData.getCellDescriptionsIndex());
+                _cellData.getCellDescriptionsIndex());
   }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
 
   return _cellData.getCellDescriptionsIndex()!=multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
@@ -343,13 +246,13 @@ void exahype::Cell::addNewCellDescription(
 
 
 void exahype::Cell::addNewCellDescription(
-  const int                                     solverNumber,
-  const exahype::records::ADERDGCellDescription::Type cellType,
-  const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
-  const int                                     level,
-  const int                                     parentIndex,
-  const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
-  const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
+    const int                                     solverNumber,
+    const exahype::records::ADERDGCellDescription::Type cellType,
+    const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
+    const int                                     level,
+    const int                                     parentIndex,
+    const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
+    const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
   exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
 
@@ -358,9 +261,9 @@ void exahype::Cell::addNewCellDescription(
   }
 
   exahype::solvers::ADERDGSolver::addNewCellDescription(
-        _cellData.getCellDescriptionsIndex(),solverNumber,
-        cellType,refinementEvent,
-        level,parentIndex,cellSize,cellOffset);
+      _cellData.getCellDescriptionsIndex(),solverNumber,
+      cellType,refinementEvent,
+      level,parentIndex,cellSize,cellOffset);
 }
 
 int exahype::Cell::getNumberOfADERDGCellDescriptions() const {
@@ -373,3 +276,392 @@ int exahype::Cell::getNumberOfFiniteVolumeCellDescriptions() const {
   return exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(
       getCellDescriptionsIndex()).size();
 }
+
+
+#ifdef Parallel
+bool exahype::Cell::isAdjacentToRemoteRank(
+    exahype::Vertex* const verticesAroundCell,
+    const peano::grid::VertexEnumerator& verticesEnumerator) {
+  tarch::la::Vector<DIMENSIONS,int> center(1);
+  dfor2(v) // Loop over vertices.
+  if (verticesAroundCell[ verticesEnumerator(v) ].isAdjacentToRemoteRank()) {
+    dfor2(a) // Loop over adjacent ranks. Does also include own rank.
+            if (tarch::la::countEqualEntries(v+a,center)==DIMENSIONS-1 && // offset in one direction from center=>face neighbour
+                verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]!=
+                    tarch::parallel::Node::getInstance().getRank()) {
+              return true;
+            }
+    enddforx //a
+  }
+  enddforx // v
+
+  return false;
+}
+
+int exahype::Cell::countListingsOfRemoteRankAtFace(
+    const int faceIndex,
+    exahype::Vertex* const verticesAroundCell,
+    const peano::grid::VertexEnumerator& verticesEnumerator) {
+  int result = 0;
+
+  const int f = faceIndex % 2;   // "0" indicates a left face, "1" indicates a right face.
+  const int d = (faceIndex-f)/2; // The normal direction: 0: x, 1: y, 1: z.
+
+  tarch::la::Vector<DIMENSIONS,int> pos(1); // This is now the center, i.e., (1,1,...,1).
+  pos(d) = 2*f;                             // This is a shift from the center by one unit in direction d.
+
+  int faceNeighbourRank = -1; // This variable is introduced to make sure that the adjacent remote rank is unique.
+  // TODO(Dominic): Uniqueness is probably guaranteed by the SFC based DD.
+  dfor2(v) // Loop over vertices.
+  dfor2(a) // Loop over adjacent ranks. Does also include own rank.
+  if (tarch::la::equals(v+a,pos)                             &&
+      verticesAroundCell[ verticesEnumerator(v) ].isInside() &&
+      verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]!=
+          tarch::parallel::Node::getInstance().getRank()) {
+    // Increment
+    if (faceNeighbourRank==-1) {
+      faceNeighbourRank = verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar];
+    }
+    if (verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]==faceNeighbourRank) {
+      result++;
+    }
+  }
+  enddforx // a
+  enddforx // v
+
+  // result corresponds either to no connection, edge connection, or whole face connection.
+  // If the bounding box scaling is turned off, there might further be only a single inside point possible
+  // in 3d. result is then 1.
+#ifdef Asserts
+  std::stringstream message;
+  message << std::endl;
+  dfor2(v)
+  message << "v="<<v.toString()<<": adjacentRanks="<<verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks().toString() << std::endl;
+  enddforx
+#endif
+  assertion5(result==0||result==TWO_POWER_D_DIVIDED_BY_TWO/4||result==TWO_POWER_D_DIVIDED_BY_TWO/2||result==TWO_POWER_D_DIVIDED_BY_TWO,
+             result,pos.toString(),faceIndex,tarch::parallel::Node::getInstance().getRank(),message.str());
+  return result;
+}
+
+bool exahype::Cell::hasToCommunicate(
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize ) const {
+  return
+      isInside() &&
+      tarch::la::allSmallerEquals(
+          cellSize,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers());
+}
+
+// MASTER->WORKER
+
+void exahype::Cell::broadcastMetadataToWorkerPerCell(
+    const int                                   worker,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const int                                   level) {
+  if ( hasToCommunicate(cellSize) ) {
+    exahype::sendMasterWorkerCommunicationMetadata(
+        worker,
+        getCellDescriptionsIndex(),
+        cellCentre,level);
+  }
+}
+
+void exahype::Cell::receiveMetadataFromMasterPerCell(
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const int                                   level) {
+  if ( hasToCommunicate(cellSize) ) {
+    _receivedMetadataHeapIndex =
+        exahype::receiveMasterWorkerCommunicationMetadata(
+            tarch::parallel::NodePool::getInstance().getMasterRank(),
+            cellCentre,level);
+  }
+}
+
+void exahype::Cell::mergeWithMetadataFromMasterPerCell(
+    const Cell&                                 receivedCell,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const exahype::State::AlgorithmSection&     section) {
+  if ( hasToCommunicate(cellSize) ) {
+    assertionEquals(_receivedMetadataHeapIndex,multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+    _receivedMetadataHeapIndex = receivedCell._receivedMetadataHeapIndex;
+    assertion(exahype::MetadataHeap::getInstance().isValidIndex(_receivedMetadataHeapIndex));
+
+    MetadataHeap::HeapEntries& receivedMetadata =
+        MetadataHeap::getInstance().getData(_receivedMetadataHeapIndex);
+    assertionEquals(
+        receivedMetadata.size(),exahype::MasterWorkerCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
+
+    if ( isInitialised() ) {
+      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+        const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
+        const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
+        if (solver->isMergingMetadata(section) &&
+            element!=exahype::solvers::Solver::NotFound &&
+            receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
+          MetadataHeap::HeapEntries metadataPortion(
+              receivedMetadata.begin()+offset,
+              receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
+
+          solver->mergeWithMasterMetadata(
+              metadataPortion,
+              getCellDescriptionsIndex(),element);
+        }
+      }
+    }
+
+    MetadataHeap::getInstance().deleteData(_receivedMetadataHeapIndex,true);
+  }
+}
+
+void exahype::Cell::broadcastDataToWorkerPerCell(
+    const int worker,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const int                                  level) const {
+  if ( hasToCommunicate(cellSize) ) {
+    exahype::sendMasterWorkerCommunicationMetadata( // TODO(Dominic): Always send. Check again
+        worker,getCellDescriptionsIndex(),
+        cellCentre,
+        level);
+
+    if ( isInitialised() ) {
+      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+        const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
+        if ( element!=exahype::solvers::Solver::NotFound ) {
+          solver->sendDataToWorker(worker,getCellDescriptionsIndex(),element,cellCentre,level);
+        } else {
+          solver->sendEmptyDataToWorker(worker,cellCentre,level);
+        }
+      }
+    } else {
+      for (auto* solver : exahype::solvers::RegisteredSolvers) {
+        solver->sendEmptyDataToWorker(worker,cellCentre,level);
+      }
+    }
+  }
+}
+
+void exahype::Cell::receiveDataFromMasterPerCell(
+    const int                                   master,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const int                                   level) {
+  if ( isInside() ) {
+    _receivedMetadataHeapIndex =
+        exahype::receiveMasterWorkerCommunicationMetadata( // TODO(Dominic): Move into cell
+            master,cellCentre,level);
+
+    assertion(_receivedDataHeapIndices.empty());
+    _receivedDataHeapIndices.resize(exahype::solvers::RegisteredSolvers.size()*4); // TODO(Dominic): Current upper bound
+    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      solver->receiveDataFromMaster(
+          master,
+          _receivedDataHeapIndices,
+          cellCentre,level);
+    }
+  }
+}
+
+void exahype::Cell::mergeWithMasterDataPerCell(
+    const Cell& receivedCell,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize ) {
+  if ( hasToCommunicate(cellSize) ) {
+    // Copy the indices from the const "receivedCell".
+    assertionEquals(_receivedMetadataHeapIndex,multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+    _receivedMetadataHeapIndex = receivedCell._receivedMetadataHeapIndex;
+    assertion(exahype::MetadataHeap::getInstance().isValidIndex(_receivedMetadataHeapIndex));
+    assertion(_receivedDataHeapIndices.empty());
+    const int maxNumberOfMessages = 4; // TODO(Dominic): Ensure this is correct (from ADERDGSolver::DataMessagesPerMasterWorkerCommunication + 2 for observables).
+    _receivedDataHeapIndices.resize(exahype::solvers::RegisteredSolvers.size()*maxNumberOfMessages);
+    _receivedDataHeapIndices = receivedCell._receivedDataHeapIndices;
+
+    // Now work with the data
+    MetadataHeap::HeapEntries& receivedMetadata =
+        MetadataHeap::getInstance().getData(_receivedMetadataHeapIndex);
+
+    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
+      const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
+      if (element!=exahype::solvers::Solver::NotFound &&
+          receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
+
+        exahype::MetadataHeap::HeapEntries metadataPortion(
+            receivedMetadata.begin()+offset,
+            receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
+
+        solver->mergeWithMasterData(
+            metadataPortion,
+            _receivedDataHeapIndices,
+            getCellDescriptionsIndex(),element);
+      } else {
+        solver->dropMasterData(
+            _receivedDataHeapIndices);
+      }
+    }
+
+    // Reset data
+    exahype::MetadataHeap::getInstance().deleteData(_receivedMetadataHeapIndex);
+    _receivedMetadataHeapIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
+    assertion( _receivedDataHeapIndices.empty() );
+  }
+}
+
+// global data
+
+void exahype::Cell::broadcastGlobalDataToWorker(
+    const int                                   worker,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const int                                   level) {
+  for (auto& solver : exahype::solvers::RegisteredSolvers) {
+    solver->sendDataToWorker(worker,cellCentre,level);
+  }
+
+  for (auto& plotter : exahype::plotters::RegisteredPlotters) {
+    plotter->sendDataToWorker(
+        worker,cellCentre,level);
+  }
+}
+
+void exahype::Cell::mergeWithGlobalDataFromMaster(
+    const int                                   master,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const int                                   level) {
+  for (auto& solver : exahype::solvers::RegisteredSolvers) {
+    solver->mergeWithMasterData(master,cellCentre,level);
+  }
+
+  for (auto& plotter : exahype::plotters::RegisteredPlotters) {
+    plotter->mergeWithMasterData(master,cellCentre,level);
+  }
+}
+
+
+// WORKER->MASTER
+
+// global
+
+void exahype::Cell::reduceGlobalDataToMaster(
+    const int                                   master,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const int                                   level) {
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    solver->sendDataToMaster(master,cellCentre,level);
+  }
+}
+
+void exahype::Cell::mergeWithGlobalDataFromWorker(
+    const int                                   worker,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const int                                   level) {
+  for (auto& solver : exahype::solvers::RegisteredSolvers) {
+    solver->mergeWithWorkerData(worker,cellCentre,level);
+  }
+}
+
+// per cell
+
+void exahype::Cell::mergeWithMetadataFromWorkerPerCell(
+    const int                                   workerRank,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const int                                   level,
+    const exahype::State::AlgorithmSection&     section) const {
+  if ( hasToCommunicate(cellSize) ) {
+    const int receivedMetadataIndex =
+        exahype::receiveMasterWorkerCommunicationMetadata(workerRank,cellCentre,level);
+    exahype::MetadataHeap::HeapEntries& receivedMetadata =
+        MetadataHeap::getInstance().getData(receivedMetadataIndex);
+    assertionEquals(receivedMetadata.size(),
+                    exahype::MasterWorkerCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
+
+    if ( isInitialised() ) {
+      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+        const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
+        const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
+        if (
+            solver->isMergingMetadata(section) &&
+            element!=exahype::solvers::Solver::NotFound &&
+            receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry
+        ) {
+          MetadataHeap::HeapEntries metadataPortion(
+              receivedMetadata.begin()+offset,
+              receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
+
+          solver->mergeWithWorkerMetadata(
+              metadataPortion,
+              getCellDescriptionsIndex(),element);
+        }
+      }
+    }
+
+    MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
+  }
+}
+
+void exahype::Cell::reduceDataToMasterPerCell(
+    const int                                   master,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const int                                   level) const {
+  if ( hasToCommunicate(cellSize) ) {
+    exahype::sendMasterWorkerCommunicationMetadata(
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        getCellDescriptionsIndex(),
+        cellCentre,level);
+
+    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
+      if ( element!=exahype::solvers::Solver::NotFound ) {
+        solver->sendDataToMaster(
+            tarch::parallel::NodePool::getInstance().getMasterRank(),
+            getCellDescriptionsIndex(),element,
+            cellCentre,level);
+      } else {
+        solver->sendEmptyDataToMaster(
+            tarch::parallel::NodePool::getInstance().getMasterRank(),
+            cellCentre,level);
+      }
+    }
+  }
+}
+
+void exahype::Cell::mergeWithDataFromWorkerPerCell(
+    const int                                   worker,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const int                                   level) const {
+  if ( hasToCommunicate(cellSize) ) {
+    const int receivedMetadataIndex =
+        exahype::receiveMasterWorkerCommunicationMetadata(worker,cellCentre,level);
+    exahype::MetadataHeap::HeapEntries& receivedMetadata =
+        exahype::MetadataHeap::getInstance().getData(receivedMetadataIndex);
+
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
+      const int offset  = exahype::MasterWorkerCommunicationMetadataPerSolver*solverNumber;
+      if (
+          receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry &&
+          element!=exahype::solvers::Solver::NotFound
+      ) {
+        exahype::MetadataHeap::HeapEntries metadataPortion(
+            receivedMetadata.begin()+offset,
+            receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
+
+        solver->mergeWithWorkerData(
+            worker,metadataPortion,getCellDescriptionsIndex(),element,cellCentre,level);
+      } else {
+        solver->dropWorkerData(worker,cellCentre,level);
+      }
+    }
+    exahype::MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
+  }
+}
+#endif
