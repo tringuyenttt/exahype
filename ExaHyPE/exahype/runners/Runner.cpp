@@ -1176,10 +1176,10 @@ void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
    *predictor time step size.
    * 4. Compute the cell-local time step sizes
    */
+  repository.switchToFusedTimeStep();
   if (numberOfStepsToRun==0) {
     repository.iterate(1,false);
   } else {
-    repository.switchToFusedTimeStep();
     repository.iterate(numberOfStepsToRun,false);
   }
 

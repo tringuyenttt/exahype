@@ -273,6 +273,12 @@ case $CMD in
 		reducedbuf="stdbuf -oL -eL" # for quicker output, no 4k buffering
 		$reducedbuf $ROOT/$BINARY $ROOT/$SPECFILE 2>&1 | $reducedbuf tee -a run.log
 		;;
+	"make-output-folders") # Create output folders for a given specfile
+		cdapp
+		ABS_SPECFILE=$GITROOT/$(subreq find specfile $APPNAME)
+		echo "Creating folders in $(pwd)"
+		exec $BuildScripts/../RunScripts/createOutputFoldersForSpecfile.sh $ABS_SPECFILE
+		;;
 	"sim") # lightweight simulation managament
 		exec $BuildScripts/../RunScripts/sim.sh $@
 		;;
