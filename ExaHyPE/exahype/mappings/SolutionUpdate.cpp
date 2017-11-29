@@ -191,6 +191,9 @@ void exahype::mappings::SolutionUpdate::beginIteration(
 
   _localState = solverState;
 
+  bool plot = exahype::plotters::startPlottingIfAPlotterIsActive(
+      solvers::Solver::getMinSolverTimeStampOfAllSolvers());
+
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     solver->setNextMeshUpdateRequest();
     solver->setNextAttainedStableState();

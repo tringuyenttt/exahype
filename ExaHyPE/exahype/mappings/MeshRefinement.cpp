@@ -54,19 +54,11 @@ exahype::mappings::MeshRefinement::communicationSpecification() const {
 }
 
 peano::MappingSpecification
-exahype::mappings::MeshRefinement::touchVertexLastTimeSpecification(int level) const {
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
-}
-
-peano::MappingSpecification
 exahype::mappings::MeshRefinement::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::Serial,true);
 }
-
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
@@ -79,6 +71,15 @@ exahype::mappings::MeshRefinement::leaveCellSpecification(int level) const {
       peano::MappingSpecification::WholeTree,
       peano::MappingSpecification::Serial,true);
 }
+
+// Nop.
+peano::MappingSpecification
+exahype::mappings::MeshRefinement::touchVertexLastTimeSpecification(int level) const {
+  return peano::MappingSpecification(
+      peano::MappingSpecification::Nop,
+      peano::MappingSpecification::AvoidFineGridRaces,true);
+}
+
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::ascendSpecification(int level) const {
   return peano::MappingSpecification(
