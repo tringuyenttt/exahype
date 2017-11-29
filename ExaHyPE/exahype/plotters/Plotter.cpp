@@ -25,13 +25,13 @@
 #include "exahype/plotters/VTK/FiniteVolumes2VTK.h"
 #include "exahype/plotters/VTK/LimitingADERDG2CartesianVTK.h"
 #include "exahype/plotters/VTK/LimitingADERDGSubcells2CartesianVTK.h"
-#include "exahype/solvers/LimitingADERDGSolver.h"
+#include "exahype/plotters/VTK/Patch2VTK.h"
 
 #include "exahype/plotters/PeanoFileFormat/ADERDG2CartesianPeanoPatchFileFormat.h"
 #include "exahype/plotters/PeanoFileFormat/ADERDG2LegendrePeanoPatchFileFormat.h"
 #include "exahype/plotters/PeanoFileFormat/FiniteVolumes2PeanoPatchFileFormat.h"
 
-
+#include "exahype/solvers/LimitingADERDGSolver.h"
 
 /* BEGIN Case intensitive string comparison: http://stackoverflow.com/a/23944175 */
 bool icompare_pred(unsigned char a, unsigned char b) {
@@ -326,6 +326,19 @@ exahype::plotters::Plotter::Plotter(
       if (equalsIgnoreCase(_identifier, ADERDG2FlashHDF5::getIdentifier())) {
         _device = new ADERDG2FlashHDF5(postProcessing);
       }
+
+      if(equalsIgnoreCase(_identifier, Patch2VTKAscii::getIdentifier())) {
+        _device = new Patch2VTKAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTKBinary::getIdentifier())) {
+        _device = new Patch2VTKBinary(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUAscii::getIdentifier())) {
+        _device = new Patch2VTUAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUBinary::getIdentifier())) {
+        _device = new Patch2VTUBinary(postProcessing, solvertype);
+      }
     break;
     case exahype::solvers::Solver::Type::FiniteVolumes:
       /**
@@ -386,6 +399,18 @@ exahype::plotters::Plotter::Plotter(
         _device = new FiniteVolumes2PeanoPatchFileFormatHDF5(
                 postProcessing,static_cast<exahype::solvers::FiniteVolumesSolver*>(
                 solvers::RegisteredSolvers[_solver])->getGhostLayerWidth());
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTKAscii::getIdentifier())) {
+        _device = new Patch2VTKAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTKBinary::getIdentifier())) {
+        _device = new Patch2VTKBinary(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUAscii::getIdentifier())) {
+        _device = new Patch2VTUAscii(postProcessing, solvertype);
+      }
+      if(equalsIgnoreCase(_identifier, Patch2VTUBinary::getIdentifier())) {
+        _device = new Patch2VTUBinary(postProcessing, solvertype);
       }
     break;
   }
