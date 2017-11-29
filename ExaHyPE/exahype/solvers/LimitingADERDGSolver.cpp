@@ -802,8 +802,9 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
         tempUnknowns,tempFluxUnknowns,tempPointForceSources);
   }
 
-  result._timeStepSize = startNewTimeStepFused(cellDescriptionsIndex,element,
-                                               isFirstIterationOfBatch,isLastIterationOfBatch);
+  result._timeStepSize = startNewTimeStepFused(
+      cellDescriptionsIndex,element,
+      isFirstIterationOfBatch,isLastIterationOfBatch);
   return result;
 }
 

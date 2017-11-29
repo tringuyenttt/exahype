@@ -214,11 +214,13 @@ void exahype::mappings::SolutionUpdate::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
+  exahype::plotters::finishedPlotting();
+
   exahype::solvers::Solver::startNewTimeStepForAllSolvers(
       _solverFlags,_minTimeStepSizes,_minCellSizes,_maxCellSizes,
       exahype::State::isFirstIterationOfBatchOrNoBatch(),
       exahype::State::isLastIterationOfBatchOrNoBatch(),
-      exahype::State::fuseADERDGPhases());
+      false);
 
   // delete temporary variables
   deleteSolverFlags(_solverFlags);

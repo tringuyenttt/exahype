@@ -739,9 +739,6 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
     logInfo( "runAsMaster(...)", "initialised all data and computed first time step size" );
 
-    bool plot = exahype::plotters::startPlottingIfAPlotterIsActive(
-        solvers::Solver::getMinSolverTimeStampOfAllSolvers()); // has side effects
-
     repository.switchToPrediction();
     repository.iterate(1,false);
     logInfo("runAsMaster(...)","plotted initial solution (if specified) and computed first predictor");

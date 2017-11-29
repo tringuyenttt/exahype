@@ -155,7 +155,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
       _solverFlags,_minTimeStepSizes,_minCellSizes,_maxCellSizes,
       exahype::State::isFirstIterationOfBatchOrNoBatch(),
       exahype::State::isLastIterationOfBatchOrNoBatch(),
-      exahype::State::fuseADERDGPhases());
+      true);
 
   // delete temporary variables
   if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
@@ -232,6 +232,8 @@ void exahype::mappings::FusedTimeStep::enterCell(
                 _predictionTemporaryVariables._tempUnknowns             [solverNumber],
                 _predictionTemporaryVariables._tempFluxUnknowns         [solverNumber],
                 _predictionTemporaryVariables._tempPointForceSources    [solverNumber]);
+
+        std::cout << "refinement requested=" << result._refinementRequested << std::endl;
 
         solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
 

@@ -623,7 +623,7 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
      * Swap the current values with the next values (in last batch iteration)
      */
     // mesh update events
-    if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
+    if ( isLastIterationOfBatchOrNoBatch ) {
       solver->setNextMeshUpdateRequest();
       solver->setNextAttainedStableState();
       if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
@@ -637,17 +637,16 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
     }
 
     // time
-    // TODO(Dominic):
     // only update the time step size in last iteration; just advance with old time step size otherwise
-    if (
-        fusedTimeStepping &&
-        isLastIterationOfBatchOrNoBatch &&
-        tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
-    ) {
-      exahype::solvers::Solver::
-      reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
-    }
-    if (exahype::State::fuseADERDGPhases()) {
+    if ( fusedTimeStepping ) {
+      if (
+          isLastIterationOfBatchOrNoBatch &&
+          tarch::parallel::Node::getInstance().getRank()==tarch::parallel::Node::getInstance().getGlobalMasterRank()
+      ) {
+        exahype::solvers::Solver::
+        reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(solver);
+      }
+
       solver->startNewTimeStepFused(
           isFirstIterationOfBatchOrNoBatch,
           isLastIterationOfBatchOrNoBatch);
