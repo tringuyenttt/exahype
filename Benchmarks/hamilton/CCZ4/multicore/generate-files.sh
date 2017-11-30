@@ -32,7 +32,7 @@ else
 fi
 prefix+="-$mesh"
 
-for order in 3 5 7 9
+for order in 3 5 7
 #for order in 3
 do
   SIMULATION END TIME
@@ -49,16 +49,16 @@ do
   t=${T[i]}
   
   # Create script
-  script=multicore/coolmuc.slurm-script
-  newScript=multicore/coolmuc-$prefix-p$order-n1-t1.slurm-script
+  script=multicore/hamilton.slurm-script
+  newScript=multicore/hamilton-$prefix-p$order-n1-t1.slurm-script
   cp $script $newScript
  
   sed -i 's,'$project'-no-output-regular-0,'$prefix',g' $newScript
   sed -i 's,p3,p'$order',g' $newScript
-  sed -i 's,script=multicore/coolmuc.slurm-script,script='$newScript',g' $newScript 
+  sed -i 's,script=multicore/hamilton.slurm-script,script='$newScript',g' $newScript 
   
   # Create spec files
-  for coresPerTask in 1 2 4 8 14 28
+  for coresPerTask in 1 3 6 12 24
   #for coresPerTask in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 48 # ham7
   #for coresPerTask in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 32 # ham6
   do

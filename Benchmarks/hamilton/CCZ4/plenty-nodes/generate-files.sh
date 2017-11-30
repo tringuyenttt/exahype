@@ -54,8 +54,8 @@ do
       #let coresPerTask=16/$tasksPerNode # ham6
 
       # Create script
-      script=plenty-nodes/coolmuc.slurm-script
-      newScript=plenty-nodes/coolmuc-$prefix-p$order-n$nodes-t$tasksPerNode-c$coresPerTask-$sharedMem.slurm-script
+      script=plenty-nodes/hamilton.slurm-script
+      newScript=plenty-nodes/hamilton-$prefix-p$order-n$nodes-t$tasksPerNode-c$coresPerTask-$sharedMem.slurm-script
       cp $script $newScript
      
       sed -i -r 's,--nodes(\s*)=(\s*)([0-9]*),--nodes\1=\2'$nodes',' $newScript
