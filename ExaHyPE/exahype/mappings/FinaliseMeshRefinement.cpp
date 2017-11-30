@@ -124,7 +124,6 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   prepareLocalTimeStepVariables();
 
   #ifdef Parallel
-  exahype::mappings::LimiterStatusSpreading::IsFirstIteration = true;
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
   #endif
 

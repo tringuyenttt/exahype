@@ -585,7 +585,6 @@ int exahype::runners::Runner::run() {
     exahype::mappings::MeshRefinement::IsInitialMeshRefinement=true;
     #ifdef Parallel
     exahype::mappings::MeshRefinement::IsFirstIteration = false;
-    exahype::mappings::LimiterStatusSpreading::IsFirstIteration = false;
     #endif
 
     if ( _parser.isValid() ) {
@@ -1013,11 +1012,8 @@ void exahype::runners::Runner::updateMeshAndSubdomains(
     repository.switchToLimiterStatusSpreading();
     repository.iterate(
         exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell(),false);
-  }
-  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
-    assertion(exahype::solvers::Solver::oneSolverRequestedMeshUpdate());
-    assertion(exahype::solvers::LimitingADERDGSolver::oneSolverHasNotAttainedStableState());
-    logInfo("updateMeshAndSubdomains(...)","global recomputation requested by at least one solver");
+
+    logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
     repository.switchToGlobalRollback();
     repository.iterate(1,false);
   }

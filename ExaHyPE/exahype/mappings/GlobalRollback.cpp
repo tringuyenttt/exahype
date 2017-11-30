@@ -183,8 +183,9 @@ void exahype::mappings::GlobalRollback::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  vertex.dropNeighbourMetadata(
-      fromRank,fineGridX,fineGridH,level);
+  vertex.mergeOnlyWithNeighbourMetadata(
+      fromRank,fineGridX,fineGridH,level,
+      exahype::State::AlgorithmSection::LimiterStatusSpreading);
 
   logTraceOut("mergeWithNeighbour(...)");
 }
