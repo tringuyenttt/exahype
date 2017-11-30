@@ -118,6 +118,8 @@ def extract_likwid_metrics(root_dir,prefix):
         header = ["Mesh","Order","CC","Kernels","Algorithm","Nodes","Tasks (per Node)","Cores (per Task)","Shared Memory"]
         for metric in metrics:
             header.append(metric[0]+"("+metric[1]+")")
+        for counter in counters:
+            header.append(counter[0]+"("+counter[1]+")")
         csvwriter.writerow(header)
 
         # write content
@@ -143,6 +145,8 @@ def extract_likwid_metrics(root_dir,prefix):
                    
                 for metric in metrics:
                     row.append ( str(measurements[metric[0]][metric[1]]) )
+                for counter in counters:
+                    row.append ( str(measurements[counter[0]][counter[1]]) )
                 csvwriter.writerow(row)
 
 def parse_likwid_metrics(file_path,metrics,counters,singlecore=False):
