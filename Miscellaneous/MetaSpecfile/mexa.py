@@ -77,7 +77,7 @@ include = namedtuple('include', 'lhs rhs') # include file
 opsymbol = { '=': assign, '<=': extend, '<<': include, '+=': append, ':=': let }
 
 # reduce operation (no more lhs):
-rhs = namedtuple('rhs', 'value src')
+sourced = namedtuple('sourced', 'value src')
 # -> should collect: hasnosymbol, parseRHS
 
 lang = Namespace()
@@ -260,7 +260,7 @@ def line2operation(srcline):
 	# parse rhs as symbol or whatever
 	value = parseRHS(parts.group('rhs'))
 
-	return opsymbol[parts.group('op')](name, rhs(value, srcline))
+	return opsymbol[parts.group('op')](name, sourced(value, srcline))
 
 def oplist2assigndict(oplist, values='rhs'):
 	symbols = {} # could use an OrderedDict here if needed.
@@ -346,7 +346,7 @@ class mexafile:
 	# These operations are prepended to any read in file.
 	rootbase = [
 		# mexa = path to the current script directory
-		let(symbol("mexa"), rhs(os.path.dirname(os.path.realpath(__file__)), sourceline.from_python())),
+		let(symbol("mexa"), sourced(os.path.dirname(os.path.realpath(__file__)), sourceline.from_python())),
 	]
 	
 	def __init__(self, fh):
@@ -438,7 +438,7 @@ class mexafile:
 					newrhs = map(updater, op.rhs)
 					if all(newrhs): # check for None
 						updateRhs(i,newrhs)
-				elif(isa(op.rhs,rhs)):
+				elif(isa(op.rhs,sourced)):
 					newrhs = updater(op.rhs)
 					if newrhs:
 						updateRhs(i, newrhs)
@@ -449,7 +449,7 @@ class mexafile:
 		def evaluateRhsString(irhs):
 			if isa(irhs.value,[str,unicode]):
 				newval = self.evalstring(irhs.value, irhs.src)
-				newrhs = rhs(newval, irhs.src)
+				newrhs = sourced(newval, irhs.src)
 				#if newval != irhs.value:
 				#	print newrhs
 				return newrhs
@@ -591,7 +591,7 @@ class mexafile:
 		"""
 		if type(irhs) == list:
 			return map(self.resolve, irhs)
-		elif isinstance(irhs, rhs):
+		elif isinstance(irhs, sourced):
 			return self.resolve(irhs.value)
 		else:
 			if type(irhs) in symbol.primitives:
