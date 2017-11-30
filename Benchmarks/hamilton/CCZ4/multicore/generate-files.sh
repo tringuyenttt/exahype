@@ -35,7 +35,7 @@ prefix+="-$mesh"
 for order in 3 5 7
 #for order in 3
 do
-  SIMULATION END TIME
+  # SIMULATION END TIME
   T=(  0.01  )            # p=3
   if (( order == 5 )); then
     T=( 0.0636 )  # p=5; (2*3+1)/(2*order+1)*T_3 ceiled with sig. 1e-6
