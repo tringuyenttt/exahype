@@ -104,10 +104,10 @@ def extract_likwid_metrics(root_dir,prefix):
                   ["Branch misprediction rate",   "Avg"]
                  ]
                  
-     counters  = [
-                  [ "FP_ARITH_INST_RETIRED_128B_PACKED_DOUBLE", "Sum" ],
-                  [ "FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum" ],
-                  [ "FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum" ]
+    counters  = [
+                  ["FP_ARITH_INST_RETIRED_128B_PACKED_DOUBLE", "Sum"],
+                  ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
+                  ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
                  ]
     
     # collect filenames
@@ -209,7 +209,7 @@ def parse_likwid_metrics(file_path,metrics,counters,singlecore=False):
                     if counter[0] in line:
                         segments = line.split('|')
                         #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE   |   PMC1  |  623010105225  | ...
-                        value  = float(segments[2].strip());
+                        value  = float(segments[3].strip());
                         values = {}                         
                         values["Sum"] = value
                         values["Min"] = value
