@@ -186,18 +186,11 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
   const int cellDescriptionsIndex2 = _vertexData.getCellDescriptionsIndex(pos2Scalar);
 
   const bool validIndexNextToBoundaryIndex =
-      (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1)
-          &&
-          (cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex
-              ||
-              // domain boundary might align with boundary to global master rank 0.
-              cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex))
-              ||
-              (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2)
-                  &&
-                  (cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex
-                      ||
-                      cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex));
+      (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1) &&
+      cellDescriptionsIndex2<0)
+      ||
+      (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2) &&
+      cellDescriptionsIndex1<0);
 
   if (
       validIndexNextToBoundaryIndex &&

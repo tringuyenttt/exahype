@@ -61,6 +61,7 @@ void exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
     assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
     if ( !allNeighbourMergesHaveBeenPerformed ) {
       logError("validateThatAllNeighbourMergesHaveBeenPerformed(...)",
+               "Failed for cellDescriptionsIndex="<<cellDescriptionsIndex<<". "<<
                "Not all neighbour merges have been performed for ADERDGCellDescription="<<
                p.toString());
       std::terminate();
@@ -74,6 +75,7 @@ void exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
     assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
     if ( !allNeighbourMergesHaveBeenPerformed ) {
       logError("validateThatAllNeighbourMergesHaveBeenPerformed(...)",
+               "Failed for cellDescriptionsIndex="<<cellDescriptionsIndex<<". "<<
                "Not all neighbour merges have been performed for FiniteVolumesCellDescription="<<
                p.toString());
       std::terminate();
