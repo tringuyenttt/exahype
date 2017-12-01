@@ -68,12 +68,12 @@ private:
 
 public:
   /**
-   * This variable is unset in LimiterStatusSpreading::beginIteration(...) in the first iteration
-   * of LimiterStatusSpreading and then reset in
-   * MeshRefinement::beginIteration(...) and Reinitialisaion::beginIteration().
+   * Reduce data from the worker to the master.
+   *
+   * \note Make sure that you return true in a
+   * previous iteration in prepareSendToWorker
+   * where you performed a broadcast to the worker.
    */
-  static bool IsFirstIteration;
-
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**

@@ -1,22 +1,9 @@
 #!/bin/bash
 #
-# Perform with speedup tests on Hamilton using several nodes.
+# Perform multicore speedup tests on Coolmuc.
 #
-# Hamilton uses SLURM. SLURM supports array jobs.
+# Coolmuc uses SLURM. SLURM supports array jobs.
 #
-# System specification(s):
-#
-# Hamilton 6 (x122 nodes):
-#    2 x Intel Xeon E5-2650 v2 (Ivy Bridge) 8 cores, 2.6 GHz processors (16 cores per node)
-#    64 GB DDR3 memory (4 GB per core)
-#    the nodes are diskless
-#    1 x TrueScale 4 x QDR single-port InfiniBand interconnect
-#
-# Hamilton 7 (x112 nodes):
-#   2 x Intel Xeon E5-2650 v4 (Broadwell) 12 cores, 2.2 GHz processors (24 cores per node)
-#   64 GB TruDDR4 memory
-#   the nodes are diskless
-#   1 x Intel OmniPath 100 Gb InfiniBand interconnect
 
 # PREAMBLE
 project=CCZ4

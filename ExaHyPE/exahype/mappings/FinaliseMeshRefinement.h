@@ -93,7 +93,6 @@ class exahype::mappings::FinaliseMeshRefinement {
 
   /**
    * Reset the following flags (to true):
-   * exahype::mappings::LimiterStatusSpreading::IsFirstIteration
    * exahype::mappings::MeshRefinement::IsFirstIteration
    *
    * <h2> Time stepping </h2>

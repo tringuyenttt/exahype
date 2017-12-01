@@ -585,7 +585,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorker(
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   localCell.mergeWithMetadataFromMasterPerCell(
       receivedMasterCell,
-      cellCentre,
+      cellSize,
       exahype::State::AlgorithmSection::MeshRefinement);
 }
 

@@ -48,59 +48,12 @@ def extract_likwid_metrics(root_dir,prefix):
     |    Packed MUOPS/s    |  252.4243 |
     |    Scalar MUOPS/s    |  73.8808  |
     +----------------------+-----------+
-
-    ##  MEM
-
-    +-----------------------------------+------------+
-    |               Metric              |   Core 1   |
-    +-----------------------------------+------------+
-    |        Runtime (RDTSC) [s]        |   6.5468   |
-    |        Runtime unhalted [s]       |   7.7608   |
-    |            Clock [MHz]            |  2849.4441 |
-    |                CPI                |   1.4359   |
-    |  Memory read bandwidth [MBytes/s] |  9203.1065 |
-    |  Memory read data volume [GBytes] |   60.2505  |
-    | Memory write bandwidth [MBytes/s] |  4409.1727 |
-    | Memory write data volume [GBytes] |   28.8658  |
-    |    Memory bandwidth [MBytes/s]    | 13612.2793 |
-    |    Memory data volume [GBytes]    |   89.1163  |
-    +-----------------------------------+------------+
-
-    ## BRANCH
-
-    +----------------------------+--------------+
-    |           Metric           |    Core 1    |
-    +----------------------------+--------------+
-    |     Runtime (RDTSC) [s]    |    6.5219    |
-    |    Runtime unhalted [s]    |    7.7536    |
-    |         Clock [MHz]        |   2858.6786  |
-    |             CPI            |    1.4345    |
-    |         Branch rate        |    0.1190    |
-    |  Branch misprediction rate | 2.575205e-07 |
-    | Branch misprediction ratio | 2.163851e-06 |
-    |   Instructions per branch  |    8.4026    |
-    +----------------------------+--------------+
-
-    ## L2CACHE
-
-    +----------------------+-----------+
-    |        Metric        |   Core 1  |
-    +----------------------+-----------+
-    |  Runtime (RDTSC) [s] |   6.5188  |
-    | Runtime unhalted [s] |   7.7477  |
-    |      Clock [MHz]     | 2855.7219 |
-    |          CPI         |   1.4335  |
-    |    L2 request rate   |   0.3787  |
-    |     L2 miss rate     |   0.1056  |
-    |     L2 miss ratio    |   0.2788  |
-    +----------------------+-----------+
-
-
+    
     # Multicore Metrics
-
-
+    
+    
     ## FLOPS_DP:
-
+    
     +---------------------------+------------+-----------+-----------+-----------+
     |           Metric          |     Sum    |    Min    |    Max    |    Avg    |
     +---------------------------+------------+-----------+-----------+-----------+
@@ -113,53 +66,23 @@ def extract_likwid_metrics(root_dir,prefix):
     |    Packed MUOPS/s STAT    |  1416.9944 |  59.0414  |  59.0415  |  59.0414  |
     |    Scalar MUOPS/s STAT    |  414.7347  |     0     |  414.7321 |  17.2806  |
     +---------------------------+------------+-----------+-----------+-----------+
+    
+    # Counters
+    
+    Counters have the same singlecore-multicore difference and additionally an extra column:
+    
+    +-----------------------------------------------+---------+----------------+-------------+---------------+--------------+
+    |                     Event                     | Counter |       Sum      |     Min     |      Max      |      Avg     |
+    +-----------------------------------------------+---------+----------------+-------------+---------------+--------------+
+    |             INSTR_RETIRED_ANY STAT            |  FIXC0  | 11181192786999 | 88372626842 | 1091629701014 | 9.317661e+11 |
+    |           CPU_CLK_UNHALTED_CORE STAT          |  FIXC1  |  3312729891579 | 48608952127 |  325502991727 | 2.760608e+11 |
+    |           CPU_CLK_UNHALTED_REF STAT           |  FIXC2  |  2930209122522 | 43828197666 |  284406478114 | 2.441841e+11 |
+    | FP_ARITH_INST_RETIRED_128B_PACKED_DOUBLE STAT |   PMC0  |    389255648   |      0      |    37863481   | 3.243797e+07 |
+    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE STAT   |   PMC1  |  623010105225  |    11437    |  66306184117  | 5.191751e+10 | 
+    | FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE STAT |   PMC2  |   6888074859   |      0      |   641967988   | 5.740062e+08 |
+    +-----------------------------------------------+---------+----------------+-------------+---------------+--------------+
 
-    ## MEM:
-
-    +----------------------------------------+------------+-----------+------------+-----------+
-    |                 Metric                 |     Sum    |    Min    |     Max    |    Avg    |
-    +----------------------------------------+------------+-----------+------------+-----------+
-    |        Runtime (RDTSC) [s] STAT        |   28.1040  |   1.1710  |   1.1710   |   1.1710  |
-    |        Runtime unhalted [s] STAT       |   17.6412  |   0.6944  |   1.1724   |   0.7351  |
-    |            Clock [MHz] STAT            | 53428.9064 | 2153.7694 |  2358.9159 | 2226.2044 |
-    |                CPI STAT                |   81.0719  |   0.8342  |   3.5820   |   3.3780  |
-    |  Memory read bandwidth [MBytes/s] STAT | 52486.4902 |     0     | 26297.3151 | 2186.9371 |
-    |  Memory read data volume [GBytes] STAT |   61.4616  |     0     |   30.7941  |   2.5609  |
-    | Memory write bandwidth [MBytes/s] STAT | 26486.8194 |     0     | 13702.7744 | 1103.6175 |
-    | Memory write data volume [GBytes] STAT |   31.0160  |     0     |   16.0459  |   1.2923  |
-    |    Memory bandwidth [MBytes/s] STAT    | 78973.3098 |     0     | 40000.0896 | 3290.5546 |
-    |    Memory data volume [GBytes] STAT    |   92.4777  |     0     |   46.8401  |   3.8532  |
-    +----------------------------------------+------------+-----------+------------+-----------+
-
-    ## BRANCH:
-
-    +---------------------------------+------------+--------------+--------------+--------------+
-    |              Metric             |     Sum    |      Min     |      Max     |      Avg     |
-    +---------------------------------+------------+--------------+--------------+--------------+
-    |     Runtime (RDTSC) [s] STAT    |   27.2616  |    1.1359    |    1.1359    |    1.1359    |
-    |    Runtime unhalted [s] STAT    |   17.7047  |    0.7118    |    1.1711    |    0.7377    |
-    |         Clock [MHz] STAT        | 53381.5227 |   2197.7583  |   2378.3713  |   2224.2301  |
-    |             CPI STAT            |   81.2767  |    0.8336    |    3.5603    |    3.3865    |
-    |         Branch rate STAT        |   3.0690   |    0.0450    |    0.1340    |    0.1279    |
-    |  Branch misprediction rate STAT |   0.0001   | 9.050274e-07 | 2.820245e-05 | 5.374324e-06 |
-    | Branch misprediction ratio STAT |   0.0010   | 6.977308e-06 |    0.0002    | 4.115248e-05 |
-    |   Instructions per branch STAT  |  197.2038  |    7.4615    |    22.2424   |    8.2168    |
-    +---------------------------------+------------+--------------+--------------+--------------+
-
-    ## L2CACHE
-
-    +---------------------------+------------+-----------+-----------+-----------+
-    |           Metric          |     Sum    |    Min    |    Max    |    Avg    |
-    +---------------------------+------------+-----------+-----------+-----------+
-    |  Runtime (RDTSC) [s] STAT |   27.4632  |   1.1443  |   1.1443  |   1.1443  |
-    | Runtime unhalted [s] STAT |   17.7995  |   0.7182  |   1.1748  |   0.7416  |
-    |      Clock [MHz] STAT     | 53545.8000 | 2203.7171 | 2357.4567 | 2231.0750 |
-    |          CPI STAT         |   81.9969  |   0.8364  |   3.5848  |   3.4165  |
-    |    L2 request rate STAT   |   12.3080  |   0.1178  |   0.5385  |   0.5128  |
-    |     L2 miss rate STAT     |   2.9400   |   0.0293  |   0.1286  |   0.1225  |
-    |     L2 miss ratio STAT    |   5.7406   |   0.2358  |   0.2489  |   0.2392  |
-    +---------------------------+------------+-----------+-----------+-----------+
-   
+    
     Args:
       root_dir (str):
          Directory containing the Peano output files.
@@ -168,7 +91,7 @@ def extract_likwid_metrics(root_dir,prefix):
     '''
     
     metrics    = [
-                  ["  MFLOP/s",                   "Sum"],   # Two whitespaces are required to not find the AVX MFLOP/s by accident
+                  ["  MFLOP/s",                   "Sum"],  # Two whitespaces are required to not find the AVX MFLOP/s by accident
                   ["AVX MFLOP/s",                 "Sum"],
                   ["Memory bandwidth [MBytes/s]", "Sum"],
                   ["Memory data volume [GBytes]", "Sum"],
@@ -180,6 +103,12 @@ def extract_likwid_metrics(root_dir,prefix):
                   ["L2 miss rate",                "Avg"],
                   ["Branch misprediction rate",   "Avg"]
                  ]
+                 
+    counters  = [
+                  ["FP_ARITH_INST_RETIRED_128B_PACKED_DOUBLE", "Sum"],
+                  ["FP_ARITH_INST_RETIRED_SCALAR_DOUBLE",      "Sum"],
+                  ["FP_ARITH_INST_RETIRED_256B_PACKED_DOUBLE", "Sum"]
+                 ]
     
     # collect filenames
     with open(root_dir+"/"+prefix+'.likwid.csv', 'w') as csvfile:
@@ -189,6 +118,8 @@ def extract_likwid_metrics(root_dir,prefix):
         header = ["Mesh","Order","CC","Kernels","Algorithm","Nodes","Tasks (per Node)","Cores (per Task)","Shared Memory"]
         for metric in metrics:
             header.append(metric[0]+"("+metric[1]+")")
+        for counter in counters:
+            header.append(counter[0]+"("+counter[1]+")")
         csvwriter.writerow(header)
 
         # write content
@@ -208,15 +139,17 @@ def extract_likwid_metrics(root_dir,prefix):
                 tasks     = match.group(8)
                 cores     = match.group(9)
                     
-                measurements = parse_likwid_metrics(root_dir+'/'+filename,metrics,int(cores)==1) 
+                measurements = parse_likwid_metrics(root_dir+'/'+filename,metrics,counters,int(cores)==1) 
                 
                 row = [mesh,order,cc,kernels,algorithm,nodes,tasks,cores,mode]
                    
                 for metric in metrics:
                     row.append ( str(measurements[metric[0]][metric[1]]) )
+                for counter in counters:
+                    row.append ( str(measurements[counter[0]][counter[1]]) )
                 csvwriter.writerow(row)
 
-def parse_likwid_metrics(file_path,metrics,singlecore=False):
+def parse_likwid_metrics(file_path,metrics,counters,singlecore=False):
     """
     Reads a single Peano output file and parses likwid performance metrics.
     
@@ -225,6 +158,8 @@ def parse_likwid_metrics(file_path,metrics,singlecore=False):
           Path to the Peano output file.
        metrics (str[][]):
           A list of metrics the we want to read out.
+       counters (str[][]):
+          A list of counters the we want to read out.
        singlecore (bool):
           Specifies if the run was a singlecore run.
 
@@ -241,6 +176,9 @@ def parse_likwid_metrics(file_path,metrics,singlecore=False):
     for metric in metrics:
         result[metric[0]] =  { }
         result[metric[0]][metric[1]] = -1.0
+    for counter in counters:
+        result[counter[0]] =  { }
+        result[counter[0]][counter[1]] = -1.0
 
     try:
         file_handle=open(file_path)
@@ -269,6 +207,29 @@ def parse_likwid_metrics(file_path,metrics,singlecore=False):
                         values["Max"] = float(segments[4].strip());
                         values["Avg"] = float(segments[5].strip());
                         result[metric[0]][metric[1]]=values[metric[1]]
+                        
+            for counter in counters: 
+                if singlecore:
+                    if counter[0] in line:
+                        segments = line.split('|')
+                        #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE   |   PMC1  |  623010105225  | ...
+                        value  = float(segments[3].strip());
+                        values = {}                         
+                        values["Sum"] = value
+                        values["Min"] = value
+                        values["Max"] = value
+                        values["Avg"] = value
+                        result[counter[0]][counter[1]]=values[metric[1]]                        
+                else:
+                    if counter[0]+" STAT" in line:
+                        segments = line.split('|')
+                        #    |    FP_ARITH_INST_RETIRED_SCALAR_DOUBLE STAT   |   PMC1  |  623010105225  | ...
+                        values = {}                                                 
+                        values["Sum"] = float(segments[3].strip());
+                        values["Min"] = float(segments[4].strip());
+                        values["Max"] = float(segments[5].strip());
+                        values["Avg"] = float(segments[6].strip());
+                        result[counter[0]][counter[1]]=values[counter[1]]
     except:
         print ("Error: Could not process file '%s'!\n" % (file_path))
         raise

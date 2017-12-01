@@ -18,13 +18,13 @@ do
   echo "SHAREDMEM=$SHAREDMEM"
   #read -p "press any key..."
 
-  for p in 3 5 7 9
+  for p in 3
   do 
     rm *.o
     sed -i -r 's,order(\s+)const(\s+)=(\s+)([0-9]+),order\1const\2=\3'$p',' $spec
     cat $spec
     $directory/configure-no-output.sh
-    make -j24 && \
+    make -j56 && \
     mv $exe $exe-p$p-$SHAREDMEM-$COMPILER
   done
 done

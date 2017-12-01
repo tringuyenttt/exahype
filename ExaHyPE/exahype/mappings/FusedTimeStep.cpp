@@ -375,7 +375,8 @@ void exahype::mappings::FusedTimeStep::mergeWithWorker(
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    localCell.mergeWithMasterDataPerCell(receivedMasterCell,cellSize);
+    localCell.mergeWithMasterDataPerCell(
+        receivedMasterCell,cellSize);
   }
 }
 

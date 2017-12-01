@@ -38,7 +38,11 @@ Additionally the CodeGenerator requires:
 * Jinja2 (https://github.com/pallets/jinja.git) a python3 template engine to generate the optimised kernel
 * MarkupSafe (https://github.com/pallets/markupsafe.git), a dependency from Jinja2.
 
-A script is provided to import all the dependencies locally
+A script is provided to import all the dependencies locally.
+In contrast to the CodeGenerator, the build of libxsmm 
+requires Python 2. It fails with Python 3.
+So, make sure that "python" does refer
+to a Python 2 binary.
 
 Quick installation:
 
