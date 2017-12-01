@@ -309,6 +309,9 @@ case $CMD in
 		cat $0 | grep -E '\)\s+#' | tr ')' ':' | tr -d '#' | column -c 2 
 		echo -e
 		;;
+	"help-shortlist") # A list of commands, for shell completion
+		cat $0 | grep -oE '^\s+"(.+)"\)' | tr -d '")|'"\n" | sed -e 's/[[:space:]]*/ /'
+		;;
 	"is") # prints out fortunes
 		echo "cool"
 		;;
