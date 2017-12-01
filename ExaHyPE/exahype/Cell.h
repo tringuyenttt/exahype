@@ -61,14 +61,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * Mapping::receiveDataFromMaster and Mapping::mergeWithWorker.
    */
   std::deque<int> _receivedDataHeapIndices;
-
-  /**
-   * \return true if the cell is inside and the
-   * cell size does belong to a grid level that is
-   * occupied by a solver.
-   */
-  bool hasToCommunicate(
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize ) const;
   #endif
 
  public:
@@ -294,6 +286,14 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
 
   #ifdef Parallel
   /**
+   * \return true if the cell is inside and the
+   * cell size does belong to a grid level that is
+   * occupied by a solver.
+   */
+  bool hasToCommunicate(
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize ) const;
+
+  /**
    * Returns true if the cell corresponding
    * to the vertices \p verticesAroundCell
    * is neighbour to a remote rank
@@ -446,6 +446,16 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const tarch::la::Vector<DIMENSIONS,double>& cellSize );
 
   // WORKER->MASTER
+
+  /**
+   * Reduce Metadata from a worker
+   * to the master.
+   */
+  void reduceMetadataToMasterPerCell(
+      const int                                   master,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const int                                   level) const;
 
   /**
    * Receives metadata from a worker and merges it with all

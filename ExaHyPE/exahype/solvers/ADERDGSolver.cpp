@@ -3058,7 +3058,7 @@ void exahype::solvers::ADERDGSolver::sendCellDescriptions(
   assertion1(Heap::getInstance().isValidIndex(cellDescriptionsIndex),
       cellDescriptionsIndex);
 
-  if (Heap::getInstance().getData(cellDescriptionsIndex).size()>0) {
+  if ( !Heap::getInstance().getData(cellDescriptionsIndex).empty() ) {
     logDebug("sendCellDescriptions(...)","send "<<
         Heap::getInstance().getData(cellDescriptionsIndex).size()<<
         " cell descriptions to rank "<<toRank<<
@@ -3132,8 +3132,7 @@ void exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
         break;
       }
 
-      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).
-          push_back(pReceived);
+      Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).push_back(pReceived);
     }
   }
 

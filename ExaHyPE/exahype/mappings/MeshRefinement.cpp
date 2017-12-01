@@ -593,44 +593,52 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
     exahype::Cell& localCell, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
-  if (!localCell.isInside())
-    return;
 
-  if (localCell.isInitialised()) {
-    exahype::solvers::ADERDGSolver::sendCellDescriptions(toRank,localCell.getCellDescriptionsIndex(),
-        peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
-    exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(toRank,localCell.getCellDescriptionsIndex(),
-        peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
+  if ( localCell.hasToCommunicate(cellSize) ) {
 
-    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+    if (
+        localCell.isInside() &&
+        localCell.isInitialised()==true
+    ) {
+      exahype::solvers::ADERDGSolver::sendCellDescriptions(toRank,localCell.getCellDescriptionsIndex(),
+          peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
+      exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(toRank,localCell.getCellDescriptionsIndex(),
+          peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
+
+      for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      const int element = solver->tryGetElement(localCell.getCellDescriptionsIndex(),solverNumber);
-      if(element!=exahype::solvers::Solver::NotFound) {
-        solver->sendDataToWorkerOrMasterDueToForkOrJoin(
-            toRank,localCell.getCellDescriptionsIndex(),element,cellCentre,level);
-      } else {
+        const int element = solver->tryGetElement(localCell.getCellDescriptionsIndex(),solverNumber);
+        if(element!=exahype::solvers::Solver::NotFound) {
+          solver->sendDataToWorkerOrMasterDueToForkOrJoin(
+              toRank,localCell.getCellDescriptionsIndex(),element,cellCentre,level);
+        } else {
+          solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,cellCentre,level);
+        }
+      }
+
+      if (_localState.isJoiningWithMaster()) {
+        exahype::solvers::ADERDGSolver::eraseCellDescriptions(localCell.getCellDescriptionsIndex());
+        exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(localCell.getCellDescriptionsIndex());
+        localCell.shutdownMetaData();
+      }
+
+    } else if (
+        localCell.isInside() &&
+        localCell.isInitialised()==false
+    ) {
+      exahype::solvers::ADERDGSolver::sendEmptyCellDescriptions(toRank,
+          peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
+      exahype::solvers::FiniteVolumesSolver::sendEmptyCellDescriptions(toRank,
+          peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
+
+      for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+        auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
         solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,cellCentre,level);
       }
     }
 
-    if (_localState.isJoiningWithMaster()) {
-      exahype::solvers::ADERDGSolver::eraseCellDescriptions(localCell.getCellDescriptionsIndex());
-      exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(localCell.getCellDescriptionsIndex());
-      localCell.shutdownMetaData();
-    }
-
-  } else if (!localCell.isInitialised()){
-    exahype::solvers::ADERDGSolver::sendEmptyCellDescriptions(toRank,
-        peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
-    exahype::solvers::FiniteVolumesSolver::sendEmptyCellDescriptions(toRank,
-        peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
-
-    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-      solver->sendEmptyDataToWorkerOrMasterDueToForkOrJoin(toRank,cellCentre,level);
-    }
   }
 }
 
@@ -650,36 +658,37 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
         exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
         int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
         const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
-  if (!localCell.isInside())
-    return;
+  if ( localCell.hasToCommunicate(cellSize) ) {
 
-  if (_localState.isNewWorkerDueToForkOfExistingDomain()) {
-    localCell.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
-    assertion1(!localCell.isInitialised(),localCell.toString());
-  }
-  if (!localCell.isInitialised()) {
-    localCell.setupMetaData();
-  }
-
-  exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
-      fromRank,localCell,
-      peano::heap::MessageType::ForkOrJoinCommunication,
-      cellCentre,level);
-  exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
-      fromRank,localCell,
-      peano::heap::MessageType::ForkOrJoinCommunication,
-      cellCentre,level);
-
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-    const int element = solver->tryGetElement(localCell.getCellDescriptionsIndex(),solverNumber);
-    if (element!=exahype::solvers::Solver::NotFound) {
-      solver->mergeWithWorkerOrMasterDataDueToForkOrJoin(
-          fromRank,localCell.getCellDescriptionsIndex(),element,cellCentre,level);
-    } else {
-      solver->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,cellCentre,level);
+    if ( _localState.isNewWorkerDueToForkOfExistingDomain() ) {
+      localCell.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      assertion1(!localCell.isInitialised(),localCell.toString());
     }
+    if ( !localCell.isInitialised() ) {
+      localCell.setupMetaData();
+    }
+
+    exahype::solvers::ADERDGSolver::mergeCellDescriptionsWithRemoteData(
+        fromRank,localCell,
+        peano::heap::MessageType::ForkOrJoinCommunication,
+        cellCentre,level);
+    exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
+        fromRank,localCell,
+        peano::heap::MessageType::ForkOrJoinCommunication,
+        cellCentre,level);
+
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+
+      const int element = solver->tryGetElement(localCell.getCellDescriptionsIndex(),solverNumber);
+      if (element!=exahype::solvers::Solver::NotFound) {
+        solver->mergeWithWorkerOrMasterDataDueToForkOrJoin(
+            fromRank,localCell.getCellDescriptionsIndex(),element,cellCentre,level);
+      } else {
+        solver->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,cellCentre,level);
+      }
+    }
+
   }
 }
 
@@ -705,10 +714,10 @@ void exahype::mappings::MeshRefinement::prepareSendToMaster(
     }
   }
 
-  exahype::sendMasterWorkerCommunicationMetadata(
+  localCell.reduceMetadataToMasterPerCell(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
-      localCell.getCellDescriptionsIndex(),
       verticesEnumerator.getCellCenter(),
+      verticesEnumerator.getCellSize(),
       verticesEnumerator.getLevel());
 }
 

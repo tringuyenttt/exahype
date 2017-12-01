@@ -566,6 +566,19 @@ void exahype::Cell::mergeWithGlobalDataFromWorker(
 
 // per cell
 
+void exahype::Cell::reduceMetadataToMasterPerCell(
+    const int                                   master,
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const int                                   level) const {
+  if ( hasToCommunicate(cellSize) ) {
+    exahype::sendMasterWorkerCommunicationMetadata(
+        master,
+        getCellDescriptionsIndex(),
+        cellCentre,level);
+  }
+}
+
 void exahype::Cell::mergeWithMetadataFromWorkerPerCell(
     const int                                   workerRank,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
@@ -612,7 +625,7 @@ void exahype::Cell::reduceDataToMasterPerCell(
     const int                                   level) const {
   if ( hasToCommunicate(cellSize) ) {
     exahype::sendMasterWorkerCommunicationMetadata(
-        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        master,
         getCellDescriptionsIndex(),
         cellCentre,level);
 
@@ -621,7 +634,7 @@ void exahype::Cell::reduceDataToMasterPerCell(
       const int element = solver->tryGetElement(getCellDescriptionsIndex(),solverNumber);
       if ( element!=exahype::solvers::Solver::NotFound ) {
         solver->sendDataToMaster(
-            tarch::parallel::NodePool::getInstance().getMasterRank(),
+            master,
             getCellDescriptionsIndex(),element,
             cellCentre,level);
       } else {
