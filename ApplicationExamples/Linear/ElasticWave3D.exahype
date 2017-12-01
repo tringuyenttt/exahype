@@ -28,13 +28,14 @@ exahype-project  Elastic
 
   computational-domain
     dimension const          = 3
-    width                    = 10.0, 10.0, 10.0
+    width                    = 40.0, 40.0, 40.0
     offset                   = 0.0, 0.0, 0.0
     end-time                 = 10.0
   end computational-domain
 
   shared-memory
     identifier               = dummy
+    configure                = {}	
     cores                    = 4
     properties-file          = sharedmemory.properties
   end shared-memory
@@ -62,7 +63,7 @@ exahype-project  Elastic
   solver ADER-DG MyElasticWaveSolver
     variables const    = v:3,sigma:6
     parameters const  = rho:1,cp:1,cs:1
-    order const        = 4
+    order const        = 6
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size  = 1.5
     maximum-mesh-depth = 0
@@ -75,7 +76,7 @@ exahype-project  Elastic
     plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
       variables const = 12
       time            = 0.0
-      repeat          = 1e-2
+      repeat          = 1.0
       output          = ./conserved
     end plot
 
@@ -103,14 +104,14 @@ exahype-project  Elastic
       output          = ./exact-primitive
     end plot */
 
-    /* Do not need the time series for a point in the moment
+    /* Do not need the time series for a point in the moment*/
     plot probe::ascii ProbeWriter
-      variables const = 5
+      variables const = 9
       time            = 0.0
-      repeat          = 0.05
+      repeat          = 0.005
       output          = ./seismogram
-      select          = x:0.2,y:0.2
+      select          = x:0.0,y:26.0,z:28.0
     end plot
-    */
+    
   end solver
 end exahype-project
