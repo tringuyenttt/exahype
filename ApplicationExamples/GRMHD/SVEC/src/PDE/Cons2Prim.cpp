@@ -33,8 +33,10 @@ constexpr bool debug_c2p = false;
  * This is a *major* switch whether to quietly ignore C2P failures (as needed for
  * a limiting scheme where failures shall be caught) or fail verbosely. We could
  * do anything beyond (like: Passing errors etc).
+ *
+ * -> locally, it can be chosen on the constructor.
  **/
-constexpr bool crash_on_failure = true;
+constexpr bool global_force_crash_on_failure = false;
 
 #define S_STR_HELPER(x) #x
 #define S_STR(x) S_STR_HELPER(x)
@@ -83,7 +85,7 @@ void GRMHD::Cons2Prim::perform() {
 	failed = rtsafe(VelVel, RhoEnthWW);
 	if(debug_c2p) { printf("C2P Outcome: "); S(VelVel); S(RhoEnthWW);}
 	if (failed) {
-		if(crash_on_failure) {
+		if(crash_on_failure || global_force_crash_on_failure) {
 			// We should raise an error instead, the c2p failed.
 			printf("C++ C2P FAILED.\n");
 			printf("Input conserved State Vector Q: \n");

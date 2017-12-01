@@ -30,6 +30,14 @@ namespace exahype {
 
     extern std::vector<Plotter*> RegisteredPlotters;
 
+    extern tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
+
+    /*! Plots a patch if a plotter is active for the corresponding solver.
+     */
+    void plotPatchIfAPlotterIsActive(const int solverNumber,const int cellDescriptionsIndex,const int element);
+
+
+    bool checkWhetherPlotterBecomesActive(double currentTimeStamp);
     bool startPlottingIfAPlotterIsActive(double currentTimeStamp);
     void finishedPlotting();
     double getTimeOfNextPlot();
@@ -154,9 +162,9 @@ class exahype::plotters::Plotter {
         const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
         const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
         const tarch::la::Vector<DIMENSIONS, double>& x,
-	const tarch::la::Vector<DIMENSIONS, int>&    pos,
+        const tarch::la::Vector<DIMENSIONS, int>&    pos,
         double* Q,
-	double* gradQ,
+        double* gradQ,
         double* outputQuantities,
         double timeStamp) { abort(); /* catch missing API implementations */ }
 
@@ -242,6 +250,12 @@ class exahype::plotters::Plotter {
   Device*                _device;
 
  public:
+  /**
+   * This semaphore is used for locking the plotters'
+   * plotPatch function which is usually not thread-safe.
+   */
+  static tarch::multicore::BooleanSemaphore SemaphoreForPlotting;
+
   Plotter(const int solverConfig,const int plotterConfig,const exahype::Parser& parser,Device* device);
 
   /**

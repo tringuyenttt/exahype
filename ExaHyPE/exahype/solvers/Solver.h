@@ -20,6 +20,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <deque>
 
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "tarch/multicore/MulticoreDefinitions.h"
@@ -550,6 +551,13 @@ class exahype::solvers::Solver {
   static const int NotFound;
 
   /**
+   * Moves a DataHeap array, i.e. copies the found
+   * data at "fromIndex" to the array at "toIndex" and
+   * deletes the "fromIndex" array afterwards.
+   */
+  static void moveDataHeapArray(const int fromIndex,const int toIndex,bool recycleFromArray);
+
+  /**
    * Run over all solvers and identify the minimal time stamp.
    */
   static double getMinSolverTimeStampOfAllSolvers();
@@ -635,7 +643,42 @@ class exahype::solvers::Solver {
    * TODO(Dominic): Rename. Name can be confused with
    * oneSolverHasNotAttainedStableState.
    */
-  static bool stabilityConditionOfOneSolverWasViolated();
+  static bool oneSolverViolatedStabilityCondition();
+
+  /**
+   * Weights the min next predictor time step size
+   * by the user's safety factor for the fused time stepping
+   * algorithm.
+   */
+  static void weighMinNextPredictorTimeStepSize(exahype::solvers::Solver* solver);
+
+  /**
+   * Reinitialises the corrector and predictor time step sizes of an ADER-DG solver
+   * with stable time step sizes if we detect a-posteriori that the CFL condition was
+   * harmed by the estimated predictor time step size used in the last iteration.
+   */
+  static void reinitialiseTimeStepDataIfLastPredictorTimeStepSizeWasInstable(exahype::solvers::Solver* solver);
+
+  /**
+   * Starts a new time step on all solvers.
+   *
+   * \param[in] solverFlags      flags for each solver indicating if a a mesh update
+   *                     is necessary or if the limiter domain has changed.
+   * \param[in] minTimeStepSizes the minimum CFL-stable time step size for all solvers
+   * \param[in] minCellSizes     the minimum cell size found in the grid for each solver.
+   * \param[in] maxCellSizes     the maximum cell size found in the grid for each solver.
+   * \param[in] isFirstIterationOfBatchOrNoBatch we run the first iteration of a batch or no batch at all
+   * \param[in] isLastIterationOfBatchOrNoBatch we run the last iteration of a batch or no batch at all
+   * \param[in] fusedTimeStepping fused time stepping is used or not
+   */
+  static void startNewTimeStepForAllSolvers(
+      const exahype::solvers::SolverFlags& solverFlags,
+      const std::vector<double>& minTimeStepSizes,
+      const std::vector<double>& minCellSizes,
+      const std::vector<double>& maxCellSizes,
+      const bool isFirstIterationOfBatchOrNoBatch,
+      const bool isLastIterationOfBatchOrNoBatch,
+      const bool fusedTimeStepping);
 
  /**
   * Some solvers can deploy data conversion into the background. How this is
@@ -1025,17 +1068,6 @@ class exahype::solvers::Solver {
       const tarch::la::Vector<DIMENSIONS,double>& boundingBoxSize) = 0;
 
   /**
-   * \return true if the solver is sending time step or neighbour data
-   * in the current algorithmic section.
-   * This depends usually on internal flags of the solver such as ones indicating
-   * a mesh update request or a limiter domain change during a previous time stepping
-   * iteration.
-   *
-   * \note Merging has not to be treated separately from computing.
-   */
-  virtual bool isSending(const exahype::records::State::AlgorithmSection& section) const = 0;
-
-  /**
    * \return true if the solver is computing in the current algorithmic section.
    * This depends usually on internal flags of the solver such as ones indicating
    * a mesh update request or a limiter domain change during a previous time stepping
@@ -1054,19 +1086,12 @@ class exahype::solvers::Solver {
    * a local recomputation.
    *
    */
-  virtual bool isBroadcasting(const exahype::records::State::AlgorithmSection& section) const = 0;
-  virtual bool isPerformingPrediction(const exahype::records::State::AlgorithmSection& section) const = 0;
-  virtual bool isComputingTimeStepSize(const exahype::records::State::AlgorithmSection& section) const = 0;
-  /**
-   * \return true if this solvers is using the Merging mapping functionalities
-   * like broadcasting time step data or merging neighbour data in the
-   * current algorithm section.
-   */
-  virtual bool isMerging(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isPerformingPrediction(const exahype::State::AlgorithmSection& section) const = 0;
+
   /**
    * \return true if this solver needs to merge metadata only(!) in the current algorithm section.
    */
-  virtual bool isMergingMetadata(const exahype::records::State::AlgorithmSection& section) const = 0;
+  virtual bool isMergingMetadata(const exahype::State::AlgorithmSection& section) const = 0;
 
   /**
    * Copies the time stepping data from the global solver onto the patch's time
@@ -2095,11 +2120,22 @@ class exahype::solvers::Solver {
       const int                                    level) const = 0;
 
   /**
-   * Merge with solver data from master rank
-   * that was sent out due to a fork or join. Write the data to
-   * the cell description \p element in
-   * the cell descriptions vector stored at \p
-   * cellDescriptionsIndex.
+   * Receive solver data from the master rank.
+   *
+   * \param[inout] heapIndices a queue where the solver
+   *                    needs to add DataHeap indices
+   *                    of received data.
+   */
+  virtual void receiveDataFromMaster(
+        const int                                    masterRank,
+        std::deque<int>&                             receivedDataHeapIndices,
+        const tarch::la::Vector<DIMENSIONS, double>& x,
+        const int                                    level) const = 0;
+
+  /**
+   * Pop the heap indices from the double ended
+   * queue and merge the data - or not.
+   * Delete the corresponding heap arrays.
    *
    * \param[in] element Index of the cell description
    *                    holding the data to send out in
@@ -2107,20 +2143,19 @@ class exahype::solvers::Solver {
    *                    This is not the solver number.
    */
   virtual void mergeWithMasterData(
-      const int                                    masterRank,
       const MetadataHeap::HeapEntries&             masterMetadata,
+      std::deque<int>&                             receivedDataHeapIndices,
       const int                                    cellDescriptionsIndex,
-      const int                                    element,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
+      const int                                    element) const = 0;
 
   /**
    * Drop solver data from master rank.
+   *
+   * Just pop the heap indices from the double ended
+   * queue and delete the corresponding heap arrays.
    */
   virtual void dropMasterData(
-      const int                                    masterRank,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level) const = 0;
+      std::deque<int>& heapIndices) const = 0;
   #endif
 };
 

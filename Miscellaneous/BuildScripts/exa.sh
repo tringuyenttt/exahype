@@ -83,11 +83,21 @@ case $CMD in
 		;;
 	"clusterconfig"|"config")  # Load cluster specific settings. Usage: "eval $(exa config)" or "exa config iboga-gcc-tbb"
 		cdroot
-		# of course there is not much purpose in sourcing this as exa.sh is currently
-		# not be intended to be sourced. What we could do here is to echo the ENV
-		# so it can be used like "source <(exa config)" or similar.
-		echo source $BuildScripts/load-clusterconfig.sh $@
-		# Currently, users can at least "eval $(exa config)"
+		if [ -z $@ ]; then # $@ is empty
+			ClusterConfigDir=$(realpath "$BuildScripts/../ClusterConfigs")
+			echo "Available cluster configurations in $ClusterConfigDir:"
+			echo
+			for x in $(ls $ClusterConfigDir); do
+				echo ${x%.*}
+			done
+		else
+			# of course there is not much purpose in sourcing this as exa.sh is currently
+			# not be intended to be sourced. What we could do here is to echo the ENV
+			# so it can be used like "source <(exa config)" or similar.
+			echo source $BuildScripts/load-clusterconfig.sh $@
+			# Currently, users can at least "eval $(exa config something)"
+			# or just call "$(exa config something)" from their command line
+		fi
 		;;
 	"toolkit") # Run the toolkit for an application, without compiling
 		cdroot; getappname
@@ -183,6 +193,17 @@ case $CMD in
 		cdapp
 		make clean || fail "Cannot clean since toolkit did not run."
 		;;
+	"clean-at") # Clean all object files below some given path
+		for f in $@; do
+			if ! [[ -d $f ]] && [[ -e $f ]] && [[ -d $(dirname "$f") ]]; then
+				echo "Cleaning at $(dirname $f)"
+				subreq clean-at $(dirname "$f")
+			else
+				echo "Cleaning at $f"
+				find $f -type f -iname \*.o -delete -print
+			fi
+		done;
+		;;
 	"cheat") # show the environment variables available for driving the build
 		cdroot; cd $SCRIPTDIR;
 		cat cheat-sheet.txt
@@ -263,6 +284,12 @@ case $CMD in
 		reducedbuf="stdbuf -oL -eL" # for quicker output, no 4k buffering
 		$reducedbuf $ROOT/$BINARY $ROOT/$SPECFILE 2>&1 | $reducedbuf tee -a run.log
 		;;
+	"make-output-folders") # Create output folders for a given specfile
+		cdapp
+		ABS_SPECFILE=$GITROOT/$(subreq find specfile $APPNAME)
+		echo "Creating folders in $(pwd)"
+		exec $BuildScripts/../RunScripts/createOutputFoldersForSpecfile.sh $ABS_SPECFILE
+		;;
 	"sim") # lightweight simulation managament
 		exec $BuildScripts/../RunScripts/sim.sh $@
 		;;
@@ -281,6 +308,9 @@ case $CMD in
 		# @TODO: Improve display of available formats
 		cat $0 | grep -E '\)\s+#' | tr ')' ':' | tr -d '#' | column -c 2 
 		echo -e
+		;;
+	"help-shortlist") # A list of commands, for shell completion
+		cat $0 | grep -oE '^\s+"(.+)"\)' | tr -d '")|'"\n" | sed -e 's/[[:space:]]*/ /'
 		;;
 	"is") # prints out fortunes
 		echo "cool"

@@ -7,18 +7,20 @@
 #define ExaGRMHD SVEC::GRMHD::ExaHyPEAdapter
 
 #include "InitialData/InitialData.h"
+#include "BoundaryConditions_FV.h"
 #include "GRMHDSolver_FV_Variables.h"
 #include "DebuggingHelpers.h"
 
 constexpr int nVar = GRMHD::AbstractGRMHDSolver_FV::NumberOfVariables;
 constexpr int nDim = DIMENSIONS;
-
+BoundaryConditionsFV* fv_bc;
 using namespace GRMHD;
 
 tarch::logging::Log GRMHD::GRMHDSolver_FV::_log( "GRMHD::GRMHDSolver_FV" );
 
 void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs) { //, exahype::Parser::ParserView& constants) {
-	InitialDataCode::getInstance();
+	fv_bc  = new BoundaryConditionsFV(this);
+	setupProblem<BoundaryConditionsFV>(fv_bc);
 }
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
@@ -119,8 +121,11 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
     double* stateOut) {
 	// SET BV for all 9 variables + 11 parameters.
 	
+	// Let it be managed by user parameters
+	fv_bc->apply(FV_BOUNDARY_CALL);
+	
 	// EXACT FV AlfenWave BC
-	InitialData(x, t, stateOut);
+	// InitialData(x, t, stateOut);
 	
 	// NEUTRON STAR reflective + outflow BC:
 	// setNeutronStarBoundaryConditions(faceIndex, d, stateIn, stateOut);

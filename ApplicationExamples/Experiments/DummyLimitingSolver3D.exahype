@@ -37,7 +37,6 @@ exahype-project  Dummy
   shared-memory
     identifier               = dummy
     configure = {}
-    configure                = {}
     cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory

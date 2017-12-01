@@ -8,6 +8,7 @@
 #include "peano/utils/Dimensions.h" // Defines DIMENSIONS
 //namespace GRMHD { constexpr int nVar = GRMHDSolver_FV::NumberOfVariables; } // ensure this is 19 or so
 #include "InitialData/InitialData.h"
+#include "BoundaryConditions_ADERDG.h"
 
 #include "PDE/PDE-GRMHD-ExaHyPE.h"
 //namespace SVEC::GRMHD::ExaHyPEAdapter = ExaGRMHD;
@@ -17,19 +18,19 @@ using namespace tensish;
 #include "GRMHDSolver_ADERDG_Variables.h"
 #include "DebuggingHelpers.h"
 
-
 constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 constexpr int order = GRMHD::AbstractGRMHDSolver_ADERDG::Order;
 constexpr int basisSize = order + 1;
 constexpr int nDim = DIMENSIONS;
+BoundaryConditionsADERDG* aderdg_bc;
 
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG" );
 
 void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) { // ,  exahype::Parser::ParserView constants) {
 	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
-	// Initialize initial data
-	InitialDataCode::getInstance();
+	aderdg_bc = new BoundaryConditionsADERDG(this);
+	setupProblem<BoundaryConditionsADERDG>(aderdg_bc);
 }
 
 
@@ -166,6 +167,10 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 	std::memset(fluxOut,  weird_number, nVar * sizeof(double));
 	*/
 	
+	// Let it be managed by user parameters
+	aderdg_bc->apply(ADERDG_BOUNDARY_CALL);
+	
+	/*
 	// employ time-integrated exact BC for AlfenWave.
 	double Qgp[nVar], Fs[nDim][nVar], *F[nDim];
 	for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
@@ -187,7 +192,7 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 			fluxOut[m] += weight * Fs[d][m];
 		}
 	}
-	
+	*/
 	/*
 	// Neutron star Reflective + Outflow BC
 	setNeutronStarBoundaryConditions(faceIndex, d, stateIn, stateOut);

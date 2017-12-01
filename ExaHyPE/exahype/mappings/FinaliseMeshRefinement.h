@@ -34,13 +34,16 @@ namespace exahype {
 }
 
 /**
- * This mapping is used to finalise grid refinement operations.
+ * This mapping is used to finalise grid refinement operations and
+ * further computes a new time step size for every solver
+ * which has requested mesh refinement.
+ *
+ * <h2>MPI</h2>
  *
  * If you compile with MPI, it will further drop grid metadata messages
  * that have been sent during the grid update iterations.
  *
  * @author Dominic Charrier
- * @version $Revision: 1.10 $
  */
 class exahype::mappings::FinaliseMeshRefinement {
  private:
@@ -48,6 +51,28 @@ class exahype::mappings::FinaliseMeshRefinement {
    * Logging device for the trace macros.
    */
   static tarch::logging::Log _log;
+
+  /**
+   * A minimum time step size for each solver.
+   */
+  std::vector<double> _minTimeStepSizes;
+
+  /**
+   * A minimum cell size for each solver.
+   */
+  std::vector<double> _minCellSizes;
+
+  /**
+   * A maximum cell size for each solver.
+   */
+  std::vector<double> _maxCellSizes;
+
+  /**
+   * Prepare a appropriately sized vector _minTimeStepSizes
+   * with elements initiliased to MAX_DOUBLE.
+   */
+  void prepareLocalTimeStepVariables();
+
  public:
   /**
    * Finalise the mesh refinement in all cell descriptions registered
@@ -68,8 +93,19 @@ class exahype::mappings::FinaliseMeshRefinement {
 
   /**
    * Reset the following flags (to true):
-   * exahype::mappings::LimiterStatusSpreading::IsFirstIteration
    * exahype::mappings::MeshRefinement::IsFirstIteration
+   *
+   * <h2> Time stepping </h2>
+   * Start iteration/grid sweep.
+   * Make the state clear its accumulated values.
+   *
+   * Further initialise temporary variables
+   * if they are not initialised yet (or
+   * if a new solver was introduced to the grid.
+   * This is why we put the initialisation
+   * in beginIteration().
+   *
+   * \note Is called once per rank.
    */
   void beginIteration(exahype::State& solverState);
 
@@ -81,14 +117,64 @@ class exahype::mappings::FinaliseMeshRefinement {
    * mesh refinement is done.
    *
    * Performance analysis is turned off initially in exahype::runners::Runner::initHPCEnvironment().
+   *
+   * <h2>Time Stepping</h2>
+   *
+   * TODO(Dominic): Update with docu on the meshUpdateRequest
+   * and limiterDomainChange flags.
+   *
+   * Runs over all the registered solvers and sets the
+   * reduced minimum time step sizes. Then updates the minimum time stamp
+   * of the solvers.
+   *
+   * Iterate over the solvers and start a new time step
+   * on every solver.
+   *
+   * <h2>Fused ADER-DG time stepping</h2>
+   * If we use the fused ADER-DG time stepping algorithm,
+   * The solver or (the solver belonging to the global master in the MPI context)
+   * is not allowed to perform the time step update
+   * directly. It first has to check if the previously used
+   * min predictor time step size was stable one.
+   * Otherwise, we would corrupt the corrector time stamp
+   * with an invalid value.
+   *
+   * <h2>MPI</h2>
+   * Here we start again a new time step "in the small" on the
+   * worker rank and overwrite it later on again if a synchronisation is applied
+   * by the master rank.
+   *
+   * It is important to keep in mind that endIteration() on a worker
+   * is called before the prepareSendToMaster routine.
+   * We thus send out the current time step size from
+   * the worker to the master.
+   *
+   * On the master, the mergeWithMaster routine is however called
+   * before endIteration.
+   * We thus merge the received time step size with the next
+   * time step size on the master.
+   *
+   * \see exahype::mappings::Sending,exahype::mappings::Merging
    */
   void endIteration(exahype::State& solverState);
 
   /**
    * Call the solvers finaliseStateUpdates functions.
-   * Furhter, compute the min and max if a solver is of type
+   * Further, compute the min and max if a solver is of type
    * LimitingADERDG and there is a patch allocated
    * in the \p fineGridCell for this solver.
+   *
+   * <h2> Time Stepping </h2>
+   *
+   * If the fine grid cell functions as compute cell for a solver,
+   * compute a stable time step size.
+   *
+   * Then update the time stamp of the compute cell
+   * and update the minimum solver time stamp and
+   * time step size.
+   *
+   * Finally, update the minimum and maximum mesh cell size
+   * fields per solver with the size of the fine grid cell.
    */
   void enterCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -217,6 +303,49 @@ class exahype::mappings::FinaliseMeshRefinement {
                           const tarch::la::Vector<DIMENSIONS, double>& h,
                           int level);
 
+
+  /**
+   * Return true since we want to reduce time step data from
+   * the worker to the master.
+   */
+  bool prepareSendToWorker(
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+      int worker);
+
+  /**
+   * Merge time step data from the worker with the master
+   * for all those solvers which have performed a mesh update.
+   */
+  void mergeWithMaster(
+      const exahype::Cell& workerGridCell,
+      exahype::Vertex* const workerGridVertices,
+      const peano::grid::VertexEnumerator& workerEnumerator,
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+      int worker, const exahype::State& workerState,
+      exahype::State& masterState);
+
+  /**
+   * Send time step data to the master for all
+   * those solvers which have performed a mesh update.
+   */
+  void prepareSendToMaster(
+      exahype::Cell& localCell, exahype::Vertex* vertices,
+      const peano::grid::VertexEnumerator& verticesEnumerator,
+      const exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
   /**
    * Nop
    */
@@ -256,45 +385,6 @@ class exahype::mappings::FinaliseMeshRefinement {
       exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
       int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
-
-  /**
-   * Nop
-   */
-  bool prepareSendToWorker(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      int worker);
-
-  /**
-   * TODO(Dominic): Docu!
-   */
-  void mergeWithMaster(
-      const exahype::Cell& workerGridCell,
-      exahype::Vertex* const workerGridVertices,
-      const peano::grid::VertexEnumerator& workerEnumerator,
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      int worker, const exahype::State& workerState,
-      exahype::State& masterState);
-
-  /**
-   * Nop
-   */
-  void prepareSendToMaster(
-      exahype::Cell& localCell, exahype::Vertex* vertices,
-      const peano::grid::VertexEnumerator& verticesEnumerator,
-      const exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
    * Nop

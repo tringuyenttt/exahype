@@ -138,7 +138,8 @@ void GRMHD::IntegralsWriter::mapQuantities(
 
 	// reduce the primitive quantities
 	double V[nVar];
-	Cons2Prim(V, Q).copyFullStateVector();
+	constexpr bool force_crash = false;
+	Cons2Prim(V, Q, force_crash).copyFullStateVector();
 	primitives.addValue(V, dV);
 
 	// now do the convergence test, as we have exact initial data

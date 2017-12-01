@@ -9,6 +9,40 @@ inline void enableNanCatcher() {
 	feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 }
 
+template<class BC>
+inline void setupProblem(BC* bc) {
+	static tarch::logging::Log _log("InitialDataCode");
+
+	std::string text_bc, exact_bc, neutronstar_bc;
+	std::string idname;
+	
+	// for the alfenwave
+	exact_bc = "left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact";
+	neutronstar_bc = "left:refl,right:outflow,bottom:refl,top:outflow,front:refl,back:outflow";
+	
+	if(false) {
+		idname = "AlfenWave";
+		text_bc = exact_bc;
+	}
+	
+	if(true) {
+		idname = "RNSID";
+		text_bc = neutronstar_bc;
+	}
+
+	//if(!abc->setFromMapView(RuntimeParameters::ParserView<exahype::Parser::ParserView>(constants)) {
+	if(!bc->setFromMapView(RuntimeParameters::StringMapView(text_bc))) {
+		logError("setupProblem", "Could not setup BC string '" << text_bc << "', probably misspelled.");
+		//printf("Could not setup BC string.\n");
+		std::abort();
+	}
+	
+	if(!GlobalInitialData::getInstance().setIdByName(idname)) {
+		logError("setupProblem", "Could not set Initial Data '" << idname << "'.");
+		std::abort();
+	}
+}
+
 // overwrite ADM variables in order to avoid diffusion.
 // to be used in the adjustSolution function
 inline void overwriteADM(const double* const x,const double t, double* Q) {
@@ -33,7 +67,7 @@ inline void resetNumericalDiffusionOnADM(double* const flux) {
 }
 
 
-// intermediate place
+// intermediate place -> OLD, replaced by BC code
 inline void setNeutronStarBoundaryConditions(const int faceIndex, const int d, const double* const stateIn, double* const stateOut) {
 	// NEUTRON STAR reflective + outflow BC:
 	NVARS(i) stateOut[i] = stateIn[i];

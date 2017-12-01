@@ -11,8 +11,10 @@
  * For the full license text, see LICENSE.txt
  **/ #}
 
+#include <algorithm>
 #include <cstring>
 #include <cmath>
+
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
@@ -45,8 +47,8 @@ void {{codeNamespace}}::riemannSolver(
   std::memset(FR, 0, {{nVarPad*nDof*nDof3D}}*sizeof(double));
   
   // Compute the average variables and parameters from the left and the right
-  double QavL[{{nDataPad}}] __attribute__((aligned(ALIGNMENT))) = {0.};
-  double QavR[{{nDataPad}}] __attribute__((aligned(ALIGNMENT))) = {0.};
+  double QavL[{{nDataPad}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
+  double QavR[{{nDataPad}}] __attribute__((aligned(ALIGNMENT))) = {0.0};
 
   for (int ij = 0; ij < {{nDof*nDof3D}}; ij++) {
     #pragma simd

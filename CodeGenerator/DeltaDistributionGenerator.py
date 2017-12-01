@@ -38,4 +38,5 @@ class DeltaDistributionGenerator:
 
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile("deltaDistribution_cpp.template", self.m_filename, self.m_context)
+        if(self.m_context['usePointSources']):
+            TemplatingUtils.renderAsFile("deltaDistribution_cpp.template", self.m_filename, self.m_context)
