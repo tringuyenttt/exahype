@@ -50,9 +50,8 @@ void exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
     const int cellDescriptionsIndex,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
   // ADER-DG
-  bool allNeighbourMergesHaveBeenPerformed = true;
   for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
-    allNeighbourMergesHaveBeenPerformed &=
+    bool allNeighbourMergesHaveBeenPerformed =
         ( p.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
           p.getNeighbourMergePerformed().all() )
         &&
@@ -60,20 +59,25 @@ void exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
           p.getNeighbourMergePerformed().all() );
 
     assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
+    if ( !allNeighbourMergesHaveBeenPerformed ) {
+      logError("validateThatAllNeighbourMergesHaveBeenPerformed(...)",
+               "Not all neighbour merges have been performed for ADERDGCellDescription="<<
+               p.toString());
+      std::terminate();
+    }
   }
 
-  // Finite-Volumes (loop body can be copied from ADER-DG loop)
+  // Finite-Volumes
   for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
-    allNeighbourMergesHaveBeenPerformed &= p.getNeighbourMergePerformed().all();
-    assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
-  }
+    bool allNeighbourMergesHaveBeenPerformed = p.getNeighbourMergePerformed().all();
 
-  assertion( allNeighbourMergesHaveBeenPerformed );
-  if ( !allNeighbourMergesHaveBeenPerformed ) {
-    logError("validateThatAllNeighbourMergesHaveBeenPerformed(...)",
-             "Not all neighbour merges have been performed in cell="<<
-             fineGridVerticesEnumerator.toString());
-    std::terminate();
+    assertion1( allNeighbourMergesHaveBeenPerformed, p.toString() );
+    if ( !allNeighbourMergesHaveBeenPerformed ) {
+      logError("validateThatAllNeighbourMergesHaveBeenPerformed(...)",
+               "Not all neighbour merges have been performed for FiniteVolumesCellDescription="<<
+               p.toString());
+      std::terminate();
+    }
   }
 }
 
