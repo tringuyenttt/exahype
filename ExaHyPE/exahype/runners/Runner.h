@@ -205,7 +205,7 @@ class exahype::runners::Runner {
   /**
    * TODO(Dominic): Add docu.
    */
-  void updateMeshAndSubdomains(
+  void updateMeshOrLimiterDomain(
       exahype::repositories::Repository& repository,
       const bool fusedTimeStepping);
 

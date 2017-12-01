@@ -1000,7 +1000,7 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
   repository.iterate();
 }
 
-void exahype::runners::Runner::updateMeshAndSubdomains(
+void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
   // 1. All solvers drop their MPI messages and broadcast time step data
   repository.switchToBroadcastGlobalDataAndDropNeighbourMessages();
@@ -1196,7 +1196,7 @@ void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
 
   if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ||
       exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalOrGlobalRecomputation()) {
-    updateMeshAndSubdomains(repository,true);
+    updateMeshOrLimiterDomain(repository,true);
   }
 
   if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
@@ -1231,7 +1231,7 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
 
   if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ||
       exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalOrGlobalRecomputation()) {
-    updateMeshAndSubdomains(repository,false);
+    updateMeshOrLimiterDomain(repository,false);
   }
 
   printTimeStepInfo(1,repository);
