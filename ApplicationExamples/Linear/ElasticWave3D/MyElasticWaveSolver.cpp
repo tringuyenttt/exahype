@@ -65,6 +65,12 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double *luh, const tarch::la::
 	  luh[id_xyzf(k,j,i,9)]  = 2.7; //rho
 	  luh[id_xyzf(k,j,i,10)] = 6.0; //cp
 	  luh[id_xyzf(k,j,i,11)] = 3.343; //cs
+	  
+	  if( x < 1.0) {
+	    luh[id_xyzf(k,j,i,9)]  = 2.6; //rho
+	    luh[id_xyzf(k,j,i,10)] = 4.0; //cp
+	    luh[id_xyzf(k,j,i,11)] = 2.0; //cs
+	  }
 
 	}
       }
@@ -217,21 +223,33 @@ void  Elastic::MyElasticWaveSolver::nonConservativeProduct(const double* const Q
 void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const double t,const double dt, double* forceVector, double* x0, int n) {
 
   static tarch::logging::Log _log("MyElasticWaveSolver::pointSource");
+  
   double pi = 3.14159265359;
   double sigma = 0.1149;
-  double t0 = 0.7;
-  //double t0 = 0.1;
-  double f = 0.0;
-  double M0 = 0.0;
+  //double t0 = 0.7;
+  double t0 = 0.1;
+  double f;
+  double M0 = 1000.0;
+  
 
+  //f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-pow((t-t0)/(std::sqrt(2)*sigma),2.0)));
+
+  //f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+
+
+ 
+
+  
 
   if(n == 0){
     
-    f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
+    //f = M0*(1.0/(sigma*std::sqrt(2.0*pi)))*(std::exp(-((t-t0)*(t-t0))/(2.0*sigma*sigma)));
 
-    double x1 = 5.0;
-    double y1 = 5.0;
-    double z1 = 5.0;
+    f = M0*t/(t0*t0)*std::exp(-t/t0);
+
+    double x1 = 2.0;
+    double y1 = 20.0;
+    double z1 = 20.0;
     
     x0[0] = x1;
     x0[1] = y1;
@@ -240,12 +258,12 @@ void  Elastic::MyElasticWaveSolver::pointSource(const double* const x,const doub
     forceVector[0] = 0.0;
     forceVector[1] = 0.0;
     forceVector[2] = 0.0;
-    forceVector[3] = 1.*f;
-    forceVector[4] = 1.*f;
-    forceVector[5] = 1.*f;
+    forceVector[3] = 0.0;
+    forceVector[4] = 0.0;
+    forceVector[5] = 0.0;
     forceVector[6] = 0.0;
     forceVector[7] = 0.0;
-    forceVector[8] = 0.0;
+    forceVector[8] = f;
     
 
     
@@ -462,7 +480,7 @@ void Elastic::MyElasticWaveSolver::riemannSolver(double* FL,double* FR,const dou
       double vn_hat_m,vm_hat_m,vl_hat_m,Tn_hat_m,Tm_hat_m,Tl_hat_m;    
 
       if (isBoundaryFace) {
-	double r= faceIndex==2 ? 1 : 0;
+	double r= faceIndex==0 ? 1 : 0;
 	riemannSolver_boundary(faceIndex,r,vn_m,vm_m,vl_m,Tn_m,Tm_m,Tl_m,zp_m,zs_m,vn_hat_m,vm_hat_m,vl_hat_m,Tn_hat_m,Tm_hat_m,Tl_hat_m);
 	riemannSolver_boundary(faceIndex,r,vn_p,vm_p,vl_p,Tn_p,Tm_p,Tl_p,zp_p,zs_p,vn_hat_p,vm_hat_p,vl_hat_p,Tn_hat_p,Tm_hat_p,Tl_hat_p);      
       }else {

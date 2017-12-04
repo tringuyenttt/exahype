@@ -575,6 +575,7 @@ void exahype::plotters::plotPatchIfAPlotterIsActive(
   }
 }
 
+// TODO(Dominic): Get rid of the return value and only do the "side effects"
 bool exahype::plotters::startPlottingIfAPlotterIsActive(double currentTimeStamp) {
   bool result = false;
   for (const auto& p : RegisteredPlotters) {

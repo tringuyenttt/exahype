@@ -175,6 +175,9 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * is anisotropic and we perform adaptive refinement.
    * Then, fine grid cells might suddenly get neighbours and thus
    * their vertices are not outside anymore.
+   *
+   * For newly introduced fine mesh cells, then prolongate the coarse grid
+   * information down.
    */
   static std::bitset<DIMENSIONS_TIMES_TWO> determineInsideAndOutsideFaces(
         const exahype::Vertex* const verticesAroundCell,
