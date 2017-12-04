@@ -29,6 +29,10 @@
 
 tarch::logging::Log exahype::Cell::_log("exahype::Cell");
 
+int exahype::Cell::ReceivedMetadataHeapIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+
+std::deque<int> exahype::Cell::ReceivedDataHeapIndices;
+
 exahype::Cell::Cell() : Base() {
   // We initialise cells which are not touched by the
   // createCell(...) events of Peano's spacetree traversal automaton
@@ -380,23 +384,20 @@ void exahype::Cell::receiveMetadataFromMasterPerCell(
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
     const int                                   level) {
   if ( hasToCommunicate(cellSize) ) {
-    _receivedMetadataHeapIndex =
+    ReceivedMetadataHeapIndex =
         exahype::receiveMasterWorkerCommunicationMetadata(
             master,cellCentre,level);
   }
 }
 
 void exahype::Cell::mergeWithMetadataFromMasterPerCell(
-    const Cell&                                 receivedCell,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
     const exahype::State::AlgorithmSection&     section) {
   if ( hasToCommunicate(cellSize) ) {
-    assertionEquals(_receivedMetadataHeapIndex,multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
-    _receivedMetadataHeapIndex = receivedCell._receivedMetadataHeapIndex;
-    assertion(exahype::MetadataHeap::getInstance().isValidIndex(_receivedMetadataHeapIndex));
+    assertion(exahype::MetadataHeap::getInstance().isValidIndex(ReceivedMetadataHeapIndex));
 
     MetadataHeap::HeapEntries& receivedMetadata =
-        MetadataHeap::getInstance().getData(_receivedMetadataHeapIndex);
+        MetadataHeap::getInstance().getData(ReceivedMetadataHeapIndex);
     assertionEquals(
         receivedMetadata.size(),exahype::MasterWorkerCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
 
@@ -419,7 +420,8 @@ void exahype::Cell::mergeWithMetadataFromMasterPerCell(
       }
     }
 
-    MetadataHeap::getInstance().deleteData(_receivedMetadataHeapIndex,true);
+    MetadataHeap::getInstance().deleteData(ReceivedMetadataHeapIndex,true);
+    ReceivedMetadataHeapIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
   }
 }
 
@@ -458,38 +460,30 @@ void exahype::Cell::receiveDataFromMasterPerCell(
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
     const int                                   level) {
   if ( hasToCommunicate(cellSize) ) {
-    _receivedMetadataHeapIndex =
+    ReceivedMetadataHeapIndex =
         exahype::receiveMasterWorkerCommunicationMetadata( // TODO(Dominic): Move into cell
             master,cellCentre,level);
 
-    assertion(_receivedDataHeapIndices.empty());
-    _receivedDataHeapIndices.resize(exahype::solvers::RegisteredSolvers.size()*4); // TODO(Dominic): Current upper bound
+    assertion(ReceivedDataHeapIndices.empty());
+    const int maxNumberOfMessages = 4; // TODO(Dominic): Ensure this is correct (from ADERDGSolver::DataMessagesPerMasterWorkerCommunication + 2 for observables).
+    ReceivedDataHeapIndices.resize(exahype::solvers::RegisteredSolvers.size()*maxNumberOfMessages);
+
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       solver->receiveDataFromMaster(
           master,
-          _receivedDataHeapIndices,
+          ReceivedDataHeapIndices,
           cellCentre,level);
     }
   }
 }
 
 void exahype::Cell::mergeWithMasterDataPerCell(
-    const Cell& receivedCell,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize ) {
   if ( hasToCommunicate(cellSize) ) {
-    // Copy the indices from the const "receivedCell".
-    assertionEquals(_receivedMetadataHeapIndex,multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
-    _receivedMetadataHeapIndex = receivedCell._receivedMetadataHeapIndex;
-    assertion(exahype::MetadataHeap::getInstance().isValidIndex(_receivedMetadataHeapIndex));
-    assertion(_receivedDataHeapIndices.empty());
-    const int maxNumberOfMessages = 4; // TODO(Dominic): Ensure this is correct (from ADERDGSolver::DataMessagesPerMasterWorkerCommunication + 2 for observables).
-    _receivedDataHeapIndices.resize(exahype::solvers::RegisteredSolvers.size()*maxNumberOfMessages);
-    _receivedDataHeapIndices = receivedCell._receivedDataHeapIndices;
-
-    // Now work with the data
+    assertion(exahype::MetadataHeap::getInstance().isValidIndex(ReceivedMetadataHeapIndex));
     MetadataHeap::HeapEntries& receivedMetadata =
-        MetadataHeap::getInstance().getData(_receivedMetadataHeapIndex);
+        MetadataHeap::getInstance().getData(ReceivedMetadataHeapIndex);
 
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -504,18 +498,18 @@ void exahype::Cell::mergeWithMasterDataPerCell(
 
         solver->mergeWithMasterData(
             metadataPortion,
-            _receivedDataHeapIndices,
+            ReceivedDataHeapIndices,
             getCellDescriptionsIndex(),element);
       } else {
         solver->dropMasterData(
-            _receivedDataHeapIndices);
+            ReceivedDataHeapIndices);
       }
     }
 
     // Reset data
-    exahype::MetadataHeap::getInstance().deleteData(_receivedMetadataHeapIndex);
-    _receivedMetadataHeapIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
-    assertion( _receivedDataHeapIndices.empty() );
+    MetadataHeap::getInstance().deleteData(ReceivedMetadataHeapIndex,true);
+    ReceivedMetadataHeapIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
+    assertion( ReceivedDataHeapIndices.empty() );
   }
 }
 
