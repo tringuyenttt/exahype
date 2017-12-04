@@ -108,6 +108,8 @@ void exahype::Vertex::validateThatNeighbourhoodIsValid(
   const int faceIndex1 = 2*direction+orientation1;
   const int faceIndex2 = 2*direction+orientation2;
 
+  if ( tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1) ) {
+
   for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
@@ -126,8 +128,8 @@ void exahype::Vertex::validateThatNeighbourhoodIsValid(
             &&
             cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
         ) {
-          logError("validateThatNeighbourhoodIsValid(...)","cell is next to empty cell: cell="<<p1.toString());
-          std::terminate();
+          logError("validateThatNeighbourhoodIsValid(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<faceIndex1<<" next to empty cell: cell="<<p1.toString());
+          // std::terminate();
         }
       }
       // Cell 2
@@ -142,8 +144,8 @@ void exahype::Vertex::validateThatNeighbourhoodIsValid(
             &&
             cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
         ) {
-          logError("validateThatNeighbourhoodIsValid(...)","cell is next to empty cell: cell="<<p2.toString());
-          std::terminate();
+          logError("validateThatNeighbourhoodIsValid(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<faceIndex2<<" next to empty cell: cell="<<p2.toString());
+          // std::terminate();
         }
       }
     } break;
@@ -159,8 +161,8 @@ void exahype::Vertex::validateThatNeighbourhoodIsValid(
             &&
             cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
         ) {
-          logError("validateThatNeighbourhoodIsValid(...)","cell is next to empty cell: cell="<<p1.toString());
-          std::terminate();
+          logError("validateThatNeighbourhoodIsValid(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<faceIndex1<<" next to empty cell: cell="<<p1.toString());
+          // std::terminate();
         }
       }
       // Cell 2
@@ -174,12 +176,14 @@ void exahype::Vertex::validateThatNeighbourhoodIsValid(
             &&
             cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
         ) {
-          logError("validateThatNeighbourhoodIsValid(...)","cell is next to empty cell: cell="<<p2.toString());
-          std::terminate();
+          logError("validateThatNeighbourhoodIsValid(...)","cell at index="<<cellDescriptionsIndex2<<" is at face="<<faceIndex2<<" next to empty cell: cell="<<p2.toString());
+          // std::terminate();
         }
       }
     } break;
     }
+  }
+
   }
 }
 
@@ -447,6 +451,8 @@ void exahype::Vertex::mergeNeighbours(
   if ( tarch::la::allSmallerEquals(h,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers()) ) {
     dfor2(pos1)
       dfor2(pos2)
+        validateThatNeighbourhoodIsValid(pos1,pos1Scalar,pos2,pos2Scalar);
+
         if (hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,x,h)) { // Assumes that we have to valid indices
           mergeNeighboursDataAndMetadata(tempFaceUnknowns,pos1,pos1Scalar,pos2,pos2Scalar);
 
