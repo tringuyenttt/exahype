@@ -574,6 +574,7 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 
   receivedCell.receiveMetadataFromMasterPerCell(
+      tarch::parallel::NodePool::getInstance().getMasterRank(),
       receivedVerticesEnumerator.getCellCenter(),
       receivedVerticesEnumerator.getCellSize(),
       receivedVerticesEnumerator.getLevel());
@@ -593,13 +594,9 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
     exahype::Cell& localCell, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
-
   if ( localCell.hasToCommunicate(cellSize) ) {
 
-    if (
-        localCell.isInside() &&
-        localCell.isInitialised()==true
-    ) {
+    if ( localCell.isInitialised() ) {
       exahype::solvers::ADERDGSolver::sendCellDescriptions(toRank,localCell.getCellDescriptionsIndex(),
           peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
       exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(toRank,localCell.getCellDescriptionsIndex(),
@@ -623,10 +620,7 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
         localCell.shutdownMetaData();
       }
 
-    } else if (
-        localCell.isInside() &&
-        localCell.isInitialised()==false
-    ) {
+    } else {
       exahype::solvers::ADERDGSolver::sendEmptyCellDescriptions(toRank,
           peano::heap::MessageType::ForkOrJoinCommunication,cellCentre,level);
       exahype::solvers::FiniteVolumesSolver::sendEmptyCellDescriptions(toRank,

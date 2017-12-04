@@ -369,14 +369,14 @@ void exahype::Cell::broadcastMetadataToWorkerPerCell(
 }
 
 void exahype::Cell::receiveMetadataFromMasterPerCell(
+    const int                                   master,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
     const int                                   level) {
   if ( hasToCommunicate(cellSize) ) {
     _receivedMetadataHeapIndex =
         exahype::receiveMasterWorkerCommunicationMetadata(
-            tarch::parallel::NodePool::getInstance().getMasterRank(),
-            cellCentre,level);
+            master,cellCentre,level);
   }
 }
 
@@ -418,10 +418,10 @@ void exahype::Cell::mergeWithMetadataFromMasterPerCell(
 }
 
 void exahype::Cell::broadcastDataToWorkerPerCell(
-    const int worker,
+    const int                                   worker,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const int                                  level) const {
+    const int                                   level) const {
   if ( hasToCommunicate(cellSize) ) {
     exahype::sendMasterWorkerCommunicationMetadata( // TODO(Dominic): Always send. Check again
         worker,getCellDescriptionsIndex(),

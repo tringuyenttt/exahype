@@ -823,9 +823,10 @@ int exahype::receiveMasterWorkerCommunicationMetadata(
   assertion(metadata.size()==0 || metadata.size()==length);
   assertion(metadata.capacity()==length);
 
-  if (metadata.size()==0) {
+  if ( metadata.empty() ) {
     metadata.assign(length, InvalidMetadataEntry);
   }
+
   return receivedMetadataIndex;
 }
 

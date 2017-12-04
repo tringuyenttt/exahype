@@ -3265,21 +3265,22 @@ void exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
     if (subcellPosition.parentElement!=NotFound) { // then: need to restrict face data
       cellDescription.setHasToHoldDataForMasterWorkerCommunication(true);
       cellDescription.setHelperStatus(0);
-      cellDescription.setType(CellDescription::Type::Ancestor);
-      ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-      ensureNecessaryMemoryIsAllocated(cellDescription);
-      cellDescription.setType(CellDescription::Type::Cell); // Hack to only store face data.
+//      cellDescription.setType(CellDescription::Type::Ancestor); // TODO(Dominic): Prepare send to worker apparently called before prepareCopyToRemoteNodeDueToForkOrJoin
+//      ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+//      ensureNecessaryMemoryIsAllocated(cellDescription);
+//      cellDescription.setType(CellDescription::Type::Cell); // Hack to only store face data.
 
       const int nextParentElement =
           tryGetElement(cellDescriptionsIndex,cellDescription.getSolverNumber());
       CellDescription& nextParent =
           getCellDescription(cellDescription.getParentIndex(),nextParentElement);
       vetoErasingOrDeaugmentingChildrenRequest(nextParent,cellDescriptionsIndex);
-    } else {
-      cellDescription.setType(CellDescription::Erased);
-      ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-      cellDescription.setType(CellDescription::Type::Cell); // Hack deletes all the data
     }
+//    else {
+//      cellDescription.setType(CellDescription::Erased);
+//      ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+//      cellDescription.setType(CellDescription::Type::Cell); // Hack deletes all the data
+//    }
   } // do nothing for descendants; wait for info from worker
     // see mergeWithWorkerMetadata
 }
@@ -3306,7 +3307,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerMetadata(
       cellDescription.setHasToHoldDataForMasterWorkerCommunication(workerHoldsData);
       ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
       ensureNecessaryMemoryIsAllocated(cellDescription);
-    } else if (cellDescription.getType()==CellDescription::Type::Ancestor ||
+    } else if (
+        cellDescription.getType()==CellDescription::Type::Ancestor ||
         cellDescription.getType()==CellDescription::Type::Cell) {
       cellDescription.setLimiterStatus(workerLimiterStatus);
       const int parentElement =

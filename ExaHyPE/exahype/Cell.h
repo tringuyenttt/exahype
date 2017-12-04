@@ -375,6 +375,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * "Mapping::receiveDataFromMaster".
    */
   void receiveMetadataFromMasterPerCell(
+      const int                                   master,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const int                                   level);
