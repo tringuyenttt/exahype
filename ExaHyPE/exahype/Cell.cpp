@@ -27,11 +27,17 @@
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
+
 tarch::logging::Log exahype::Cell::_log("exahype::Cell");
+
+#ifdef Parallel
+#include <deque>
 
 int exahype::Cell::ReceivedMetadataHeapIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 
 std::deque<int> exahype::Cell::ReceivedDataHeapIndices;
+#endif
+
 
 exahype::Cell::Cell() : Base() {
   // We initialise cells which are not touched by the
