@@ -11,6 +11,6 @@ export EXAHYPE_CC=icpc
 export MODE=Release
 export COMPILER=Intel
 export DISTRIBUTEDMEM=None
-export ARCHITECTURE=hsw
+export ARCHITECTURE=knl
 export GPROF=off
 export USE_IPO=on

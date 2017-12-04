@@ -8,7 +8,7 @@ exahype-project  CCZ4
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./Benchmarks/coolmuc2/CCZ4/
+  output-directory const           = ./Benchmarks/coolmuc3_KNL/CCZ4/
   architecture const               = knl
   log-file                         = whatever.log
 

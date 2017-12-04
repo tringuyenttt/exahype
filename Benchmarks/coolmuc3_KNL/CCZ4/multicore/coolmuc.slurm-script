@@ -4,13 +4,13 @@
 #SBATCH -e ExaHyPE-EulerFlow.%A.err
 #SBATCH -t 01:59:00
 #SBATCH --exclusive
-#SBATCH --cluster=mpp2
+#SBATCH --cluster=mpp3
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=28
 #SBATCH --mail-user=jean-matthieu.gallard@tum.de
 #SBATCH --mail-type=ALL
-#SBATCH --array=1,2,4,8,14,28
+#SBATCH --array=1,2,4,8,16,32,64
 
 source /etc/profile.d/modules.sh
 

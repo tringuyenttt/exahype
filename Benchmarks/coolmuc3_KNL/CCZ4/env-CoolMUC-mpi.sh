@@ -11,6 +11,6 @@ export EXAHYPE_CC="mpicc -DnoParallelExchangePackedRecordsAtBoundary -DnoParalle
 export MODE=Release
 export COMPILER=Intel
 export DISTRIBUTEDMEM=MPI
-export ARCHITECTURE=hsw
+export ARCHITECTURE=knl
 export GPROF=off
 export USE_IPO=on

@@ -5,16 +5,10 @@ spec=$directory/CCZ4-no-output.exahype
 
 cp $spec ${spec}_tmp
 
-for m in 1 2
+for m in TBB OMP None
 do
-  if (( m == 1 )); then
-    make clean
-    export SHAREDMEM=TBB
-  else
-    make clean
-    export SHAREDMEM=None
-  fi
-
+  make clean
+  export SHAREDMEM=$m
   echo "SHAREDMEM=$SHAREDMEM"
   #read -p "press any key..."
 

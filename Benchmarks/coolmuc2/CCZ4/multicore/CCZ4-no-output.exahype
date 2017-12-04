@@ -8,7 +8,7 @@ exahype-project  CCZ4
 
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
-  output-directory const           = ./AstroApplications/CCZ4/
+  output-directory const           = ./Benchmarks/coolmuc2/CCZ4/
   architecture const               = hsw
   log-file                         = whatever.log
 
