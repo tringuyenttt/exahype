@@ -217,6 +217,7 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::receiveDat
   receivedCell.receiveDataFromMasterPerCell(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
       receivedVerticesEnumerator.getCellCenter(),
+      receivedVerticesEnumerator.getCellSize(),
       receivedVerticesEnumerator.getLevel());
 
   logTraceOut( "receiveDataFromMaster(...)" );

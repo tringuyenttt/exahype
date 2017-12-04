@@ -365,6 +365,7 @@ void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
     receivedCell.receiveDataFromMasterPerCell(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         receivedVerticesEnumerator.getCellCenter(),
+        receivedVerticesEnumerator.getCellSize(),
         receivedVerticesEnumerator.getLevel());
   }
 }

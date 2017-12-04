@@ -455,8 +455,9 @@ void exahype::Cell::broadcastDataToWorkerPerCell(
 void exahype::Cell::receiveDataFromMasterPerCell(
     const int                                   master,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
     const int                                   level) {
-  if ( isInside() ) {
+  if ( hasToCommunicate(cellSize) ) {
     _receivedMetadataHeapIndex =
         exahype::receiveMasterWorkerCommunicationMetadata( // TODO(Dominic): Move into cell
             master,cellCentre,level);

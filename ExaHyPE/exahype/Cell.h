@@ -419,12 +419,14 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * \note Must be called on the "receivedCell" in "Mapping::receiveDataFromMaster".
    *
    * \param[in] cellCentrie centre of the received cell.
+   * \param[in] cellSize   size of this cell.
    * \param[in] level grid level the received cell resides at.
    *
    */
   void receiveDataFromMasterPerCell(
       const int                                   master,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const int                                   level);
 
   /*! Merge received heap data with the local cell.
