@@ -292,6 +292,9 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * \return true if the cell is inside and the
    * cell size does belong to a grid level that is
    * occupied by a solver.
+   *
+   * \note isInside() is not necessarily consistent on receivedCell from receiveDataFromMaster and
+   * on localCell in mergeWithWorker and thus ignored here.
    */
   bool hasToCommunicate(
       const tarch::la::Vector<DIMENSIONS,double>& cellSize ) const;

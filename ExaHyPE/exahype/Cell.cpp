@@ -358,7 +358,6 @@ int exahype::Cell::countListingsOfRemoteRankAtFace(
 bool exahype::Cell::hasToCommunicate(
     const tarch::la::Vector<DIMENSIONS,double>& cellSize ) const {
   return
-      isInside() &&
       tarch::la::allSmallerEquals(
           cellSize,exahype::solvers::Solver::getCoarsestMaximumMeshSizeOfAllSolvers());
 }
