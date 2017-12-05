@@ -3416,25 +3416,24 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS, int>& dest,
     const int                                 cellDescriptionsIndex,
     const int                                 element) const {
-  if (tarch::la::countEqualEntries(src,dest)!=DIMENSIONS-1) { // only consider faces
-    return;
-  }
-  const int direction   = tarch::la::equalsReturnIndex(src, dest);
-  const int orientation = (1 + src(direction) - dest(direction))/2;
-  const int faceIndex   = 2*direction+orientation;
+  if (tarch::la::countEqualEntries(src,dest)==DIMENSIONS-1) { // only consider faces
+    const int direction   = tarch::la::equalsReturnIndex(src, dest);
+    const int orientation = (1 + src(direction) - dest(direction))/2;
+    const int faceIndex   = 2*direction+orientation;
 
-  const int neighbourAugmentationStatus =
-      neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus].getU();
-  const int neighbourHelperStatus       =
-      neighbourMetadata[exahype::NeighbourCommunicationMetadataHelperStatus      ].getU();
-  const int neighbourLimiterStatus      =
+    const int neighbourAugmentationStatus =
+        neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus].getU();
+    const int neighbourHelperStatus       =
+        neighbourMetadata[exahype::NeighbourCommunicationMetadataHelperStatus      ].getU();
+    const int neighbourLimiterStatus      =
         neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus   ].getU();
 
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+    CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  mergeWithAugmentationStatus(cellDescription,faceIndex,neighbourAugmentationStatus);
-  mergeWithHelperStatus      (cellDescription,faceIndex,neighbourHelperStatus);
-  mergeWithLimiterStatus     (cellDescription,faceIndex,neighbourLimiterStatus);
+    mergeWithAugmentationStatus(cellDescription,faceIndex,neighbourAugmentationStatus);
+    mergeWithHelperStatus      (cellDescription,faceIndex,neighbourHelperStatus);
+    mergeWithLimiterStatus     (cellDescription,faceIndex,neighbourLimiterStatus);
+  }
 }
 
 void exahype::solvers::ADERDGSolver::sendDataToNeighbour(
