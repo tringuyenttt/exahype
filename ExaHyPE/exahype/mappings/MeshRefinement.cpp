@@ -141,7 +141,7 @@ void exahype::mappings::MeshRefinement::refineSafely(
     bool                                          isCalledByCreationalEvent) const {
   if (
       fineGridVertex.getRefinementControl()==Vertex::Records::Unrefined
-    ) {
+  ) {
     switch ( _localState.mayRefine(isCalledByCreationalEvent,fineGridLevel) ) {
     case State::RefinementAnswer::DontRefineYet:
       break;
@@ -230,7 +230,7 @@ void exahype::mappings::MeshRefinement::createCell(
   logTraceInWith4Arguments("createCell(...)", fineGridCell,
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
-  fineGridCell.getCellData().setCellDescriptionsIndex(
+  fineGridCell.setCellDescriptionsIndex(
       multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 
   logTraceOutWith1Argument("createCell(...)", fineGridCell);

@@ -2899,7 +2899,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     assertion3(normalDirection==(faceIndexLeft - (faceIndexLeft %2))/2,normalDirection,faceIndexLeft,faceIndexRight);
     assertion3(normalDirection<DIMENSIONS,normalDirection,faceIndexLeft,faceIndexRight);
 
-    // Synchronise time stepping.
+    // Synchronise time stepping TODO(Dominic): Move outside
     synchroniseTimeStepping(pLeft);
     synchroniseTimeStepping(pRight);
 

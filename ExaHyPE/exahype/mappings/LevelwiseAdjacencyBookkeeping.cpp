@@ -1,4 +1,4 @@
-#include "exahype/adapters/MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.h"
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 #include <sstream>
 
@@ -10,60 +10,50 @@
 #include "exahype/VertexOperations.h"
 
 
-peano::CommunicationSpecification   exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::communicationSpecification() const {
-  return peano::CommunicationSpecification::getMinimalSpecification();
+peano::CommunicationSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::communicationSpecification() const {
+  return peano::CommunicationSpecification::getMinimalSpecification(true);
 }
 
-
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::touchVertexLastTimeSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
-}
-
-
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::touchVertexFirstTimeSpecification(int level) const { 
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
-}
-
-
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::enterCellSpecification(int level) const {
+peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCellSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::WholeTree,peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
-
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::leaveCellSpecification(int level) const {
+peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::touchVertexLastTimeSpecification(int level) const {
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
+}
+peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::touchVertexFirstTimeSpecification(int level) const { 
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
+}
+peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::leaveCellSpecification(int level) const {
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
+}
+peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::ascendSpecification(int level) const {
+  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
+}
+peano::MappingSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::descendSpecification(int level) const {
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
 }
 
 
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::ascendSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
+exahype::mappings::LevelwiseAdjacencyBookkeeping::LevelwiseAdjacencyBookkeeping() {
 }
 
 
-peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::descendSpecification(int level) const {
-  return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::AvoidFineGridRaces,false);
-}
-
-
-exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4() {
-}
-
-
-exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::~MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4() {
+exahype::mappings::LevelwiseAdjacencyBookkeeping::~LevelwiseAdjacencyBookkeeping() {
 }
 
 
 #if defined(SharedMemoryParallelisation)
-exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4(const MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4&  masterThread) {
+exahype::mappings::LevelwiseAdjacencyBookkeeping::LevelwiseAdjacencyBookkeeping(const LevelwiseAdjacencyBookkeeping&  masterThread) {
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::mergeWithWorkerThread(const MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4& workerThread) {
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithWorkerThread(const LevelwiseAdjacencyBookkeeping& workerThread) {
 }
 #endif
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::createHangingVertex(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::createHangingVertex(
   exahype::Vertex&     fineGridVertex,
   const tarch::la::Vector<DIMENSIONS,double>&                fineGridX,
   const tarch::la::Vector<DIMENSIONS,double>&                fineGridH,
@@ -72,32 +62,13 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::create
   exahype::Cell&       coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&                   fineGridPositionOfVertex
 ) {
-  const int level = coarseGridVerticesEnumerator.getLevel()+1;
-  
   VertexOperations::writeCellDescriptionsIndex(
-    fineGridVertex,
-    multiscalelinkedcell::HangingVertexBookkeeper::getInstance().createHangingVertex(
-      fineGridX,level,
-      fineGridPositionOfVertex,
-      VertexOperations::readCellDescriptionsIndex(coarseGridVerticesEnumerator,coarseGridVertices))
-    );
+      fineGridVertex,
+      multiscalelinkedcell::HangingVertexBookkeeper::getInstance().createVertexLinkMapForNewVertex());
 }
 
 
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::destroyHangingVertex(
-  const exahype::Vertex&   fineGridVertex,
-  const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
-  const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
-  exahype::Vertex * const  coarseGridVertices,
-  const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
-  exahype::Cell&           coarseGridCell,
-  const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
-) {
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::createInnerVertex(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::createInnerVertex(
   exahype::Vertex&               fineGridVertex,
   const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
   const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -112,7 +83,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::create
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::createBoundaryVertex(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::createBoundaryVertex(
   exahype::Vertex&               fineGridVertex,
   const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
   const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -126,20 +97,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::create
       multiscalelinkedcell::HangingVertexBookkeeper::getInstance().createVertexLinkMapForBoundaryVertex());
 }
 
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::destroyVertex(
-      const exahype::Vertex&   fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
-      const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
-      exahype::Vertex * const  coarseGridVertices,
-      const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
-      exahype::Cell&           coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
-) {
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::createCell(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::createCell(
   exahype::Cell&                 fineGridCell,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -148,11 +106,12 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::create
   exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
+  fineGridCell.setCellDescriptionsIndex(
+      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 }
 
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::destroyCell(
-  const exahype::Cell&           fineGridCell,
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
+  exahype::Cell&                 fineGridCell,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
   exahype::Vertex * const        coarseGridVertices,
@@ -160,12 +119,16 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::destro
   exahype::Cell&                 coarseGridCell,
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
-  multiscalelinkedcell::HangingVertexBookkeeper::getInstance().destroyCell(fineGridCell.getCellDescriptionsIndex());
+  dfor2(k)
+    if ( !fineGridVertices[fineGridVerticesEnumerator(k)].isHangingNode() ) {
+      VertexOperations::writeCellDescriptionsIndex(
+          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1, fineGridCell.getCellDescriptionsIndex());
+    }
+  enddforx
 }
 
-
 #ifdef Parallel
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::mergeWithNeighbour(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithNeighbour(
   exahype::Vertex&  vertex,
   const exahype::Vertex&  neighbour,
   int                                           fromRank,
@@ -182,86 +145,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::mergeW
   );
 }
 
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::prepareSendToNeighbour(
-      exahype::Vertex&  vertex,
-      int                                           toRank,
-      const tarch::la::Vector<DIMENSIONS,double>&   x,
-      const tarch::la::Vector<DIMENSIONS,double>&   h,
-      int                                           level
-) {
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::prepareCopyToRemoteNode(
-      exahype::Vertex&  localVertex,
-      int                                           toRank,
-      const tarch::la::Vector<DIMENSIONS,double>&   x,
-      const tarch::la::Vector<DIMENSIONS,double>&   h,
-      int                                           level
-) {
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::prepareCopyToRemoteNode(
-      exahype::Cell&  localCell,
-      int                                           toRank,
-      const tarch::la::Vector<DIMENSIONS,double>&   cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>&   cellSize,
-      int                                           level
-) {
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::mergeWithRemoteDataDueToForkOrJoin(
-  exahype::Vertex&  localVertex,
-  const exahype::Vertex&  masterOrWorkerVertex,
-  int                                       fromRank,
-  const tarch::la::Vector<DIMENSIONS,double>&  x,
-  const tarch::la::Vector<DIMENSIONS,double>&  h,
-  int                                       level
-) {
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::mergeWithRemoteDataDueToForkOrJoin(
-  exahype::Cell&  localCell,
-  const exahype::Cell&  masterOrWorkerCell,
-  int                                       fromRank,
-  const tarch::la::Vector<DIMENSIONS,double>&  x,
-  const tarch::la::Vector<DIMENSIONS,double>&  h,
-  int                                       level
-) {
-}
-
-
-bool exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::prepareSendToWorker(
-  exahype::Cell&                 fineGridCell,
-  exahype::Vertex * const        fineGridVertices,
-  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
-  exahype::Vertex * const        coarseGridVertices,
-  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
-  exahype::Cell&                 coarseGridCell,
-  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell,
-  int                                                                  worker
-) {
-  return false;
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::prepareSendToMaster(
-      exahype::Cell&                       localCell,
-      exahype::Vertex *                    vertices,
-      const peano::grid::VertexEnumerator&       verticesEnumerator, 
-      const exahype::Vertex * const        coarseGridVertices,
-      const peano::grid::VertexEnumerator&       coarseGridVerticesEnumerator,
-      const exahype::Cell&                 coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS,int>&   fineGridPositionOfCell
-) {
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::mergeWithMaster(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithMaster(
   const exahype::Cell&           workerGridCell,
   exahype::Vertex * const        workerGridVertices,
   const peano::grid::VertexEnumerator& workerEnumerator,
@@ -288,32 +172,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::mergeW
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::receiveDataFromMaster(
-      exahype::Cell&                        receivedCell, 
-      exahype::Vertex *                     receivedVertices,
-      const peano::grid::VertexEnumerator&        receivedVerticesEnumerator,
-      exahype::Vertex * const               receivedCoarseGridVertices,
-      const peano::grid::VertexEnumerator&        receivedCoarseGridVerticesEnumerator,
-      exahype::Cell&                        receivedCoarseGridCell,
-      exahype::Vertex * const               workersCoarseGridVertices,
-      const peano::grid::VertexEnumerator&        workersCoarseGridVerticesEnumerator,
-      exahype::Cell&                        workersCoarseGridCell,
-      const tarch::la::Vector<DIMENSIONS,int>&    fineGridPositionOfCell
-) {
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::mergeWithWorker(
-      exahype::Cell&           localCell, 
-      const exahype::Cell&     receivedMasterCell,
-      const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
-      int                                          level
-) {
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::mergeWithWorker(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithWorker(
       exahype::Vertex&        localVertex,
       const exahype::Vertex&  receivedMasterVertex,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
@@ -328,10 +187,147 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::mergeW
     )
   );
 }
+
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::prepareSendToNeighbour(
+      exahype::Vertex&  vertex,
+      int                                           toRank,
+      const tarch::la::Vector<DIMENSIONS,double>&   x,
+      const tarch::la::Vector<DIMENSIONS,double>&   h,
+      int                                           level
+) {
+}
+
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::prepareCopyToRemoteNode(
+      exahype::Vertex&  localVertex,
+      int                                           toRank,
+      const tarch::la::Vector<DIMENSIONS,double>&   x,
+      const tarch::la::Vector<DIMENSIONS,double>&   h,
+      int                                           level
+) {
+}
+
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::prepareCopyToRemoteNode(
+      exahype::Cell&  localCell,
+      int                                           toRank,
+      const tarch::la::Vector<DIMENSIONS,double>&   cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>&   cellSize,
+      int                                           level
+) {
+}
+
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToForkOrJoin(
+  exahype::Vertex&  localVertex,
+  const exahype::Vertex&  masterOrWorkerVertex,
+  int                                       fromRank,
+  const tarch::la::Vector<DIMENSIONS,double>&  x,
+  const tarch::la::Vector<DIMENSIONS,double>&  h,
+  int                                       level
+) {
+}
+
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToForkOrJoin(
+  exahype::Cell&  localCell,
+  const exahype::Cell&  masterOrWorkerCell,
+  int                                       fromRank,
+  const tarch::la::Vector<DIMENSIONS,double>&  x,
+  const tarch::la::Vector<DIMENSIONS,double>&  h,
+  int                                       level
+) {
+}
+
+
+bool exahype::mappings::LevelwiseAdjacencyBookkeeping::prepareSendToWorker(
+  exahype::Cell&                 fineGridCell,
+  exahype::Vertex * const        fineGridVertices,
+  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
+  exahype::Vertex * const        coarseGridVertices,
+  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
+  exahype::Cell&                 coarseGridCell,
+  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell,
+  int                                                                  worker
+) {
+  return false;
+}
+
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::prepareSendToMaster(
+      exahype::Cell&                       localCell,
+      exahype::Vertex *                    vertices,
+      const peano::grid::VertexEnumerator&       verticesEnumerator, 
+      const exahype::Vertex * const        coarseGridVertices,
+      const peano::grid::VertexEnumerator&       coarseGridVerticesEnumerator,
+      const exahype::Cell&                 coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS,int>&   fineGridPositionOfCell
+) {
+}
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::receiveDataFromMaster(
+      exahype::Cell&                        receivedCell, 
+      exahype::Vertex *                     receivedVertices,
+      const peano::grid::VertexEnumerator&        receivedVerticesEnumerator,
+      exahype::Vertex * const               receivedCoarseGridVertices,
+      const peano::grid::VertexEnumerator&        receivedCoarseGridVerticesEnumerator,
+      exahype::Cell&                        receivedCoarseGridCell,
+      exahype::Vertex * const               workersCoarseGridVertices,
+      const peano::grid::VertexEnumerator&        workersCoarseGridVerticesEnumerator,
+      exahype::Cell&                        workersCoarseGridCell,
+      const tarch::la::Vector<DIMENSIONS,int>&    fineGridPositionOfCell
+) {
+}
+
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithWorker(
+      exahype::Cell&           localCell, 
+      const exahype::Cell&     receivedMasterCell,
+      const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
+      int                                          level
+) {
+}
 #endif
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::touchVertexFirstTime(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::destroyHangingVertex(
+  const exahype::Vertex&   fineGridVertex,
+  const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
+  const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
+  exahype::Vertex * const  coarseGridVertices,
+  const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
+  exahype::Cell&           coarseGridCell,
+  const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
+) {
+}
+
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::destroyVertex(
+      const exahype::Vertex&   fineGridVertex,
+      const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
+      const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
+      exahype::Vertex * const  coarseGridVertices,
+      const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
+      exahype::Cell&           coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
+) {
+}
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::destroyCell(
+  const exahype::Cell&           fineGridCell,
+  exahype::Vertex * const        fineGridVertices,
+  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
+  exahype::Vertex * const        coarseGridVertices,
+  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
+  exahype::Cell&                 coarseGridCell,
+  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
+) {
+}
+
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::touchVertexFirstTime(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridH,
@@ -343,7 +339,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::touchV
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::touchVertexLastTime(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::touchVertexLastTime(
       exahype::Vertex&         fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
       const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
@@ -355,31 +351,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::touchV
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::enterCell(
-  exahype::Cell&                 fineGridCell,
-  exahype::Vertex * const        fineGridVertices,
-  const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
-  exahype::Vertex * const        coarseGridVertices,
-  const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
-  exahype::Cell&                 coarseGridCell,
-  const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
-) {
-  dfor2(k)
-    if (fineGridVertices[fineGridVerticesEnumerator(k)].isHangingNode()) {
-      multiscalelinkedcell::HangingVertexBookkeeper::getInstance().getAdjacencyEntriesOfVertex( 
-        fineGridVerticesEnumerator.getVertexPosition(k),
-        fineGridVerticesEnumerator.getLevel()
-      )(TWO_POWER_D-kScalar-1) = fineGridCell.getCellDescriptionsIndex();
-    }
-    else {
-      VertexOperations::writeCellDescriptionsIndex(
-          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1, fineGridCell.getCellDescriptionsIndex());
-    }
-  enddforx
-}
-
-
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::leaveCell(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::leaveCell(
       exahype::Cell&           fineGridCell,
       exahype::Vertex * const  fineGridVertices,
       const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,
@@ -391,21 +363,19 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::leaveC
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::beginIteration(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::beginIteration(
   exahype::State&  solverState
 ) {
-  multiscalelinkedcell::HangingVertexBookkeeper::getInstance().beginIteration();
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::endIteration(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::endIteration(
   exahype::State&  solverState
 ) {
-  multiscalelinkedcell::HangingVertexBookkeeper::getInstance().endIteration();
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::descend(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::descend(
   exahype::Cell * const          fineGridCells,
   exahype::Vertex * const        fineGridVertices,
   const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
@@ -416,7 +386,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::descen
 }
 
 
-void exahype::adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4::ascend(
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::ascend(
   exahype::Cell * const    fineGridCells,
   exahype::Vertex * const  fineGridVertices,
   const peano::grid::VertexEnumerator&          fineGridVerticesEnumerator,

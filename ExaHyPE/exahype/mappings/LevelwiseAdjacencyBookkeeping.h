@@ -1,7 +1,17 @@
-// This file is part of the Peano project. For conditions of distribution and 
-// use, please see the copyright notice at www.peano-framework.org
-#ifndef EXAHYPE_ADAPTERS_FinaliseMeshRefinement2MultiscaleLinkedCell_1_H_
-#define EXAHYPE_ADAPTERS_FinaliseMeshRefinement2MultiscaleLinkedCell_1_H_
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ */
+#ifndef EXAHYPE_MAPPINGS_LevelwiseAdjacencyBookkeeping_H_
+#define EXAHYPE_MAPPINGS_LevelwiseAdjacencyBookkeeping_H_
 
 
 #include "tarch/logging/Log.h"
@@ -17,22 +27,28 @@
 
 
 namespace exahype {
-      namespace adapters {
-        class FinaliseMeshRefinement2MultiscaleLinkedCell_1;
+      namespace mappings {
+        class LevelwiseAdjacencyBookkeeping;
       } 
 }
 
 
 /**
- * This is an adapter providing a multiscale linked-cell data structure
+ * This is an adapter which writes cell-based heap indices into the adjacency
+ * maps of each vertex. This is done completely levelwisely. No hanging nodes
+ * are considered.
+ *
+ * Codes which want to use this mapping need to ensure that no
+ * hanging nodes appear on the boundary of the domain.
+ * Refinement must be employed such that this is prevented.
  *
  * CellDescriptionsIndex   Name of the index used for the cell indices within the vertex and 
  *          the cell
  *
- * @author Tobias Weinzierl
+ * @author Tobias Weinzierl, Dominic Etienne Charrier
  * @version $Revision: 1.1 $
  */
-class exahype::adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 {
+class exahype::mappings::LevelwiseAdjacencyBookkeeping {
   public:
     peano::MappingSpecification   touchVertexLastTimeSpecification(int level) const;
     peano::MappingSpecification   touchVertexFirstTimeSpecification(int level) const;
@@ -42,18 +58,22 @@ class exahype::adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 {
     peano::MappingSpecification   descendSpecification(int level) const;
     peano::CommunicationSpecification   communicationSpecification() const;
 
-    FinaliseMeshRefinement2MultiscaleLinkedCell_1();
+    LevelwiseAdjacencyBookkeeping();
 
     #if defined(SharedMemoryParallelisation)
-    FinaliseMeshRefinement2MultiscaleLinkedCell_1(const FinaliseMeshRefinement2MultiscaleLinkedCell_1& masterThread);
+    LevelwiseAdjacencyBookkeeping(const LevelwiseAdjacencyBookkeeping& masterThread);
     #endif
 
-    virtual ~FinaliseMeshRefinement2MultiscaleLinkedCell_1();
+    virtual ~LevelwiseAdjacencyBookkeeping();
   
     #if defined(SharedMemoryParallelisation)
-    void mergeWithWorkerThread(const FinaliseMeshRefinement2MultiscaleLinkedCell_1& workerThread);
+    void mergeWithWorkerThread(const LevelwiseAdjacencyBookkeeping& workerThread);
     #endif
 
+    /**
+     * Initialises the adjacency map
+     * of the fine grid vertex with an invalid index.
+     */
     void createInnerVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
@@ -64,7 +84,10 @@ class exahype::adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 {
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
     );
 
-
+    /**
+     * Initialises the adjacency map
+     * of the fine  grid vertex with a boundary adjacency index.
+     */
     void createBoundaryVertex(
       exahype::Vertex&               fineGridVertex,
       const tarch::la::Vector<DIMENSIONS,double>&                          fineGridX,
@@ -75,86 +98,8 @@ class exahype::adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 {
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
     );
 
-
     /**
-     * @todo Only half of the documentation
-     * @todo Enumeration has changed
-     *
-     * In an adaptive grid, not all of the $2^d$ adjacent cells exist for hanging
-     * vertices. Since each vertex is supposed to hold the adjacent vertices in
-     * order to fill the ghostlayers of the cellDescriptiones appropriately, the adjacent
-     * indices of hanging vertices need to be filled by the data of the vertices
-     * on the next coarser grid. This filling is implemented in this method.
-     *
-     * !!! The idea
-     * Each vertex holds $2^d$ indices. In the vertices they are numbered from 0
-     * to $2^d-1$. However, in this method they are considered to exist in a
-     * n-dimensional array. In 2d this would look like
-     *
-     * (0,1)|(1,1)
-     * -----v-----
-     * (0,0)|(1,0)
-     *
-     * The linearization looks as follow:
-     *
-     *   1  |  0
-     * -----v-----
-     *   3  |  2
-     *
-     * In the following the term "fine grid" refers to the $4^d$ vertices
-     * belonging to the $3^d$ fine grid cells which overlap with the coars grid
-     * cell.
-     *
-     * On the coarse grid cell we again consider the vertices being arranged in a
-     * n-dimensional array:
-     *
-     * (0,1)-----(1,1)
-     *   |          |
-     *   |          |
-     *   |          |
-     * (0,0)-----(1,0)
-     *
-     * Each of them hold again the $2^d$ adjacent indices, while those which refer
-     * to a refined cell are set to -1. A hanging vertex therefore gets the
-     * adjacent indices from the nearest coarse grid vertex. If they coincide the
-     * data can just be used directly. If not, it depends on which boundary of the
-     * coarse grid cell the hanging vertex resides. Here the (single) index
-     * outside of the coarse grid cell is assigned for all indices of the hanging
-     * vertex pointing in the direction of this neighboring coarse grid cell.
-     *
-     * !!! The algorithm
-     * It gets a hanging vertex and performs a loop over the $2^d$ adjacent-cellDescription-
-     * indices.
-     * In each loop iteration it computes the n-dimensional index of the coarse
-     * grid vertex (fromCoarseGridVertex) from which the data has to be copied.
-     * For each dimension d with $0\le d <n$:
-     *  - If the fine grid position of the hanging vertex in dimension $d$ is 0 set
-     *    $fromCoarseGridVertex(d)$ to 0. If it is equals 3 then set
-     *    $fromCoarseGridVertex(d)$ to 1. By this we ensure that we always choose
-     *    the nearest coarse grid vertex in dimension $d$. If the hanging vertex
-     *    resides in a corner of the fine grid this approach always chooses the
-     *    coarse grid vertex that is located on the same position.
-     *  - If the fine grid position of the hanging vertex in dimension $d$ is
-     *    neither 0 nor 3 then the value of $fromCoarseGridVertex(d)$ depends on
-     *    the adjacent-cellDescription-index $k$ that has to be set currently. $k(d)$ can
-     *    either be 0 or 1. If $k(d)$ is 0 than we want to get data from the
-     *    in this dimension "lower" coarse grid vertex, so we set
-     *    $fromCoarseGridVertex(d)$ to 0 as well. In the case of $k(d)=1$ we set
-     *    $fromCoarseGridVertex(d)$ to 1, accordingly. This actually doesn't
-     *    matter since the appropriate adjacent-cellDescription-indices of the to coarse
-     *    grid vertices have to be the same, since they are pointing to the same
-     *    adjacent cell.
-     * The determination of the correct adjacent-cellDescription-index of the coarse grid
-     * vertex (coarseGridVertexAdjacentCellDescriptionIndex) is done in a similar way. So,
-     * for the adjacent-cellDescription-index $k$ on the hanging vertex:
-     *  - As stated before, if the fine and coarse grid vertices coincide we can
-     *    just copy the adjacent-cellDescription-index. Therefore, if the fine grid position
-     *    of the hanging vertex in dimension $d$ is equal to 0 or to 3, we set
-     *    $coarseGridVertexAdjacentCellDescriptionIndex(d)$ to $k(d)$.
-     *  - Otherwise, we just set $coarseGridVertexAdjacentCellDescriptionIndex(d)$ to the
-     *    inverted $k(d)$. I.e. if $k(d) = 0$ we set
-     *    $coarseGridVertexAdjacentCellDescriptionIndex(d)$ to 1 and the other way around.
-     *
+     * Initialises the adjacency map with an invalid index.
      */
     void createHangingVertex(
       exahype::Vertex&               fineGridVertex,
@@ -166,29 +111,9 @@ class exahype::adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 {
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
     );
 
-
-    void destroyHangingVertex(
-      const exahype::Vertex&   fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
-      const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
-      exahype::Vertex * const  coarseGridVertices,
-      const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
-      exahype::Cell&           coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
-    );
-
-
-    void destroyVertex(
-      const exahype::Vertex&   fineGridVertex,
-      const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
-      const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
-      exahype::Vertex * const  coarseGridVertices,
-      const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
-      exahype::Cell&           coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
-    );
-
-
+    /**
+     * Initialises the fine grid cell's heap index as invalid index.
+     */
     void createCell(
       exahype::Cell&                 fineGridCell,
       exahype::Vertex * const         fineGridVertices,
@@ -199,9 +124,15 @@ class exahype::adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 {
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
     );
 
-
-    void destroyCell(
-      const exahype::Cell&           fineGridCell,
+    /**
+     * Updates the adjacency maps of all surrounding fine grid
+     * vertices with the fine grid cells cell description.
+     * Ignores hanging nodes.
+     *
+     * \note Requires a
+     */
+    void enterCell(
+      exahype::Cell&                 fineGridCell,
       exahype::Vertex * const        fineGridVertices,
       const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
       exahype::Vertex * const        coarseGridVertices,
@@ -209,12 +140,50 @@ class exahype::adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 {
       exahype::Cell&                 coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
     );
-        
+
     #ifdef Parallel
+    /**
+     * Updates the adjacency maps of the fine grid vertices
+     * at a remote boundary.
+     */
     void mergeWithNeighbour(
       exahype::Vertex&  vertex,
       const exahype::Vertex&  neighbour,
       int                                           fromRank,
+      const tarch::la::Vector<DIMENSIONS,double>&   x,
+      const tarch::la::Vector<DIMENSIONS,double>&   h,
+      int                                           level
+    );
+
+    /**
+     * Updates the adjacency maps of the fine grid vertices
+     * at a remote boundary. Only invoked if another mapping in
+     * the same adapter requires worker->master communication.
+     */
+    void mergeWithMaster(
+      const exahype::Cell&                     workerGridCell,
+      exahype::Vertex * const                  workerGridVertices,
+      const peano::grid::VertexEnumerator&     workerEnumerator,
+      exahype::Cell&                           fineGridCell,
+      exahype::Vertex * const                  fineGridVertices,
+      const peano::grid::VertexEnumerator&     fineGridVerticesEnumerator,
+      exahype::Vertex * const                  coarseGridVertices,
+      const peano::grid::VertexEnumerator&     coarseGridVerticesEnumerator,
+      exahype::Cell&                           coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS,int>& fineGridPositionOfCell,
+      int                                      worker,
+      const exahype::State&                    workerState,
+      exahype::State&                          masterState
+    );
+
+    /**
+     * Updates the adjacency map of a fine grid vertex
+     * at a remote boundary. Only invoked if another mapping in
+     * the same adapter requires master->worker communication.
+     */
+    void mergeWithWorker(
+      exahype::Vertex&        localVertex,
+      const exahype::Vertex&  receivedMasterVertex,
       const tarch::la::Vector<DIMENSIONS,double>&   x,
       const tarch::la::Vector<DIMENSIONS,double>&   h,
       int                                           level
@@ -283,22 +252,6 @@ class exahype::adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 {
       const tarch::la::Vector<DIMENSIONS,int>&   fineGridPositionOfCell
     );
 
-    void mergeWithMaster(
-      const exahype::Cell&           workerGridCell,
-      exahype::Vertex * const        workerGridVertices,
-      const peano::grid::VertexEnumerator& workerEnumerator,
-      exahype::Cell&                 fineGridCell,
-      exahype::Vertex * const        fineGridVertices,
-      const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
-      exahype::Vertex * const        coarseGridVertices,
-      const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
-      exahype::Cell&                 coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell,
-      int                                                                  worker,
-      const exahype::State&          workerState,
-      exahype::State&                masterState
-    );
-
 
     void receiveDataFromMaster(
       exahype::Cell&                        receivedCell, 
@@ -323,14 +276,37 @@ class exahype::adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 {
     );
 
 
-    void mergeWithWorker(
-      exahype::Vertex&        localVertex,
-      const exahype::Vertex&  receivedMasterVertex,
-      const tarch::la::Vector<DIMENSIONS,double>&   x,
-      const tarch::la::Vector<DIMENSIONS,double>&   h,
-      int                                           level
-    );
     #endif
+    void destroyHangingVertex(
+        const exahype::Vertex&   fineGridVertex,
+        const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
+        const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
+        exahype::Vertex * const  coarseGridVertices,
+        const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
+        exahype::Cell&           coarseGridCell,
+        const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
+    );
+
+    void destroyVertex(
+        const exahype::Vertex&   fineGridVertex,
+        const tarch::la::Vector<DIMENSIONS,double>&                    fineGridX,
+        const tarch::la::Vector<DIMENSIONS,double>&                    fineGridH,
+        exahype::Vertex * const  coarseGridVertices,
+        const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
+        exahype::Cell&           coarseGridCell,
+        const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
+    );
+
+
+    void destroyCell(
+        const exahype::Cell&           fineGridCell,
+        exahype::Vertex * const        fineGridVertices,
+        const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
+        exahype::Vertex * const        coarseGridVertices,
+        const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
+        exahype::Cell&                 coarseGridCell,
+        const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
+    );
 
 
     void touchVertexFirstTime(
@@ -352,17 +328,6 @@ class exahype::adapters::FinaliseMeshRefinement2MultiscaleLinkedCell_1 {
       const peano::grid::VertexEnumerator&          coarseGridVerticesEnumerator,
       exahype::Cell&           coarseGridCell,
       const tarch::la::Vector<DIMENSIONS,int>&                       fineGridPositionOfVertex
-    );
-    
-
-    void enterCell(
-      exahype::Cell&                 fineGridCell,
-      exahype::Vertex * const        fineGridVertices,
-      const peano::grid::VertexEnumerator&                fineGridVerticesEnumerator,
-      exahype::Vertex * const        coarseGridVertices,
-      const peano::grid::VertexEnumerator&                coarseGridVerticesEnumerator,
-      exahype::Cell&                 coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
     );
 
 
