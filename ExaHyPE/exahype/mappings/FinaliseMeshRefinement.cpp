@@ -247,8 +247,12 @@ void exahype::mappings::FinaliseMeshRefinement::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  vertex.dropNeighbourMetadata(
-      fromRank,fineGridX,fineGridH,level);
+  bool oneSolverRequestedMeshUpdate =
+      exahype::solvers::Solver::oneSolverRequestedMeshUpdate();
+  if (oneSolverRequestedMeshUpdate) {
+    vertex.dropNeighbourMetadata(
+        fromRank,fineGridX,fineGridH,level);
+  }
 
   logTraceOut("mergeWithNeighbour(...)");
 }
