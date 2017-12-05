@@ -1814,7 +1814,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
         const bool                                   isRecomputation,
         const tarch::la::Vector<DIMENSIONS, double>& x,
         const int                                    level) const {
-  if (level==getMaximumAdaptiveMeshLevel()) {
+  if ( level==getMaximumAdaptiveMeshLevel() ) {
     SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
     logDebug("sendDataToNeighbourBasedOnLimiterStatus(...)", "send data for solver " << _identifier << " to rank " <<
@@ -1842,7 +1842,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
 
   } else {
 
-    if (!isRecomputation) {
+    if ( isRecomputation==false ) {
       _solver->sendDataToNeighbour(toRank,cellDescriptionsIndex,element,src,dest,x,level);
     } else {
       _solver->sendEmptyDataToNeighbour(toRank,x,level);
@@ -1851,7 +1851,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToNeighbour( //  TODO(Dominic): Potential bug
+void exahype::solvers::LimitingADERDGSolver::sendEmptyDataToNeighbour(
     const int                                     toRank,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
@@ -2020,7 +2020,7 @@ void exahype::solvers::LimitingADERDGSolver::dropNeighbourData(
     const int                                     level) const {
   // send order:   minAndMax,solver,limiter
   // receive order limiter,solver,minAndMax
-  if (level==getMaximumAdaptiveMeshLevel()) {
+  if ( level==getMaximumAdaptiveMeshLevel() ) {
     _limiter->dropNeighbourData(fromRank,src,dest,x,level);
   }
   _solver->dropNeighbourData(fromRank,src,dest,x,level);
@@ -2044,7 +2044,7 @@ void exahype::solvers::LimitingADERDGSolver::sendEmptySolverAndLimiterDataToNeig
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
   _solver->sendEmptyDataToNeighbour(toRank,x,level);
-  if (level==getMaximumAdaptiveMeshLevel()) {
+  if ( level==getMaximumAdaptiveMeshLevel() ) {
     _limiter->sendEmptyDataToNeighbour(toRank,x,level);
   }
 }
@@ -2059,10 +2059,10 @@ void exahype::solvers::LimitingADERDGSolver::dropNeighbourSolverAndLimiterData(
             fromRank << " at vertex x=" << x << ", level=" << level <<
             ", src=" << src << ", dest=" << dest);
 
-  _limiter->dropNeighbourData(fromRank,src,dest,x,level); // !!! Receive order must be inverted in neighbour comm.
-  if (level==getMaximumAdaptiveMeshLevel()) {
-    _solver->dropNeighbourData(fromRank,src,dest,x,level);
+  if ( level==getMaximumAdaptiveMeshLevel() ) {
+    _limiter->dropNeighbourData(fromRank,src,dest,x,level); // !!! Receive order must be inverted in neighbour comm.
   }
+  _solver->dropNeighbourData(fromRank,src,dest,x,level);
 }
 
 /////////////////////////////////////

@@ -1953,9 +1953,6 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     assertion2(cellDescription.getPredictorTimeStamp()>=0,
         cellDescription.toString(),toString());
 
-    assertionEquals1(0,tarch::la::max(cellDescription.getFacewiseLimiterStatus()),
-        cellDescription.toString());
-
     // persistent fields
     // volume DoF (basisSize**(DIMENSIONS))
     double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();

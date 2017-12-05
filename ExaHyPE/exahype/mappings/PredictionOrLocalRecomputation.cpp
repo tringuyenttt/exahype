@@ -506,8 +506,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighourData(
       const int element = solver->tryGetElement(destCellDescriptionIndex,solverNumber);
       const int offset  = exahype::NeighbourCommunicationMetadataPerSolver*solverNumber;
 
-      if (element!=exahype::solvers::Solver::NotFound
-          && receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry) {
+      if (
+          element!=exahype::solvers::Solver::NotFound &&
+          receivedMetadata[offset].getU()!=exahype::InvalidMetadataEntry
+      ) {
         logDebug("mergeWithNeighbourData(...)", "receive data for solver " << solverNumber << " from rank " <<
                       fromRank << " at vertex x=" << x << ", level=" << level <<
                       ", src=" << src << ", dest=" << dest);
