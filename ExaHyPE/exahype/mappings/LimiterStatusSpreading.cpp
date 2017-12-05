@@ -144,7 +144,10 @@ void exahype::mappings::LimiterStatusSpreading::endIteration(exahype::State& sol
 
       limitingADERDG->updateNextMeshUpdateRequest(_solverFlags._meshUpdateRequest[solverNumber]);
       limitingADERDG->updateNextAttainedStableState(!limitingADERDG->getNextMeshUpdateRequest());
-      limitingADERDG->updateNextLimiterDomainChange(_solverFlags._limiterDomainChange[solverNumber]);
+      if (limitingADERDG->getNextMeshUpdateRequest()==true) {
+        limitingADERDG->updateNextLimiterDomainChange(
+            exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate);
+      }
 
       limitingADERDG->setNextMeshUpdateRequest();
       limitingADERDG->setNextLimiterDomainChange();
@@ -217,10 +220,6 @@ void exahype::mappings::LimiterStatusSpreading::enterCell(
                 fineGridCell.getCellDescriptionsIndex(),element);
 
         _solverFlags._meshUpdateRequest[solverNumber] |= meshUpdateRequest;
-        if (meshUpdateRequest) {
-          _solverFlags._limiterDomainChange[solverNumber] =
-              exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-        }
       }
     }
 

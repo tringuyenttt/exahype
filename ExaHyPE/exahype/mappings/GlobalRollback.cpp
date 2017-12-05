@@ -28,7 +28,7 @@ peano::CommunicationSpecification
 exahype::mappings::GlobalRollback::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::
-      MaskOutMasterWorkerDataAndStateExchange,
+      SendDataAndStateBeforeFirstTouchVertexFirstTime, // TODO(Dominic): Might be able to relax this
       peano::CommunicationSpecification::ExchangeWorkerMasterData::
       MaskOutWorkerMasterDataAndStateExchange,
       true);
@@ -183,11 +183,41 @@ void exahype::mappings::GlobalRollback::mergeWithNeighbour(
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
 
-  vertex.mergeOnlyWithNeighbourMetadata(
-      fromRank,fineGridX,fineGridH,level,
-      exahype::State::AlgorithmSection::LimiterStatusSpreading);
+  vertex.dropNeighbourMetadata(fromRank,fineGridX,fineGridH,level);
 
   logTraceOut("mergeWithNeighbour(...)");
+}
+
+bool exahype::mappings::GlobalRollback::prepareSendToWorker(
+    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+    int worker) {
+  exahype::Cell::broadcastGlobalDataToWorker(
+      worker,
+      fineGridVerticesEnumerator.getCellCenter(),
+      fineGridVerticesEnumerator.getLevel());
+
+  return false;
+}
+
+void exahype::mappings::GlobalRollback::receiveDataFromMaster(
+    exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
+    const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+    exahype::Vertex* const receivedCoarseGridVertices,
+    const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
+    exahype::Cell& receivedCoarseGridCell,
+    exahype::Vertex* const workersCoarseGridVertices,
+    const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
+    exahype::Cell& workersCoarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  exahype::Cell::mergeWithGlobalDataFromMaster(
+        tarch::parallel::NodePool::getInstance().getMasterRank(),
+        receivedVerticesEnumerator.getCellCenter(),
+        receivedVerticesEnumerator.getLevel());
 }
 
 //
@@ -230,18 +260,6 @@ void exahype::mappings::GlobalRollback::mergeWithRemoteDataDueToForkOrJoin(
   // do nothing
 }
 
-bool exahype::mappings::GlobalRollback::prepareSendToWorker(
-    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    int worker) {
-  // do nothing
-  return false;
-}
-
 void exahype::mappings::GlobalRollback::prepareSendToMaster(
     exahype::Cell& localCell, exahype::Vertex* vertices,
     const peano::grid::VertexEnumerator& verticesEnumerator,
@@ -264,19 +282,6 @@ void exahype::mappings::GlobalRollback::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
-  // do nothing
-}
-
-void exahype::mappings::GlobalRollback::receiveDataFromMaster(
-    exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
-    const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-    exahype::Vertex* const receivedCoarseGridVertices,
-    const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
-    exahype::Cell& receivedCoarseGridCell,
-    exahype::Vertex* const workersCoarseGridVertices,
-    const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
-    exahype::Cell& workersCoarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   // do nothing
 }
 
