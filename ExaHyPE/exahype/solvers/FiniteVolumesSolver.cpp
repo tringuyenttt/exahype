@@ -1229,7 +1229,8 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
 //        << "and face=" << faceIndex
         << " from vertex x=" << x << ", level=" << level <<
         ", src type=" << multiscalelinkedcell::indexToString(cellDescriptionsIndex) <<
-        ", src=" << src << ", dest=" << dest
+        ", src=" << src << ", dest=" << dest <<
+        ", size="<<DataHeap::getInstance().getData(cellDescription.getExtrapolatedSolution()).size()
 //        << ", counter=" << cellDescription.getFaceDataExchangeCounter(faceIndex)
     );
 
@@ -1283,8 +1284,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
   // Solving Riemann problems at a Ancestor Ancestor boundary might lead to problems
   // if one Ancestor is just used for restriction.
   if(neighbourType==CellDescription::Type::Cell || cellDescription.getType()==CellDescription::Type::Cell){
-    tarch::multicore::Lock lock(exahype::HeapSemaphore);
-
     assertion1(holdsFaceData(neighbourType),neighbourType);
     assertion1(holdsFaceData(cellDescription.getType()),cellDescription.toString());
 
