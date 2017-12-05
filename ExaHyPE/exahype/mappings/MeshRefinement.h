@@ -248,6 +248,20 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
+   * After a fork, Peano erases the master's cells.
+   * We plugin into these erases and deallocate heap data
+   * before the cells are erased.
+   */
+  void destroyCell(
+      const exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
+  /**
    * TODO(Tobias): Add docu.
    *
    * TODO(Dominic): Update docu.
@@ -456,17 +470,6 @@ public:
      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
      exahype::Cell& coarseGridCell,
      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
- /**
-  * Nop.
-  */
- void destroyCell(
-     const exahype::Cell& fineGridCell,
-     exahype::Vertex* const fineGridVertices,
-     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-     exahype::Vertex* const coarseGridVertices,
-     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-     exahype::Cell& coarseGridCell,
-     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
  /**
   * Nop.
   */

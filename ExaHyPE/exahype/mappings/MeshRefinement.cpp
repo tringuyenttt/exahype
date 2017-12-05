@@ -500,6 +500,26 @@ void exahype::mappings::MeshRefinement::leaveCell(
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }
 
+
+void exahype::mappings::MeshRefinement::destroyCell(
+    const exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  // TODO(Dominic): introduce some allSolversDoThis allSolversDoThat...  functions
+  if ( fineGridCell.isInitialised() ) {
+    exahype::solvers::ADERDGSolver::eraseCellDescriptions(fineGridCell.getCellDescriptionsIndex());
+    exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(fineGridCell.getCellDescriptionsIndex());
+
+    exahype::solvers::ADERDGSolver::Heap::getInstance().
+        deleteData(fineGridCell.getCellDescriptionsIndex());
+    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().
+        deleteData(fineGridCell.getCellDescriptionsIndex());
+  }
+}
+
 #ifdef Parallel
 void exahype::mappings::MeshRefinement::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
@@ -804,17 +824,6 @@ void exahype::mappings::MeshRefinement::destroyVertex(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
   // do nothing
 }
-
-void exahype::mappings::MeshRefinement::destroyCell(
-    const exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  // do nothing
-}
-
 
 void exahype::mappings::MeshRefinement::descend(
     exahype::Cell* const fineGridCells, exahype::Vertex* const fineGridVertices,
