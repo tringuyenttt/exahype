@@ -54,13 +54,13 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * Heap index for tempoarily storing metadata between
    * the calls of Mapping::receiveDataFromMaster and Mapping::mergeWithWorker.
    */
-  int _receivedMetadataHeapIndex = multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
+  static int ReceivedMetadataHeapIndex;
 
   /**
    * Heap index for temporarily storing metadata between
    * Mapping::receiveDataFromMaster and Mapping::mergeWithWorker.
    */
-  std::deque<int> _receivedDataHeapIndices;
+  static std::deque<int> ReceivedDataHeapIndices;
   #endif
 
  public:
@@ -292,6 +292,9 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * \return true if the cell is inside and the
    * cell size does belong to a grid level that is
    * occupied by a solver.
+   *
+   * \note isInside() is not necessarily consistent on receivedCell from receiveDataFromMaster and
+   * on localCell in mergeWithWorker and thus ignored here.
    */
   bool hasToCommunicate(
       const tarch::la::Vector<DIMENSIONS,double>& cellSize ) const;
@@ -303,7 +306,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * via one of the faces.
    */
   static bool isAdjacentToRemoteRank(
-      exahype::Vertex* const verticesAroundCell,
+      exahype::Vertex* const               verticesAroundCell,
       const peano::grid::VertexEnumerator& verticesEnumerator);
 
   /**
@@ -338,8 +341,8 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * remote rank. This might however not be necessary.
    */
   static int countListingsOfRemoteRankAtFace(
-      const int faceIndex,
-      exahype::Vertex* const verticesAroundCell,
+      const int                            faceIndex,
+      exahype::Vertex* const               verticesAroundCell,
       const peano::grid::VertexEnumerator& verticesEnumerator);
 
   // MASTER->WORKER
@@ -378,6 +381,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * "Mapping::receiveDataFromMaster".
    */
   void receiveMetadataFromMasterPerCell(
+      const int                                   master,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const int                                   level);
@@ -389,7 +393,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * "Mapping::mergeWithWorker".
    */
   void mergeWithMetadataFromMasterPerCell(
-      const Cell&                                 receivedCell,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const exahype::State::AlgorithmSection&     section);
 
@@ -408,44 +411,43 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * \param[in] level      grid level this cell is residing at.
    */
   void broadcastDataToWorkerPerCell(
-    const int worker,
+    const int                                   worker,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-    const int                                  level) const;
+    const int                                   level) const;
 
   /*! Receive cell-wise heap data from the master.
    *
    * \note Must be called on the "receivedCell" in "Mapping::receiveDataFromMaster".
    *
    * \param[in] cellCentrie centre of the received cell.
+   * \param[in] cellSize   size of this cell.
    * \param[in] level grid level the received cell resides at.
    *
    */
   void receiveDataFromMasterPerCell(
       const int                                   master,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const int                                   level);
 
   /*! Merge received heap data with the local cell.
    *
    * In Peano's two-step receive-from-master process,
    * we first receive data in "Mapping::receiveDataFromMaster".
-   * We store received heap data in the fields _receivedDataHeapIndex and
-   * _receivedHeapDataIndices of the "receivedCell".
+   * We store received heap data in the fields ReceivedDataHeapIndex and
+   * ReceivedHeapDataIndices.
    *
-   * In the second and last step, we then pass the "receivedCell"
-   * to the "localCell" in "Mapping::mergeWithWorker".
-   * Here, we pick up the previously received heap data, merge
+   * In the second and last step, in "Mapping::mergeWithWorker",
+   * we pick up the previously received heap data, merge
    * it with the "localCell", and then delete the heap data associated
    * with the "receivedCell".
    *
    * \note Must be called on the "localCell" in "Mapping::mergeWithWorker".
    *
-   * \param[in] receivedCell a cell received from the master which we also use to store heap indices.
    * \param[in] cellSize size of either cell.
    */
   void mergeWithMasterDataPerCell(
-      const Cell&                                 receivedCell,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize );
 
   // WORKER->MASTER

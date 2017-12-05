@@ -244,10 +244,10 @@ void exahype::mappings::SolutionUpdate::prepareSendToMaster(
       coarseGridVerticesEnumerator.getCellCenter(),
       coarseGridVerticesEnumerator.getLevel());
 
-  exahype::sendMasterWorkerCommunicationMetadata(
+  localCell.reduceMetadataToMasterPerCell(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
-      localCell.getCellDescriptionsIndex(),
       verticesEnumerator.getCellCenter(),
+      verticesEnumerator.getCellSize(),
       verticesEnumerator.getLevel());
 }
 

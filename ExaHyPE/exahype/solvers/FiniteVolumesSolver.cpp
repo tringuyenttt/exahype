@@ -985,7 +985,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeCellDescriptionsWithRemoteData(
       "level="<< level << ")");
 
   Heap::getInstance().getData(localCell.getCellDescriptionsIndex()).clear();
-  if (Heap::getInstance().getData(receivedCellDescriptionsIndex).size()>0) {
+  if ( !Heap::getInstance().getData(receivedCellDescriptionsIndex).empty() ) {
     resetDataHeapIndices(receivedCellDescriptionsIndex,
         multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
     assertion1(Heap::getInstance().isValidIndex(localCell.getCellDescriptionsIndex()),

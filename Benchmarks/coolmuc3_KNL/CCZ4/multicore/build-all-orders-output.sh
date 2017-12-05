@@ -1,14 +1,20 @@
 directory=multicore
 
 exe=ExaHyPE-CCZ4
-spec=$directory/CCZ4-no-output.exahype
+spec=$directory/CCZ4-output.exahype
 
 cp $spec ${spec}_tmp
 
-for m in TBB OMP None
+for m in 1 2
 do
-  make clean
-  export SHAREDMEM=$m
+  if (( m == 1 )); then
+    make clean
+    export SHAREDMEM=TBB
+  else
+    make clean
+    export SHAREDMEM=None
+  fi
+
   echo "SHAREDMEM=$SHAREDMEM"
   #read -p "press any key..."
 
@@ -17,7 +23,7 @@ do
     rm *.o
     sed -i -r 's,order(\s+)const(\s+)=(\s+)([0-9]+),order\1const\2=\3'$p',' $spec
     cat $spec
-    $directory/configure-no-output.sh
+    $directory/configure-output.sh
     make -j56 && \
     mv $exe $exe-p$p-$SHAREDMEM-$COMPILER
   done

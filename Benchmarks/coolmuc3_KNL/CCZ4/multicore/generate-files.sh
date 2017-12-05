@@ -36,7 +36,7 @@ for order in 3 5 7 9
 #for order in 3
 do
   #SIMULATION END TIME
-  T=(  0.011 )            # p=3
+  T=(  0.011  )            # p=3
   if (( order == 5 )); then
     T=( 0.0636 )  # p=5; (2*3+1)/(2*order+1)*T_3 ceiled with sig. 1e-6
   fi
@@ -58,7 +58,7 @@ do
   sed -i 's,script=multicore/coolmuc.slurm-script,script='$newScript',g' $newScript 
   
   # Create spec files
-  for coresPerTask in 1 2 4 8 14 28
+  for coresPerTask in 1 2 4 8 16 32 64
   #for coresPerTask in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 48 # ham7
   #for coresPerTask in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 32 # ham6
   do

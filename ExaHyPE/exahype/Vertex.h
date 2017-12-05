@@ -216,6 +216,17 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
       const tarch::la::Vector<DIMENSIONS, double>& h) const;
 
   /**
+   * Va;odate that a compute cell is not next to
+   * a compute cell as long as the face is an interior
+   * face.
+   */
+  void validateThatNeighbourhoodIsValid(
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const int pos1Scalar,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2,
+      const int pos2Scalar) const;
+
+  /**
    * Checks if the cell descriptions at the indices corresponding
    * to \p pos1 and \p pos2 need to be merged with each other.
    *

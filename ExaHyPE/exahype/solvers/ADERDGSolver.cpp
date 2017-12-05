@@ -3263,22 +3263,11 @@ void exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
         <CellDescription,Heap>(cellDescription);
 
     if (subcellPosition.parentElement!=NotFound) { // then: need to restrict face data
-      cellDescription.setHasToHoldDataForMasterWorkerCommunication(true);
-      cellDescription.setHelperStatus(0);
-      cellDescription.setType(CellDescription::Type::Ancestor);
-      ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-      ensureNecessaryMemoryIsAllocated(cellDescription);
-      cellDescription.setType(CellDescription::Type::Cell); // Hack to only store face data.
-
       const int nextParentElement =
           tryGetElement(cellDescriptionsIndex,cellDescription.getSolverNumber());
       CellDescription& nextParent =
           getCellDescription(cellDescription.getParentIndex(),nextParentElement);
       vetoErasingOrDeaugmentingChildrenRequest(nextParent,cellDescriptionsIndex);
-    } else {
-      cellDescription.setType(CellDescription::Erased);
-      ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-      cellDescription.setType(CellDescription::Type::Cell); // Hack deletes all the data
     }
   } // do nothing for descendants; wait for info from worker
     // see mergeWithWorkerMetadata
@@ -3306,7 +3295,8 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerMetadata(
       cellDescription.setHasToHoldDataForMasterWorkerCommunication(workerHoldsData);
       ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
       ensureNecessaryMemoryIsAllocated(cellDescription);
-    } else if (cellDescription.getType()==CellDescription::Type::Ancestor ||
+    } else if (
+        cellDescription.getType()==CellDescription::Type::Ancestor ||
         cellDescription.getType()==CellDescription::Type::Cell) {
       cellDescription.setLimiterStatus(workerLimiterStatus);
       const int parentElement =
@@ -3426,25 +3416,24 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS, int>& dest,
     const int                                 cellDescriptionsIndex,
     const int                                 element) const {
-  if (tarch::la::countEqualEntries(src,dest)!=DIMENSIONS-1) { // only consider faces
-    return;
-  }
-  const int direction   = tarch::la::equalsReturnIndex(src, dest);
-  const int orientation = (1 + src(direction) - dest(direction))/2;
-  const int faceIndex   = 2*direction+orientation;
+  if (tarch::la::countEqualEntries(src,dest)==DIMENSIONS-1) { // only consider faces
+    const int direction   = tarch::la::equalsReturnIndex(src, dest);
+    const int orientation = (1 + src(direction) - dest(direction))/2;
+    const int faceIndex   = 2*direction+orientation;
 
-  const int neighbourAugmentationStatus =
-      neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus].getU();
-  const int neighbourHelperStatus       =
-      neighbourMetadata[exahype::NeighbourCommunicationMetadataHelperStatus      ].getU();
-  const int neighbourLimiterStatus      =
+    const int neighbourAugmentationStatus =
+        neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus].getU();
+    const int neighbourHelperStatus       =
+        neighbourMetadata[exahype::NeighbourCommunicationMetadataHelperStatus      ].getU();
+    const int neighbourLimiterStatus      =
         neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus   ].getU();
 
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
+    CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
-  mergeWithAugmentationStatus(cellDescription,faceIndex,neighbourAugmentationStatus);
-  mergeWithHelperStatus      (cellDescription,faceIndex,neighbourHelperStatus);
-  mergeWithLimiterStatus     (cellDescription,faceIndex,neighbourLimiterStatus);
+    mergeWithAugmentationStatus(cellDescription,faceIndex,neighbourAugmentationStatus);
+    mergeWithHelperStatus      (cellDescription,faceIndex,neighbourHelperStatus);
+    mergeWithLimiterStatus     (cellDescription,faceIndex,neighbourLimiterStatus);
+  }
 }
 
 void exahype::solvers::ADERDGSolver::sendDataToNeighbour(

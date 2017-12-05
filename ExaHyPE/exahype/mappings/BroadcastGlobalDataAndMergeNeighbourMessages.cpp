@@ -217,6 +217,7 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::receiveDat
   receivedCell.receiveDataFromMasterPerCell(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
       receivedVerticesEnumerator.getCellCenter(),
+      receivedVerticesEnumerator.getCellSize(),
       receivedVerticesEnumerator.getLevel());
 
   logTraceOut( "receiveDataFromMaster(...)" );
@@ -229,8 +230,7 @@ void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::mergeWithW
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   logTraceInWith2Arguments( "mergeWithWorker(...)", localCell.toString(), receivedMasterCell.toString() );
 
-  localCell.mergeWithMasterDataPerCell(
-      receivedMasterCell,cellSize);
+  localCell.mergeWithMasterDataPerCell( cellSize );
 
   logTraceOutWith1Argument( "mergeWithWorker(...)", localCell.toString() );
 }
