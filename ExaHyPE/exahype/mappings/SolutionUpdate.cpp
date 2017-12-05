@@ -241,8 +241,8 @@ void exahype::mappings::SolutionUpdate::prepareSendToMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   exahype::Cell::reduceGlobalDataToMaster(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
-      coarseGridVerticesEnumerator.getCellCenter(),
-      coarseGridVerticesEnumerator.getLevel());
+      verticesEnumerator.getCellCenter(),
+      verticesEnumerator.getLevel());
 
   localCell.reduceMetadataToMasterPerCell(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
@@ -265,8 +265,8 @@ void exahype::mappings::SolutionUpdate::mergeWithMaster(
     exahype::State& masterState) {
   exahype::Cell::mergeWithGlobalDataFromWorker(
       worker,
-      coarseGridVerticesEnumerator.getCellCenter(),
-      coarseGridVerticesEnumerator.getLevel());
+      fineGridVerticesEnumerator.getCellCenter(),
+      fineGridVerticesEnumerator.getLevel());
 
   fineGridCell.mergeWithMetadataFromWorkerPerCell(
       worker,
