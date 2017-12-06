@@ -35,8 +35,10 @@ namespace exahype {
 
 /**
  * This is an adapter which writes cell-based heap indices into the adjacency
- * maps of each vertex. This is done completely levelwisely. No hanging nodes
- * are considered.
+ * maps of each vertex. This is done completely levelwisely. No heap indices
+ * from the coarse grid are written to the adjacency maps of
+ * hanging vertices. Instead we write an invalid index at positions where an
+ * adjacent cell is located on the coarse grid.
  *
  * Codes which want to use this mapping need to ensure that no
  * hanging nodes appear on the boundary of the domain.
@@ -127,9 +129,6 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
     /**
      * Updates the adjacency maps of all surrounding fine grid
      * vertices with the fine grid cells cell description.
-     * Ignores hanging nodes.
-     *
-     * \note Requires a
      */
     void enterCell(
       exahype::Cell&                 fineGridCell,
