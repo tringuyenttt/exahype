@@ -99,7 +99,8 @@ void exahype::mappings::LocalRollback::mergeWithWorkerThread(
 
 void exahype::mappings::LocalRollback::beginIteration(
     exahype::State& solverState) {
-  // do nothing
+  _oneSolverRequestedLocalRecomputation =
+      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
 }
 
 bool exahype::mappings::LocalRollback::performLocalRecomputation(
@@ -113,20 +114,22 @@ bool exahype::mappings::LocalRollback::performLocalRecomputation(
 
 void exahype::mappings::LocalRollback::endIteration(
     exahype::State& solverState) {
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-    auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-    if (
-        performLocalRecomputation(solver) &&
-        exahype::State::fuseADERDGPhases()==true
-    ) {
-      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDGSolver->rollbackToPreviousTimeStepFused();
-    } else if (
-        performLocalRecomputation(solver) &&
-        exahype::State::fuseADERDGPhases()==false
-    ) {
-      auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-      limitingADERDGSolver->rollbackToPreviousTimeStep();
+  if ( _oneSolverRequestedLocalRecomputation ) {
+    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
+      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
+      if (
+          performLocalRecomputation(solver) &&
+          exahype::State::fuseADERDGPhases()==true
+      ) {
+        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+        limitingADERDGSolver->rollbackToPreviousTimeStepFused();
+      } else if (
+          performLocalRecomputation(solver) &&
+          exahype::State::fuseADERDGPhases()==false
+      ) {
+        auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+        limitingADERDGSolver->rollbackToPreviousTimeStep();
+      }
     }
   }
 }
@@ -142,7 +145,10 @@ void exahype::mappings::LocalRollback::enterCell(
                            fineGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfCell);
 
-  if (fineGridCell.isInitialised()) {
+  if (
+      _oneSolverRequestedLocalRecomputation &&
+      fineGridCell.isInitialised()
+  ) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined10);
     pfor(i, 0, numberOfSolvers, grainSize.getGrainSize())
@@ -180,7 +186,10 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  if (vertex.hasToCommunicate(h)) {
+  if (
+      _oneSolverRequestedLocalRecomputation &&
+      vertex.hasToCommunicate(h)
+  ) {
     dfor2(dest)
       dfor2(src)
         if (vertex.hasToSendMetadata(toRank,src,dest)) {

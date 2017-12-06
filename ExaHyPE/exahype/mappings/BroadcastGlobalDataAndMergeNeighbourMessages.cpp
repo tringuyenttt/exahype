@@ -194,7 +194,7 @@ bool exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::prepareSen
 
   logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
 
-  return false;
+  return true; // see docu
 }
 
 void exahype::mappings::BroadcastGlobalDataAndMergeNeighbourMessages::receiveDataFromMaster(

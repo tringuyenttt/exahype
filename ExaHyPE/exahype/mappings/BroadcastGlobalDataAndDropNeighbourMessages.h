@@ -108,6 +108,11 @@ public:
 
   /**
    * Send down global time step and plotter data down to the worker.
+   *
+   * \note Has to return true since in the next adapter,
+   * we will perform a reduction and skip the broadcast.
+   * Skipping the broadcast implies that the reduceToDataMaster
+   * flag is not updated anymore.
    */
   bool prepareSendToWorker(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,

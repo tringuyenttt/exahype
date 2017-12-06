@@ -1589,7 +1589,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursBasedOnLimiterStatus
     else {
       logError("mergeNeighboursBasedOnLimiterStatus(...)","Neighbours cannot communicate. " <<
           std::endl << "cell1=" << solverPatch1.toString() <<
-          std::endl << ".cell2=" << solverPatch1.toString());
+          std::endl << ".cell2=" << solverPatch2.toString());
       std::terminate();
     }
 

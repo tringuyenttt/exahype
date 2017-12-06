@@ -246,6 +246,12 @@ public:
    * the worker. Further send down face data if a cell description
    * registered in the fine grid cell is of type Descendant.
    *
+   * \note Has to return true since in the next adapter,
+   * we will perform a reduction and skip the broadcast.
+   * Skipping the broadcast implies that the reduceToDataMaster
+   * flag is not updated anymore.
+   *
+   *
    * <h2>Domain Decomposition in Peano</h2>
    * It is important to notice
    * that the master rank's cell

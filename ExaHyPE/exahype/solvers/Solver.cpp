@@ -486,40 +486,38 @@ int exahype::solvers::Solver::getMaxAdaptiveRefinementDepthOfAllSolvers() {
 }
 
 bool exahype::solvers::Solver::oneSolverRequestedMeshUpdate() {
+  bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getMeshUpdateRequest()) {
-      return true;
-    }
+    result |= solver->getMeshUpdateRequest();
   }
-  return false;
+  return result;
 }
 
 bool exahype::solvers::Solver::oneSolverHasNotAttainedStableState() {
+  bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (!solver->getAttainedStableState()) {
-      return true;
-    }
+    result |= !solver->getAttainedStableState();
   }
-  return false;
+  return result;
 }
 
 bool exahype::solvers::Solver::oneSolverViolatedStabilityCondition() {
+  bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     switch (solver->getType()) {
       case Type::ADERDG:
-        if (static_cast<ADERDGSolver*>(solver)->getStabilityConditionWasViolated())
-          return true;
+        result |= static_cast<ADERDGSolver*>(solver)->getStabilityConditionWasViolated();
         break;
       case Type::LimitingADERDG:
-        if (static_cast<LimitingADERDGSolver*>(solver)->getSolver().get()->
-            getStabilityConditionWasViolated())
-          return true;
+        result |=
+            static_cast<LimitingADERDGSolver*>(solver)->getSolver().get()->
+            getStabilityConditionWasViolated();
         break;
       default:
         break;
     }
   }
-  return false;
+  return result;
 }
 
 

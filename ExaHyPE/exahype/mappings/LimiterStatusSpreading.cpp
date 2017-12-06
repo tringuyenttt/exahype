@@ -28,14 +28,11 @@
 
 tarch::logging::Log exahype::mappings::LimiterStatusSpreading::_log("exahype::mappings::LimiterStatusSpreading");
 
-/**
- * @todo Please tailor the parameters to your mapping's properties.
- */
 peano::CommunicationSpecification
 exahype::mappings::LimiterStatusSpreading::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::
-          SendDataAndStateBeforeFirstTouchVertexFirstTime, // TODO(Dominic): Cannot mask out Master-Worker exchange - technically I should be able too. Probably the reduction stuff.
+          MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::
           SendDataAndStateAfterLastTouchVertexLastTime,
       true);
@@ -242,6 +239,8 @@ bool exahype::mappings::LimiterStatusSpreading::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
+  logTraceIn( "prepareSendToWorker(...)" );
+  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
   return true;
 }
 
@@ -280,6 +279,8 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
+
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
@@ -290,6 +291,8 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
           verticesEnumerator.getLevel());
     }
   }
+
+  logTraceOut( "prepareSendToMaster(...)" );
 }
 
 void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
@@ -304,6 +307,8 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
+  logTraceIn( "mergeWithMaster(...)" );
+
   // Merge global solver states
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -315,6 +320,8 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
           fineGridVerticesEnumerator.getLevel());
     }
   }
+
+  logTraceOut( "mergeWithMaster(...)" );
 }
 
 //

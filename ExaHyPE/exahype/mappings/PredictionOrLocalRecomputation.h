@@ -47,24 +47,21 @@ class PredictionOrLocalRecomputation;
  * |                        | enterCell              | Determine a unified value of the merged face-wise limiter status values and write it to every face. (Do not update the cell-wise limiter status.)|
  * |                        | prepareSendToNeighbour | Send the unified ace-wise limiter status to neighbouring ranks.|
  * -------------------------------------------------------------------------------------------------------
- * | Reinitialisation       | mergeWithNeighbour     | Receive the neighbour ranks' cells' merged limiter status. Directly update the unified merged limiter status value of cells at the remote boundary |
+ * | LocalRollback          | mergeWithNeighbour     | Receive the neighbour ranks' cells' merged limiter status. Directly update the unified merged limiter status value of cells at the remote boundary |
  * |                        | touchVertexFirstTime   | Merge the limiter status between local neighbours (again).
  * |                        | enterCell              | Determine a unified value of the merged face-wise limiter status values and write it to every face. |
  * |                        |                        | (Do not update the cell-wise limiter status.)                                                       |
  * |                        |                        | Rollback the solution in troubled cells and their next two neighbours.
  * |                        | prepareSendToNeighbour | Based on the unified face-wise limiter status send interface values to the neighbours. |
  * ------------------------------------------------------------------------------------------------------
- * |PredictionOrLocalRecomputation      | mergeWithNeighbour     | Based on the unified face-wise limiter status receive or drop the interface values send by the neighbours.
- * |                        | touchVertexFirstTIme   | Based on the unified face-wise limiter status merge local direct neighbours.
- * |                        | enterCell              | Recompute the solution in the troubled cells (and their direct neighbours).
- * |                        |                        | Set the cell-wise limiter status to the unified face-wise limiter status.
- * |                        |                        | (The normal time marching does only consider the cell-wise limiter status from now on
- * |                        |                        | and overwrites the face-wise values uniformly with Ok or Troubled after
- * |                        |                        | evaluating the discrete maximum principle (DMP) and the physical admissibility detection (PAD).)
+ * |PredictionOrLocalRecomputation | mergeWithNeighbour     | Based on the unified face-wise limiter status receive or drop the interface values send by the neighbours.
+ * |                               | touchVertexFirstTIme   | Based on the unified face-wise limiter status merge local direct neighbours.
+ * |                               | enterCell              | Recompute the solution in the troubled cells (and their direct neighbours).
+ * |                               |                        | Set the cell-wise limiter status to the unified face-wise limiter status.
+ * |                               |                        | (The normal time marching does only consider the cell-wise limiter status from now on
+ * |                               |                        | and overwrites the face-wise values uniformly with Ok or Troubled after
+ * |                               |                        | evaluating the discrete maximum principle (DMP) and the physical admissibility detection (PAD).)
  * ------------------------------------------------------------------------
- *
- * This mapping is only used in the algorithmic section PredictionOrLocalRecomputation.
- * It is not used for in the algorithmic section APosterioriRefinement.
  *
  * @author Dominic Charrier
  */
@@ -95,6 +92,12 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    * state is then broadcasted by Peano to all other ranks.)
    */
   exahype::State _localState;
+
+  /**
+   * Flag indicating if one solver requested a local recomputation.
+   * Is initialised in beginIteration(...).
+   */
+  bool _oneSolverRequestedLocalRecomputation = false;
 
   /**
    * A minimum time step size for each solver.
@@ -220,7 +223,11 @@ class exahype::mappings::PredictionOrLocalRecomputation {
   peano::CommunicationSpecification communicationSpecification() const;
 
   /**
-   * TODO(Dominic): Add docu.
+   * In case one solver requested a local recomputation,
+   * advance limiter patches in time for this solvers.
+   *
+   * In case of fused time stepping, perform the prediction
+   * for ADER-DG solvers which have performed mesh refinement.
    */
   void enterCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -245,7 +252,8 @@ class exahype::mappings::PredictionOrLocalRecomputation {
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
-   * TODO(Dominic): Add docu.
+   * In case one solver requested a local recomputation,
+   * merge neighbouring limiter patches for this solvers.
    */
   void touchVertexFirstTime(
       exahype::Vertex& fineGridVertex,
@@ -289,7 +297,8 @@ class exahype::mappings::PredictionOrLocalRecomputation {
 
 #ifdef Parallel
   /**
-   * TODO(Dominic): Add docu.
+   * In case one solver requested a local recomputation,
+   * receive limiter boundary values from neighbouring ranks.
    */
   void mergeWithNeighbour(exahype::Vertex& vertex,
                           const exahype::Vertex& neighbour, int fromRank,
@@ -297,13 +306,77 @@ class exahype::mappings::PredictionOrLocalRecomputation {
                           const tarch::la::Vector<DIMENSIONS, double>& h,
                           int level);
   /**
-   * TODO(Dominic): Add docu.
+   * Send data out to the worker if fused time stepping is used.
+   * We send for all solvers.
+   * This does not depend on if we have performed a mesh
+   * update or a local reecomputation.
    */
   void prepareSendToNeighbour(exahype::Vertex& vertex, int toRank,
                               const tarch::la::Vector<DIMENSIONS, double>& x,
                               const tarch::la::Vector<DIMENSIONS, double>& h,
                               int level);
 
+  /**
+   * Broadcast global data to a worker.
+   *
+   * \see exahype::Cell::broadcastGlobalDataToWorker
+   */
+  bool prepareSendToWorker(
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+      int worker);
+
+  /**
+   * Receive global data to a from the master.
+   *
+   * \see exahype::Cell::mergeWithGlobalDataFromMaster
+   */
+  void receiveDataFromMaster(
+      exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
+      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
+      exahype::Vertex* const receivedCoarseGridVertices,
+      const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
+      exahype::Cell& receivedCoarseGridCell,
+      exahype::Vertex* const workersCoarseGridVertices,
+      const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
+      exahype::Cell& workersCoarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
+  /**
+   * Reduce face data to the master for all solvers.
+   * For solvers which requested a local recomputation,
+   * reduce new time step data up to the master as well.
+   */
+  void prepareSendToMaster(
+      exahype::Cell& localCell, exahype::Vertex* vertices,
+      const peano::grid::VertexEnumerator& verticesEnumerator,
+      const exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
+  /**
+   * Merge with reduced face data for all solvers
+   * from the workers.
+   * For solvers which requested a local recomputation,
+   * merge with new time step data from the workers.
+   */
+  void mergeWithMaster(
+      const exahype::Cell& workerGridCell,
+      exahype::Vertex* const workerGridVertices,
+      const peano::grid::VertexEnumerator& workerEnumerator,
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+      int worker, const exahype::State& workerState,
+      exahype::State& masterState);
 
 
   //
@@ -341,55 +414,7 @@ class exahype::mappings::PredictionOrLocalRecomputation {
       exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
       int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
-  /**
-   * Nop.
-   */
-  bool prepareSendToWorker(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      int worker);
-  /**
-   * Nop.
-   */
-  void mergeWithMaster(
-      const exahype::Cell& workerGridCell,
-      exahype::Vertex* const workerGridVertices,
-      const peano::grid::VertexEnumerator& workerEnumerator,
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      int worker, const exahype::State& workerState,
-      exahype::State& masterState);
-  /**
-   * Nop.
-   */
-  void prepareSendToMaster(
-      exahype::Cell& localCell, exahype::Vertex* vertices,
-      const peano::grid::VertexEnumerator& verticesEnumerator,
-      const exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
-  /**
-   * Nop.
-   */
-  void receiveDataFromMaster(
-      exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
-      const peano::grid::VertexEnumerator& receivedVerticesEnumerator,
-      exahype::Vertex* const receivedCoarseGridVertices,
-      const peano::grid::VertexEnumerator& receivedCoarseGridVerticesEnumerator,
-      exahype::Cell& receivedCoarseGridCell,
-      exahype::Vertex* const workersCoarseGridVertices,
-      const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
-      exahype::Cell& workersCoarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
   /**
    * Nop.
    */

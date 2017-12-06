@@ -110,9 +110,11 @@ void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::mergeWithNe
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
-  vertex.receiveNeighbourData(
-      fromRank,false /*no merge - just drop */,
-      nullptr,fineGridX,fineGridH,level);
+  if ( exahype::State::fuseADERDGPhases() ) {
+    vertex.receiveNeighbourData(
+        fromRank,false /*no merge - just drop */,
+        nullptr,fineGridX,fineGridH,level);
+  }
 }
 
 ///////////////////////////////////////
@@ -131,7 +133,7 @@ bool exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::prepareSend
         fineGridVerticesEnumerator.getCellCenter(),
         fineGridVerticesEnumerator.getLevel());
 
-  return false;
+  return true; // see docu
 }
 
 void exahype::mappings::BroadcastGlobalDataAndDropNeighbourMessages::receiveDataFromMaster(

@@ -239,6 +239,8 @@ void exahype::mappings::SolutionUpdate::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
+
   exahype::Cell::reduceGlobalDataToMaster(
       tarch::parallel::NodePool::getInstance().getMasterRank(),
       verticesEnumerator.getCellCenter(),
@@ -249,6 +251,8 @@ void exahype::mappings::SolutionUpdate::prepareSendToMaster(
       verticesEnumerator.getCellCenter(),
       verticesEnumerator.getCellSize(),
       verticesEnumerator.getLevel());
+
+  logTraceOut( "prepareSendToMaster(...)" );
 }
 
 void exahype::mappings::SolutionUpdate::mergeWithMaster(
@@ -263,6 +267,8 @@ void exahype::mappings::SolutionUpdate::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
+  logTraceIn( "mergeWithMaster(...)" );
+
   exahype::Cell::mergeWithGlobalDataFromWorker(
       worker,
       fineGridVerticesEnumerator.getCellCenter(),
@@ -274,6 +280,21 @@ void exahype::mappings::SolutionUpdate::mergeWithMaster(
       fineGridVerticesEnumerator.getCellSize(),
       fineGridVerticesEnumerator.getLevel(),
       exahype::State::AlgorithmSection::TimeStepping);
+
+  logTraceOut( "mergeWithMaster(...)" );
+}
+
+bool exahype::mappings::SolutionUpdate::prepareSendToWorker(
+    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+    exahype::Vertex* const coarseGridVertices,
+    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+    exahype::Cell& coarseGridCell,
+    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+    int worker) {
+  logTraceIn( "prepareSendToWorker(...)" );
+  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
+  return true;
 }
 
 //
@@ -322,18 +343,6 @@ void exahype::mappings::SolutionUpdate::mergeWithRemoteDataDueToForkOrJoin(
     int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   // do nothing
-}
-
-bool exahype::mappings::SolutionUpdate::prepareSendToWorker(
-    exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    exahype::Vertex* const coarseGridVertices,
-    const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    exahype::Cell& coarseGridCell,
-    const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    int worker) {
-  // do nothing
-  return false;
 }
 
 void exahype::mappings::SolutionUpdate::receiveDataFromMaster(
