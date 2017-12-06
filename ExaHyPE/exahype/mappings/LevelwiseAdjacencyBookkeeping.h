@@ -35,10 +35,12 @@ namespace exahype {
 
 /**
  * This is an adapter which writes cell-based heap indices into the adjacency
- * maps of each vertex. This is done completely levelwisely. No heap indices
- * from the coarse grid are written to the adjacency maps of
- * hanging vertices. Instead we write an invalid index at positions where an
- * adjacent cell is located on the coarse grid.
+ * maps of each vertex. This is done completely levelwisely.
+ *
+ * \note Hanging nodes are completely ignored and the indices initialised
+ * with invalid indices everytime a hanging node is created.
+ * Consistency checks must thus not consider cells which
+ * have an adjacent hanging node.
  *
  * Codes which want to use this mapping need to ensure that no
  * hanging nodes appear on the boundary of the domain.

@@ -120,8 +120,10 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
   dfor2(k)
-    VertexOperations::writeCellDescriptionsIndex(
-        fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1, fineGridCell.getCellDescriptionsIndex());
+    if ( !fineGridVertices[fineGridVerticesEnumerator(k) ].isHangingNode() ) {
+      VertexOperations::writeCellDescriptionsIndex(
+          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1, fineGridCell.getCellDescriptionsIndex());
+    }
   enddforx
 }
 
