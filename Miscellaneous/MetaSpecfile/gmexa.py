@@ -25,6 +25,7 @@ idfunc = lambda x: x
 # A nicer functional list access thing
 first = lambda x: x[0]
 last = lambda x: x[-1]
+tuplize = lambda x: (x,)
 # Removes all None from a list
 removeNone = lambda l: [ x for x in l if x is not None ]
 removeFalse = lambda l: [ x for x in l if x ]
@@ -104,6 +105,7 @@ class NamedFunction:
 	def __repr__(self):
 		return self.name
 
+### end helpers
 
 class term:
 	# a unique thing (string). For nxNetwork graph
@@ -114,19 +116,32 @@ class term:
 			cls.uniq_counter = 0
 		cls.uniq_counter += 1
 		return cls.uniq_counter
-	def __init__(self,value=None):
+	def __init__(self,value=None, addr_instance=None):
+		"""
+		Get a new term. This will be an unique object, i.e. term("foo") != term("foo").
+		In order to address an exixting term (mostly for debugging purposes), you can
+		write term("foo", 7) if your existing term("foo") has a counter==7.
+		"""
 		self.value = value
-		self.counter = self.__class__._incrCounter() if value else 0
+		if addr_instance == None:
+			self.counter = self.__class__._incrCounter() if value else 0
+		else:
+			self.counter = addr_instance
+	def isRoot(self):
+		return not bool(self.value)
 	def copy(self):
 		# make a new instance of term which is unrelated to this one.
 		return term(self.value)
 	def __repr__(self):
-		return "term%s(%s)"%(self.counter,repr(self.value)) if self.value else "root"
+		return "term(%s,%d)"%(repr(self.value),self.counter) if self.value else "root"
 	def __eq__(self,other):
 		#return not self.value and not other.value
 		return self.counter == other.counter and self.value == other.value
 	def __hash__(self):
-		return hash((self.value,self._incrCounter))
+		return hash((self.value,self.counter))
+
+# define the root symbol for convenience
+term.root = term()
 
 class symbol:
 	"""
@@ -135,10 +150,7 @@ class symbol:
 	Symbols are treated as immutable: There is no method to change them after construction.
 	In Mexa, symbols always appear as the LHS of an relation (operation).
 	"""
-	
-	# primitive types which we allow to store on the RHS.
-	primitives = [int,float,str,unicode,bool]
-	
+
 	def __init__(self,name=''):
 		""""
 		Creates a symbol from a name such as Foo/Bar/Baz or a path such
@@ -188,6 +200,9 @@ class symbol:
 		list [/, /a, /a/b].
 		"""
 		return [symbol(self._path[:i]) for i,_ in enumerate(self._path)]
+	def as_str_tuple(self, include_root=False):
+		# Returns the (immutable) tuple of strings holding the elements of the path
+		return ("",)+self._path if include_root else self._path
 	def parts_as_term(self):
 		"""
 		Like ancestors, just weird. For instance /a/b/c it is
@@ -223,11 +238,10 @@ class symbol:
 	def __hash__(self):
 		return hash(tuple(self._path))
 	def __eq__(self, other):
-		return self.canonical() == other.canonical()
+		return isa(other,symbol) and self.canonical() == other.canonical()
 	def __lt__(self, other): # sortable
 		return self.canonical() < other.canonical()
 
-### end helpers
 
 class source:
 	"""
@@ -236,6 +250,8 @@ class source:
 	"""
 	def __init__(self, src=None):
 		if isa(src, source):
+			self.sources = src.sources
+		elif isa(src, list): # shall not catch sourceline instances
 			self.sources = src
 		elif src==None:
 			self.sources = ["unknown"]
@@ -252,6 +268,7 @@ class source:
 			# TODO: Make this nicer
 			return " -> ".join(map(str, self.sources))
 
+source.unknown = source()
 
 class sourceline(namedtuple('sourceline', 'fname linenum text')):
 	"""
@@ -296,7 +313,9 @@ class sourceline(namedtuple('sourceline', 'fname linenum text')):
 # Regexps for defining the language
 class lang:
 	symbols = { '=': 'equals', '<=': "subsets", '<<': "include", '+=': "append" }
-	opor = "|".join(map(re.escape, symbols.keys())) # regex detecting operators
+	symbol_alternatives = { '=': 'equals', '<': 'subsets', '<=': 'subsets', '<<': 'include', '+=': 'append' }
+	primitives = [int,float,str,unicode,bool]
+	opor = "|".join(map(re.escape, symbol_alternatives.keys())) # regex detecting operators
 	symb_split = ("::", "/")
 	symb_split_or = "|".join(map(re.escape, symb_split))
 	symb = r"[a-z_][a-z_0-9:/]*" # regex defining a LHS symbol
@@ -305,6 +324,18 @@ class lang:
 	stringvarchar = "@" # variable escape character
 	stringvarsimple = stringvarchar + "([a-z_0-9]+)" # only alphanumeric
 	stringvarcomplex = stringvarchar + "\{("+symb+")\}"
+	
+	class evalstr:
+		def __init__(self, text):
+			self.text = text
+		def __call__(self, context):
+			replmatch = lambda matchobj: context.resolve_symbol(matchobj.group(1))
+			text = re.sub(lang.stringvarsimple, replmatch, text, count=0, flags=baseflags)
+			text = re.sub(lang.stringvarcomplex, replmatch, text, count=0, flags=baseflags)
+			return lang.rhs2python(text, context=context)
+		def __repr__(self):
+			return "%s(%s)" % (self.__class__.__name__, self.text)
+
 	
 	@classmethod
 	def rhs2python(cls, text, context=None):
@@ -326,20 +357,16 @@ class lang:
 		text_decommented = first(text.partition(lang.comment))
 		if re.search(lang.stringvarsimple, text_decommented) or re.search(lang.stringvarcomplex, text_decommented):
 			#import ipdb; ipdb.set_trace()
-			def promise_rhs2python(context, text=text): # text=text is a workaround for py2 missing closures
-				replmatch = lambda matchobj: context.resolve_symbol(matchobj.group(1))
-				text = re.sub(lang.stringvarsimple, replmatch, text, count=0, flags=baseflags)
-				text = re.sub(lang.stringvarcomplex, replmatch, text, count=0, flags=baseflags)
-				return rhs2python(text, context=context)
 			# if we already have an operations context, directly evaluate the variables.
 			# Otherweise, return the closure.
-			return promise_rhs2python(context) if context else NamedFunction("evalstr(%s)" % text, promise_rhs2python)
+			promise = lang.evalstr(text)
+			return promise(context) if context else promise
 		
 		# We use python's parser for both understanding the data structure
 		# and removing pythonic line comments such as "#".
 		try:
 			typed = ast.literal_eval(text)
-			if isa(typed,symbol.primitives):
+			if isa(typed, lang.primitives):
 				return typed
 			elif isa(typed,[tuple,list]):
 				# We said we support lists.
@@ -369,6 +396,17 @@ class lang:
 		return text
 	
 	@classmethod
+	def rhs2string(cls, rhs):
+		if isa(rhs,symbol):
+			return rhs.canonical()
+		if isa(rhs,lang.evalstr):
+			return '"%s"' % rhs.text
+		if isa(rhs,lang.primitives):
+			return str(rhs)
+		else:
+			raise ValueError("Bad RHS, cannot transform safely to text: %s" % str(rhs))
+	
+	@classmethod
 	def Rel_from_textline(cls, srcline): # was textline2edge
 		"""
 		Parses a single line. Input is a sourceline object. You can test lines quickly with
@@ -385,14 +423,17 @@ class lang:
 		name = symbol(parts.group('lhs'))
 		# parse rhs as symbol or whatever
 		value = lang.rhs2python(parts.group('rhs'))
-		op = lang.symbols[parts.group('op')]
+		op = lang.symbol_alternatives[parts.group('op')]
 
 		return Rel(name, value, op, srcline)
+	
+	@classmethod
+	def Rel_to_textline(cls, rel):
+		return "%s %s %s" % (rel.l.canonical(), invdict(lang.symbols)[rel.op], cls.rhs2string(rel.r))
 
 class Rel:
 	def __init__(self, l, r, op, src=None):
-		assert isa(l,symbol)
-		self.l = l # typically a symbol
+		self.l = l # typically a symbol. May also be a term in some contexts.
 		self.r = r # typically something or also a symbol
 		self.op = op
 		self.src = source(src)
@@ -404,13 +445,13 @@ class Rel:
 			self.r = self.r.value(*arg)
 		return self.r
 	
-	def add_prefix(self, path):
+	def add_prefix(self, path): # to be updated or removed
 		"Return a new operation where lhs is prefixed with path"
-		return self.__class__( self.l.add_prefix(path), self.rhs)
+		return self.__class__( self.l.add_prefix(path), self.r, self.op, self.src)
 	
-	def remove_prefix(self, path):
+	def remove_prefix(self, path): # to be updated or removed
 		"Return a new operation list where each lhs has a common prefix with path removed"
-		return self.__class__( self.l.remove_prefix(path), self.rhs)
+		return self.__class__( self.l.remove_prefix(path), self.r, self.op, self.src)
 	
 	# list or tuple idiom
 	def __len__(self):
@@ -422,104 +463,211 @@ class Rel:
 		yield self.src
 
 class mexagraph:
+	# the graph has two types of edges
+	P = 'path'
+	E = 'extends' # or inherits
+	
 	def __init__(self, edges):
 		self.G = nx.DiGraph()
+		# add a root
+		self.G.add_node(term.root)
 		self.from_mexafile(edges)
+	def __repr__(self):
+		return '%s(%s)' % (self.__class__.__name__, pprint.pformat(self.G.edges(data=True),width=1))
 	
-	def insert(self, path):
-		"Returns the last edge target which was inserted"
-		assert isa(path,symbol)
-		ret = term()
-		for a,b in window(path.parts_as_term()):
-			self.G.add_edge(a, b, op='path')
-			ret = b
-		return ret
+	def insert_path(self, path, starting_from=term.root, src=None):
+		"""
+		Insert edges for a  symbol path, i.e. /a/b/c gets a-[path]->b-[path]->c
+		Returns the last edge target which was inserted.
+		"""
+		if not isa(path,symbol): path = symbol(path)
+		if path.isRoot():
+			return starting_from
+		head, tail = path.base().canonical(), path.except_base()
+		child = None
+		for existing_child, attr in self.G[starting_from].iteritems():
+			if attr['op'] == self.P:
+				if existing_child.value == head:
+					child = existing_child
+					break
+		# if did not found the segment, create it:
+		if not child:
+			child = term(head)
+			self.G.add_edge(starting_from, child, op=self.P, src=src)
+		return self.insert_path(tail, child, src=src)
 
-	def get_term(self, left, starting_from=term()):
-		# Resolve from a symbol path, starting from root, to a term
-		# Neccessary because term() instances are unfindable by definition
-		# returns None if not findable
+	def get_path(self, left, starting_from=term(), silent_failure=False):
+		"""
+		Resolve a term from a symbol path, starting from root.
+		Neccessary because term() instances are unfindable by definition
+		returns None if not findable
+		"""
 		if not isa(left,symbol): left = symbol(left)
 		if left.isRoot(): # we found our element
 			return starting_from
 		first = left.base().canonical()
 		for right, attr in self.G[starting_from].iteritems():
-			if attr['op'] == 'path':
+			if attr['op'] == self.P:
 				if right.value == first:
 					print "Looking for %s, Found %s" % (left,first)
-					return self.get_term(left.except_base(), right)
+					return self.get_path(left.except_base(), right)
 				else:
 					print "No success: %s != %s" % (right,first)
 		print "Looked for %s (%s), found nothing" % (left,first)
+		if not silent_failure:
+			raise ValueError("Symbol %s not found in graph, searching from %s." % (left,starting_from))
 		
-	def get_path(self, right):
-		# Resolve from a term to a symbol
-		return right # TODO
+	def get_path(self, symb, right, up_to=term()):
+		# Resolve from a term to a symbol by going back the path
+		# symb: Symbol to look for, e.g.  foo/bar
+		# right: Term where to start looking at, i.e. biz in bla/boo/biz
+		# up_to: Where to stop looking, e.g. the root
+		# In this example, foo/bar could be found at bla/foo/bar or bla/boo/foo/bar
+		# or even bla/boo/biz/foo/bar.
+		if not isa(symb,symbol): symb = symbol(symb)
+		
+		# we also need a stack to avoid loops.
+		
+		pred = self.G.predecessors(right)
+		edges = self.G.edges(pred)
+		targets = []
+		for left, right, attr in edges:
+			if attr['op'] == self.P:
+				if symb.node().canonical() == left.value:
+					# we found a potential part of the symbol
+					target.append( self.get_path(symb.parent(), left, up_to=up_to) )
+			elif attr['op'] == self.E:
+				# just traverse over this edge
+				target.append( self.get_path(symb, left, up_to=up_to) )
+		targets = removeEmpty(targets)
+		return targets # whatever this means
+	
+		# todo: untested. Test.
+	
+	# need also a version from get_path *up* instead of *down* for resolving
+	# RHS symbols.
 	
 	def from_mexafile(self, edges):
+		"""
+		Adds edges to the graph. The rules are:
+		  * paths are resolved into the graph and get path edges
+		  * equalities and subsets are represented as extends edges
+		  * all other operations are not touched and go throught the processing.
+		That is, you should make sure if you have operations such as "include" and "append",
+		parse them before.
+		"""
+		
 		for l,r,op,src in edges:
 			assert isa(l,symbol)
-			l = self.insert(l) # include the path
-			if isa(r,symbol): r = self.insert(r)
-			# include the actual equality
-			self.G.add_edge(l, r, op=op, src=src)
+			l = self.insert_path(l, src=src)
+			# this may create a dangling node (a node without an attached relationship)
+			# which will be resolved in to_mexafile().
+			if isa(r,symbol): r = self.insert_path(r, src=src) # this should actually be a variable resolve in the first place,
+			#  -> self.insert_path(r, self.resolve_variable(r, l))  # or similar
+			# =>  so far, this only allows global symbols as RHS
+			
+			# map equals and subsets together
+			if op == 'equals':
+				self.G.add_edge(l, r, op=self.E, src=src)
+				self.G.add_edge(r, l, op=self.E, src=src) # TODO: Should comment the source.
+			elif op == 'subsets':
+				self.G.add_edge(l, r, op=self.E, src=src)
+			else:
+				self.G.add_edge(l, r, op=op, src=src)
 	
-	# graph to mexa, again
-	##### TODO:
-	##### At this step, evaluate the graph (is requested).
-	##### Then, we do everything inplace: += << = <=
-	#####
-	def to_mexafile(self, left=term(), left_path=symbol()):
+	# graph to mexa: Without evaluation of any edges
+	def to_mexafile(self, left=term.root, left_path=symbol()):
 		#assert isa(root, term)
 		ret = []
 		for right, attr in self.G[left].iteritems():
 			#print "%s,%s" % (right,attr)
-			if attr['op'] == 'path':
+			if attr['op'] == self.P:
 				right_path = symbol(right.value).add_prefix(left_path)# if isa(right,term) else str(right))
 				#print "At %s, %s: Visiting %s, %s" % (left, left_path, right, right_path)
 				ret += self.to_mexafile(right, right_path)
 			else:
 				#print "%s: Attr is %s" % (right, attr)
 				if isa(right, term):
-					right = self.get_path(right)
+					right = self.get_path(right) # this is actually a variable resolve
 				ret += [ Rel(left_path, right, attr['op'], attr['src']) ]
-		return ret
+		return mexafile(ret)
 		#return map(unpack(node_to_mexafile), )
-	
-	# evaluating is easier
-	def evaluate(self):
-		for u, v, optype in self.G.edges(data='type'):
-			if optype == '+=':
-				# addition abbreviation, simple.
-				if isa(v,term):
-					intermediate = v.copy()
+		
+	# check for undefined symbols
+	def check_undef(self, symb=term.root):
+		# undefined symbols are defined simply as: A path leaf which has no outoing equalities.
+		#[x for x in self.G.nodes_iter() if self.G.out_degree(x)==0 ]
+		pass
+		# TOD BE DONE.
+		
+	def evaluate_to_mexafile(self, left=term.root, stack=tuple(), max_rec=10):
+		"""
+		Correctly resolves all equalities and directed equalities to an oplist aka a mexafile.
+		Current Limitations:
+		  * Code ignores loops in the equality graph, thus it cannot detect
+		    missing definitions. This should be done independently by check_undef.
+		"""
+		if max_rec == 0:
+			raise ValueError("self.Path is too deep. at %s, stack=%s" % (left,stack))
+		ret = []
+		for right, attr in self.G[left].iteritems():
+			if attr['op'] == self.P:
+				# put onto the stack:
+				newstack = stack + tuplize(Rel(left, right, self.P, attr['src']))
+				#right_path = symbol(right.value).add_prefix(left_path)
+				#print "At %s, %s: Visiting %s, %s" % (left, left_path, right, right_path)
+				ret += self.evaluate_to_mexafile(right, newstack, max_rec=max_rec-1)
+			elif attr['op'] == self.E:
+				if isa(right, term):
+					if right in [rel.l for rel in stack]:
+						# run into an equality a-[equals]->b, b-[equals]->a. Do not follow.
+						# Equality loops are there by design.
+						continue
+					else:
+						# follow the equals with same path
+						newstack = stack + tuplize(Rel(left, right, self.E, attr['src']))
+						ret += self.evaluate_to_mexafile(right, newstack, max_rec=max_rec-1)
 				else:
-					# v is a primitive. TODO: Come up with a good name.
-					# To do so, get number of total children or so.
-					intermediate_name = term("todo")
-				self.G.add_edge(u, intermediate, type='path')
-				self.G.add_edge(intermediate, v, type='=')
-				# TODO: remove the current edge
-				
-			# TODO: Also loop correctly over all optypes
-			elif optype == '=':
-				#self.G.add_edge(u, 
-				pass # TODO
-				
+					# make an attribute node.
+					newstack = stack + tuplize(Rel(left, right, self.E, attr['src']))
+					pathlst = [ rel.r.value for rel in newstack if rel.op == self.P ]
+					srclst  = [ rel.src     for rel in newstack if rel.op == self.E and not rel.l.isRoot() ]
+					#print "At left=%s, newstack=%s I composed path=%s, srclist=%s" % (left,newstack,pathlst,srclst)
+					ret += [ Rel(symbol(pathlst), right, "equals", source(srclst)) ] # could also use "define"
+			else:
+				# TODO: Should instead let all other operations pass.
+				raise ValueError("At l=%s,stack=%s, Operation not known: rattr=%s" % (left,stack,attr))
+		#if len(ret) == 0:
+			# no childs given at this node = undefined!
+		#	raise ValueError("Term l=%s,stack=%s lacks a definition\n"%(left,stack))
+		return mexafile(ret)
+		#return map(unpack(node_to_mexafile), )
 
 class mexafile:
 	"""
 	Current mexafile
 	"""
 	
-	def __init__(self, edges=[]):
-		# store edges only for debugging
-		self.edges = edges # this is by intention not a copy, but just a reference
-		# this is where we want to work on
-		#self.G = edges2graph(edges)
+	def __init__(self, ops=None):
+		if not ops:
+			self.ops = list()
+		elif isa(ops,mexafile):
+			self.ops = ops.ops # reference
+		else:
+			self.ops = ops # reference
+		# we do not call evaluate() here, do this manually.
 		
 	def __repr__(self):
-		return '%s(%s)' % (self.__class__.__name__, pprint.pformat(self.edges,width=1))
+		return '%s(%s)' % (self.__class__.__name__, pprint.pformat(self.ops,width=1))
+	def __iter__(self):
+		return iter(self.ops)
+	def __len__(self):
+		return len(self.ops)
+	
+	def add_source(self, something): # chainable
+		for op in self.ops:
+			op.src.add_source(something)
+		return self
 	
 	@classmethod
 	def from_filehandle(cls, fh):
@@ -545,31 +693,127 @@ class mexafile:
 		oplist = removeNone(sourceline.sourcemap(oplines, source_name).map(lang.Rel_from_textline))
 		return cls(oplist)
 	
-	def evaluate(self):
-		#### this is superseded. We do *everything* inline when evaluating.
+
+	def evaluate_symbol(self, symb, evaluator, inplace=True, eliminate=True, max_rec=10):
+		"""
+		Evaluate a questioned symbol, where symbol is a class, for instance `append`.
+		Returns new operations object or does the evaluation inplace.
+		"""
+		ret_oplist = []
+		for rel in self.ops:
+			if rel.op == symb:
+				new_oplist = evaluator(rel, self)
+				ret_oplist += new_oplist
+			else:
+				ret_oplist.append(rel) # pass throught
+		
+		if eliminate:
+			remaining = mexafile([ rel for rel in ret_oplist if rel.op == symb ])
+			if any(remaining):
+			# There are still instances of symbol in the oplist and we were
+			# asked to eliminate all of them. Recursively call ourselves,
+				# expecting that they vanish.
+				if max_rec == 0:
+					raise ValueError("While trying to evaluate %s, reached maximum number of iterations. The user probably included cyclic links. These symbols remain: %s" % (str(symb),str(remaining)))
+				return self.evaluate_symbol(symb, evaluator, inplace=inplace, eliminate=eliminate, max_rec=max_rec-1)
+		
+		if inplace:
+			self.ops = ret_oplist
+		else:
+			return mexafile(ret_oplist)
+		
+	def evaluate_all_symbols(self, evaluator, inplace=True):
+		ret = evaluator(self)
+		if inplace:
+			self.ops = ret
+		else:
+			return mexafile(ret)
+	
+	def evaluate(self, inplace=True):
+		"""
+		The evaluation is two-place: First, there is a element-local replacement step.
+		Second, there is a global variable resolving step, using the graph.
+		"""
+		
 		def include(op, operations):
 			# include a file
-			fname = op.evaluate_rhs(VariableContext(op,operations))
+			fname = op.evaluate_rhs(self.resolver_for(op))
 			if not isa(fname, [str,unicode]):
 				raise ValueError("For file inclusion, only strings are supported. In %s" % str(op))
-			return operations.from_filename(fname).add_prefix(op.l)
+			return mexafile.from_filename(fname).add_prefix(op.l).add_source(op.src)
 
 		def append(op, operations):
 			# This algorithm reads as rule: "a/b += c/d" => "a/b/d = c/d"
-			
+
 			if isa(op.r,list):
 				# we do support multiple RHS values, i.e. a syntax like
 				#  a += b c d  <=> equals(a, sourced([b,c,d], ...))
 				return flatten2d([append(o, operations) for o in op.r])
 			
-			# name of the node to create below the lhs. This is by
-			# definition the node name.
-			if not isa(op.r,symbol):
-				raise ValueError("Only support symbol for appending, got %s in %s" % (type(op.r), op))
-			# todo: could also support appending
-			name = op.r.node()
-			return operations([ equals(op.lhs.add_prefix(name), op.rhs) ])
+			# name of the node to create below the lhs.
+			if isa(op.r, symbol):
+				name = op.r.node()
+			else:
+				# come up with some name describing this object
+				# TODO: Name should be improved.
+				name =  hex(abs(hash( op.r )%2**30))
+				
+			return mexafile([ Rel(symbol(name).add_prefix(op.l), op.r, 'equals', op.src) ])
+		
+		def prepare_equal(op, operations):
+			if isa(op.r.value, list):
+				# lists get created by rhs2python i.e. with something like a = (1,2,3)
+				def listToAppends(i,vi): #for i,vi in enumerate(op.r.value):
+					if isa(vi,symbol.primitives):
+						return Rel(symbol("l%d"%i).add_prefix(op.l), vi, 'equals', op.src.add_source("list expansion"))
+					else:
+						raise ValueError("self.evaluate_symbol('include', include)Found illegal non-primitive value in RHS of assignment operation "+str(op))
+				return map(listToAppends, enumerate(op.r.value))
+			else:
+				return [op]
+		
+		def equalities(operations): # caveat, this is global
+			# resolves = and <=
+			graph = mexagraph(operations)
+			# just for convenience, store a version of the graph for subsequent
+			# use. There is however no mechanism to keep ops and graph in sync.
+			operations.graph = graph
+			return graph.evaluate_to_mexafile().ops
+		
+		self.evaluate_symbol('include', include, inplace=inplace)
+		self.evaluate_symbol('append', append, inplace=inplace)
+		self.evaluate_symbol('equal', prepare_equal, eliminate=False, inplace=inplace)
+		#self.evaluate_all_symbols(equalities, inplace=inplace)
+		# as a last step, should look for inconsistencies or check whether all data
+		# have correctly been evaluated.
 
+	def resolve_symbol(self, varname, src=source.unknown):
+		"""
+		Looks up the value of a variable such as "foo" or "foo/bar" or "foo::bar::baz"
+		in the symbols dictionary. In case of errors, src is spilled out.
+		"""
+		sv = symbol(varname)
+		for rel in self.ops:
+			if rel.l == sv:
+				return rel.r
+		raise ValueError("Variable '%s' not defined but used in %s" % (varname,src.verbose()))
+	
+	def resolver_for(self, rel):
+		"Returns a function for resolving a variable. Used for the evalstr() instances."
+		return lambda varname: operations.resolve_symbol(rel.r, varname, rel.src)
+
+	def add_prefix(self, path):
+		"Return a new operations list where each lhs is prefixed with path"
+		if not isa(path,symbol): path = symbol(path)
+		return mexafile([ op.add_prefix(path) for op in self.ops ])
+	
+	def remove_prefix(self, path):
+		"Return a new operation list where each lhs has a common prefix with path removed"
+		if not isa(path,symbol): path = symbol(path)
+		return mexafile([ op.remove_prefix(path) for op in self.ops ])
+
+	def toPlain(self):
+		return "\n".join([ lang.Rel_to_textline(rel) for rel in self ])
 
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -581,13 +825,14 @@ parser.add_argument('--outfile', nargs='?', type=argparse.FileType('w'), default
 args = parser.parse_args()
 
 mf = mexafile.from_filehandle(args.infile)
+mf.evaluate()
 
-mG=mexagraph(mf.edges)
-print mG.to_mexafile()
+print mf.toPlain()
 
 # render on terminal with
 # dot -Grankdir=LR -Tpng graph.dot  -o graph.png
-nx.nx_agraph.write_dot(mG.G, "graph.dot")
+
+###nx.nx_agraph.write_dot(mf.graph.G, "graph.dot")
 
 
 #append_oplist = removeNone(args.expressions)
