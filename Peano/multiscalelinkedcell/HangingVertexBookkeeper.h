@@ -98,8 +98,6 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
 
     typedef std::map< tarch::la::Vector<DIMENSIONS+1,double >, HangingVertexIdentifier, tarch::la::VectorCompare<DIMENSIONS+1> >  VertexMap;
 
-    bool _inheritIndicesFromCoarserGrids;
-
     VertexMap _vertexMap;
 
     HangingVertexBookkeeper();
@@ -118,30 +116,6 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
     static const int DomainBoundaryAdjacencyIndex;
 
     static HangingVertexBookkeeper&  getInstance();
-
-    /**
-     * Disable inheriting the heap indices from coarser
-     * grids at a hanging node.
-     *
-     * !!! Domain and remote boundary indices !!!
-     * The above text does not tell the whole story.
-     *
-     * To be precise, we still inherit boundary
-     * adjacency information from the coarse grid
-     * but we do not inherit indices that
-     * point to actual simulation data.
-     *
-     * Remote boundary indices are set during
-     * a mesh traversal via ::updateCellIndicesInMergeWithNeighbour.
-     *
-     * !!! Background !!!
-     *
-     * This routine is for codes that do not require
-     * the actual hanging node bookkeeping but still
-     * want to use the adjacency information provided by
-     * the HangingVertexBookkepper.
-     */
-    void disableInheritingOfCoarseGridIndices();
 
     /**
      * @see createBoundaryVertex

@@ -557,8 +557,6 @@ int exahype::runners::Runner::run() {
   if ( _parser.isValid() ) {
     initHeaps();
 
-    multiscalelinkedcell::HangingVertexBookkeeper::getInstance().disableInheritingOfCoarseGridIndices();
-
     exahype::State::FuseADERDGPhases                = _parser.getFuseAlgorithmicSteps();
     exahype::State::WeightForPredictionRerun        = _parser.getFuseAlgorithmicStepsFactor();
 
@@ -652,7 +650,7 @@ void exahype::runners::Runner::plotMeshSetupInfo(
   logInfo("createGrid()",
            "grid setup iteration #" << meshSetupIterations <<
            ", run one more iteration=" <<  repository.getState().continueToConstructGrid() ||
-                                            exahype::solvers::Solver::oneSolverHasNotAttainedStableState();
+                                            exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
    );
   #endif
 
