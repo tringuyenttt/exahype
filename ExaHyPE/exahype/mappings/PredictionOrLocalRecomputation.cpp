@@ -122,6 +122,9 @@ exahype::mappings::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputati
 exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation(
     const PredictionOrLocalRecomputation& masterThread)
 : _localState(masterThread._localState) {
+  _oneSolverRequestedLocalRecomputation =
+        exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
+
   prepareLocalTimeStepVariables();
 
   initialiseTemporaryVariables();

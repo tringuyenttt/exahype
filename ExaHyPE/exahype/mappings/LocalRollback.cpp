@@ -89,7 +89,8 @@ exahype::mappings::LocalRollback::LocalRollback() {
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::LocalRollback::LocalRollback(
     const LocalRollback& masterThread) {
-  // do nothing
+  _oneSolverRequestedLocalRecomputation =
+        exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
 }
 void exahype::mappings::LocalRollback::mergeWithWorkerThread(
     const LocalRollback& workerThread) {

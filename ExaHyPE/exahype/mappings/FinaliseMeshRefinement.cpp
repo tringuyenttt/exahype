@@ -100,6 +100,9 @@ exahype::mappings::FinaliseMeshRefinement::~FinaliseMeshRefinement() {}
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const FinaliseMeshRefinement& masterThread) {
+  _oneSolverRequestedMeshUpdate =
+      exahype::solvers::Solver::oneSolverRequestedMeshUpdate();
+
   prepareLocalTimeStepVariables();
 }
 

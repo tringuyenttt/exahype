@@ -50,7 +50,7 @@ private:
 
   /**
    * Flag indicating if one solver requested a local recomputation.
-   * Is initialised in beginIteration(...).
+   * Is initialised in beginIteration(...) and the shared-memory constructor.
    */
   bool _oneSolverRequestedLocalRecomputation = false;
 

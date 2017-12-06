@@ -95,7 +95,7 @@ class exahype::mappings::PredictionOrLocalRecomputation {
 
   /**
    * Flag indicating if one solver requested a local recomputation.
-   * Is initialised in beginIteration(...).
+   * Is set in beginIteration(...) and the shared-memory constructor.
    */
   bool _oneSolverRequestedLocalRecomputation = false;
 
