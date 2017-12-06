@@ -18,6 +18,8 @@
 #include "tarch/logging/Log.h"
 #include "tarch/la/Vector.h"
 
+#include "CurvilinearTransformation.h"
+
 namespace ElasticWaveEquation3D{
   class ElasticWaveEquation;
 }
@@ -28,8 +30,10 @@ class ElasticWaveEquation3D::ElasticWaveEquation : public ElasticWaveEquation3D:
      * Log device
      */
     static tarch::logging::Log _log;
+    CurvilinearTransformation crt;    
   public:
     ElasticWaveEquation(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
+
 
     /**
      * Initialise the solver.

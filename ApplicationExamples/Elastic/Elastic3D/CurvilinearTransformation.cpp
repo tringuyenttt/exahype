@@ -1,8 +1,6 @@
-
-#include "CurvilinearTransformation.h"
-
 #include "kernels/KernelUtils.h"
 #include "kernels/DGMatrices.h"
+#include "CurvilinearTransformation.h"
 #if defined(_GLL)
 #include "kernels/GaussLobattoQuadrature.h"
 #else
@@ -14,7 +12,321 @@
 //   return;
 // }
 
-double fault(double y, double z,double a_y, double b_y, double a_z, double b_z){
+CurvilinearTransformation::CurvilinearTransformation(const int a_num_nodes,const double a_dx ){
+
+  num_nodes=a_num_nodes;
+  dx=a_dx;
+
+  int ne_x = std::round(1/dx); //number of elements in x direction on whole domain
+  int ne_y = ne_x;
+  int ne_z = ne_x;
+  
+  int nx = ne_x *(num_nodes-1) + 1; //global number of nodes in x direction considering collocation
+  int ny = ne_y *(num_nodes-1) + 1; //global number of nodes in y direction considering collocation
+  int nz = ne_z *(num_nodes-1) + 1; //global number of nodes in z direction considering collocation
+
+  double block_width_x;
+  double block_width_y=1.0;
+  double block_width_z=1.0;
+
+  fault_position = 0.5;
+  for(int n=0 ; n<2 ; ++n ){
+    ne_x = std::round(1/dx);
+    if(n == 0){
+      block_width_x=fault_position;
+      ne_x = std::round((ne_x+1)*fault_position);
+      nx =  ne_x *(num_nodes-1)+1;
+    }else{
+      block_width_x=1.0-fault_position;
+      ne_x = ne_x-std::round((ne_x+1)*fault_position);
+      nx =  ne_x *(num_nodes-1)+1;
+    }
+
+    left_bnd_x[n]= new double[ny*nz];
+    left_bnd_y[n]= new double[ny*nz];
+    left_bnd_z[n]= new double[ny*nz];  
+
+    right_bnd_x[n]= new double[ny*nz];
+    right_bnd_y[n]= new double[ny*nz];
+    right_bnd_z[n]= new double[ny*nz];  
+
+    bottom_bnd_x[n]= new double[nx*nz];
+    bottom_bnd_y[n]= new double[nx*nz];
+    bottom_bnd_z[n]= new double[nx*nz];  
+
+    top_bnd_x[n]= new double[nx*nz];
+    top_bnd_y[n]= new double[nx*nz];
+    top_bnd_z[n]= new double[nx*nz];  
+
+    front_bnd_x[n]= new double[nx*ny];
+    front_bnd_y[n]= new double[nx*ny];
+    front_bnd_z[n]= new double[nx*ny];  
+
+    back_bnd_x[n]= new double[nx*ny];
+    back_bnd_y[n]= new double[nx*ny];
+    back_bnd_z[n]= new double[nx*ny];
+
+    getBoundaryCurves3D_cutOffTopography_withFault( num_nodes,
+						    nx,ny,nz,n,fault_position,       
+						    block_width_x,  block_width_y ,  block_width_z ,
+						    left_bnd_x[n],  left_bnd_y[n],  left_bnd_z[n],
+						    right_bnd_x[n],  right_bnd_y[n],  right_bnd_z[n],
+						    bottom_bnd_x[n],  bottom_bnd_y[n],  bottom_bnd_z[n],
+						    top_bnd_x[n],  top_bnd_y[n],  top_bnd_z[n],
+						    front_bnd_x[n],  front_bnd_y[n],  front_bnd_z[n],
+						    back_bnd_x[n],  back_bnd_y[n],  back_bnd_z[n]);
+
+    // if(n == 1){
+    //   std::cout << "left" << std::endl;
+
+    //   for (int i=0; i< ny*nz; i++){
+    // 	std::cout << left_bnd_x[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  ny*nz; i++){
+    // 	std::cout << left_bnd_y[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  ny*nz; i++){
+    // 	std::cout << left_bnd_z[n][i] << std::endl;
+    //   }
+
+    //   std::cout << "right" << std::endl;
+
+    //   for (int i=0; i< ny*nz; i++){
+    // 	std::cout << right_bnd_x[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  ny*nz; i++){
+    // 	std::cout << right_bnd_y[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  ny*nz; i++){
+    // 	std::cout << right_bnd_z[n][i] << std::endl;
+    //   }
+
+
+    //   std::cout << "back" <<std::endl;
+
+    //   for (int i=0; i< ny*nx; i++){
+    // 	std::cout << back_bnd_x[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  ny*nx; i++){
+    // 	std::cout << back_bnd_y[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  ny*nx; i++){
+    // 	std::cout << back_bnd_z[n][i] << std::endl;
+    //   }
+
+    //   std::cout <<"front" << std::endl;
+
+    //   for (int i=0; i< ny*nx; i++){
+    // 	std::cout << front_bnd_x[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  ny*nx; i++){
+    // 	std::cout << front_bnd_y[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  ny*nx; i++){
+    // 	std::cout << front_bnd_z[n][i] << std::endl;
+    //   }
+
+    //   std::cout <<"top" << std::endl;
+
+    //   for (int i=0; i< nz*nx; i++){
+    // 	std::cout << top_bnd_x[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  nz*nx; i++){
+    // 	std::cout << top_bnd_y[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  nz*nx; i++){
+    // 	std::cout << top_bnd_z[n][i] << std::endl;
+    //   }
+
+    //   std::cout << "bottom" << std::endl;
+
+    //   for (int i=0; i< nz*nx; i++){
+    // 	std::cout << bottom_bnd_x[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  nz*nx; i++){
+    // 	std::cout << bottom_bnd_y[n][i] << std::endl;
+    //   }
+
+    //   for (int i=0; i<  nz*nx; i++){
+    // 	std::cout << bottom_bnd_z[n][i] << std::endl;
+    //   }
+    //   std::exit(-1);
+    // }
+
+    //initalize Lagrange Denominator
+    
+
+  }
+  
+}
+
+void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSIONS,double>& center,
+					       const tarch::la::Vector<DIMENSIONS,double>& dx,    
+					       double* gl_vals_x,double* gl_vals_y,double* gl_vals_z,
+					       double* jacobian,
+					       double* q_x,double* q_y,double* q_z,
+					       double* r_x,double* r_y,double* r_z,
+					       double* s_x,double* s_y,double* s_z){
+
+  int ne_x = std::round(1/dx[0]); //number of elements in x direction on whole domain
+  int ne_y = std::round(1/dx[1]); //number of elements in y direction on whole domain
+  int ne_z = std::round(1/dx[2]); //number of elements in z direction on whole domain       
+
+  int nx = ne_x *(num_nodes-1) + 1; //global number of nodes in x direction considering collocation
+  int ny = ne_y *(num_nodes-1) + 1; //global number of nodes in y direction considering collocation
+  int nz = ne_z *(num_nodes-1) + 1; //global number of nodes in z direction considering collocation
+  
+  double block_width_x;
+  double block_width_y=1.0;
+  double block_width_z=1.0;
+
+  double offset_x=center[0]-0.5*dx[0];
+  double offset_y=center[1]-0.5*dx[1];
+  double offset_z=center[2]-0.5*dx[2];
+
+  //defines which block we are in
+  int n = offset_x >  fault_position ? 1 : 0 ; //1: Water Column 0: Solid
+  
+  double width_x=dx[0];
+  double width_y=dx[1];
+  double width_z=dx[2];
+
+
+  //indeces of the first node within the element 
+  int i_m; 
+  int j_m; 
+  int k_m;  
+  
+  if(n == 0){
+    block_width_x=fault_position;
+    ne_x = std::round((ne_x+1)*fault_position);
+    nx =  ne_x *(num_nodes-1)+1;
+
+
+    i_m =  std::round((offset_x)/width_x) *(num_nodes-1);
+    j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
+    k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
+  }else{
+    block_width_x=1.0-fault_position;
+    ne_x = ne_x-std::round((ne_x+1)*fault_position);
+    nx =  ne_x *(num_nodes-1)+1;
+
+
+    i_m =  std::floor((offset_x-fault_position)/width_x) *(num_nodes-1);
+    j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
+    k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
+  }
+
+  
+  // getBoundaryCurves3D( num_nodes,
+  //            offset_x,  offset_y,  offset_z,
+  //            width_x,  width_y ,  width_z ,
+  //            left_bnd_x,  left_bnd_y,  left_bnd_z,
+  //            right_bnd_x,  right_bnd_y,  right_bnd_z,
+  //            bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
+  //            top_bnd_x,  top_bnd_y,  top_bnd_z,
+  //            front_bnd_x,  front_bnd_y,  front_bnd_z,
+  //            back_bnd_x,  back_bnd_y,  back_bnd_z);
+
+  
+
+  
+  // getBoundaryCurves3D_fixedTopFace_forBlock( num_nodes,
+  //                nx,ny,nz,n  ,       
+  //                block_width_x,  block_width_y ,  block_width_z ,
+  //                left_bnd_x,  left_bnd_y,  left_bnd_z,
+  //                right_bnd_x,  right_bnd_y,  right_bnd_z,
+  //                bottom_bnd_x,  bottom_bnd_y,  bottom_bnd_z,
+  //                top_bnd_x,  top_bnd_y,  top_bnd_z,
+  //                front_bnd_x,  front_bnd_y,  front_bnd_z,
+  //                back_bnd_x,  back_bnd_y,  back_bnd_z);
+
+  kernels::idx2 id_xy(ny,nx); // back front
+  kernels::idx2 id_xz(nz,nx); // botton top
+  kernels::idx2 id_yz(nz,ny); //left right
+
+
+  double* curvilinear_x = new double[num_nodes*num_nodes*num_nodes];
+  double* curvilinear_y = new double[num_nodes*num_nodes*num_nodes];
+  double* curvilinear_z = new double[num_nodes*num_nodes*num_nodes];  
+
+  int i_p = i_m + num_nodes;
+  int j_p = j_m + num_nodes;
+  int k_p = k_m + num_nodes;   
+
+  
+  transFiniteInterpolation3D( nx,  ny,  nz,
+              k_m,  k_p ,
+              j_m,  j_p ,
+              i_m,  i_p ,
+              num_nodes,
+            width_x,width_y,width_z,
+              left_bnd_x[n],
+              right_bnd_x[n],
+              bottom_bnd_x[n],
+              top_bnd_x[n],
+              front_bnd_x[n],
+              back_bnd_x[n],
+              curvilinear_x
+              );
+
+  transFiniteInterpolation3D( nx,  ny,  nz,
+              k_m,  k_p ,
+              j_m,  j_p ,
+              i_m,  i_p ,
+              num_nodes,
+            width_x,width_y,width_z,
+              left_bnd_y[n],
+              right_bnd_y[n],
+              bottom_bnd_y[n],
+              top_bnd_y[n],
+              front_bnd_y[n],
+              back_bnd_y[n],
+              curvilinear_y
+              );
+
+  //  double right_bnd_z_block = right_bnd_z[k_m:k_p]
+  
+  transFiniteInterpolation3D( nx,  ny,  nz,
+              k_m,  k_p ,
+              j_m,  j_p ,
+              i_m,  i_p ,
+              num_nodes,
+            width_x,width_y,width_z,            
+              left_bnd_z[n],
+              right_bnd_z[n],
+              bottom_bnd_z[n],
+              top_bnd_z[n],
+              front_bnd_z[n],
+              back_bnd_z[n],
+              curvilinear_z
+              );
+
+
+  metricDerivativesAndJacobian3D(num_nodes,
+           curvilinear_x,  curvilinear_y,  curvilinear_z,
+           gl_vals_x,  gl_vals_y,  gl_vals_z,
+           q_x,  q_y,  q_z,
+           r_x,  r_y,  r_z,
+           s_x,  s_y,  s_z,          
+           jacobian,
+           width_x,  width_y,  width_z
+           );
+
+}
+
+double CurvilinearTransformation::fault(double y, double z,double a_y, double b_y, double a_z, double b_z){
   double pi = 3.14159265359;
   double angle = 60.0/360.0 * 2 * pi;
   double depth_y = 1.0; //b_y-a_y;
@@ -25,13 +337,13 @@ double fault(double y, double z,double a_y, double b_y, double a_z, double b_z){
   double fault_surface;
   
   fault_surface=0.25*(std::sin(2*pi*y/Ly)*std::cos(2*pi*y/Ly))*std::sin(2*pi*z/Lz)*std::cos(2*pi*z/Lz);
-  
+  //  fault_surface=0;
   return  fault_surface;
    //return y*(1-y);
 }
 
 
-double topography(double x, double z,double a_x, double b_x,double a_z, double b_z){
+double CurvilinearTransformation::topography(double x, double z,double a_x, double b_x,double a_z, double b_z){
 
   double pi = 3.14159265359;
   double angle = 60.0/360.0 * 2 * pi;
@@ -43,12 +355,12 @@ double topography(double x, double z,double a_x, double b_x,double a_z, double b
 
   topo = 1.0*(0.1*(x + z) + 0.1*(std::sin(4*pi*x/Lx+3.34)*std::cos(4*pi*x/Lx)
 				 * std::sin(4*pi*z/Lz+3.34)*std::cos(4*pi*z/Lz)));
-  //topo=0;
+  //  topo=0;
   return topo;
 }  
 
 
-void getBoundaryCurves3D(int num_points,
+void CurvilinearTransformation::getBoundaryCurves3D(int num_points,
 			 double offset_x, double offset_y, double offset_z,
 			 double width_x, double width_y , double width_z ,
 			 double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
@@ -124,7 +436,7 @@ void getBoundaryCurves3D(int num_points,
     
 }
 
-void getBoundaryCurves3D_fixedTopFace(int num_points,
+void CurvilinearTransformation::getBoundaryCurves3D_fixedTopFace(int num_points,
 				      double offset_x, double offset_y, double offset_z,
 				      double width_x, double width_y , double width_z ,
 				      double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
@@ -196,7 +508,7 @@ void getBoundaryCurves3D_fixedTopFace(int num_points,
 
 
 
-void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
+void CurvilinearTransformation::getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
 					       int nx, int ny, int nz, int n,
 					       double width_x, double width_y , double width_z,	      
 					       double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
@@ -301,7 +613,7 @@ void getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
 
 
 
-void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
+void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
 						    int nx, int ny, int nz, int n,double fault_position,
 						    double width_x, double width_y , double width_z,	      
 						    double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
@@ -843,7 +1155,7 @@ void getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
 
 
 
-void getInterpolatedFace_fromBottomAndTop( int n_block, int n_left_right, int n_top_bottom, int face,
+void CurvilinearTransformation::getInterpolatedFace_fromBottomAndTop( int n_block, int n_left_right, int n_top_bottom, int face,
 					   double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
 					   double* bottom_bnd_x, double* bottom_bnd_y, double* bottom_bnd_z,
 					   double* face_x, double* face_y , double* face_z){
@@ -1084,7 +1396,7 @@ void getInterpolatedFace_fromBottomAndTop( int n_block, int n_left_right, int n_
 }  
 
 
-void getBoundaryCurves(int num_points,double offset_x, double offset_y,double width_x, double width_y ,double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y){
+void CurvilinearTransformation::getBoundaryCurves(int num_points,double offset_x, double offset_y,double width_x, double width_y ,double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y){
 
   double pi = 3.14159265359;
 
@@ -1154,7 +1466,7 @@ void getBoundaryCurves(int num_points,double offset_x, double offset_y,double wi
 }
 
 
-void transFiniteInterpolation3D(int mx, int my, int mz,
+void CurvilinearTransformation::transFiniteInterpolation3D(int mx, int my, int mz,
 				int k_m, int k_p ,
 				int j_m, int j_p ,
 				int i_m, int i_p ,
@@ -1280,7 +1592,7 @@ void transFiniteInterpolation3D(int mx, int my, int mz,
 }
 
 
-void transFiniteInterpolation_singleCoordinate(int mx, int my, double* left_bnd, double* right_bnd, double* bottom_bnd, double* top_bnd, double* curvilinear ){
+void CurvilinearTransformation::transFiniteInterpolation_singleCoordinate(int mx, int my, double* left_bnd, double* right_bnd, double* bottom_bnd, double* top_bnd, double* curvilinear ){
 
    double mesh_size_x = 1.0/(mx-1);
    double mesh_size_y = 1.0/(my-1);
@@ -1319,7 +1631,7 @@ void transFiniteInterpolation_singleCoordinate(int mx, int my, double* left_bnd,
 }
 
 
-void transFiniteInterpolation(int mx, int my, int j_m, int j_p, int i_m, int i_p, int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y, double* curvilinear_x , double* curvilinear_y ){
+void CurvilinearTransformation::transFiniteInterpolation(int mx, int my, int j_m, int j_p, int i_m, int i_p, int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y, double* curvilinear_x , double* curvilinear_y ){
       
 
    double mesh_size_x = 1.0/(mx-1);
@@ -1351,14 +1663,14 @@ void transFiniteInterpolation(int mx, int my, int j_m, int j_p, int i_m, int i_p
    }
 }
 
-// void transFiniteInterpolation(int mx, int my, int j_m, int j_p, int i_m, int i_p, int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y, double* curvilinear_x , double* curvilinear_y ){
+// void CurvilinearTransformation::transFiniteInterpolation(int mx, int my, int j_m, int j_p, int i_m, int i_p, int num_points, double* left_bnd_x, double* left_bnd_y, double* right_bnd_x, double* right_bnd_y, double* bottom_bnd_x, double* bottom_bnd_y, double* top_bnd_x, double* top_bnd_y, double* curvilinear_x , double* curvilinear_y ){
   
 //   transFiniteInterpolation_singleCoordinate(mx, my, left_bnd_x,right_bnd_x,bottom_bnd_x,top_bnd_x,curvilinear_x );
 //   transFiniteInterpolation_singleCoordinate(mx, my, left_bnd_y,right_bnd_y,bottom_bnd_y,top_bnd_y,curvilinear_y );
 // }
 
 
-double lagrangeBasis(double x,double* points,int i,int num_points){
+double CurvilinearTransformation::lagrangeBasis(double x,double* points,int i,int num_points){
   double result=1;
   for (int j = 0 ; j< num_points ; j ++){
 
@@ -1372,7 +1684,7 @@ double lagrangeBasis(double x,double* points,int i,int num_points){
 
 
 
-void interpolate3D(double x, double y, double z, double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes,double& result){
+void CurvilinearTransformation::interpolate3D(double x, double y, double z, double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes,double& result){
 
   double a_x=0;
   double a_y=0;
@@ -1398,7 +1710,7 @@ void interpolate3D(double x, double y, double z, double* orig_mesh_x , double* o
 
 
 
-void interpolate(double x, double y, double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes,double& result){
+void CurvilinearTransformation::interpolate(double x, double y, double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes,double& result){
 
   double a_x=0;
   double a_y=0;
@@ -1419,7 +1731,7 @@ void interpolate(double x, double y, double* orig_mesh_x , double* orig_mesh_y, 
 
 
 
-void getValuesAtQuadNodes3D(double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes, double* results){
+void CurvilinearTransformation::getValuesAtQuadNodes3D(double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes, double* results){
 
   kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes);
 
@@ -1430,7 +1742,11 @@ void getValuesAtQuadNodes3D(double* orig_mesh_x , double* orig_mesh_y, double* o
 #if defined(_GLL)
 	interpolate3D(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-i],kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-j],kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-k],orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
 	#else
-	interpolate3D(kernels::gaussLegendreNodes[num_nodes-1][i],kernels::gaussLegendreNodes[num_nodes-1][j],kernels::gaussLegendreNodes[num_nodes-1][k],orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
+	interpolate3D(kernels::gaussLegendreNodes[num_nodes-1][i],
+		      kernels::gaussLegendreNodes[num_nodes-1][j],
+		      kernels::gaussLegendreNodes[num_nodes-1][k],
+		      orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,
+		      num_nodes,results[id_xyz(k,j,i)]);
 	#endif
       }
     }
@@ -1439,7 +1755,7 @@ void getValuesAtQuadNodes3D(double* orig_mesh_x , double* orig_mesh_y, double* o
 
 
 
-void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes, double* results){
+void CurvilinearTransformation::getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes, double* results){
 
   kernels::idx2 id_xy(num_nodes,num_nodes);
 
@@ -1454,7 +1770,7 @@ void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* des
   }
 }
 
-void computeDerivatives_x(int i, int j , double* values , int num_nodes, double& der_x, double dx){
+void CurvilinearTransformation::computeDerivatives_x(int i, int j , double* values , int num_nodes, double& der_x, double dx){
    kernels::idx2 id_xy(num_nodes,num_nodes);
 
    der_x = 0.0;
@@ -1464,7 +1780,7 @@ void computeDerivatives_x(int i, int j , double* values , int num_nodes, double&
    }
 }
 
-void computeDerivatives_y (int i, int j , double* values , int num_nodes, double& der_y, double dy){
+void CurvilinearTransformation::computeDerivatives_y (int i, int j , double* values , int num_nodes, double& der_y, double dy){
   kernels::idx2 id_xy(num_nodes,num_nodes); 
 
   der_y = 0.0;
@@ -1474,7 +1790,7 @@ void computeDerivatives_y (int i, int j , double* values , int num_nodes, double
 }
 
 
-void computeDerivatives_x_3D(int i, int j , int k, double* values , int num_nodes, double& der_x, double dx){
+void CurvilinearTransformation::computeDerivatives_x_3D(int i, int j , int k, double* values , int num_nodes, double& der_x, double dx){
   
   kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes);
 
@@ -1486,7 +1802,7 @@ void computeDerivatives_x_3D(int i, int j , int k, double* values , int num_node
 
 }
 
-void computeDerivatives_y_3D (int i, int j,int k, double* values , int num_nodes, double& der_y, double dy){
+void CurvilinearTransformation::computeDerivatives_y_3D (int i, int j,int k, double* values , int num_nodes, double& der_y, double dy){
   kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes); 
 
   der_y = 0.0;
@@ -1496,7 +1812,7 @@ void computeDerivatives_y_3D (int i, int j,int k, double* values , int num_nodes
   }
 }
 
-void computeDerivatives_z_3D (int i, int j , int k ,double* values , int num_nodes, double& der_z, double dz){
+void CurvilinearTransformation::computeDerivatives_z_3D (int i, int j , int k ,double* values , int num_nodes, double& der_z, double dz){
   kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes); 
 
   der_z = 0.0;
@@ -1507,15 +1823,24 @@ void computeDerivatives_z_3D (int i, int j , int k ,double* values , int num_nod
 
 }
 
-void metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* curvilinear_y,double* gl_vals_x,double* gl_vals_y,double* q_x,double* q_y,double* r_x,double* r_y,double* jacobian, double dx, double dy){
+void CurvilinearTransformation::metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* curvilinear_y,double* gl_vals_x,double* gl_vals_y,double* q_x,double* q_y,double* r_x,double* r_y,double* jacobian, double dx, double dy){
 
   double* unif_mesh= new double[num_nodes];
   for(int i = 0; i< num_nodes ; i++){
     unif_mesh[i]=i*1.0/(num_nodes-1);
   }
 
-  getValuesAtQuadNodes(unif_mesh,unif_mesh,curvilinear_x,num_nodes,gl_vals_x);
-  getValuesAtQuadNodes(unif_mesh,unif_mesh,curvilinear_y,num_nodes,gl_vals_y);
+  getValuesAtQuadNodes(unif_mesh,
+		       unif_mesh,
+		       curvilinear_x,
+		       num_nodes,
+		       gl_vals_x);
+
+  getValuesAtQuadNodes(unif_mesh,
+		       unif_mesh,
+		       curvilinear_y,
+		       num_nodes,
+		       gl_vals_y);
 
   double x_der_x; 
   double x_der_y;
@@ -1557,7 +1882,7 @@ void metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* 
 }
 
 
-void metricDerivativesAndJacobian3D(int num_nodes,
+void CurvilinearTransformation::metricDerivativesAndJacobian3D(int num_nodes,
 				  double* curvilinear_x, double* curvilinear_y, double* curvilinear_z,
 				  double* gl_vals_x, double* gl_vals_y, double* gl_vals_z,
 				  double* q_x, double* q_y, double* q_z,
@@ -1634,7 +1959,7 @@ void metricDerivativesAndJacobian3D(int num_nodes,
 }
 
 
-double interpolate_fault_surface(double* X1, double* Y1, double* Z1, double y, double z, int my, int mz)
+double CurvilinearTransformation::interpolate_fault_surface(double* X1, double* Y1, double* Z1, double y, double z, int my, int mz)
 {
 //real(kind = wp), dimension(:,:),intent(in) :: X1, Y1, Z1       ! data
 //    real(kind = wp),intent(in) :: y, z
@@ -1794,7 +2119,7 @@ double interpolate_fault_surface(double* X1, double* Y1, double* Z1, double y, d
   
 }
 
-double interpol2d_dG(int my, int mz, int nmy, int npy, int nmz, int npz, double y, double z, double* yj, double* zk, double* f)
+double  CurvilinearTransformation::interpol2d_dG(int my, int mz, int nmy, int npy, int nmz, int npz, double y, double z, double* yj, double* zk, double* f)
 {
   //!contruct the langrange interpolation g(x,y) of  f(x,y)
   
@@ -1833,7 +2158,21 @@ double interpol2d_dG(int my, int mz, int nmy, int npy, int nmz, int npz, double 
 }
 
 
-double lagrange(int m, int p, int i, double x, double *xi){
+int CurvilinearTransformation::getBlock(const tarch::la::Vector<DIMENSIONS,double>& center,
+					const tarch::la::Vector<DIMENSIONS,double>& dx){
+
+  double offset_x=center[0]-0.5*dx[0];
+  double offset_y=center[1]-0.5*dx[1];
+  double offset_z=center[2]-0.5*dx[2];
+
+
+  //defines which block we are in
+  int n = offset_x >  fault_position ? 1 : 0 ; //1: Water Column 0: Solid
+
+  return n;
+}
+
+double CurvilinearTransformation::lagrange(int m, int p, int i, double x, double *xi){
   
   //!Function to calculate  Lagrange polynomial for order N and polynomial
   //![nm, np] at location x.
