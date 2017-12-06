@@ -995,9 +995,7 @@ exahype::solvers::LimitingADERDGSolver::updateLimiterStatusAndMinAndMaxAfterAdju
     const int cellDescriptionsIndex,
     const int solverElement) {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-  if (
-      solverPatch.getType()==SolverPatch::Type::Cell
-  ) {
+  if ( solverPatch.getType()==SolverPatch::Type::Cell ) {
     determineSolverMinAndMax(solverPatch);
     if (!evaluatePhysicalAdmissibilityCriterion(solverPatch)) {
       solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);

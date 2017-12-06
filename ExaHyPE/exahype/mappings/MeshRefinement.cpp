@@ -38,8 +38,6 @@ bool exahype::mappings::MeshRefinement::IsInitialMeshRefinement = false;
 
 tarch::logging::Log exahype::mappings::MeshRefinement::_log("exahype::mappings::MeshRefinement");
 
-tarch::multicore::BooleanSemaphore exahype::mappings::MeshRefinement::_semaphore;
-
 /**
  * @todo Please tailor the parameters to your mapping's properties.
  */
@@ -57,13 +55,13 @@ peano::MappingSpecification
 exahype::mappings::MeshRefinement::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::Serial,true);
 }
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::Serial,true);
 }
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::leaveCellSpecification(int level) const {
@@ -187,7 +185,7 @@ void exahype::mappings::MeshRefinement::createBoundaryVertex(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if (
-      tarch::la::oneGreater(fineGridH,
+       tarch::la::oneGreater(fineGridH,
           exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers())
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
@@ -320,7 +318,6 @@ void exahype::mappings::MeshRefinement::enterCell(
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
         const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
-          tarch::multicore::Lock lock(_semaphore);
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
           adjustSolution |=
               limitingADERDGSolver->updateLimiterStatusDuringLimiterStatusSpreading(

@@ -62,12 +62,6 @@ private:
   State _localState;
 
   /**
-   * A semaphore that is locked if a thread calls while solver->updateStateInEnterCell
-   * or solver->updateStateInLeaveCell
-   */
-  static tarch::multicore::BooleanSemaphore _semaphore;
-
-  /**
    * TODO(Tobias): Add docu.
    */
   void refineSafely(
@@ -151,6 +145,31 @@ public:
    */
   MeshRefinement(const MeshRefinement& masterThread);
 #endif
+
+  /**
+   * Initialise all heaps.
+   *
+   * For each solver, reset the grid update requested flag
+   * to false.
+   *
+   * Further zero the time step sizes of the solver.
+   *
+   * <h2>MPI</h2>
+   * Finish the previous synchronous sends and
+   * start synchronous sending again.
+   */
+  void beginIteration(exahype::State& solverState);
+
+  /**
+   * For each solver, set the grid update requested flag
+   * for the next iteration.
+   *
+   * <h2>MPI</h2>
+   * If this rank is the global master, update the
+   * initial grid refinement strategy.
+   */
+  void endIteration(exahype::State& solverState);
+
   /**
    * TODO(Tobias): Add docu.
    */
@@ -262,6 +281,18 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
+   * For all solvers, merge the metadata of neighbouring patches.
+   */
+  void touchVertexFirstTime(
+      exahype::Vertex& fineGridVertex,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
+
+  /**
    * TODO(Tobias): Add docu.
    *
    * TODO(Dominic): Update docu.
@@ -274,30 +305,6 @@ public:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
-
-  /**
-   * Initialise all heaps.
-   *
-   * For each solver, reset the grid update requested flag
-   * to false.
-   *
-   * Further zero the time step sizes of the solver.
-   *
-   * <h2>MPI</h2>
-   * Finish the previous synchronous sends and
-   * start synchronous sending again.
-   */
-  void beginIteration(exahype::State& solverState);
-
-  /**
-   * For each solver, set the grid update requested flag
-   * for the next iteration.
-   *
-   * <h2>MPI</h2>
-   * If this rank is the global master, update the
-   * initial grid refinement strategy.
-   */
-  void endIteration(exahype::State& solverState);
 
 
 #ifdef Parallel
@@ -464,17 +471,6 @@ public:
   */
  void destroyVertex(
      const exahype::Vertex& fineGridVertex,
-     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-     exahype::Vertex* const coarseGridVertices,
-     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-     exahype::Cell& coarseGridCell,
-     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
- /**
-  * Nop.
-  */
- void touchVertexFirstTime(
-     exahype::Vertex& fineGridVertex,
      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
      exahype::Vertex* const coarseGridVertices,
