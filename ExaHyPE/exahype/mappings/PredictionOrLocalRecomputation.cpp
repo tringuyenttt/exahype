@@ -332,7 +332,9 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
   exahype::Vertex* const coarseGridVertices,
   const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
   exahype::Cell& coarseGridCell,
-  const tarch::la::Vector<DIMENSIONS, intlogTraceInWith6Arguments( "touchVertexFirstTime(...)", fineGridVertex, fineGridX, fineGridH, coarseGridVerticesEnumerator.toString(), coarseGridCell, fineGridPositionOfVertex );>& fineGridPositionOfVertex) {
+  const tarch::la::Vector<DIMENSIONS,int>& fineGridPositionOfVertex
+) {
+  logTraceInWith6Arguments( "touchVertexFirstTime(...)", fineGridVertex, fineGridX, fineGridH, coarseGridVerticesEnumerator.toString(), coarseGridCell, fineGridPositionOfVertex );
 
   if ( _oneSolverRequestedLocalRecomputation ) {
     dfor2(pos1)
