@@ -12,11 +12,11 @@
 //   return;
 // }
 
-CurvilinearTransformation::CurvilinearTransformation(const int a_num_nodes,const double a_dx ){
-
-  num_nodes=a_num_nodes;
-  dx=a_dx;
-
+CurvilinearTransformation::CurvilinearTransformation(const int a_num_nodes,const double a_dx ):
+  num_nodes(a_num_nodes),
+  dx(a_dx),
+  fault_position(0.5)
+{
   int ne_x = std::round(1/dx); //number of elements in x direction on whole domain
   int ne_y = ne_x;
   int ne_z = ne_x;
@@ -29,7 +29,6 @@ CurvilinearTransformation::CurvilinearTransformation(const int a_num_nodes,const
   double block_width_y=1.0;
   double block_width_z=1.0;
 
-  fault_position = 0.5;
   for(int n=0 ; n<2 ; ++n ){
     ne_x = std::round(1/dx);
     if(n == 0){
@@ -75,100 +74,27 @@ CurvilinearTransformation::CurvilinearTransformation(const int a_num_nodes,const
 						    top_bnd_x[n],  top_bnd_y[n],  top_bnd_z[n],
 						    front_bnd_x[n],  front_bnd_y[n],  front_bnd_z[n],
 						    back_bnd_x[n],  back_bnd_y[n],  back_bnd_z[n]);
+  }
 
-    // if(n == 1){
-    //   std::cout << "left" << std::endl;
-
-    //   for (int i=0; i< ny*nz; i++){
-    // 	std::cout << left_bnd_x[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  ny*nz; i++){
-    // 	std::cout << left_bnd_y[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  ny*nz; i++){
-    // 	std::cout << left_bnd_z[n][i] << std::endl;
-    //   }
-
-    //   std::cout << "right" << std::endl;
-
-    //   for (int i=0; i< ny*nz; i++){
-    // 	std::cout << right_bnd_x[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  ny*nz; i++){
-    // 	std::cout << right_bnd_y[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  ny*nz; i++){
-    // 	std::cout << right_bnd_z[n][i] << std::endl;
-    //   }
-
-
-    //   std::cout << "back" <<std::endl;
-
-    //   for (int i=0; i< ny*nx; i++){
-    // 	std::cout << back_bnd_x[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  ny*nx; i++){
-    // 	std::cout << back_bnd_y[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  ny*nx; i++){
-    // 	std::cout << back_bnd_z[n][i] << std::endl;
-    //   }
-
-    //   std::cout <<"front" << std::endl;
-
-    //   for (int i=0; i< ny*nx; i++){
-    // 	std::cout << front_bnd_x[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  ny*nx; i++){
-    // 	std::cout << front_bnd_y[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  ny*nx; i++){
-    // 	std::cout << front_bnd_z[n][i] << std::endl;
-    //   }
-
-    //   std::cout <<"top" << std::endl;
-
-    //   for (int i=0; i< nz*nx; i++){
-    // 	std::cout << top_bnd_x[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  nz*nx; i++){
-    // 	std::cout << top_bnd_y[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  nz*nx; i++){
-    // 	std::cout << top_bnd_z[n][i] << std::endl;
-    //   }
-
-    //   std::cout << "bottom" << std::endl;
-
-    //   for (int i=0; i< nz*nx; i++){
-    // 	std::cout << bottom_bnd_x[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  nz*nx; i++){
-    // 	std::cout << bottom_bnd_y[n][i] << std::endl;
-    //   }
-
-    //   for (int i=0; i<  nz*nx; i++){
-    // 	std::cout << bottom_bnd_z[n][i] << std::endl;
-    //   }
-    //   std::exit(-1);
-    // }
-
-    //initalize Lagrange Denominator
-    
-
+  unif_mesh= new double[num_nodes];
+  for(int i = 0; i< num_nodes ; i++){
+    unif_mesh[i]=i*1.0/(num_nodes-1);
   }
   
+  denominator_lagrange= new double[num_nodes];
+  //initalize Lagrange Denominator
+  for(int i=0; i< num_nodes ; i++){
+    double temp = 1.0;
+
+    for (int j = 0 ; j< i ; j ++){
+      temp = temp* (unif_mesh[i]-unif_mesh[j]);
+    }
+    
+    for (int j = i+1 ; j < num_nodes ; j ++){
+      temp = temp*(unif_mesh[i]-unif_mesh[j]);
+    }
+    denominator_lagrange[i] = 1.0/temp;
+  }
 }
 
 void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSIONS,double>& center,
@@ -1672,12 +1598,19 @@ void CurvilinearTransformation::transFiniteInterpolation(int mx, int my, int j_m
 
 double CurvilinearTransformation::lagrangeBasis(double x,double* points,int i,int num_points){
   double result=1;
-  for (int j = 0 ; j< num_points ; j ++){
 
-    if (j != i) {
-      result *= (x-points[j])/(points[i]-points[j]);
-    }
+  for (int j = 0 ; j< i ; j ++){
+    // unifMesh
+    result *= (x-unif_mesh[j]);
   }
+  
+  for (int j = i+1 ; j < num_points ; j ++){
+    // 
+    result *= (x-unif_mesh[j]);
+  }
+
+  result*= denominator_lagrange[i];
+
    
   return result;
 }
@@ -1699,8 +1632,11 @@ void CurvilinearTransformation::interpolate3D(double x, double y, double z, doub
   for (int k = 0 ; k< num_nodes ; k++){    
     for (int j = 0 ; j< num_nodes ; j ++){
       for (int i = 0 ; i< num_nodes ; i ++){
+	                  // unifMesh
 	a_x=lagrangeBasis(x,orig_mesh_x,i,num_nodes);
+	                  // unifMesh
 	a_y=lagrangeBasis(y,orig_mesh_y,j,num_nodes);
+	                  // unifMesh
 	a_z=lagrangeBasis(z,orig_mesh_z,k,num_nodes);
 	result += dest_mesh[id_xyz(k,j,i)] * a_x*a_y*a_z;
       }
@@ -1732,6 +1668,7 @@ void CurvilinearTransformation::interpolate(double x, double y, double* orig_mes
 
 
 void CurvilinearTransformation::getValuesAtQuadNodes3D(double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes, double* results){
+  // unifMesh unifMesh unifMesh
 
   kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes);
 
@@ -1740,11 +1677,17 @@ void CurvilinearTransformation::getValuesAtQuadNodes3D(double* orig_mesh_x , dou
     for (int j = 0 ; j< num_nodes ; j ++){
       for (int i = 0 ; i< num_nodes ; i ++){
 #if defined(_GLL)
-	interpolate3D(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-i],kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-j],kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-k],orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
+	interpolate3D(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-i],
+		      kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-j],
+		      kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-k],
+		      // unifMesh unifMesh unifMesh
+		      orig_mesh_x,orig_mesh_y,orig_mesh_z,
+		      dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
 	#else
 	interpolate3D(kernels::gaussLegendreNodes[num_nodes-1][i],
 		      kernels::gaussLegendreNodes[num_nodes-1][j],
 		      kernels::gaussLegendreNodes[num_nodes-1][k],
+		      // unifMesh unifMesh unifMesh
 		      orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,
 		      num_nodes,results[id_xyz(k,j,i)]);
 	#endif
@@ -1825,10 +1768,6 @@ void CurvilinearTransformation::computeDerivatives_z_3D (int i, int j , int k ,d
 
 void CurvilinearTransformation::metricDerivativesAndJacobian(int num_nodes, double* curvilinear_x, double* curvilinear_y,double* gl_vals_x,double* gl_vals_y,double* q_x,double* q_y,double* r_x,double* r_y,double* jacobian, double dx, double dy){
 
-  double* unif_mesh= new double[num_nodes];
-  for(int i = 0; i< num_nodes ; i++){
-    unif_mesh[i]=i*1.0/(num_nodes-1);
-  }
 
   getValuesAtQuadNodes(unif_mesh,
 		       unif_mesh,

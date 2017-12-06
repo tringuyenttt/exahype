@@ -105,12 +105,13 @@ class CurvilinearTransformation{
 
  private:
 
-  int num_nodes;
-  double dx;
+  const int num_nodes;
+  const double dx;
+  const double fault_position;
 
-  double lagrange_denom;
+  double* denominator_lagrange;
+  double* unif_mesh;
 
-  double fault_position;
   double* left_bnd_x[2];
   double* left_bnd_y[2];
   double* left_bnd_z[2];
