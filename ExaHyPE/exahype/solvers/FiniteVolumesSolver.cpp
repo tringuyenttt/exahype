@@ -543,13 +543,6 @@ bool exahype::solvers::FiniteVolumesSolver::attainedStableState(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     const int solverNumber) const {
-  //  const int element = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  //  if (element!=exahype::solvers::Solver::NotFound) {
-  //    CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
-  //
-  //    return (cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None);
-  //  }
-
   return true;
 }
 

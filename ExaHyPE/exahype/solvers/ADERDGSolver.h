@@ -210,18 +210,14 @@ private:
    * as well as in markForAugmentation(...) which is called from within
    * enterCell(...)
    */
-  bool markForRefinement(
-      CellDescription& pFine);
+  bool markForRefinement(CellDescription& pFine);
 
   /**
    * TODO(Dominic): Add docu.
    *
    * \note Not thread-safe!
    */
-  bool markForAugmentation(
-      CellDescription& pFine,
-      const tarch::la::Vector<THREE_POWER_D, int>& neighbourCellDescriptionIndices,
-      const bool onMasterWorkerBoundary);
+  bool markForAugmentation(CellDescription& pFine);
 
   /*
    * Change the erasing children request to a change children to descendants

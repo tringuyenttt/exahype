@@ -320,21 +320,15 @@ void exahype::mappings::MeshRefinement::enterCell(
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
         const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
-          const tarch::la::Vector<TWO_POWER_D_TIMES_TWO_POWER_D,int>& indicesAdjacentToFineGridVertices =
-              exahype::VertexOperations::readCellDescriptionsIndex(
-                  fineGridVerticesEnumerator,fineGridVertices);
-          if (multiscalelinkedcell::adjacencyInformationIsConsistent(
-              indicesAdjacentToFineGridVertices)) {
-            tarch::multicore::Lock lock(_semaphore);
-            auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-            adjustSolution |=
-                limitingADERDGSolver->updateLimiterStatusDuringLimiterStatusSpreading(
-                    fineGridCell.getCellDescriptionsIndex(),element);
-            oneSolverRequestsRefinement |=
-                limitingADERDGSolver->
-                evaluateLimiterStatusRefinementCriterion(
-                    fineGridCell.getCellDescriptionsIndex(),element);
-          }
+          tarch::multicore::Lock lock(_semaphore);
+          auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+          adjustSolution |=
+              limitingADERDGSolver->updateLimiterStatusDuringLimiterStatusSpreading(
+                  fineGridCell.getCellDescriptionsIndex(),element);
+          oneSolverRequestsRefinement |=
+              limitingADERDGSolver->
+              evaluateLimiterStatusRefinementCriterion(
+                  fineGridCell.getCellDescriptionsIndex(),element);
         }
       }
 

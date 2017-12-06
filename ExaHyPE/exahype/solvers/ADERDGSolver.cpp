@@ -1010,39 +1010,23 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
         fineGridCellDescription.toString(),fineGridCell.toString(),
         coarseGridCell.toString()); // see mergeCellDescriptionsWithRemoteData.
 
-    // actions requiring adjacency info
-    const tarch::la::Vector<TWO_POWER_D_TIMES_TWO_POWER_D,int>&
-      indicesAdjacentToFineGridVertices =
-          VertexOperations::readCellDescriptionsIndex(
-                          fineGridVerticesEnumerator,fineGridVertices);
+    // TODO(Dominic): Does this information indicate that a cell adjacent
+    // to a worker/master rank???
+    #ifdef Parallel
+    fineGridCellDescription.setAdjacentToRemoteRank(
+        exahype::Cell::isAdjacentToRemoteRank(fineGridVertices,fineGridVerticesEnumerator));
+    #endif
 
-    if (multiscalelinkedcell::adjacencyInformationIsConsistent(
-        indicesAdjacentToFineGridVertices)) {
-      const tarch::la::Vector<THREE_POWER_D, int> neighbourCellDescriptionIndices =
-          multiscalelinkedcell::getIndicesAroundCell(
-              indicesAdjacentToFineGridVertices);
+    // Ensure we have allocated enough memory.
+    updateHelperStatus(fineGridCellDescription);
+    ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
+    ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
 
-      // TODO(Dominic): Does this information indicate that a cell adjacent
-      // to a worker/master rank???
-
-      #ifdef Parallel
-      fineGridCellDescription.setAdjacentToRemoteRank(
-          exahype::Cell::isAdjacentToRemoteRank(fineGridVertices,fineGridVerticesEnumerator));
-      #endif
-
-      // Ensure we have allocated enough memory.
-      updateHelperStatus(fineGridCellDescription);
-      ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
-      ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
-
-      // marking for augmentation
-      updateAugmentationStatus(fineGridCellDescription);
-      result._refinementRequested |= // TODO(Dominic): Change to the template version.
-          markForAugmentation(
-              fineGridCellDescription,
-              neighbourCellDescriptionIndices,
-              fineGridCell.isAssignedToRemoteRank());
-    }
+    // marking for augmentation
+    updateAugmentationStatus(fineGridCellDescription);
+    result._refinementRequested |=
+        markForAugmentation(fineGridCellDescription);
+    // TODO(Dominic): Change to the template version if more solvers
   }
 
   // Coarse grid cell based adaptive mesh refinement operations.
@@ -1159,9 +1143,7 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
 }
 
 bool exahype::solvers::ADERDGSolver::markForAugmentation(
-    CellDescription& fineGridCellDescription,
-    const tarch::la::Vector<THREE_POWER_D, int>& neighbourCellDescriptionIndices,
-    const bool assignedToRemoteRank) {
+    CellDescription& fineGridCellDescription) {
   const int coarseGridElement = tryGetElement(
       fineGridCellDescription.getParentIndex(),
       fineGridCellDescription.getSolverNumber());
@@ -1269,34 +1251,6 @@ void exahype::solvers::ADERDGSolver::vetoErasingOrDeaugmentingChildrenRequest(
       }
     }
   }
-
-
-  // TODO(Dominic): Old code for reference
-//  const int coarseGridCellParentElement = tryGetElement(coarseGridCellDescription.getParentIndex(),
-//                                                  coarseGridCellDescription.getSolverNumber());
-//  const int fineGridCellElement = tryGetElement(fineGridCellDescriptionsIndex,
-//                                          coarseGridCellDescription.getSolverNumber());
-//  if (fineGridCellElement!=exahype::solvers::Solver::NotFound &&
-//      coarseGridCellParentElement!=exahype::solvers::Solver::NotFound) {
-//    CellDescription& coarseGridCellDescriptionParent =
-//        getCellDescription(coarseGridCellDescription.getParentIndex(),coarseGridCellParentElement);
-//
-//        switch (coarseGridCellDescriptionParent.getRefinementEvent()) {
-//          case CellDescription::DeaugmentingChildrenRequested:
-//            assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Descendant,coarseGridCellDescription.toString());
-//            coarseGridCellDescriptionParent.setRefinementEvent(CellDescription::None);
-//            break;
-//          case CellDescription::ErasingChildrenRequested:
-//            assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell,
-//                       coarseGridCellDescription.toString());
-//
-//            coarseGridCellDescriptionParent.setRefinementEvent(
-//                CellDescription::ChangeChildrenToDescendantsRequested);
-//            break;
-//          default:
-//            break;
-//        }
-//  }
 }
 
 void exahype::solvers::ADERDGSolver::addNewCell(
@@ -1499,19 +1453,12 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
         const int solverNumber) const {
   const int element = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  if (element!=exahype::solvers::Solver::NotFound) {
+  if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
-
-    const tarch::la::Vector<TWO_POWER_D_TIMES_TWO_POWER_D,int>&
-      indicesAdjacentToFineGridVertices =
-          VertexOperations::readCellDescriptionsIndex(
-              fineGridVerticesEnumerator,fineGridVertices);
-
-    return cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
-       && multiscalelinkedcell::adjacencyInformationIsConsistent(indicesAdjacentToFineGridVertices);
+    return cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None;
+  } else {
+    return true;
   }
-
-  return true;
 }
 
 bool exahype::solvers::ADERDGSolver::updateStateInLeaveCell(

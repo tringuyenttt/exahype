@@ -397,26 +397,19 @@ bool exahype::solvers::LimitingADERDGSolver::markForRefinement(
   const int fineGridSolverElement =
       _solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if (fineGridSolverElement!=Solver::NotFound) {
-    const tarch::la::Vector<TWO_POWER_D_TIMES_TWO_POWER_D,int>&
-    indicesAdjacentToFineGridVertices =
-        VertexOperations::readCellDescriptionsIndex(
-            fineGridVerticesEnumerator,fineGridVertices);
-    if (multiscalelinkedcell::adjacencyInformationIsConsistent(
-        indicesAdjacentToFineGridVertices)) {
-      bool refineFineGridCell =
-          markForRefinementBasedOnLimiterStatus(
-              fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-              coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
-              fineGridPositionOfCell,
-              initialGrid,
-              solverNumber);
+    bool refineFineGridCell =
+        markForRefinementBasedOnLimiterStatus(
+            fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
+            coarseGridCell,coarseGridVertices,coarseGridVerticesEnumerator,
+            fineGridPositionOfCell,
+            initialGrid,
+            solverNumber);
 
-      vetoErasingChildrenRequestBasedOnLimiterStatus(
-          fineGridCell.getCellDescriptionsIndex(),fineGridSolverElement,
-          coarseGridCell.getCellDescriptionsIndex());
+    vetoErasingChildrenRequestBasedOnLimiterStatus(
+        fineGridCell.getCellDescriptionsIndex(),fineGridSolverElement,
+        coarseGridCell.getCellDescriptionsIndex());
 
-      return refineFineGridCell;
-    }
+    return refineFineGridCell;
   }
 
   return false;
