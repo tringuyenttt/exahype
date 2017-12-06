@@ -32,6 +32,8 @@
 tarch::logging::Log exahype::mappings::PredictionOrLocalRecomputation::_log(
     "exahype::mappings::PredictionOrLocalRecomputation");
 
+bool exahype::mappings::PredictionOrLocalRecomputation::OneSolverRequestedLocalRecomputation = false;
+
 peano::CommunicationSpecification
 exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() const {
   return peano::CommunicationSpecification(
@@ -122,9 +124,6 @@ exahype::mappings::PredictionOrLocalRecomputation::~PredictionOrLocalRecomputati
 exahype::mappings::PredictionOrLocalRecomputation::PredictionOrLocalRecomputation(
     const PredictionOrLocalRecomputation& masterThread)
 : _localState(masterThread._localState) {
-  _oneSolverRequestedLocalRecomputation =
-        exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
-
   prepareLocalTimeStepVariables();
 
   initialiseTemporaryVariables();
@@ -149,8 +148,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
 
   _localState = solverState;
 
-  _oneSolverRequestedLocalRecomputation =
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
+  OneSolverRequestedLocalRecomputation =
+        exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
 
   prepareLocalTimeStepVariables();
 
@@ -183,7 +182,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
 
-  if ( _oneSolverRequestedLocalRecomputation ) {
+  if ( OneSolverRequestedLocalRecomputation ) {
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if (
@@ -293,7 +292,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
     endpfor
     grainSize.parallelSectionHasTerminated();
 
-    if ( _oneSolverRequestedLocalRecomputation ) {
+    if ( OneSolverRequestedLocalRecomputation ) {
       exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
           fineGridCell.getCellDescriptionsIndex(),
           fineGridVerticesEnumerator);
@@ -339,7 +338,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
 ) {
   logTraceInWith6Arguments( "touchVertexFirstTime(...)", fineGridVertex, fineGridX, fineGridH, coarseGridVerticesEnumerator.toString(), coarseGridCell, fineGridPositionOfVertex );
 
-  if ( _oneSolverRequestedLocalRecomputation ) {
+  if ( OneSolverRequestedLocalRecomputation ) {
     dfor2(pos1)
       dfor2(pos2)
         if (fineGridVertex.hasToMergeNeighbours(pos1,pos1Scalar,pos2,pos2Scalar,fineGridX,fineGridH)) { // Assumes that we have to valid indices
@@ -446,7 +445,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
   if (
-      _oneSolverRequestedLocalRecomputation &&
+      OneSolverRequestedLocalRecomputation &&
       vertex.hasToCommunicate(fineGridH)
   ) {
     dfor2(myDest)

@@ -188,12 +188,12 @@ multiscalelinkedcell::HangingVertexBookkeeper&  multiscalelinkedcell::HangingVer
 }
 
 
-tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForNewVertex() const {
+tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForNewVertex() {
   return tarch::la::Vector<TWO_POWER_D,int>(InvalidAdjacencyIndex);
 }
 
 
-tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForBoundaryVertex() const {
+tarch::la::Vector<TWO_POWER_D,int> multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForBoundaryVertex() {
   return tarch::la::Vector<TWO_POWER_D,int>(DomainBoundaryAdjacencyIndex);
 }
 

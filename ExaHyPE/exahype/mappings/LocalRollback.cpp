@@ -82,6 +82,8 @@ exahype::mappings::LocalRollback::descendSpecification(int level) const {
 tarch::logging::Log exahype::mappings::LocalRollback::_log(
     "exahype::mappings::LocalRollback");
 
+bool exahype::mappings::LocalRollback::OneSolverRequestedLocalRecomputation = false;
+
 exahype::mappings::LocalRollback::LocalRollback() {
   // do nothing
 }
@@ -89,8 +91,7 @@ exahype::mappings::LocalRollback::LocalRollback() {
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::LocalRollback::LocalRollback(
     const LocalRollback& masterThread) {
-  _oneSolverRequestedLocalRecomputation =
-        exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
+  // do nothing
 }
 void exahype::mappings::LocalRollback::mergeWithWorkerThread(
     const LocalRollback& workerThread) {
@@ -100,7 +101,7 @@ void exahype::mappings::LocalRollback::mergeWithWorkerThread(
 
 void exahype::mappings::LocalRollback::beginIteration(
     exahype::State& solverState) {
-  _oneSolverRequestedLocalRecomputation =
+  OneSolverRequestedLocalRecomputation =
       exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
 }
 
@@ -115,7 +116,7 @@ bool exahype::mappings::LocalRollback::performLocalRecomputation(
 
 void exahype::mappings::LocalRollback::endIteration(
     exahype::State& solverState) {
-  if ( _oneSolverRequestedLocalRecomputation ) {
+  if ( OneSolverRequestedLocalRecomputation ) {
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if (
@@ -147,7 +148,7 @@ void exahype::mappings::LocalRollback::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if (
-      _oneSolverRequestedLocalRecomputation &&
+      OneSolverRequestedLocalRecomputation &&
       fineGridCell.isInitialised()
   ) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
@@ -188,7 +189,7 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   if (
-      _oneSolverRequestedLocalRecomputation &&
+      OneSolverRequestedLocalRecomputation &&
       vertex.hasToCommunicate(h)
   ) {
     dfor2(dest)

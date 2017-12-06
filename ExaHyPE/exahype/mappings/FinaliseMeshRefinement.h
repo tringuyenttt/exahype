@@ -55,9 +55,9 @@ class exahype::mappings::FinaliseMeshRefinement {
   /**
    * Flag indicating that one solver requested
    * a mesh update.
-   * Is set in beginIteration(...) and the shared-memory constructor.
+   * Is set in beginIteration(...).
    */
-  bool _oneSolverRequestedMeshUpdate = false;
+  static bool OneSolverRequestedMeshUpdate;
 
   /**
    * A minimum time step size for each solver.

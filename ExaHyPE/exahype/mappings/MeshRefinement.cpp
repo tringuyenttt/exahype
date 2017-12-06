@@ -522,6 +522,7 @@ void exahype::mappings::MeshRefinement::mergeWithNeighbour(
   if (exahype::mappings::MeshRefinement::IsFirstIteration) {
     return;
   }
+
   vertex.mergeOnlyWithNeighbourMetadata(
       fromRank,fineGridX,fineGridH,level,
       exahype::State::AlgorithmSection::MeshRefinement);
@@ -650,11 +651,9 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
     exahype::Vertex& localVertex, const exahype::Vertex& masterOrWorkerVertex,
     int fromRank, const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
-  if (
-      _localState.isNewWorkerDueToForkOfExistingDomain()
-  ) {
+  if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
     exahype::VertexOperations::writeCellDescriptionsIndex(
-        localVertex,multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+        localVertex,multiscalelinkedcell::HangingVertexBookkeeper::getInstance().createVertexLinkMapForNewVertex());
   }
 }
 
@@ -664,9 +663,8 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
         const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   if ( localCell.hasToCommunicate(cellSize) ) {
 
-    if ( _localState.isNewWorkerDueToForkOfExistingDomain() ) {
+    if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
       localCell.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
-      assertion1(!localCell.isInitialised(),localCell.toString());
     }
     if ( !localCell.isInitialised() ) {
       localCell.setupMetaData();

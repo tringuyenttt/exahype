@@ -121,8 +121,8 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
      * @see createBoundaryVertex
      * @see createInnerVertex
      */
-    tarch::la::Vector<TWO_POWER_D,int> createVertexLinkMapForNewVertex() const;
-    tarch::la::Vector<TWO_POWER_D,int> createVertexLinkMapForBoundaryVertex() const;
+    static tarch::la::Vector<TWO_POWER_D,int> createVertexLinkMapForNewVertex();
+    static tarch::la::Vector<TWO_POWER_D,int> createVertexLinkMapForBoundaryVertex();
 
     /**
      * Returns a real reference to an existing hanging vertex. It does not create
@@ -200,7 +200,7 @@ class multiscalelinkedcell::HangingVertexBookkeeper {
      * happen that you fork the grid dynamically. Then, this routine updates
      * the entries dynamically, too.
      */
-    tarch::la::Vector<TWO_POWER_D,int> updateCellIndicesInMergeWithNeighbour(
+    static tarch::la::Vector<TWO_POWER_D,int> updateCellIndicesInMergeWithNeighbour(
       const tarch::la::Vector<TWO_POWER_D,int>&  adjacentRanks,
       const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries
     );

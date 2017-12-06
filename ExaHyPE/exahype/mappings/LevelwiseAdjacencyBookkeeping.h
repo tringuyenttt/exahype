@@ -190,6 +190,34 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
       int                                           level
     );
 
+    /**
+     * If we are on a new worker, write
+     * invalid adjacency indices into the vertex'
+     * adjacency map.
+     */
+    void mergeWithRemoteDataDueToForkOrJoin(
+      exahype::Vertex&  localVertex,
+      const exahype::Vertex&  masterOrWorkerVertex,
+      int                                       fromRank,
+      const tarch::la::Vector<DIMENSIONS,double>&  x,
+      const tarch::la::Vector<DIMENSIONS,double>&  h,
+      int                                       level
+    );
+
+    /**
+     * If we are on a new worker, write an
+     * invalid index into the cell's
+     * heap index.
+     */
+    void mergeWithRemoteDataDueToForkOrJoin(
+      exahype::Cell&  localCell,
+      const exahype::Cell&  masterOrWorkerCell,
+      int                                       fromRank,
+      const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
+      int                                       level
+    );
+
     void prepareSendToNeighbour(
       exahype::Vertex&  vertex,
       int                                           toRank,
@@ -212,24 +240,6 @@ class exahype::mappings::LevelwiseAdjacencyBookkeeping {
       const tarch::la::Vector<DIMENSIONS,double>&   cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>&   cellSize,
       int                                           level
-    );
-
-    void mergeWithRemoteDataDueToForkOrJoin(
-      exahype::Vertex&  localVertex,
-      const exahype::Vertex&  masterOrWorkerVertex,
-      int                                       fromRank,
-      const tarch::la::Vector<DIMENSIONS,double>&  x,
-      const tarch::la::Vector<DIMENSIONS,double>&  h,
-      int                                       level
-    );
-
-    void mergeWithRemoteDataDueToForkOrJoin(
-      exahype::Cell&  localCell,
-      const exahype::Cell&  masterOrWorkerCell,
-      int                                       fromRank,
-      const tarch::la::Vector<DIMENSIONS,double>&  cellCentre,
-      const tarch::la::Vector<DIMENSIONS,double>&  cellSize,
-      int                                       level
     );
 
     bool prepareSendToWorker(
