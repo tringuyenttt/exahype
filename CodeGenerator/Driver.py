@@ -36,8 +36,8 @@ import Backend
 # Configuration parameters
 # --------------------------------------------------------
 
-pathFromHereToExaHyPERoot = "../"                     #path to the root of ExaHyPe from this file
-pathToLibxsmmGemmGenerator = "libxsmm_gemm_generator" #path to the gemm generator from this file
+pathFromHereToExaHyPERoot = "../" #path to the root of ExaHyPe from this file
+pathToLibxsmmGemmGenerator = os.path.join("dependencies", "libxsmm", "bin", "libxsmm_gemm_generator") #path to the gemm generator from this file
 
 # --------------------------------------------------------
 # Require python3
