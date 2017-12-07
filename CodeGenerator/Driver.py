@@ -28,7 +28,7 @@ import argparse
 import os
 import sys
 
-import CodeGenArgumentParser
+from utils import CodeGenArgumentParser
 import Backend
 
 
