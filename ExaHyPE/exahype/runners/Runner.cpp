@@ -239,11 +239,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::Core::getInstance().configure(numberOfThreads);
   tarch::multicore::logThreadAffinities();
 
-  #ifdef SharedTBBInvade
-  tarch::multicore::setMaxNumberOfRunningBackgroundThreads(-1);
-  #else
   tarch::multicore::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
-  #endif
 
   switch (_parser.getMulticoreOracleType()) {
   case Parser::MulticoreOracleType::Dummy:
