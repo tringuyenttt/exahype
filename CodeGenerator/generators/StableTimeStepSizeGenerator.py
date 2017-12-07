@@ -14,21 +14,26 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
+#
 # @section DESCRIPTION
 #
-# Method to render a template using by default jinja2
+# Generates the DtableTimeStep Kernel
 #
 
 
-import os
-
-from jinja2 import Template
+from utils import TemplatingUtils
 
 
-def renderAsFile(inputFilename, outputFilename, context):
-    dir = os.path.dirname(__file__)
-           
-    with open(os.path.join(dir,'templates',inputFilename), 'r') as input:
-        template = Template(input.read(), trim_blocks=True)                
-        with open(os.path.join(context['pathToOutputDirectory'],outputFilename), 'w') as output:
-            output.write(template.render(context))
+class StableTimeStepSizeGenerator:
+    m_context = {}
+    
+    # name of generated output file
+    m_filename = "stableTimeStepSize.cpp"
+
+
+    def __init__(self, i_context):
+        self.m_context = i_context
+
+
+    def generateCode(self):
+        TemplatingUtils.renderAsFile("stableTimeStepSize_cpp.template", self.m_filename, self.m_context)

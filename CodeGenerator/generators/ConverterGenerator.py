@@ -17,25 +17,26 @@
 #
 # @section DESCRIPTION
 #
-# Generate a ccph with getter to the parameters used by the code generator
+# Generate the converter, used to mix generic and optimized kernels
 #
 
 
-import TemplatingUtils
+from utils import TemplatingUtils
 
 
-class ConfigurationParametersGenerator:
+class ConverterGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename = "ConfigurationParameters.cpph"
+    m_filenameRoot = "converter"
 
-    
-    def __init__(self, i_config):
-        self.m_context = i_config
 
+    def __init__(self, i_context):
+        self.m_context = i_context
+        
 
     def generateCode(self):
-        self.m_context["isLinearCText"] = "true" if self.m_context["isLinear"] else "false" #c++ true/false instead of True/False
-
-        TemplatingUtils.renderAsFile("configurationParameters_cpph.template", self.m_filename, self.m_context)
+        self.m_context["noVarPadding"] = self.m_context["nVarPad"] == self.m_context["nVar"]
+        
+        TemplatingUtils.renderAsFile("converter_h.template",   self.m_filenameRoot+".h",   self.m_context)
+        TemplatingUtils.renderAsFile("converter_cpp.template", self.m_filenameRoot+".cpp", self.m_context)

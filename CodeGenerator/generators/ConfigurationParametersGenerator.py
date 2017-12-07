@@ -17,23 +17,25 @@
 #
 # @section DESCRIPTION
 #
-# Generates the SolutionUpdate Kernel
+# Generate a ccph with getter to the parameters used by the code generator
 #
 
 
-import TemplatingUtils
+from utils import TemplatingUtils
 
 
-class SolutionUpdateGenerator:
+class ConfigurationParametersGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename = "solutionUpdate.cpp"
+    m_filename = "ConfigurationParameters.cpph"
 
-
-    def __init__(self, i_context):
-        self.m_context = i_context
+    
+    def __init__(self, i_config):
+        self.m_context = i_config
 
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile("solutionUpdate_cpp.template", self.m_filename, self.m_context)
+        self.m_context["isLinearCText"] = "true" if self.m_context["isLinear"] else "false" #c++ true/false instead of True/False
+
+        TemplatingUtils.renderAsFile("configurationParameters_cpph.template", self.m_filename, self.m_context)

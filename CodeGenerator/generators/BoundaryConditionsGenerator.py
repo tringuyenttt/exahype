@@ -14,28 +14,28 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
-#
 # @section DESCRIPTION
 #
-# Generate the Kernels.h header
+# Generates the kernel to apply the boundary condition at the border of the domain
+#
+# Call the user function boundaryValues
 #
 
 
-import TemplatingUtils
+from utils import TemplatingUtils
 
 
-class KernelsHeaderGenerator:
+class BoundaryConditionsGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename = "Kernels.h"
+    m_filename = "boundaryConditions.cpp"
 
     
-    def __init__(self, i_context):
-        self.m_context = i_context
+    def __init__(self, i_config):
+        self.m_context = i_config
 
 
     def generateCode(self):
-        self.m_context["solverNamespace"] = self.m_context["solverName"].split("::")[0]
-        self.m_context["solverClass"] = self.m_context["solverName"].split("::")[1]
-        TemplatingUtils.renderAsFile("Kernels_h.template", self.m_filename, self.m_context)
+        TemplatingUtils.renderAsFile("boundaryConditions_cpp.template", self.m_filename, self.m_context)
+

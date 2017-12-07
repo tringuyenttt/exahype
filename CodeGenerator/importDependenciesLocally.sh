@@ -105,8 +105,10 @@ cd "$scriptDir"
 # make sym links
 echo "Make symbolic links"
 if [ "$JINJA2_ALREADY_AVAILABLE" = false ] ; then
-  ln -s "$MARKUPSAFE_LOCAL_DIR"/markupsafe
-  ln -s "$JINJA_LOCAL_DIR"/jinja2
+  cd utils
+  ln -s ../"$MARKUPSAFE_LOCAL_DIR"/markupsafe
+  ln -s ../"$JINJA_LOCAL_DIR"/jinja2
+  cd ..
 fi
 ln -s "$LIBXSMM_LOCAL_DIR"/bin/libxsmm_gemm_generator
 

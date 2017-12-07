@@ -17,26 +17,26 @@
 #
 # @section DESCRIPTION
 #
-# Generate the converter, used to mix generic and optimized kernels
+# Generate the deltaDistribution kernel
+#
+# Call user function pointSource
 #
 
 
-import TemplatingUtils
+from utils import TemplatingUtils
 
 
-class ConverterGenerator:
+class DeltaDistributionGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filenameRoot = "converter"
+    m_filename = "deltaDistribution.cpp"
 
+    
+    def __init__(self, i_config):
+        self.m_context = i_config
 
-    def __init__(self, i_context):
-        self.m_context = i_context
-        
 
     def generateCode(self):
-        self.m_context["noVarPadding"] = self.m_context["nVarPad"] == self.m_context["nVar"]
-        
-        TemplatingUtils.renderAsFile("converter_h.template",   self.m_filenameRoot+".h",   self.m_context)
-        TemplatingUtils.renderAsFile("converter_cpp.template", self.m_filenameRoot+".cpp", self.m_context)
+        if(self.m_context['usePointSources']):
+            TemplatingUtils.renderAsFile("deltaDistribution_cpp.template", self.m_filename, self.m_context)

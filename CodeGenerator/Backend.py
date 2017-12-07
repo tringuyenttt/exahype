@@ -30,22 +30,23 @@ import subprocess
 import errno
 import time
 
-import KernelsHeaderGenerator
-import SpaceTimePredictorGenerator
-import VolumeIntegralGenerator
-import SurfaceIntegralGenerator
-import RiemannGenerator
-import SolutionUpdateGenerator
-import AdjustSolutionGenerator
-import StableTimeStepSizeGenerator
-import QuadratureGenerator
-import DGMatrixGenerator
-import ConfigurationParametersGenerator
-import BoundaryConditionsGenerator
-import ConverterGenerator
-import GemmsCPPGenerator
-import AMRRoutinesGenerator
-import DeltaDistributionGenerator
+
+from generators import KernelsHeaderGenerator
+from generators import SpaceTimePredictorGenerator
+from generators import VolumeIntegralGenerator
+from generators import SurfaceIntegralGenerator
+from generators import RiemannGenerator
+from generators import SolutionUpdateGenerator
+from generators import AdjustSolutionGenerator
+from generators import StableTimeStepSizeGenerator
+from generators import QuadratureGenerator
+from generators import DGMatrixGenerator
+from generators import ConfigurationParametersGenerator
+from generators import BoundaryConditionsGenerator
+from generators import ConverterGenerator
+from generators import GemmsCPPGenerator
+from generators import AMRRoutinesGenerator
+from generators import DeltaDistributionGenerator
 
 
 g_runtimes               = {}

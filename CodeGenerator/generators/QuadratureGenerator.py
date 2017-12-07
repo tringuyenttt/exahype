@@ -21,9 +21,10 @@
 # Use pure python matrices operations from Utils
 #
 
+
 import Backend
-import TemplatingUtils
-import Utils #matrix operation and build functions
+from utils import TemplatingUtils
+from utils import MathsUtils #matrix operation and build functions
 
 
 class QuadratureGenerator:
@@ -38,25 +39,25 @@ class QuadratureGenerator:
 
     def __init__(self, i_context):
         self.m_context = i_context
-        self.m_wGPN, _ = Utils.getGaussLegendre(self.m_context["nDof"])
+        self.m_wGPN, _ = MathsUtils.getGaussLegendre(self.m_context["nDof"])
         
 
     def generateCode(self):
         self.m_context["quadratureType"] = "Gauss-Legendre"
-        l_weightsVector = Utils.vectorPad(self.m_wGPN, self.m_context["nDofPad"] - self.m_context["nDof"])
+        l_weightsVector = MathsUtils.vectorPad(self.m_wGPN, self.m_context["nDofPad"] - self.m_context["nDof"])
         self.m_context["weights1"] = l_weightsVector
         self.m_context["w1Size"] = len(self.m_context["weights1"])
         self.m_context["w1_seq"] = range(self.m_context["w1Size"])
         if(self.m_context["nDim"] == 2):
             # weightsVector is wGPN itself
-            l_weightsVector      = Utils.vectorPad(self.m_wGPN, Backend.getPadWidth(len(self.m_wGPN)))
+            l_weightsVector      = MathsUtils.vectorPad(self.m_wGPN, Backend.getPadWidth(len(self.m_wGPN)))
             self.m_context["weights2"] = l_weightsVector
             self.m_context["w2Size"] = len(self.m_context["weights2"])
             self.m_context["w2_seq"] = range(self.m_context["w2Size"])
 
             # all combinations of two weights, written as an 1D array
             l_weightsVector = [self.m_wGPN[i] * self.m_wGPN[j] for i in range(self.m_context["nDof"]) for j in range(self.m_context["nDof"])]
-            l_weightsVector = Utils.vectorPad(l_weightsVector, Backend.getPadWidth(len(l_weightsVector)))
+            l_weightsVector = MathsUtils.vectorPad(l_weightsVector, Backend.getPadWidth(len(l_weightsVector)))
             self.m_context["weights3"] = l_weightsVector
             self.m_context["w3Size"] = len(self.m_context["weights3"])
             self.m_context["w3_seq"] = range(self.m_context["w3Size"])
@@ -64,14 +65,14 @@ class QuadratureGenerator:
         elif(self.m_context["nDim"] == 3):
             # all combinations of two weights, written as an 1D array
             l_weightsVector = [self.m_wGPN[i] * self.m_wGPN[j] for i in range(self.m_context["nDof"]) for j in range(self.m_context["nDof"])]
-            l_weightsVector      = Utils.vectorPad(l_weightsVector, Backend.getPadWidth(len(l_weightsVector)))
+            l_weightsVector      = MathsUtils.vectorPad(l_weightsVector, Backend.getPadWidth(len(l_weightsVector)))
             self.m_context["weights2"] = l_weightsVector
             self.m_context["w2Size"] = len(self.m_context["weights2"])
             self.m_context["w2_seq"] = range(self.m_context["w2Size"])
 
             # all combination of three weights, written as an 1D array
             l_weightsVector = [self.m_wGPN[i] * self.m_wGPN[j] * self.m_wGPN[k] for i in range(self.m_context["nDof"]) for j in range(self.m_context["nDof"]) for k in range(self.m_context["nDof"])]
-            l_weightsVector      = Utils.vectorPad(l_weightsVector, Backend.getPadWidth(len(l_weightsVector)))
+            l_weightsVector      = MathsUtils.vectorPad(l_weightsVector, Backend.getPadWidth(len(l_weightsVector)))
             self.m_context["weights3"] = l_weightsVector
             self.m_context["w3Size"] = len(self.m_context["weights3"])
             self.m_context["w3_seq"] = range(self.m_context["w3Size"])
@@ -79,7 +80,7 @@ class QuadratureGenerator:
         else:
             print("WeightsGenerator.__generateWeightsCombinations(): nDim not supported")
 
-        self.m_context["wGPN"], self.m_context["xGPN"] = Utils.getGaussLegendre(self.m_context["nDof"])
+        self.m_context["wGPN"], self.m_context["xGPN"] = MathsUtils.getGaussLegendre(self.m_context["nDof"])
         self.m_context["GPN_seq"] = range(self.m_context["nDof"])
         
         #generate files 

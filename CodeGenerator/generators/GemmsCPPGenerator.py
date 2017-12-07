@@ -17,23 +17,26 @@
 #
 # @section DESCRIPTION
 #
-# Generates the DtableTimeStep Kernel
+# Generate the a cpp+h to include the libxsmm gemm properly
 #
 
 
-import TemplatingUtils
+from utils import TemplatingUtils
 
 
-class StableTimeStepSizeGenerator:
+class GemmsCPPGenerator:
     m_context = {}
-    
+
     # name of generated output file
-    m_filename = "stableTimeStepSize.cpp"
+    m_filenameRoot = "gemmsCPP"
 
 
     def __init__(self, i_context):
         self.m_context = i_context
-
+        
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile("stableTimeStepSize_cpp.template", self.m_filename, self.m_context)
+        self.m_context["gemm_prefix"]  = "gemm"
+        
+        TemplatingUtils.renderAsFile("gemmsCPP_h.template",   self.m_filenameRoot+".h",   self.m_context)
+        TemplatingUtils.renderAsFile("gemmsCPP_cpp.template", self.m_filenameRoot+".cpp", self.m_context)

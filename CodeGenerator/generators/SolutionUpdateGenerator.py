@@ -17,23 +17,18 @@
 #
 # @section DESCRIPTION
 #
-# Generates the kernel for the mapping of the DG polynomial
-# onto the [0,1] and calls the user-defined function.
-#
-# Call the user function adjustPointSolution
+# Generates the SolutionUpdate Kernel
 #
 
 
-import TemplatingUtils
+from utils import TemplatingUtils
 
 
-#TODO JMG patchwise adjust
-
-class AdjustSolutionGenerator:
+class SolutionUpdateGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename_point = "adjustPointSolution.cpp"
+    m_filename = "solutionUpdate.cpp"
 
 
     def __init__(self, i_context):
@@ -41,4 +36,4 @@ class AdjustSolutionGenerator:
 
 
     def generateCode(self):
-        TemplatingUtils.renderAsFile("adjustPointSolution_cpp.template", self.m_filename_point, self.m_context)
+        TemplatingUtils.renderAsFile("solutionUpdate_cpp.template", self.m_filename, self.m_context)

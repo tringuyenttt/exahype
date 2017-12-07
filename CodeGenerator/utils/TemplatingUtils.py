@@ -14,33 +14,21 @@
 # Released under the BSD 3 Open Source License.
 # For the full license text, see LICENSE.txt
 #
-#
 # @section DESCRIPTION
 #
-# Generates the SurfaceIntegral kernel
+# Method to render a template using by default jinja2
 #
 
 
-import TemplatingUtils
+import os
+
+from jinja2 import Template
 
 
-class SurfaceIntegralGenerator:
-    m_context = {}
-
-    # name of generated output file
-    m_filename = "surfaceIntegral.cpp"
-
-
-    def __init__(self, i_context):
-        self.m_context = i_context
-
-
-    def generateCode(self):
-        self.m_context["bndFaceSize"] = self.m_context["nVarPad"] * self.m_context["nDof"] * self.m_context["nDof3D"]  
-        TemplatingUtils.renderAsFile("surfaceIntegral_cpp.template", self.m_filename, self.m_context)
-
-
-
-
-
-
+def renderAsFile(inputFilename, outputFilename, context):
+    dir = os.path.dirname(__file__)
+           
+    with open(os.path.join(dir,'..','templates',inputFilename), 'r') as input:
+        template = Template(input.read(), trim_blocks=True)                
+        with open(os.path.join(context['pathToOutputDirectory'],outputFilename), 'w') as output:
+            output.write(template.render(context))

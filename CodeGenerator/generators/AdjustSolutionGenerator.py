@@ -17,25 +17,28 @@
 #
 # @section DESCRIPTION
 #
-# Generate the a cpp+h to include the libxsmm gemm properly
+# Generates the kernel for the mapping of the DG polynomial
+# onto the [0,1] and calls the user-defined function.
+#
+# Call the user function adjustPointSolution
 #
 
-import TemplatingUtils
+
+from utils import TemplatingUtils
 
 
-class GemmsCPPGenerator:
+#TODO JMG patchwise adjust
+
+class AdjustSolutionGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filenameRoot = "gemmsCPP"
+    m_filename_point = "adjustPointSolution.cpp"
 
 
     def __init__(self, i_context):
         self.m_context = i_context
-        
+
 
     def generateCode(self):
-        self.m_context["gemm_prefix"]  = "gemm"
-        
-        TemplatingUtils.renderAsFile("gemmsCPP_h.template",   self.m_filenameRoot+".h",   self.m_context)
-        TemplatingUtils.renderAsFile("gemmsCPP_cpp.template", self.m_filenameRoot+".cpp", self.m_context)
+        TemplatingUtils.renderAsFile("adjustPointSolution_cpp.template", self.m_filename_point, self.m_context)
