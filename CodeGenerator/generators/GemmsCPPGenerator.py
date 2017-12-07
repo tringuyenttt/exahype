@@ -20,7 +20,8 @@
 # Generate the a cpp+h to include the libxsmm gemm properly
 #
 
-import TemplatingUtils
+
+from utils import TemplatingUtils
 
 
 class GemmsCPPGenerator:

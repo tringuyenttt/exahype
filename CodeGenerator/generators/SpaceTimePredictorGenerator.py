@@ -24,8 +24,8 @@
 
 
 import Backend
-import TemplatingUtils
-from MatmulConfig import MatmulConfig
+from utils import TemplatingUtils
+from utils.MatmulConfig import MatmulConfig
 
 
 class SpaceTimePredictorGenerator:

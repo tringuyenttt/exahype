@@ -22,7 +22,7 @@
 #
 
 
-import TemplatingUtils
+from utils import TemplatingUtils
 
 
 class BoundaryConditionsGenerator:

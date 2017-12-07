@@ -22,7 +22,7 @@
 # Call user function flux, ncp, eigenvalue
 
 
-import TemplatingUtils
+from utils import TemplatingUtils
 
 
 class RiemannGenerator:

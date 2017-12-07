@@ -21,7 +21,7 @@
 #
 
 
-import TemplatingUtils
+from utils import TemplatingUtils
 
 
 class ConverterGenerator:

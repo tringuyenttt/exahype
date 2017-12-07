@@ -28,7 +28,7 @@ from jinja2 import Template
 def renderAsFile(inputFilename, outputFilename, context):
     dir = os.path.dirname(__file__)
            
-    with open(os.path.join(dir,'templates',inputFilename), 'r') as input:
+    with open(os.path.join(dir,'..','templates',inputFilename), 'r') as input:
         template = Template(input.read(), trim_blocks=True)                
         with open(os.path.join(context['pathToOutputDirectory'],outputFilename), 'w') as output:
             output.write(template.render(context))

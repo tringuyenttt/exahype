@@ -24,7 +24,7 @@
 #
 
 
-import TemplatingUtils
+from utils import TemplatingUtils
 
 
 #TODO JMG patchwise adjust
