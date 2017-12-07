@@ -249,12 +249,14 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       new peano::datatraversal::autotuning::OracleForOnePhaseDummy(
          true,  //   bool useMultithreading                  = true,
          0,     //   int  grainSizeOfUserDefinedRegions      = 0,
-/*
-         #if defined(SharedOMP) // Pipelining does not pay off for OpenMP (yet)
-         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::DoNotSplit,
+
+     #if defined(SharedOMP) // Pipelining does not pay off for OpenMP (yet)
+         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
          false, //  bool pipelineDescendProcessing          = false,
          false,  //   bool pipelineAscendProcessing           = false,
-         #elif defined(SharedTBBInvade)
+		 #else
+		 /*
+		 #elif defined(SharedTBBInvade)
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::DoNotSplit,
          false, //  bool pipelineDescendProcessing          = false,
          false,  //   bool pipelineAscendProcessing           = false,
@@ -263,7 +265,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
          true, //  bool pipelineDescendProcessing
          true, //   bool pipelineAscendProcessing
-//         #endif
+    #endif
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
          1, //   int  smallestProblemSizeForEnterLeaveCell = tarch::la::aPowI(DIMENSIONS,9/2),
