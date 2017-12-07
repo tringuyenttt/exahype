@@ -34,11 +34,7 @@ double* exahype::solvers::allocateArray( std::vector<int>& heapIndices, const in
 
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
   const int heapIndex = exahype::DataHeap::getInstance().createData(size,size,
-  #if defined(SharedTBB) || defined(SharedTBBInvade)
-    exahype::DataHeap::Allocation::DoNotUseAnyRecycledEntry
-  #else
     exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired
-  #endif
   );
   lock.free();
 
@@ -55,11 +51,8 @@ void exahype::solvers::freeArrays( std::vector<int>& heapIndices ) {
   for (int i : heapIndices) {
     assertion(exahype::DataHeap::getInstance().isValidIndex(i));
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
-    #if defined(SharedTBB) || defined(SharedTBBInvade)
-    const bool doRecycle = false;
-    #else
+
     const bool doRecycle = true;
-    #endif
     exahype::DataHeap::getInstance().deleteData(
       i,
       doRecycle);
