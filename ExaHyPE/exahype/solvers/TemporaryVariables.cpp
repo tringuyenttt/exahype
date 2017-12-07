@@ -37,7 +37,7 @@ double* exahype::solvers::allocateArray( std::vector<int>& heapIndices, const in
   #if defined(SharedTBB) || defined(SharedTBBInvade)
     exahype::DataHeap::Allocation::DoNotUseAnyRecycledEntry
   #else
-    exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+    exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired
   #endif
   );
   lock.free();
