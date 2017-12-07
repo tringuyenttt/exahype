@@ -1364,9 +1364,9 @@ int exahype::Parser::getNumberOfBackgroundTasks() {
   const std::string Search = "background-tasks";
 
   int result = static_cast<int>(exahype::Parser::getValueFromPropertyString(getSharedMemoryConfiguration(),Search));
-  if (result<1) {
+  if (result<-1) {
     logWarning("getNumberOfBackgroundTasks()", "invalid number of background tasks (background-tasks field in configuration) " <<
-      "set or no number at all. Use default (1)");
+      "set or no number at all. Use default (1). 0 switches background tasks off despite long-running tasks, while -1 switches background tasks off compleley");
     result = 1;
   }
   return result;
