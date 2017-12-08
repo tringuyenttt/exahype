@@ -200,21 +200,20 @@ void exahype::mappings::LimiterStatusSpreading::enterCell(
     for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      const int element =
-          solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+      const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+      const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
       if (
-          spreadLimiterStatus(solver)
-          &&
+          spreadLimiterStatus(solver) &&
           element!=exahype::solvers::Solver::NotFound
       ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         limitingADERDG->updateLimiterStatusDuringLimiterStatusSpreading(
-            fineGridCell.getCellDescriptionsIndex(),element);
+            cellDescriptionsIndex,element);
 
         bool meshUpdateRequest =
             limitingADERDG->
             evaluateLimiterStatusRefinementCriterion(
-                fineGridCell.getCellDescriptionsIndex(),element);
+                cellDescriptionsIndex,element);
 
         _solverFlags._meshUpdateRequest[solverNumber] |= meshUpdateRequest;
       }

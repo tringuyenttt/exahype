@@ -55,7 +55,7 @@ peano::MappingSpecification
 exahype::mappings::MeshRefinement::touchVertexFirstTimeSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::Serial,true);
+      peano::MappingSpecification::AvoidFineGridRaces,true);
 }
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::enterCellSpecification(int level) const {
@@ -316,16 +316,14 @@ void exahype::mappings::MeshRefinement::enterCell(
       // Update limiter status and allocate limiter patch if necessary
       // Further evaluate the limiter status based refinement criterion
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+        const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+        const int element               = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-          adjustSolution |=
-              limitingADERDGSolver->updateLimiterStatusDuringLimiterStatusSpreading(
-                  fineGridCell.getCellDescriptionsIndex(),element);
-          oneSolverRequestsRefinement |=
-              limitingADERDGSolver->
-              evaluateLimiterStatusRefinementCriterion(
-                  fineGridCell.getCellDescriptionsIndex(),element);
+          adjustSolution |= limitingADERDGSolver->
+              updateLimiterStatusDuringLimiterStatusSpreading(cellDescriptionsIndex,element);
+          oneSolverRequestsRefinement |= limitingADERDGSolver->
+              evaluateLimiterStatusRefinementCriterion(cellDescriptionsIndex,element);
         }
       }
 
@@ -347,6 +345,9 @@ void exahype::mappings::MeshRefinement::enterCell(
               IsInitialMeshRefinement,
               solverNumber);
 
+      // TODO(Dominic): This part is not comelety parallelised yet.
+      static tarch::multicore::BooleanSemaphore updateStateInEnterCellSemaphore;
+      tarch::multicore::Lock lock(updateStateInEnterCellSemaphore);
       exahype::solvers::Solver::UpdateStateInEnterCellResult result =
           solver->updateStateInEnterCell(
               fineGridCell,
@@ -358,25 +359,24 @@ void exahype::mappings::MeshRefinement::enterCell(
               fineGridPositionOfCell,
               IsInitialMeshRefinement,
               solverNumber);
+      lock.free();
+
       oneSolverRequestsRefinement |= result._refinementRequested;
       adjustSolution     |= result._newComputeCellAllocated;
 
       // Synchronise time stepping and adjust the solution if required
       if (fineGridCell.isInitialised()) {
-        const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+        const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+        const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
         if (element!=exahype::solvers::Solver::NotFound) {
           if (adjustSolution) {
-            solver->zeroTimeStepSizes(fineGridCell.getCellDescriptionsIndex(),element);
-            solver->synchroniseTimeStepping(fineGridCell.getCellDescriptionsIndex(),element);
-
-            solver->adjustSolution(
-                fineGridCell.getCellDescriptionsIndex(),
-                element);
+            solver->zeroTimeStepSizes(cellDescriptionsIndex,element);
+            solver->synchroniseTimeStepping(cellDescriptionsIndex,element);
+            solver->adjustSolution(cellDescriptionsIndex,element);
 
             if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
               static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                  updateLimiterStatusAndMinAndMaxAfterAdjustSolution(
-                      fineGridCell.getCellDescriptionsIndex(),element);
+                  updateLimiterStatusAndMinAndMaxAfterAdjustSolution(cellDescriptionsIndex,element);
             }
           }
         }

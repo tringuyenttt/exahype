@@ -246,7 +246,10 @@ private:
       const int solverElement) const;
 
   /**
-   * Allocates a new limiter patch.
+   * Allocates a new limiter patch,
+   * copies geometry information from the solver
+   * patch, and projects the solver patch's DG solution
+   * onto the FV limiter patch.
    *
    * \return The index of the patch in the heap
    * vector at address \p cellDescriptionsIndex.
@@ -978,21 +981,14 @@ public:
 
 
    /**
-    * TODO(Dominic): Add docu.
-    */
-   void rollbackSolverSolutionsGlobally(
-          const int cellDescriptionsIndex,
-          const int element) const;
-
-   /**
     * Overwrite the new limiter status by the previous one.
     * Deallocate unneeded limiter patches.
     * Set iterations to cure troubled cells
     * to the maximum level.
     */
-   void reinitialiseSolversGlobally(
-       const int cellDescriptionsIndex,
-       const int element) const;
+   void rollbackSolverSolutionsGlobally(
+          const int cellDescriptionsIndex,
+          const int element) const;
 
   /**
    * Reinitialises cells that have been subject to a limiter status change.

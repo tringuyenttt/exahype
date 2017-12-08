@@ -1009,6 +1009,10 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     repository.iterate(
         exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell(),false);
 
+    if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
+      logInfo("updateMeshAndSubdomains(...)","one solver requested global recomputation");
+    }
+
     // TODO(Dominic): Need a broadcast again if global recomputation
     logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
     repository.switchToGlobalRollback();

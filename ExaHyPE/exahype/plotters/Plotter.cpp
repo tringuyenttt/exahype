@@ -571,6 +571,7 @@ void exahype::plotters::plotPatchIfAPlotterIsActive(
     if (plotter->plotDataFromSolver(solverNumber)) {
       tarch::multicore::Lock lock(exahype::plotters::SemaphoreForPlotting);
       plotter->plotPatch(cellDescriptionsIndex,element);
+      lock.free();
     }
   }
 }
