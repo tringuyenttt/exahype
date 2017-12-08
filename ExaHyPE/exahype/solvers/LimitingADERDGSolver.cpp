@@ -446,15 +446,18 @@ void exahype::solvers::LimitingADERDGSolver::vetoErasingChildrenRequestBasedOnLi
       ||
       fineGridSolverPatch.getRefinementEvent()==SolverPatch::RefinementEvent::ChangeChildrenToDescendantsRequested
   ) {
-    fineGridSolverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None); // TODO(Dominic): Reenable erasing again later on
-//    if (fineGridSolverPatch.getLimiterStatus()>=
-//        computeMinimumLimiterStatusForRefinement(fineGridSolverPatch.getLevel())
-//        ||
-//        fineGridSolverPatch.getPreviousLimiterStatus()>=
-//        computeMinimumLimiterStatusForRefinement(fineGridSolverPatch.getLevel()) // TODO(Dominic): Add to docu: This is necessary for not erasing cells in global recomputation and it further adds some laziness in erasing.
-//    ) {
-//      fineGridSolverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
-//    }
+    if (getLimiterDomainChange()!=LimiterDomainChange::Regular) { // TODO(Dominic): Add to docu: We always veto in case we go back in time
+      fineGridSolverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
+    }
+    else if (
+        fineGridSolverPatch.getLimiterStatus()>=
+        computeMinimumLimiterStatusForRefinement(fineGridSolverPatch.getLevel())
+        ||
+        fineGridSolverPatch.getPreviousLimiterStatus()>=
+        computeMinimumLimiterStatusForRefinement(fineGridSolverPatch.getLevel()) // TODO(Dominic): Add to docu: This is necessary for not erasing cells in global recomputation and it further adds some laziness in erasing.
+    ) {
+      fineGridSolverPatch.setRefinementEvent(SolverPatch::RefinementEvent::None);
+    }
   }
 }
 
@@ -471,7 +474,8 @@ bool exahype::solvers::LimitingADERDGSolver::updateStateInLeaveCell(
       _solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   const int parentSolverElement =
       _solver->tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-  if (solverElement!=Solver::NotFound
+  if (
+      solverElement!=Solver::NotFound
       &&
       parentSolverElement!=Solver::NotFound
   ) {
@@ -1205,7 +1209,8 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
       solverPatch,cellDescriptionsIndex,limiterElement);
   _limiter->ensureNecessaryMemoryIsAllocated(limiterPatch);
 
-  // Copy more geometry information from the solver patch
+  projectDGSolutionOnFVSpace(solverPatch,limiterPatch);
+
   limiterPatch.setIsInside(solverPatch.getIsInside());
 
   return limiterElement;
@@ -1218,12 +1223,12 @@ bool exahype::solvers::LimitingADERDGSolver::ensureRequiredLimiterPatchIsAllocat
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
   const int limiterElement =
       tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
-  if (solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-      limiterElement==Solver::NotFound    &&
+  if (
+      solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
+      limiterElement==Solver::NotFound                      &&
       solverPatch.getType()==SolverPatch::Type::Cell        &&
       solverPatch.getLimiterStatus()>0
   ) {
-//    std::cout << "allocate limiter patch after solution update" << std::endl; // TODO(Dominic): remove
     assertion1(solverPatch.getPreviousLimiterStatus()==0,solverPatch.toString());
     allocateLimiterPatch(cellDescriptionsIndex,solverElement);
     return true;
@@ -1284,25 +1289,6 @@ void exahype::solvers::LimitingADERDGSolver::rollbackSolverSolutionsGlobally(
       _solver->swapSolutionAndPreviousSolution(solverPatch);
     }
   }
-}
-
-void exahype::solvers::LimitingADERDGSolver::reinitialiseSolversGlobally(
-    const int cellDescriptionsIndex,
-        const int solverElement) const {
-  SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,solverElement);
-
-  // 1. Overwrite the limiter status with the previous one
-  solverPatch.setLimiterStatus(solverPatch.getPreviousLimiterStatus());
-  assertion1(tarch::la::max(solverPatch.getFacewiseLimiterStatus())==0,solverPatch.toString());
-
-  // 2. Reset the iterationsToCure on all troubled cells to maximum value if cell is troubled
-  if (solverPatch.getLimiterStatus()>=_solver->getMinimumLimiterStatusForTroubledCell()) {
-    solverPatch.setIterationsToCureTroubledCell(1+_iterationsToCureTroubledCell);
-  }
-
-  // 3. Only after the reinitialisation, it is safe to deallocate the limiter patch
-  deallocateLimiterPatchOnHelperCell(cellDescriptionsIndex,solverElement);
-  ensureNoUnrequiredLimiterPatchIsAllocatedOnComputeCell(cellDescriptionsIndex,solverElement);
 }
 
 void exahype::solvers::LimitingADERDGSolver::reinitialiseSolversLocally(
@@ -1430,10 +1416,10 @@ void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
 
 void exahype::solvers::LimitingADERDGSolver::preProcess(
     const int cellDescriptionsIndex,
-    const int element) const {
-  _solver->preProcess(cellDescriptionsIndex,element);
+    const int solverElement) const {
+  _solver->preProcess(cellDescriptionsIndex,solverElement);
 
-  const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
+  const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
   if (limiterElement!=Solver::NotFound) {
     _limiter->preProcess(cellDescriptionsIndex,limiterElement);
   }
@@ -1441,10 +1427,10 @@ void exahype::solvers::LimitingADERDGSolver::preProcess(
 
 void exahype::solvers::LimitingADERDGSolver::postProcess(
     const int cellDescriptionsIndex,
-    const int element) {
-  _solver->postProcess(cellDescriptionsIndex,element);
+    const int solverElement) {
+  _solver->postProcess(cellDescriptionsIndex,solverElement);
 
-  const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,element);
+  const int limiterElement = tryGetLimiterElementFromSolverElement(cellDescriptionsIndex,solverElement);
   if (limiterElement!=Solver::NotFound) {
     _limiter->postProcess(cellDescriptionsIndex,limiterElement);
   }

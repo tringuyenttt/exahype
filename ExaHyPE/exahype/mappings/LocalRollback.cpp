@@ -153,10 +153,10 @@ void exahype::mappings::LocalRollback::enterCell(
   ) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined10);
-    pfor(i, 0, numberOfSolvers, grainSize.getGrainSize())
-      auto solver = exahype::solvers::RegisteredSolvers[i];
+    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+      auto solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),i);
+      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
         if( performLocalRecomputation( solver ) ) {
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);

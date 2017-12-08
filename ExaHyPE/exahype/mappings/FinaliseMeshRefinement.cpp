@@ -162,17 +162,16 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
             fineGridPositionOfCell,
             solverNumber);
 
-        const int element = exahype::solvers::RegisteredSolvers[solverNumber]->tryGetElement(
-            fineGridCell.getCellDescriptionsIndex(),solverNumber);
+        const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+        const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
         if ( element!=exahype::solvers::Solver::NotFound ) {
+
           // compute a new time step size
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
           if ( exahype::State::fuseADERDGPhases() ) {
-            admissibleTimeStepSize = solver->updateTimeStepSizesFused(
-                fineGridCell.getCellDescriptionsIndex(),element);
+            admissibleTimeStepSize = solver->updateTimeStepSizesFused(cellDescriptionsIndex,element);
           } else {
-            admissibleTimeStepSize = solver->updateTimeStepSizes(
-                fineGridCell.getCellDescriptionsIndex(),element);
+            admissibleTimeStepSize = solver->updateTimeStepSizes(cellDescriptionsIndex,element);
           }
 
           _minTimeStepSizes[solverNumber] = std::min(
@@ -185,14 +184,8 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
           // determine min and max for LimitingADERDGSolver
           if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
             auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
+            limitingADERDGSolver->determineMinAndMax(cellDescriptionsIndex,element);
             assertion(limitingADERDGSolver->getLimiterDomainChange()!=exahype::solvers::LimiterDomainChange::Irregular);
-
-            const int element = exahype::solvers::RegisteredSolvers[solverNumber]->tryGetElement(
-                fineGridCell.getCellDescriptionsIndex(),solverNumber);
-            if (element!=exahype::solvers::Solver::NotFound) {
-              limitingADERDGSolver->
-                  determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
-            }
           }
         }
       }

@@ -672,7 +672,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
-  repository.switchToMeshRefinement();
+  repository.switchToMeshRefinementAndPlotGrid();
 
   while (
       repository.getState().continueToConstructGrid() ||
@@ -691,7 +691,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   logInfo("createGrid()", "more status spreading.");
   int extraIterations =
       std::max (
-          5, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
+          10, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
           exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell());
   while (
       extraIterations > 0
@@ -1008,6 +1008,10 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     repository.switchToLimiterStatusSpreading();
     repository.iterate(
         exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell(),false);
+
+    if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
+      logInfo("updateMeshAndSubdomains(...)","one solver requested global recomputation");
+    }
 
     // TODO(Dominic): Need a broadcast again if global recomputation
     logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
