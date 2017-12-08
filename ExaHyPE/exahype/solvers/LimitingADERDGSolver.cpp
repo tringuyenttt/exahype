@@ -1187,7 +1187,6 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
   #endif
   assertion(previouslimiterElement==Solver::NotFound);
 
-  tarch::multicore::Lock lock(exahype::HeapSemaphore);
   exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
       cellDescriptionsIndex,
       solverPatch.getSolverNumber(),
@@ -1197,7 +1196,6 @@ int exahype::solvers::LimitingADERDGSolver::allocateLimiterPatch(
       solverPatch.getParentIndex(),
       solverPatch.getSize(),
       solverPatch.getOffset());
-  lock.free();
 
   assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getPreviousSolution()),solverPatch.toString());
   assertion1(DataHeap::getInstance().isValidIndex(solverPatch.getSolution()),solverPatch.toString());

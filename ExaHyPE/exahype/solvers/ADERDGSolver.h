@@ -84,6 +84,11 @@ public:
   static int MinimumAugmentationStatusForRefining;
 
   /**
+   * Semaphore for fine grid cells accessing a coarse grid parent.
+   */
+  static tarch::multicore::BooleanSemaphore RestrictionSemaphore;
+
+  /**
    * Rank-local heap that stores ADERDGCellDescription instances.
    *
    * \note This heap might be shared by multiple ADERDGSolver instances
@@ -301,7 +306,7 @@ private:
    * Initialise cell description of type Cell.
    * Initialise the refinement event with None.
    *
-   * \note This operations is not thread-safe
+   * \note This operations is thread-safe
    */
   void addNewCell(
       exahype::Cell& fineGridCell,

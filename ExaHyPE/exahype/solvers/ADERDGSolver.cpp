@@ -75,6 +75,8 @@ int exahype::solvers::ADERDGSolver::MaximumAugmentationStatus                = 4
 int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForAugmentation = 3;
 int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForRefining     = 3;
 
+tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSemaphore;
+
 void exahype::solvers::ADERDGSolver::addNewCellDescription(
   const int cellDescriptionsIndex,
   const int                                      solverNumber,
@@ -156,7 +158,9 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setExtrapolatedPredictorCompressed(-1);
   newCellDescription.setFluctuationCompressed(-1);
 
+  tarch::multicore::Lock lock(exahype::HeapSemaphore);
   ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex).push_back(newCellDescription);
+  lock.free();
 }
 
 /**
@@ -1042,7 +1046,6 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
         coarseGridCellDescription,
         fineGridCell.getCellDescriptionsIndex());
 
-    // TODO(Dominic): Pass limiter status flag down to the new cell
     addNewDescendantIfAugmentingRequested(
             fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
             coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
@@ -1130,7 +1133,7 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
 
       if (coarseGridCellDescription.getRefinementEvent()==CellDescription::ErasingChildrenRequested ||
           coarseGridCellDescription.getRefinementEvent()==CellDescription::ChangeChildrenToDescendantsRequested) {
-        tarch::multicore::Lock lock(HeapSemaphore);
+        tarch::multicore::Lock lock(RestrictionSemaphore);
         coarseGridCellDescription.setRefinementEvent(CellDescription::None);
         lock.free();
         assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
@@ -1154,7 +1157,9 @@ bool exahype::solvers::ADERDGSolver::markForAugmentation(
     CellDescription& coarseGridCellDescription =
         getCellDescription(fineGridCellDescription.getParentIndex(),coarseGridElement);
     if (coarseGridCellDescription.getRefinementEvent()==CellDescription::DeaugmentingChildrenRequestedTriggered) {
+      tarch::multicore::Lock lock(ADERDGSolver::RestrictionSemaphore);
       coarseGridCellDescription.setRefinementEvent(CellDescription::DeaugmentingChildrenRequested);
+      lock.free();
     }
   }
 
@@ -1202,7 +1207,9 @@ bool exahype::solvers::ADERDGSolver::markForAugmentation(
       auto& coarseGridCellDescription = getCellDescription(fineGridCellDescription.getParentIndex(),
                                                            coarseGridCellElement);
       if (coarseGridCellDescription.getRefinementEvent()==CellDescription::DeaugmentingChildrenRequested) {
+        tarch::multicore::Lock lock(RestrictionSemaphore);
         coarseGridCellDescription.setRefinementEvent(CellDescription::None);
+        lock.free();
 
         assertion1(fineGridCellDescription.getType()==CellDescription::Type::Descendant,
                    fineGridCellDescription.toString());
@@ -1219,9 +1226,8 @@ bool exahype::solvers::ADERDGSolver::markForAugmentation(
 void exahype::solvers::ADERDGSolver::vetoErasingOrDeaugmentingChildrenRequest(
     CellDescription& coarseGridCellDescription,
     const int fineGridCellDescriptionsIndex) {
-  const int fineGridCellElement =
-      tryGetElement(fineGridCellDescriptionsIndex,
-          coarseGridCellDescription.getSolverNumber());
+  const int fineGridCellElement = tryGetElement(
+      fineGridCellDescriptionsIndex,coarseGridCellDescription.getSolverNumber());
   if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
     CellDescription& fineGridCellDescription =
        getCellDescription(fineGridCellDescriptionsIndex,fineGridCellElement);
@@ -1233,19 +1239,24 @@ void exahype::solvers::ADERDGSolver::vetoErasingOrDeaugmentingChildrenRequest(
         #endif
     ) {
       switch (coarseGridCellDescription.getRefinementEvent()) {
-      case CellDescription::DeaugmentingChildrenRequested:
+      case CellDescription::DeaugmentingChildrenRequested: {
         assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
                    coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
                    coarseGridCellDescription.toString());
+
+        tarch::multicore::Lock lock(RestrictionSemaphore);
         coarseGridCellDescription.setRefinementEvent(CellDescription::None);
-        break;
-      case CellDescription::ErasingChildrenRequested:
+        lock.free();
+      }  break;
+      case CellDescription::ErasingChildrenRequested: {
         assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
             coarseGridCellDescription.toString());
 
+        tarch::multicore::Lock lock(RestrictionSemaphore);
         coarseGridCellDescription.setRefinementEvent(
             CellDescription::ChangeChildrenToDescendantsRequested);
-        break;
+        lock.free();
+      } break;
       default:
         break;
       }
@@ -1270,6 +1281,7 @@ void exahype::solvers::ADERDGSolver::addNewCell(
               coarseGridCellDescriptionsIndex,
               fineGridVerticesEnumerator.getCellSize(),
               fineGridVerticesEnumerator.getVertexPosition());
+
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   CellDescription& fineGridCellDescription =
@@ -1291,12 +1303,14 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfAugmentingRequested(
     assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
                coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
                coarseGridCellDescription.toString());
-    const int fineGridElement =
-        tryGetElement(fineGridCell.getCellDescriptionsIndex(),
-                      coarseGridCellDescription.getSolverNumber());
+    const int fineGridElement = tryGetElement(
+        fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
 
+    tarch::multicore::Lock lock(RestrictionSemaphore);
     coarseGridCellDescription.setRefinementEvent(CellDescription::None);
-    if (fineGridElement==exahype::solvers::Solver::NotFound) {
+    lock.free();
+
+    if ( fineGridElement==exahype::solvers::Solver::NotFound ) {
       fineGridCell.addNewCellDescription( // (EmptyDescendant),None
           coarseGridCellDescription.getSolverNumber(),
           CellDescription::Type::Descendant,
@@ -1305,16 +1319,21 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfAugmentingRequested(
           coarseGridCellDescriptionsIndex,
           fineGridVerticesEnumerator.getCellSize(),
           fineGridVerticesEnumerator.getVertexPosition());
-      const int fineGridElement =
-          tryGetElement(fineGridCell.getCellDescriptionsIndex(),
-                        coarseGridCellDescription.getSolverNumber());
+
+      const int fineGridElement = tryGetElement(
+          fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
       CellDescription& fineGridCellDescription =
           getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
       fineGridCellDescription.setIsInside(coarseGridCellDescription.getIsInside());
 
+      tarch::multicore::Lock lock(RestrictionSemaphore);
       coarseGridCellDescription.setRefinementEvent(CellDescription::Augmenting);
-    } else if (fineGridElement!=exahype::solvers::Solver::NotFound &&
-               coarseGridCellDescription.getRefinementEvent()==CellDescription::AugmentingRequested){
+      lock.free();
+    } else if (
+        fineGridElement!=exahype::solvers::Solver::NotFound
+        &&
+        coarseGridCellDescription.getRefinementEvent()==CellDescription::AugmentingRequested
+    ){
       /**
        * Reset an augmentation request if the child cell does hold
        * a Descendant or EmptyDescendant cell description with
@@ -1328,7 +1347,9 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfAugmentingRequested(
        * Ancestors and EmptyAncestors can never request refinement.
        * TODO(Dominic): Add to docu.
        */
+      tarch::multicore::Lock lock(RestrictionSemaphore);
       coarseGridCellDescription.setRefinementEvent(CellDescription::None);
+      lock.free();
 
       #if defined(Debug) || defined(Asserts)
       CellDescription& fineGridCellDescription =
@@ -1352,9 +1373,8 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
       coarseGridCellDescription.getRefinementEvent()==CellDescription::Refining) {
     assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell,
                coarseGridCellDescription.toString());
-    const int fineGridCellElement =
-        tryGetElement(fineGridCell.getCellDescriptionsIndex(),
-                      coarseGridCellDescription.getSolverNumber());
+    const int fineGridCellElement = tryGetElement(
+        fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
 
     if (fineGridCellElement==exahype::solvers::Solver::NotFound) {
       addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
@@ -1386,7 +1406,9 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
           fineGridCellDescription,coarseGridCellDescription,fineGridPositionOfCell,initialGrid);
     }
 
+    tarch::multicore::Lock lock(RestrictionSemaphore);
     coarseGridCellDescription.setRefinementEvent(CellDescription::Refining);
+    lock.free();
     return true;
   }
   return false;
@@ -2476,7 +2498,7 @@ void exahype::solvers::ADERDGSolver::restrictLimiterStatus(
         ADERDGSolver::getCellDescription(parentCellDescriptionsIndex,parentElement);
     if(parentCellDescription.getType()==CellDescription::Type::Ancestor) {
       parentCellDescription.setLimiterStatus(ADERDGSolver::_minimumLimiterStatusForTroubledCell);
-      cellDescription.setFacewiseLimiterStatus(0);
+      parentCellDescription.setFacewiseLimiterStatus(0);
     }
   }
 }

@@ -672,7 +672,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   bool meshUpdate = false;
 
   int meshSetupIterations = 0;
-  repository.switchToMeshRefinementAndPlotGrid();
+  repository.switchToMeshRefinement();
 
   while (
       repository.getState().continueToConstructGrid() ||
@@ -691,7 +691,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   logInfo("createGrid()", "more status spreading.");
   int extraIterations =
       std::max (
-          10, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
+          5, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
           exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell());
   while (
       extraIterations > 0

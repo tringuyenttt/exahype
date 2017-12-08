@@ -426,7 +426,9 @@ void exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
 
   newCellDescription.setCompressionState(CellDescription::CompressionState::Uncompressed);
 
+  tarch::multicore::Lock lock(exahype::HeapSemaphore);
   Heap::getInstance().getData(cellDescriptionsIndex).push_back(newCellDescription);
+  lock.free();
 }
 
 
