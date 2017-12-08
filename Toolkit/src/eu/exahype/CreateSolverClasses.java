@@ -56,7 +56,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
     }
 
     if (node.getArchitecture()!=null) {
-      _microarchitecture = node.getArchitecture().getText().toLowerCase();
+      _microarchitecture = ( (nodes.TArchitecture)( node.getArchitecture() )).getIdentifier().getText().toLowerCase();
     }
     else {
       _microarchitecture = "noarch";
