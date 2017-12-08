@@ -84,9 +84,15 @@ public:
   static int MinimumAugmentationStatusForRefining;
 
   /**
-   * Semaphore for fine grid cells accessing a coarse grid parent.
+   * Semaphore for fine grid cells restricting volume data to a
+   * coarse grid parent which is a computationally intense operation.
    */
   static tarch::multicore::BooleanSemaphore RestrictionSemaphore;
+
+  /**
+   * Semaphore for fine grid cells accessing a coarse grid parent.
+   */
+  static tarch::multicore::BooleanSemaphore CoarseGridSemaphore;
 
   /**
    * Rank-local heap that stores ADERDGCellDescription instances.
@@ -326,6 +332,17 @@ private:
    *
    * Additionally, copies the information if a face is inside
    * from the parent to the new child cell.
+   *
+   * Reset an augmentation request if the child cell does hold
+   * a Descendant or EmptyDescendant cell description with
+   * the same solver number.
+   *
+   * This scenario occurs if an augmentation request is triggered in
+   * enterCell().
+   *
+   * A similar scenario can never occur for refinement requests
+   * since only cell descriptions of type Cell can be refined.
+   * Ancestors can never request refinement.
    *
    * \note This operations is not thread-safe
    */

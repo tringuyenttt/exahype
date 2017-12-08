@@ -345,9 +345,6 @@ void exahype::mappings::MeshRefinement::enterCell(
               IsInitialMeshRefinement,
               solverNumber);
 
-      // TODO(Dominic): This part is not comelety parallelised yet.
-      static tarch::multicore::BooleanSemaphore updateStateInEnterCellSemaphore;
-      tarch::multicore::Lock lock(updateStateInEnterCellSemaphore);
       exahype::solvers::Solver::UpdateStateInEnterCellResult result =
           solver->updateStateInEnterCell(
               fineGridCell,
@@ -359,7 +356,6 @@ void exahype::mappings::MeshRefinement::enterCell(
               fineGridPositionOfCell,
               IsInitialMeshRefinement,
               solverNumber);
-      lock.free();
 
       oneSolverRequestsRefinement |= result._refinementRequested;
       adjustSolution     |= result._newComputeCellAllocated;

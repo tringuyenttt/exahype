@@ -396,7 +396,7 @@ bool exahype::solvers::LimitingADERDGSolver::markForRefinement(
   // update limiter status if neighbours are in a consistent state
   const int fineGridSolverElement =
       _solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  if (fineGridSolverElement!=Solver::NotFound) {
+  if ( fineGridSolverElement!=Solver::NotFound ) {
     bool refineFineGridCell =
         markForRefinementBasedOnLimiterStatus(
             fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
