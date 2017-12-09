@@ -9,7 +9,7 @@ import networkx as nx
 
 
 # batteries:
-import os, re, sys, ast, inspect, argparse, base64, pprint
+import os, re, sys, ast, inspect, argparse, base64, pprint, subprocess
 from collections import namedtuple
 from argparse import Namespace as namespace
 from itertools import izip, islice
@@ -136,7 +136,7 @@ class term:
 		return "term(%s,%d)"%(repr(self.value),self.counter) if self.value else "root"
 	def __eq__(self,other):
 		#return not self.value and not other.value
-		return self.counter == other.counter and self.value == other.value
+		return isa(other,term) and self.counter == other.counter and self.value == other.value
 	def __hash__(self):
 		return hash((self.value,self.counter))
 
@@ -496,11 +496,15 @@ class mexagraph:
 			self.G.add_edge(starting_from, child, op=self.P, src=src)
 		return self.insert_path(tail, child, src=src)
 
-	def get_path(self, left, starting_from=term(), silent_failure=False):
+	def get_path_down(self, left, starting_from=term(), silent_failure=False): # the original get_path
 		"""
-		Resolve a term from a symbol path, starting from root.
-		Neccessary because term() instances are unfindable by definition
-		returns None if not findable
+		Resolve symbol -> term.
+		starting from some term (default: root).
+		Resolves down the graph.
+		Neccessary because term() instances are unfindable by definition.
+		Returns None if nothing found, raises exception if asked for.
+		Symbol is always supposed to be rootet at starting_from.
+		-> works!
 		"""
 		if not isa(left,symbol): left = symbol(left)
 		if left.isRoot(): # we found our element
@@ -509,44 +513,70 @@ class mexagraph:
 		for right, attr in self.G[starting_from].iteritems():
 			if attr['op'] == self.P:
 				if right.value == first:
-					print "Looking for %s, Found %s" % (left,first)
-					return self.get_path(left.except_base(), right)
+					#print "Looking for %s, Found %s" % (left,first)
+					return self.get_path_down(left.except_base(), right)
 				else:
-					print "No success: %s != %s" % (right,first)
-		print "Looked for %s (%s), found nothing" % (left,first)
+					#print "No success: %s != %s" % (right,first)
+					pass
+		#print "Looked for %s (%s), found nothing" % (left,first)
 		if not silent_failure:
 			raise ValueError("Symbol %s not found in graph, searching from %s." % (left,starting_from))
 		
-	def get_path(self, symb, right, up_to=term()):
+	def get_path_up(self, symb, right, include_start=True, stack=tuple()):
+		"""
+		Resolves symbol -> [term], starting from some term.
 		# Resolve from a term to a symbol by going back the path
 		# symb: Symbol to look for, e.g.  foo/bar
 		# right: Term where to start looking at, i.e. biz in bla/boo/biz
-		# up_to: Where to stop looking, e.g. the root
+		# stack: Internal stack to avoid loops
 		# In this example, foo/bar could be found at bla/foo/bar or bla/boo/foo/bar
 		# or even bla/boo/biz/foo/bar.
+		
+		It always returns a list. Elements of this list are tuples.
+		First value is target symbol, second value is the stack i.e. path from
+		starting symbol to final value (neccessary for understanding double resolutions).
+		Ideally, only one list element is returned and the resolution is trivial.
+		"""
+		
 		if not isa(symb,symbol): symb = symbol(symb)
-		
-		# we also need a stack to avoid loops.
-		
-		pred = self.G.predecessors(right)
-		edges = self.G.edges(pred)
-		targets = []
-		for left, right, attr in edges:
-			if attr['op'] == self.P:
-				if symb.node().canonical() == left.value:
-					# we found a potential part of the symbol
-					target.append( self.get_path(symb.parent(), left, up_to=up_to) )
-			elif attr['op'] == self.E:
-				# just traverse over this edge
-				target.append( self.get_path(symb, left, up_to=up_to) )
-		targets = removeEmpty(targets)
-		return targets # whatever this means
+		ret = []
+		# test from right itself
+		if include_start:
+			resolving_term = self.get_path_down(symb, starting_from=right, silent_failure=True)
+			if resolving_term:
+				ret.append( resolving_term )
+		# check in parents of right
+		for left, attr in self.G.pred[right].iteritems():
+			resolving_term = self.get_path_down(symb, starting_from=left, silent_failure=True)
+			if resolving_term:
+				ret.append(resolving_term)
+			else:
+				if left in [rel.l for rel in stack]:
+					# run into an equality a-[equals]->b, b-[equals]->a. Do not follow.
+					# Equality loops are there by design.
+					continue
+				else:
+					# traverse over the edge
+					newstack = stack + tuplize(Rel(left, right, attr['op'], attr['src']))
+					ret += self.get_path_up(symb, right=left, stack=newstack)
+		return unique_preserve(removeFalse(ret))
 	
-		# todo: untested. Test.
-	
-	# need also a version from get_path *up* instead of *down* for resolving
-	# RHS symbols.
-	
+	# currently UNUSED.
+	def resolve_symbol(self, symb, start, silent_failure=False):
+		"""
+		Returns a symbol to a term.
+		"""
+		res = self.get_path_up(symb, right=start, include_start=True)
+		if len(res) == 1:
+			return first(res)
+		elif len(res) == 0:
+			if silent_failure:
+				return None
+			else:
+				raise ValueError("Symbol %s not found around term %s" % (symb,start))
+		else: # len(res)>1
+			raise ValueError("Found multiple candidates for %s around term %s: %s" % (symb,start,res))
+
 	def from_mexafile(self, edges):
 		"""
 		Adds edges to the graph. The rules are:
@@ -560,11 +590,20 @@ class mexagraph:
 		for l,r,op,src in edges:
 			assert isa(l,symbol)
 			l = self.insert_path(l, src=src)
-			# this may create a dangling node (a node without an attached relationship)
-			# which will be resolved in to_mexafile().
-			if isa(r,symbol): r = self.insert_path(r, src=src) # this should actually be a variable resolve in the first place,
-			#  -> self.insert_path(r, self.resolve_variable(r, l))  # or similar
-			# =>  so far, this only allows global symbols as RHS
+			
+			if isa(r,symbol):
+				target = self.get_path_up(r, l) # check if variable exists
+				if len(target) == 1:
+					r = first(target) # link to existing
+				elif len(target) == 0:
+					r = self.insert_path(r, src=src) # insert new node
+				else: # len(target) > 1:
+					# multiple targets exist. This is bad.
+					raise ValueError("Found multiple candidates for %s around term %s: %s" % (r,l,target))
+			# => allows full relative variable addressation.
+			# => problem: Resolving variables may not yet take future relations into account.
+			#    to encounter the problem, the graph would have needed to be setup in a
+			#    iterative process with correction steps.
 			
 			# map equals and subsets together
 			if op == 'equals':
@@ -588,7 +627,7 @@ class mexagraph:
 			else:
 				#print "%s: Attr is %s" % (right, attr)
 				if isa(right, term):
-					right = self.get_path(right) # this is actually a variable resolve
+					right = self.get_path_down(right) # TODO: Resolve the term -> symbol here.
 				ret += [ Rel(left_path, right, attr['op'], attr['src']) ]
 		return mexafile(ret)
 		#return map(unpack(node_to_mexafile), )
@@ -668,6 +707,12 @@ class mexafile:
 		for op in self.ops:
 			op.src.add_source(something)
 		return self
+	
+	def graph(self):
+		# There is no mechanism to keep ops and graph in sync.
+		if not hasattr(self, '_graph'):
+			self._graph = mexagraph(self)
+		return self._graph
 	
 	@classmethod
 	def from_filehandle(cls, fh):
@@ -774,16 +819,12 @@ class mexafile:
 		
 		def equalities(operations): # caveat, this is global
 			# resolves = and <=
-			graph = mexagraph(operations)
-			# just for convenience, store a version of the graph for subsequent
-			# use. There is however no mechanism to keep ops and graph in sync.
-			operations.graph = graph
-			return graph.evaluate_to_mexafile().ops
+			return operations.graph().evaluate_to_mexafile().ops
 		
 		self.evaluate_symbol('include', include, inplace=inplace)
 		self.evaluate_symbol('append', append, inplace=inplace)
 		self.evaluate_symbol('equal', prepare_equal, eliminate=False, inplace=inplace)
-		#self.evaluate_all_symbols(equalities, inplace=inplace)
+		self.evaluate_all_symbols(equalities, inplace=inplace)
 		# as a last step, should look for inconsistencies or check whether all data
 		# have correctly been evaluated.
 
@@ -814,6 +855,14 @@ class mexafile:
 
 	def toPlain(self):
 		return "\n".join([ lang.Rel_to_textline(rel) for rel in self ])
+	
+	def toGraph(self, base_filename):
+		graph = self.graph()
+		dotfilename = base_filename+".dot"
+		imgfilename = base_filename+".png"
+		nx.nx_agraph.write_dot(graph.G, dotfilename)
+		retcode = subprocess.call(["dot", "-Grankdir=LR", "-Tpng", dotfilename, "-o", imgfilename])
+		print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
 
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -827,7 +876,10 @@ args = parser.parse_args()
 mf = mexafile.from_filehandle(args.infile)
 mf.evaluate()
 
+g = mf.graph()
+
 print mf.toPlain()
+mf.toGraph("graph")
 
 # render on terminal with
 # dot -Grankdir=LR -Tpng graph.dot  -o graph.png
