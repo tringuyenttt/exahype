@@ -13,13 +13,17 @@ import os, re, sys, ast, inspect, argparse, base64, pprint, subprocess, collecti
 from collections import namedtuple
 from argparse import Namespace as namespace
 from itertools import izip, islice
+from functools import wraps
 #from future.utils import raise_from # no batteries
 
 # helpers and shorthands:
 
 baseflags = re.IGNORECASE
 match = lambda pattern,string,flags=0: re.match(pattern,string,baseflags+flags)
+# unpack a tuple
 unpack = lambda f: lambda p: f(*p)
+# unpack a namespace
+unpack_namespace = lambda f: lambda ns: f(**vars(ns))
 # The identity function. Don't mix up with pythons internal "id"
 idfunc = lambda x: x
 # A nicer functional list access thing
@@ -74,17 +78,6 @@ def raise_exception(e):
 	raise e
 # returns string until first occurance of character, not including the character
 untilCharacter = lambda txt, char: first(txt.partition(char))
-#
-def quoted_printable(s, escape='%'):
-	"""
-	Returns a quoted printable version of the string s with escape character %, no maximum line length
-	(i.e. everything in a single line) and everything non-alphanumeric replaced.
-	"""
-	# sourcecode inspired by quopri, https://github.com/python/cpython/blob/2.7/Lib/quopri.py
-	HEX = '0123456789ABCDEF'
-	quote = lambda c: escape + HEX[ord(c)//16] + HEX[ord(c)%16] # quote a single character
-	needsquote = lambda c: not ('0' <= c <= '9' or 'a' <= c <= 'z' or 'A' <= c <= 'Z') # Whether character needs to be quoted
-	return "".join([ quote(c) if needsquote(c) else c for c in s])
 #
 def window(seq, n=2):
 	"Returns a sliding window (of width n) over data from the iterable"
@@ -698,7 +691,7 @@ class mexagraph:
 		pass
 		# TOD BE DONE.
 		
-	def evaluate_to_mexafile(self, left=term.root, stack=tuple(), max_rec=10, sort_by='input'):
+	def evaluate_to_mexafile(self, left=term.root, stack=tuple(), max_rec=20, sort_by='input'):
 		"""
 		Correctly resolves all equalities and directed equalities to an oplist aka a mexafile.
 		Current Limitations:
@@ -808,7 +801,7 @@ class mexafile:
 		oplist = removeNone(sourceline.sourcemap(oplines, source_name).map(lang.Rel_from_textline))
 		return cls(oplist)
 	
-	def query(self, root='', exclude_root=False):
+	def query(self, root='', inplace=False, exclude_root=False):
 		"""
 		Get the assignment tree based on some root (which may be string, list, symbol).
 		Returns a new operations instance.
@@ -819,10 +812,62 @@ class mexafile:
 		# on symbols:
 		# tree = { lhs : rhs for lhs,rhs in self.symbols.iteritems() if root in lhs.ancestors() }
 		# on the oplist:
-		return mexafile([ op for op in self.ops 
+		ret = [ op for op in self.ops 
 			if root in op.l.ancestors() # root="foo", include "foo/bar" and "foo/bar/baz"
 			or (root == op.l and not exclude_root)  # root="foo", include "foo" itself.
-		])
+		]
+		if inplace:
+			self.ops = ret
+		else:
+			return mexafile(ret)
+		
+	def tree(self, root='', symbol_resolver=None, backref=False):
+		"""
+		Like query, but will result in a nested dictionary structure instead of an oplist.
+		
+		\option root: A symbol instance.
+		\option symbol_resolver: Not needed any more!
+		\option backref: Insert the full path into every dictionary.
+		"""
+		oplist_absolute = self.query(root) # with absolute paths
+		oplist_relative = oplist_absolute.remove_prefix(root) # relative paths to root
+		# a list with the general structure of the tree, especially parents come before childs
+		# so we can make a dict tree out of it
+		outline = sorted(unique(flatten2d([op.l.ancestors() for op in oplist_relative])))
+		
+		# setup the tree outline (nodes)
+		tree = {}
+		for sym in outline:
+			subtree = tree
+			for symp in sym.as_str_tuple():
+				if not symp in subtree:
+					subtree[symp] = {}
+				subtree = subtree[symp]
+		
+		# as a placeholder, should be related to a context
+		if not symbol_resolver:
+			symbol_resolver = lambda sym: "REF="+sym.canonical()
+			
+		# backref: Include the full path for each node (not leaf)
+		backref_key = "$path"
+			
+		# fill the tree with leafs
+		for abs_op,op in izip(oplist_absolute,oplist_relative):
+			if op.l.isRoot():
+				tree = op.r
+			else:
+				parent = reduce(dict.get, op.l.parent().as_str_tuple(), tree) 
+				leaf_name = op.l.node().canonical()
+				parent[leaf_name] = op.r
+				
+				if backref and not backref_key in parent:
+					# we do *not* put the parent in a symbol_resolver but instead
+					# use the canonical description.
+					# Note that the absolute path is the original one in the defining file,
+					# not taking into account the actual mapping (inclusion) of the path.
+					parent[backref_key] = abs_op.l.parent().canonical()
+
+		return tree
 	
 
 	def evaluate_symbol(self, symb, evaluator, inplace=True, eliminate=True, max_rec=10):
@@ -961,50 +1006,351 @@ class mexafile:
 		retcode = subprocess.call(["dot", "-Grankdir=LR", "-Tpng", dotfilename, "-o", imgfilename])
 		print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
 
+###
+### CLI and application interface.
+###
 
-parser = argparse.ArgumentParser(description=__doc__)
+class mexa_cli(object):
+	command_registration = {} # maps string -> class
+	
+	def __init__(self):
+		self.parser = argparse.ArgumentParser(description=__doc__)
+		subparsers_dest = 'command'
+		subparsers = self.parser.add_subparsers(
+			dest=subparsers_dest,
+			title="commands",
+			description="valid subcommands",
+			help="choose one")
+		
+		for cmd, cls in self.command_registration.iteritems():
+			subargs = subparsers.add_parser(cmd)
+			cls.arguments(subargs) # ask class for setting arguments
+		
+		args = vars(self.parser.parse_args())
+		
+		target_cls = self.command_registration[ args[subparsers_dest] ]
+		self.job = target_cls(**args)
 
-parser.add_argument('--infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
-	metavar='FILENAME', help="Input file to read. If no file is given, read from stdin.")
-parser.add_argument('--outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout,
-	metavar='FILENAME', help="Output file to write to. If no file is given, write to stdout.")
-args = parser.parse_args()
+	@classmethod
+	def register_subcommand(cls, subcommand_name):
+		def register(the_cls): # @wraps breaks this.
+			cls.command_registration[subcommand_name] = the_cls
+			return the_cls
+		return register
 
-# appending stuff to any file, as a root
-global_mexa_information = [
-	# mexa = path to the current script directory
-	Rel(symbol("mexa"), os.path.dirname(os.path.realpath(__file__)), "equals", sourceline.from_python()),
-]
-# -> should move to include file lookup paths instead.
+class io_mexafile(object):
+	def __init__(self, infile, outfile, root="", evaluate=True, **ignored_kwargs):
+		self.outfile = outfile
+		self.mf = mexafile.from_filehandle(infile)
+		self.root = root
+		if root:
+			self.mf.query(root, inplace=True)
+		
+		# appending stuff to any file, as a root
+		global_mexa_information = [
+			# mexa = path to the current script directory
+			Rel(symbol("mexa"), os.path.dirname(os.path.realpath(__file__)), "equals", sourceline.from_python()),
+		]
+		# -> should move to include file lookup paths instead.
+		
+		self.mf.ops = global_mexa_information + self.mf.ops
+		
+		self.evaluate = evaluate
+		if evaluate:
+			self.mf.evaluate()
+		
+		#print mf.toPlain()
+		#mf.toGraph("graph")		
+	
+	@classmethod
+	def arguments(cls, parser, add_root=True):
+		group = parser.add_argument_group('input/output')
+		group.add_argument('--infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
+			metavar='FILENAME', help="Input file to read. If no file is given, read from stdin.")
+		group.add_argument('--outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout,
+			metavar='FILENAME', help="Output file to write to. If no file is given, write to stdout.")
+		
+		if add_root:
+			group.add_argument('--root', default='', help='Queried root container')
+		
+		# also probably allow injection, i.e.
+		# --env  => the environment variables, etc.
+		# --var FOO=BAR => another variable definition, etc.
+		
+	def write(self, data):
+		self.outfile.write(data)
 
-mf = mexafile.from_filehandle(args.infile)
-mf.ops = global_mexa_information + mf.ops
-mf.evaluate()
 
-g = mf.graph()
-
-print mf.toPlain()
-mf.toGraph("graph")
-
-# render on terminal with
-# dot -Grankdir=LR -Tpng graph.dot  -o graph.png
-
-###nx.nx_agraph.write_dot(mf.graph.G, "graph.dot")
-
-
-#append_oplist = removeNone(args.expressions)
-#if len(append_oplist):
-#	print "Parsing: " + str(append_oplist)
-#	mf.append(append_oplist, "Command line argument expression")
-
-# could do here also --env which then adds all or requested environment variables below env/
+@mexa_cli.register_subcommand('plain')
+class plain_mexafile(io_mexafile):
+	def __init__(self, no_evaluation, *args, **kwargs):
+		#import ipdb; ipdb.set_trace()
+		super(plain_mexafile,self).__init__(evaluate=not no_evaluation, *args, **kwargs)
+		self.write("# evaluated = %s\n" % (str(self.evaluate)))
+		self.write(self.mf.toPlain())
+		self.write("\n")
+		
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser)
+		parser.add_argument('--no-evaluation', default=False, action='store_false', help='Do not evaluate the file at all')
 
 
-#sys.exit() # stop here for the time being
+@mexa_cli.register_subcommand('encode')
+class encoded_mexafile(io_mexafile):
+	def __init__(self, encoding, header, *args, **kwargs):
+		#import ipdb; ipdb.set_trace()
+		super(encoded_mexafile,self).__init__(*args, **kwargs)
+		self.write(self.dump(self.mf, encoding, header))
+	
+	@staticmethod
+	def quoted_printable(s, escape='%'): # helper
+		"""
+		Returns a quoted printable version of the string s with escape character %, no maximum line length
+		(i.e. everything in a single line) and everything non-alphanumeric replaced.
+		"""
+		# sourcecode inspired by quopri, https://github.com/python/cpython/blob/2.7/Lib/quopri.py
+		HEX = '0123456789ABCDEF'
+		quote = lambda c: escape + HEX[ord(c)//16] + HEX[ord(c)%16] # quote a single character
+		needsquote = lambda c: not ('0' <= c <= '9' or 'a' <= c <= 'z' or 'A' <= c <= 'Z') # Whether character needs to be quoted
+		return "".join([ quote(c) if needsquote(c) else c for c in s])
+	
+	encodings = {
+		# base64 is the well known base64
+		'base64': lambda f: base64.b64encode(f),
+		# base16 is only the hex
+		'base16': lambda f: base64.b16encode(f),
+		# urlencode/quoted printable:
+		'quotedprintable': lambda f: encoded_mexafile.quoted_printable(f)
+	}
 
-# todo: Could offer here also an option to inject various or all environment
-# variables, just by passing "--env". Could setup manual assign() operations
-# similar to mexafile.rootbase.
-# Could also get rid of "let" statements by moving the rootbase outside the class.
+	default_encoding = 'quotedprintable'
+	default_prepend_header = "##MEXA-simple configuration file"
+	
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser)
+		parser.add_argument('--encoding', choices=cls.encodings.keys(), default=cls.default_encoding, help='Output encoding')
+		parser.add_argument('--header', default=cls.default_prepend_header, help='First line to add to output')
+	
+	@classmethod
+	def dump(cls, mf, encoding=None, header=None):
+		"""
+		Return an encoded mexa file. Several encodements are available, see the
+		encodings table.
+		@arg mf: Mexafile instance
+		@arg encoding: A value in encodings
+		@arg header: A single header line (incl. comment sign) to be prepended before the file
+		@arg simple_mexa: Whether to create simple mexa output
+		"""
+		if not encoding: encoding = cls.default_encoding
+		if not header: header = cls.default_prepend_header
+		fcontent = header + "\n" + mf.toPlain()
+		return cls.encodings[encoding](fcontent)
 
-#mf.evaluate()
+@mexa_cli.register_subcommand('structured')
+class structured_mexafile(io_mexafile):
+	native_styles = {
+		'tree': lambda mexa: mexa.tree(), # graph as nested dictionary
+		'tree-backref': lambda mexa: mexa.tree(backref=True), # including full paths (backreferences)
+		'linear': lambda mexa: collections.OrderedDict([ (op.l.canonical(), op.r) for op in mexa ]), # all ops in a linear list
+	}
+	
+	formats = [ 'json', 'yaml', 'xml' ]
+	
+	default_style = 'tree'
+	default_format = 'json'
+	
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser)
+		parser.add_argument('--style', choices=cls.native_styles.keys(), default=cls.default_style, help='Data layout requested (semantics)')
+		parser.add_argument('--format', choices=cls.formats, default=cls.default_format, help='Data format to use (structure)')
+
+
+	def __init__(self, style, format, *args, **kwargs):
+		super(structured_mexafile,self).__init__(*args, **kwargs)
+		self.style = style
+		self.native = self.native_styles[style](self.mf)
+		outstr = getattr(self, format)()
+		self.write(outstr)
+		
+	def json(self):
+		"""
+		Translate the oplist to a more human readable one, omitting all the classy
+		meta data. In Json without hierarchy.
+		"""
+		
+		# JSON pointer reference. Currently unused.
+		json_pointer = lambda irhs: { '$ref': '#/'+irhs.canonical() }
+		
+		import json # batteries included 
+		return json.dumps(self.native)
+
+	def yaml(self):
+		# placeholder
+		yaml_pointer = lambda irhs: { 'YAML-REF': 'towards->'+irhs.canonical() }
+		
+		# this has to be installed
+		import yaml
+		return yaml.dump(self.native, default_flow_style=False)
+
+	def xml(self):
+		# xml dumps straight the classy structure
+		# This is extremely verbose and more suitable as a tech-demo
+		# Could also implement a hierarchy writer here
+		
+		# -> xml currently supports only the linear style!!
+		
+		# lxml and xml.sax are included in python (batteries)
+		from lxml import etree
+		from xml.sax.saxutils import escape as xml_escape
+		
+		root = etree.Element(self.__class__.__name__)
+		root.set('style', self.style) # actually, the style is ignored here.
+		root.set('query_root', self.root)
+		
+		def visit(obj, parent, tagname=None):
+			if not tagname: tagname = obj.__class__.__name__
+			me = etree.SubElement(parent, tagname)
+			
+			if type(obj) == list:
+				for oi in obj:
+					visit(oi, me)
+			elif hasattr(obj, '_asdict'): # namedtuples instable API gives OrderedDict
+				for namedtuple_fieldname, value in obj._asdict().iteritems():
+					visit(value, etree.SubElement(me, namedtuple_fieldname))
+			elif isinstance(obj, symbol):
+				for p in obj.path:
+					etree.SubElement(me, 'pathseg').text = p
+			else:
+				me.text = xml_escape(str(obj)).strip()
+
+		#if self.style == 'linear':
+		#	for k in self.native:
+		
+		# todo: repair the output layout.
+		visit(self.native, root)
+		return etree.tostring(root, pretty_print=True)
+	
+@mexa_cli.register_subcommand('specfile')
+class mexafile_to_exahype_specfile(io_mexafile):
+	default_root = 'exahype' # the root container in a mexa file where the hierarchy begins
+	
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser, add_root=False)
+		parser.add_argument('--root', default=cls.default_root, help='Root container in the mexa file where the hierarchy begins')
+		parser.add_argument('--debug', action='store_true', default=False, help='Print debug output')
+
+
+	def __init__(self, root, debug, *args, **kwargs):
+		super(mexafile_to_exahype_specfile,self).__init__(*args, **kwargs)
+		self.root = root
+		self.debug = debug
+		self.embed_config = True
+		self.tplfile = './exa-specfile-tpl.exahype'
+		self.exahype_base = self.mf.query(root)
+		self.native = self.exahype_base.tree(backref=True)
+		self.write(self.exaspecfile(mf_tree=self.native))
+	
+	def exaspecfile(self, mf_tree):
+		"Return an ExaHyPE specfile which corresponds to these data"
+	
+		# assuming we only have one exahype project in ctx
+		ctx = {'exahype_projects': [mf_tree] }
+		
+		# replace True and False by "on" and "off"
+		exaBool = { True: "on", False: "off" }
+		replBool = lambda item: exaBool[item] if isa(item,bool) else item
+		ctx = mapComplex(replBool, ctx)
+		
+		# for debugging:
+		if self.debug:
+			pprint.pprint(ctx)
+		
+		mexa_path = self.mf.resolve_symbol("mexa")
+		
+		# this has to be installed:
+		import jinja2
+		
+		jinja_env = jinja2.Environment(
+			loader=jinja2.FileSystemLoader(mexa_path),
+			undefined=jinja2.StrictUndefined
+		)
+		
+		# provide further jinja functions:
+		# w decorators: https://stackoverflow.com/a/47291097
+		
+		def jinja_filter(func):
+			jinja_env.filters[func.__name__] = func
+			return func
+		
+		@jinja_filter
+		def dimlist(comp_domain, field):
+			"Compute the ExaHypE computational domain string (width_x, width_y, width_z?) "
+			fieldnames = [field+"_"+i for i in "xyz"]
+			fieldnames = fieldnames[:comp_domain['dimension']]
+			fields = [str(comp_domain[fn]) for fn in fieldnames]
+			return ", ".join(fields)
+		
+		@jinja_filter
+		def count_variables(variable_list):
+			"""Count the variables in a list 'x,y,z' or 'x:1,y:5,z:17' to 3 or 23, respectively"""
+			matches = re.findall(r"([a-zA-Z-_]+)(?:[:](\d+))?", variable_list)
+			return sum([1 if count == "" else int(count) for label,count in matches ])
+		
+		@jinja_filter
+		def resolve_path(node, prepend='/'):
+			"""
+			Lookup the tree_backref_native inserted backreference and embed it.
+			In order to have this be understood as a file path by the ExaHyPE specfile parser,
+			prepend a slash.
+			"""
+			# print out the query xpath (backref)
+			backref_key = "$path"
+			if backref_key in node:
+				return prepend + node[backref_key]
+			else:
+				raise ValueError("Missing backref key '%s' in node '%s'" % (backref_key, str(node)))
+			
+		@jinja_filter
+		def embed(node, encoding):
+			# embed the configuration as a string, suitable for the specfile constants
+			# parameters
+			root = resolve_path(node)
+			# embedded: Remove the prefix since we do not need the fully featured address list
+			opfilter=symbol(root).remove_prefix_oplist # => does not work, opfilter is broken
+			#opfilter = idfunc
+			return self.dump_encoded_mexa(encoding=encoding, root=root, opfilter=opfilter)
+		
+		@jinja_filter
+		def link_in_list(node):
+			# This can be either resolve_path or embed. Here we do both for simplicity
+			encoding = 'quotedprintable'
+			return 'mexa:embedded,mexaref:%s,mexaformat:%s,mexacontent:%s' % (resolve_path(node), encoding, embed(node,encoding) )
+		
+		@jinja_filter
+		def as_float(txt):
+			"""
+			Ensure a number does look like a float (2.) instead of an int (2).
+			This is what the ExaHyPE parser is sensitive on...
+			"""
+			return str(float(txt))
+		
+		# function (not a filter):
+		jinja_env.globals['error'] = lambda msg: raise_exception(ValueError("Template stopped: "+msg))
+		
+		#try:
+		return "DEBUG"
+		####### return jinja_env.get_template(self.tplfile).render(ctx)
+		# without exception chaining, we loose the stack trace:
+		#except Exception as e:
+		#	print "Debuggin context:"
+		#	pprint.pprint(ctx)
+		#	print "Exception:"
+		#	print str(e)
+		#	raise e	
+
+if __name__ == "__main__":
+	cli = mexa_cli()
