@@ -12,7 +12,7 @@ import networkx as nx
 import os, re, sys, ast, inspect, argparse, base64, pprint, subprocess, collections, types, operator
 from collections import namedtuple
 from argparse import Namespace as namespace
-from itertools import izip, islice
+from itertools import izip, islice, product
 from functools import wraps
 #from future.utils import raise_from # no batteries
 
@@ -574,7 +574,7 @@ class mexagraph:
 		if not silent_failure:
 			raise ValueError("Symbol %s not found in graph, searching from %s." % (left,starting_from))
 		
-	def get_path_up(self, symb, right, include_start=True, stack=tuple()):
+	def get_path_up(self, symb, right, include_start=True, stack=tuple(), disallow_first_parent=True):
 		"""
 		Resolves symbol -> [term], starting from some term.
 		# Resolve from a term to a symbol by going back the path
@@ -601,7 +601,12 @@ class mexagraph:
 		for left, attr in self.G.pred[right].iteritems():
 			resolving_term = self.get_path_down(symb, starting_from=left, silent_failure=True)
 			if resolving_term:
-				ret.append(resolving_term)
+				if disallow_first_parent:
+					# we are in a situation where a/b = b and we are on a. Do not allow
+					# a self-reference from b<->b.
+					continue
+				else:
+					ret.append(resolving_term)
 			else:
 				if left in [rel.l for rel in stack]:
 					# run into an equality a-[equals]->b, b-[equals]->a. Do not follow.
@@ -610,7 +615,7 @@ class mexagraph:
 				else:
 					# traverse over the edge
 					newstack = stack + tuplize(Rel(left, right, attr['op'], attr['src']))
-					ret += self.get_path_up(symb, right=left, stack=newstack)
+					ret += self.get_path_up(symb, right=left, stack=newstack, disallow_first_parent=False)
 		return unique_preserve(removeFalse(ret))
 	
 	# currently UNUSED.
@@ -644,7 +649,8 @@ class mexagraph:
 			l = self.insert_path(l, src=src)
 			
 			if isa(r,symbol):
-				target = self.get_path_up(r, l) # check if variable exists
+				oldr = r # for debugging
+				target = self.get_path_up(r, l, include_start=False) # check if variable exists
 				if len(target) == 1:
 					r = first(target) # link to existing
 				elif len(target) == 0:
@@ -656,15 +662,41 @@ class mexagraph:
 			# => problem: Resolving variables may not yet take future relations into account.
 			#    to encounter the problem, the graph would have needed to be setup in a
 			#    iterative process with correction steps.
+
+				assert l != r, "Produced weird graph because l=%s, oldr=%s, new r=%s for op=%s\n" % (l, oldr, r, op)
 			
 			# map equals and subsets together
 			if op == 'equals':
-				self.G.add_edge(l, r, op=self.E, src=src)
-				self.G.add_edge(r, l, op=self.E, src=src) # TODO: Should comment the source.
+				self.G.add_edge(l, r, op=self.E, src=src, patched=False)
+				self.G.add_edge(r, l, op=self.E, src=src, patched=False) # TODO: Should comment the source.
 			elif op == 'subsets':
-				self.G.add_edge(l, r, op=self.E, src=src)
+				self.G.add_edge(l, r, op=self.E, src=src, patched=False)
 			else:
 				self.G.add_edge(l, r, op=op, src=src)
+				
+		def equivalent_adjacency_iter(l, stack=tuple()):
+			# A version of self.G[l].iteritems() which also returns all edges
+			# from the equivalent nodes
+			for r, attr in self.G[l].iteritems():
+				if attr['op'] == self.E and not r in stack:
+					newstack = stack + (r,) # avoid loops
+					for r, attr in equivalent_adjacency_iter(r, stack=newstack):
+						yield (r, attr)
+				yield (r, attr)
+		
+		# correction step: inherit equivalence.
+		while not all([attr['patched'] for l,r,attr in self.G.edges(data=True) if attr['op']==self.E]):
+			for l, r, attr in self.G.edges(data=True):
+				if attr['op'] == self.E and not attr['patched']:
+					#for (ln, lattr), (rn, rattr) in product(self.G[l].iteritems(), self.G[r].iteritems()):
+					for (ln, lattr), (rn, rattr) in product(equivalent_adjacency_iter(l), equivalent_adjacency_iter(r)):
+						if isa(ln, term) and isa(rn,term) \
+						   and lattr['op'] == self.P and rattr['op'] == self.P \
+						   and ln != rn and ln.value == rn.value \
+						   and not self.G.has_edge(ln, rn):
+							self.G.add_edge(ln, rn, op=self.E, src=attr['src'], patched=False) # TODO: Comment source
+					# the l-[eq]->r edge is now patched.
+					attr['patched'] = True
 	
 	# graph to mexa: Without evaluation of any edges
 	def to_mexafile(self, left=term.root, left_path=symbol()):
@@ -721,7 +753,7 @@ class mexagraph:
 				ret += self.evaluate_to_mexafile(right, newstack, max_rec=max_rec-1, sort_by=sort_by)
 			elif attr['op'] == self.E:
 				if isa(right, term):
-					if right in [rel.l for rel in stack]:
+					if right in [rel.r for rel in stack]: # WAS rel.l
 						# run into an equality a-[equals]->b, b-[equals]->a. Do not follow.
 						# Equality loops are there by design.
 						continue
@@ -744,6 +776,13 @@ class mexagraph:
 		#	raise ValueError("Term l=%s,stack=%s lacks a definition\n"%(left,stack))
 		return mexafile(ret)
 		#return map(unpack(node_to_mexafile), )
+		
+	def toFile(self, base_filename):
+		dotfilename = base_filename+".dot"
+		imgfilename = base_filename+".png"
+		nx.nx_agraph.write_dot(self.G, dotfilename)
+		retcode = subprocess.call(["dot", "-Grankdir=LR", "-Tpng", dotfilename, "-o", imgfilename])
+		print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
 
 class mexafile:
 	"""
@@ -997,14 +1036,6 @@ class mexafile:
 
 	def toPlain(self):
 		return "\n".join([ lang.Rel_to_textline(rel) for rel in self ])
-	
-	def toGraph(self, base_filename):
-		graph = self.graph()
-		dotfilename = base_filename+".dot"
-		imgfilename = base_filename+".png"
-		nx.nx_agraph.write_dot(graph.G, dotfilename)
-		retcode = subprocess.call(["dot", "-Grankdir=LR", "-Tpng", dotfilename, "-o", imgfilename])
-		print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
 
 ###
 ### CLI and application interface.
@@ -1060,7 +1091,7 @@ class io_mexafile(object):
 			self.mf.evaluate()
 		
 		#print mf.toPlain()
-		#mf.toGraph("graph")		
+		#mf.toGraph("graph")
 	
 	@classmethod
 	def arguments(cls, parser, add_root=True):
@@ -1083,17 +1114,22 @@ class io_mexafile(object):
 
 @mexa_cli.register_subcommand('plain')
 class plain_mexafile(io_mexafile):
-	def __init__(self, no_evaluation, *args, **kwargs):
+	def __init__(self, no_evaluation, graph, *args, **kwargs):
 		#import ipdb; ipdb.set_trace()
 		super(plain_mexafile,self).__init__(evaluate=not no_evaluation, *args, **kwargs)
 		self.write("# evaluated = %s\n" % (str(self.evaluate)))
 		self.write(self.mf.toPlain())
 		self.write("\n")
 		
+		# quick and dirty (this is the wrong place, in principle):
+		if graph:
+			self.mf.graph().toFile("graph")
+		
 	@classmethod
 	def arguments(cls, parser):
 		io_mexafile.arguments(parser)
 		parser.add_argument('--no-evaluation', default=False, action='store_false', help='Do not evaluate the file at all')
+		parser.add_argument('--graph', default=False, action='store_true', help='Plot a graph')
 
 
 @mexa_cli.register_subcommand('encode')
@@ -1250,6 +1286,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		self.debug = debug
 		self.embed_config = True
 		self.tplfile = './exa-specfile-tpl.exahype'
+		#self.tplfile = './debug-project.jinja'
 		self.exahype_base = self.mf.query(root)
 		self.native = self.exahype_base.tree(backref=True)
 		self.write(self.exaspecfile(mf_tree=self.native))
@@ -1258,7 +1295,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		"Return an ExaHyPE specfile which corresponds to these data"
 	
 		# assuming we only have one exahype project in ctx
-		ctx = {'exahype_projects': [mf_tree] }
+		ctx = {'exahype_projects': mf_tree }
 		
 		# replace True and False by "on" and "off"
 		exaBool = { True: "on", False: "off" }
@@ -1276,7 +1313,8 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		
 		jinja_env = jinja2.Environment(
 			loader=jinja2.FileSystemLoader(mexa_path),
-			undefined=jinja2.StrictUndefined
+			#undefined=jinja2.StrictUndefined
+			undefined=jinja2.DebugUndefined
 		)
 		
 		# provide further jinja functions:
@@ -1285,6 +1323,12 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		def jinja_filter(func):
 			jinja_env.filters[func.__name__] = func
 			return func
+		
+		@jinja_filter
+		def tolist(adict):
+			# Mexa always stores dict. To treat a dictionary as a list, use this.
+			# Could also loop like for k,v in ... in jinja.
+			return adict.values()
 		
 		@jinja_filter
 		def dimlist(comp_domain, field):
@@ -1297,6 +1341,8 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		@jinja_filter
 		def count_variables(variable_list):
 			"""Count the variables in a list 'x,y,z' or 'x:1,y:5,z:17' to 3 or 23, respectively"""
+			if not isa(variable_list, [str,unicode]):
+				return str(variable_list) ## whatever!
 			matches = re.findall(r"([a-zA-Z-_]+)(?:[:](\d+))?", variable_list)
 			return sum([1 if count == "" else int(count) for label,count in matches ])
 		
@@ -1319,10 +1365,8 @@ class mexafile_to_exahype_specfile(io_mexafile):
 			# embed the configuration as a string, suitable for the specfile constants
 			# parameters
 			root = resolve_path(node)
-			# embedded: Remove the prefix since we do not need the fully featured address list
-			opfilter=symbol(root).remove_prefix_oplist # => does not work, opfilter is broken
-			#opfilter = idfunc
-			return self.dump_encoded_mexa(encoding=encoding, root=root, opfilter=opfilter)
+			mf = self.mf.query(root).remove_prefix(root)
+			return encoded_mexafile.dump(mf, encoding='quotedprintable')
 		
 		@jinja_filter
 		def link_in_list(node):
@@ -1342,8 +1386,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		jinja_env.globals['error'] = lambda msg: raise_exception(ValueError("Template stopped: "+msg))
 		
 		#try:
-		return "DEBUG"
-		####### return jinja_env.get_template(self.tplfile).render(ctx)
+		return jinja_env.get_template(self.tplfile).render(ctx)
 		# without exception chaining, we loose the stack trace:
 		#except Exception as e:
 		#	print "Debuggin context:"

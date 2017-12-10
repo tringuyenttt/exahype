@@ -11,7 +11,7 @@
  * meta parameter framework.
  **/
 
-{% for project in exahype_projects -%}
+{% for project in exahype_projects|tolist -%}
 exahype-project {{ project.project_name }}
 
   peano-kernel-path const  = {{ project.peano_kernel_path }}
@@ -52,7 +52,7 @@ exahype-project {{ project.project_name }}
     spawn-double-compression-as-background-thread = {{ project.optimisation.spawn_double_compression }}
   end global-optimisation
 
-  {% for solver in project.solvers -%}
+  {% for solver in project.solvers|tolist -%}
   solver {{solver.type}} {{solver.name}}
     variables const    = {{ solver.variables }}
 
@@ -63,7 +63,7 @@ exahype-project {{ project.project_name }}
     {% elif solver.type == "Limiting-ADER-DG" %}
     order const        = {{ solver.order }}
     {% else %}
-       {{ error("Invalid plotter.type.") }}
+       {{ error("Invalid solver.type: " ~ solver.type) }}
     {% endif -%}
     {# #}
     maximum-mesh-size  = {{ solver.maximum_mesh_size|as_float }}
@@ -91,8 +91,8 @@ exahype-project {{ project.project_name }}
     constants          = {{ solver.constants|link_in_list }}
     {% endif -%}
 
-    {% for plotter in solver.plotters %}
-    plot {{plotter.type}}  {{plotter.name}}
+    {% for plotter_name, plotter in solver.plotters.items() %}
+    plot {{plotter.type}}  {{plotter_name}}
       variables const = {{plotter.variables|count_variables }}
       time      = {{plotter.time}}
       repeat    = {{plotter.repeat}}
