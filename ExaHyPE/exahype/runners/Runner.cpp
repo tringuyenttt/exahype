@@ -705,9 +705,13 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
           5, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
           exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell());
   while (
+    (
       extraIterations > 0
       || repository.getState().continueToConstructGrid()
       || exahype::solvers::Solver::oneSolverHasNotAttainedStableState() // Further mesh refinement is possible
+    )
+    &&
+    ( extraIterations>-6 )
   ) {
     meshUpdate |=
         repository.getState().continueToConstructGrid()
@@ -720,6 +724,10 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
     plotMeshSetupInfo(repository,meshSetupIterations);
+  }
+
+  if (extraIterations<-1) {
+    logWarning( "createMesh(...)", "it seems that additional grid construction steps run into infinite loop. Stopped it manually" );
   }
 
   logInfo("createGrid(Repository)", "finished grid setup after " << meshSetupIterations << " iterations" );
