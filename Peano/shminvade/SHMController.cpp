@@ -7,12 +7,17 @@
 #include <sstream>
 
 
+tbb::task_group_context  shminvade::SHMController::InvasiveTaskGroupContext;
+
+
 shminvade::SHMController::SHMController():
   _switchedOn( true ) {
   #if SHM_INVADE_DEBUG>=1
   std::cout << SHM_DEBUG_PREFIX <<  "Create SHMController, maxCores=" << getMaxAvailableCores() <<
     " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
   #endif
+
+  InvasiveTaskGroupContext.set_priority( tbb::priority_low );
 
   registerNewThread(
     (pid_t) syscall (__NR_gettid),
@@ -42,7 +47,7 @@ void shminvade::SHMController::switchOn() {
 
 
 void shminvade::SHMController::switchOff() {
-  //_switchedOn = false;
+  _switchedOn = false;
 }
 
 
@@ -60,7 +65,7 @@ int shminvade::SHMController::getBookedCores() const {
   int result = 1;
 
   for (auto p: _threads) {
-    if ( getThreadTableEntry(p.first).type==ThreadType::ExclusivelyOwned) {
+    if ( getThreadType(p.first)==ThreadType::ExclusivelyOwned) {
       result++;
     }
   }
@@ -69,11 +74,11 @@ int shminvade::SHMController::getBookedCores() const {
 }
 
 
-shminvade::SHMController::ThreadState shminvade::SHMController::getThreadTableEntry( pid_t pid ) const {
+shminvade::SHMController::ThreadType shminvade::SHMController::getThreadType( pid_t pid ) const {
   // switch to non-const to ensure that noone else is modifying the entry at the very moment
   ThreadTable::const_accessor a;
   _threads.find(a,pid);
-  return a->second;
+  return a->second->type;
 }
 
 
@@ -87,20 +92,28 @@ void shminvade::SHMController::shutdown() {
   for (auto p: _threads) {
     ThreadTable::accessor a;
     _threads.find(a,p.first);
-    a->second.type = ThreadType::Shutdown;
+    ThreadState::Mutex::scoped_lock lock( a->second->mutex );
+    a->second->type = ThreadType::Shutdown;
   }
 
-  // @todo We should check whether there are lock tasks remainidng. If not, cancel the sleep
-
-  #if SHM_INVADE_DEBUG>=2
-  std::cout << SHM_DEBUG_PREFIX <<  "wait for all lock threads to terminate (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
-  #endif
-
   __TBB_Yield();
-  #ifdef SHM_SLEEP
-  sleep(SHM_SLEEP);
-  //sleep(getMaxAvailableCores() * SHM_SLEEP);
+  #ifdef SHM_MIN_SLEEP
+  sleep(SHM_MIN_SLEEP);
   #endif
+
+  int totalNumberOfLockTasks = 0;
+  for (auto p: _threads) {
+    ThreadTable::accessor a;
+    _threads.find(a,p.first);
+    ThreadState::Mutex::scoped_lock lock( a->second->mutex );
+    totalNumberOfLockTasks += a->second->numberOfExistingLockTasks;
+  }
+  if (totalNumberOfLockTasks>0) {
+    #if SHM_INVADE_DEBUG>=1
+    std::cout << SHM_DEBUG_PREFIX <<  "wait for all lock threads to terminate as lock tasks seem to be alive (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+    #endif
+    sleep(SHM_MAX_SLEEP);
+  }
 
   #if SHM_INVADE_DEBUG>=2
   std::cout << SHM_DEBUG_PREFIX <<  "assume all threads have terminated (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
@@ -108,46 +121,78 @@ void shminvade::SHMController::shutdown() {
 }
 
 
-void shminvade::SHMController::retreatFromCore( pid_t pid ) {
+bool shminvade::SHMController::tryToBookThread( pid_t pid ) {
+  if (!_switchedOn) return false;
+
+  bool result = false;
   ThreadTable::accessor a;
   _threads.find(a,pid);
-  if ( a->second.type==ThreadType::ExclusivelyOwned ) {
-    a->second.type = ThreadType::NotOwned;
+
+  ThreadState::Mutex::scoped_lock  lock( a->second->mutex);
+  if ( a->second->type==SHMController::ThreadType::NotOwned ) {
+    a->second->type = SHMController::ThreadType::ExclusivelyOwned;
+    result = true;
+    #if SHM_INVADE_DEBUG>=4
+    std::cout << SHM_DEBUG_PREFIX <<  "invade thread " << pid << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+    #endif
+  }
+
+  lock.release();
+  a.release();
+
+  return result;
+}
+
+
+void shminvade::SHMController::retreatFromThread( pid_t pid ) {
+  ThreadTable::accessor a;
+  _threads.find(a,pid);
+
+  ThreadState::Mutex::scoped_lock  lock( a->second->mutex);
+
+  if ( a->second->type==ThreadType::ExclusivelyOwned ) {
+    a->second->type = ThreadType::NotOwned;
+    #if SHM_INVADE_DEBUG>=4
+    std::cout << SHM_DEBUG_PREFIX <<  "retreat from thread " << pid << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+    #endif
   }
 
   if (
-    a->second.type!=ThreadType::Shutdown
+    a->second->type!=ThreadType::Shutdown
     &&
-    a->second.numberOfExistingLockTasks==0
+    a->second->numberOfExistingLockTasks==0
   ) {
-    a->second.numberOfExistingLockTasks++;
-    tbb::task &t = *new(tbb::task::allocate_root()) SHMLockTask(pid);
+    a->second->numberOfExistingLockTasks++;
+    tbb::task &t = *new(tbb::task::allocate_root(InvasiveTaskGroupContext)) SHMLockTask(pid);
     tbb::task::enqueue(t);
     #if SHM_INVADE_DEBUG>=4
-    std::cout << SHM_DEBUG_PREFIX <<  "retreat from core " << pid << " and issue new lock task (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+    std::cout << SHM_DEBUG_PREFIX <<  "issue new lock task for thread " << pid << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
     #endif
   }
+
+  lock.release();
+  a.release();
 }
 
 
 void shminvade::SHMController::retreatFromAllCores() {
   for (auto p: _threads) {
-    if (getThreadTableEntry(p.first).type==ThreadType::ExclusivelyOwned) {
-      retreatFromCore(p.first);
+    if (getThreadType(p.first)==ThreadType::ExclusivelyOwned) {
+      retreatFromThread(p.first);
     }
   }
 }
 
 
 void shminvade::SHMController::registerNewThread(int threadId, ThreadType initialType) {
-  ThreadState newThread(initialType);
-  _threads.insert( std::pair<pid_t, ThreadState>(threadId,newThread) );
+  ThreadState* newThread = new ThreadState(initialType);
+  _threads.insert( std::pair<pid_t, ThreadState* >(threadId,newThread) );
 
   #if SHM_INVADE_DEBUG>=1
-  std::cout << SHM_DEBUG_PREFIX <<  "register new thread " << threadId << " as " << toString(newThread) << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
+  std::cout << SHM_DEBUG_PREFIX <<  "register new thread " << threadId << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
   #endif
 
-  retreatFromCore(threadId);
+  retreatFromThread(threadId);
 }
 
 

@@ -73,7 +73,7 @@ class shminvade::SHMSharedMemoryBetweenTasks {
       char user_data_per_process[SHM_INVADE_MAX_PROGRAMS][SHMINVADE_USER_DATA_SIZE];
     };
 
-    SharedData* global_shm_data;
+    SharedData* volatile  global_shm_data;
 
     SHMSharedMemoryBetweenTasks();
 

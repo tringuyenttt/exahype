@@ -7,6 +7,9 @@
 #include <tbb/atomic.h>
 #include <tbb/spin_mutex.h>
 #include <tbb/concurrent_hash_map.h>
+#include <tbb/spin_mutex.h>
+#include <tbb/task.h>
+
 
 
 // @todo Remove Namespace
@@ -30,9 +33,13 @@ class shminvade::SHMController {
     };
 
     struct ThreadState {
+      typedef tbb::spin_mutex  Mutex;
+
       ThreadState(ThreadType type_):
         type(type_),
         numberOfExistingLockTasks(0) {}
+
+      Mutex      mutex;
 
       ThreadType type;
 
@@ -48,20 +55,31 @@ class shminvade::SHMController {
     static std::string toString( ThreadState state );
 
   private:
+    /**
+     * TBB otherwise might destroy the context once it thinks that all tasks
+     * have terminated. See my own post to Intel at
+     *
+     * https://software.intel.com/en-us/forums/intel-threading-building-blocks/topic/700057
+     *
+     * So we create a special task group context for SHMInvade which notably
+     * allows us to enqueue all lock tasks into this one.
+     */
+    static tbb::task_group_context  InvasiveTaskGroupContext;
+
     tbb::atomic<bool> _switchedOn;
 
-
-/*
-    https://software.intel.com/en-us/node/506171
-    Like std::list, insertion of new items does not invalidate any iterators, nor change the order of items already in the map. Insertion and traversal may be concurrent.
-
-    @todo Wir koennen da nicht drueber iterieren, weil sich die States ja staendig aendern koennen
-*/
-    typedef tbb::concurrent_hash_map<pid_t, ThreadState> ThreadTable;
+    /**
+     * I'd prefer to use the thread states directly here. However, I have to
+     * work with pointers as each entry contains a mutex and TBB does not
+     * allow us to copy mutexes.
+     */
+    typedef tbb::concurrent_hash_map<pid_t, ThreadState*> ThreadTable;
     ThreadTable  _threads;
 
-    void setThreadTableEntry( pid_t pid, ThreadState state );
-    ThreadState getThreadTableEntry( pid_t pid ) const;
+    /**
+     * Read-only operation mainly required by lock tasks
+     */
+    ThreadType getThreadType( pid_t pid ) const;
 
     /**
      * Just register the master thread through registerNewThread(). This
@@ -110,7 +128,10 @@ class shminvade::SHMController {
      */
     void shutdown();
 
-    void retreatFromCore( pid_t pid );
+
+    void retreatFromThread( pid_t pid );
+
+    bool tryToBookThread( pid_t pid );
 };
 
 #endif

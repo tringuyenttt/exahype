@@ -6,8 +6,9 @@
 #include <assert.h>
 
 
-shminvade::SHMLockTask::SHMLockTask(pid_t pid_t):
-  _pid_t( pid_t ) {
+shminvade::SHMLockTask::SHMLockTask(pid_t pid_t, int sleepTime):
+  _pid_t( pid_t ),
+  _sleepTime( sleepTime ) {
   // TBB complains and clarifies that affinities are ignored for enqueued
   // tasks
   // set_affinity( _pid_t );
@@ -20,13 +21,15 @@ void shminvade::SHMLockTask::reenqueue() {
     " has been triggered to reenqueue on thread " << syscall (__NR_gettid) << " (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
   #endif
 
-  if (SHMController::getInstance().getThreadTableEntry(_pid_t).type == SHMController::ThreadType::Shutdown) {
+  if (SHMController::getInstance().getThreadType(_pid_t) == SHMController::ThreadType::Shutdown) {
     #if SHM_INVADE_DEBUG>=8
     std::cout << SHM_DEBUG_PREFIX <<  "Controller seems to be down already, so stop lock task too (line:" << __LINE__ << ",file:" << __FILE__ << ")" << std::endl;
     #endif
   }
   else {
-    tbb::task &t = *new(tbb::task::allocate_root()) SHMLockTask(_pid_t);
+    tbb::task &t = *new(tbb::task::allocate_root(SHMController::InvasiveTaskGroupContext)) SHMLockTask(
+      _pid_t,std::min( SHM_MAX_SLEEP,_sleepTime+1)
+    );
     tbb::task::enqueue(t);
   }
 }
@@ -35,8 +38,11 @@ void shminvade::SHMLockTask::reenqueue() {
 void shminvade::SHMLockTask::terminate() {
   SHMController::ThreadTable::accessor a;
   SHMController::getInstance()._threads.find(a,_pid_t);
-  assert( a->second.numberOfExistingLockTasks>0 );
-  a->second.numberOfExistingLockTasks--;
+  SHMController::ThreadState::Mutex::scoped_lock lock( a->second->mutex );
+  assert( a->second->numberOfExistingLockTasks>0 );
+  a->second->numberOfExistingLockTasks--;
+  lock.release();
+  a.release();
 }
 
 
@@ -53,7 +59,7 @@ tbb::task* shminvade::SHMLockTask::execute() {
     return nullptr;
   }
   else {
-    SHMController::ThreadType state = SHMController::getInstance().getThreadTableEntry(_pid_t).type;
+    SHMController::ThreadType state = SHMController::getInstance().getThreadType(_pid_t);
     switch (state) {
       case SHMController::ThreadType::Master:
         // there should be no lock tasks on the master so let this one die
@@ -70,17 +76,18 @@ tbb::task* shminvade::SHMLockTask::execute() {
         terminate();
         return nullptr;
       case SHMController::ThreadType::NotOwned:
-        #if SHM_INVADE_DEBUG>=8
-        std::cout << SHM_DEBUG_PREFIX <<  "thread " << _pid_t << " should not be used so yield immediately and make lock task sleep (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
-        #endif
         __TBB_Yield();
-        #ifdef SHM_SLEEP
-        sleep(SHM_SLEEP);
+        if (_sleepTime<SHM_MAX_SLEEP) {
+          _sleepTime *= 2;
+        }
+        #if SHM_INVADE_DEBUG>=2
+        std::cout << SHM_DEBUG_PREFIX <<  "thread " << _pid_t << " should not be used so make lock task sleep for " << _sleepTime << "s before we reenqueue (line:" << __LINE__ << ",file: " << __FILE__ << ")" << std::endl;
         #endif
+        sleep(_sleepTime);
         reenqueue();
         return nullptr;
       case SHMController::ThreadType::Shutdown:
-        #if SHM_INVADE_DEBUG>=8
+        #if SHM_INVADE_DEBUG>=4
         std::cout << SHM_DEBUG_PREFIX <<  "thread " << _pid_t << " is marked to shut down so remove lock thread (line:" << __LINE__  << ",file: " << __FILE__ << ")" << std::endl;
         #endif
         // we should die anyway

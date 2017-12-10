@@ -24,12 +24,14 @@ class shminvade::SHMLockTask: public tbb::task {
   private:
     const pid_t  _pid_t;
 
+    int    _sleepTime;
+
     void reenqueue();
 
     void terminate();
 
   public:
-    SHMLockTask( pid_t pid_t );
+    SHMLockTask( pid_t pid_t, int sleepTime = SHM_MIN_SLEEP );
 
     /**
      * Please note that we use enqueue for task requeuing as TBB does
