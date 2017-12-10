@@ -9,7 +9,7 @@ import networkx as nx
 
 
 # batteries:
-import os, re, sys, ast, inspect, argparse, base64, pprint, subprocess
+import os, re, sys, ast, inspect, argparse, base64, pprint, subprocess, collections, types, operator
 from collections import namedtuple
 from argparse import Namespace as namespace
 from itertools import izip, islice
@@ -39,6 +39,8 @@ replace_with_list_at = lambda i, a, b: a[:i]+b+a[i+1:]
 remove_comstr_prefix = lambda text, prefix: text[text.startswith(prefix) and len(prefix):]
 # flatten a 2d list
 flatten2d = lambda l: [item for sublist in l for item in sublist]
+# potentially flatten a 2d list, accept heterogeneous input such as [1,[2,3],4]
+potentialFlatten2D = lambda l: flatten2d([ i if isa(i,collections.Iterable) and not isa(i,types.StringTypes) else [i] for i in l ])
 # unique items
 unique = lambda l: list(set(l))
 # unique items while preserve the order
@@ -104,6 +106,7 @@ class NamedFunction:
 		return self.f(*args, **kwargs)
 	def __repr__(self):
 		return self.name
+
 
 ### end helpers
 
@@ -320,22 +323,37 @@ class lang:
 	symb_split_or = "|".join(map(re.escape, symb_split))
 	symb = r"[a-z_][a-z_0-9:/]*" # regex defining a LHS symbol
 	comment = r"#" # comment character
-	linecomment = r"(?:" + comment + r".*)?$" # allows a comment until end of line
+	linecomment = r"\s*(?:" + comment + r".*)?$" # allows a comment until end of line
 	stringvarchar = "@" # variable escape character
 	stringvarsimple = stringvarchar + "([a-z_0-9]+)" # only alphanumeric
 	stringvarcomplex = stringvarchar + "\{("+symb+")\}"
+
+	# rhs parsing:
+	astring = r"(?:" + r'"([^"]+)"'+'|'+r"'([^']+)'" + ')'
+	anum = r"([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)" # floats/ints; cf https://docs.python.org/3/library/re.html#simulating-scanf
+	yes = r"^(Yes|True|On)"
+	no = r"^(No|False|Off)"
 	
 	class evalstr:
 		def __init__(self, text):
 			self.text = text
-		def __call__(self, context):
-			replmatch = lambda matchobj: context.resolve_symbol(matchobj.group(1))
-			text = re.sub(lang.stringvarsimple, replmatch, text, count=0, flags=baseflags)
+		def __call__(self, variable_resolver):
+			replmatch = lambda matchobj: variable_resolver(matchobj.group(1))
+			text = re.sub(lang.stringvarsimple, replmatch, self.text, count=0, flags=baseflags)
 			text = re.sub(lang.stringvarcomplex, replmatch, text, count=0, flags=baseflags)
-			return lang.rhs2python(text, context=context)
+			return lang.rhs2python(text, context=variable_resolver)
 		def __repr__(self):
 			return "%s(%s)" % (self.__class__.__name__, self.text)
 
+	@classmethod
+	def num2py(cls, text):
+		try:
+			return int(text)
+		except ValueError:
+			try:
+				return float(text)
+			except ValueError:
+				return text # string fallback
 	
 	@classmethod
 	def rhs2python(cls, text, context=None):
@@ -346,7 +364,10 @@ class lang:
 		If this returns a list or if the returned and subsequently evaluated function
 		returns a list, it is subject to the caller to deal with this list accordingly.
 		
-		context shall be a VariableContext instance or None.
+		Note that this parser covers the requirements by the language but does not fit them
+		1:1. Especially, it may allow certain syntax which is not part of the language.
+		Feel free to improve the parser; the focus of this implementation lies in resolving
+		variables, thought, while staying simple and without external dependencies.
 		"""
 		text = text.strip()
 		
@@ -361,6 +382,51 @@ class lang:
 			# Otherweise, return the closure.
 			promise = lang.evalstr(text)
 			return promise(context) if context else promise
+
+		# throw a number of regexps on the values to determine what they are.
+		
+		# "strings" or 'strings'. Caveat: Treat comments correctly in strings like "foo#bar".
+		mstr = re.match(lang.astring + lang.linecomment, text, re.IGNORECASE)
+		if mstr:
+			return first(removeNone(mstr.groups())) # for whatever reason, mstr.group() treats "' wrong.
+		# numbers. cf. 
+		mnum = re.match(lang.anum + lang.linecomment, text, re.IGNORECASE)
+		if mnum:
+			num = mnum.groups()[0]
+			return lang.num2py(num)
+	
+		# since our boolean types also cast as lang.symb, we disallow nodes with these names.
+		# Yes/No/True/False/On/Off are thus the only reserved keywords in the language.
+		if re.match(lang.yes+lang.linecomment, text, re.IGNORECASE):
+			return True
+		if re.match(lang.no+lang.linecomment, text, re.IGNORECASE):
+			return False
+		
+		# A symbol or a list of symbols.
+		symbs = re.match(r"^("+lang.symb+")(\s+"+lang.symb+")*"+lang.linecomment, text, re.IGNORECASE)
+		# If only one symbol is detected, return the symbol. Otherwise
+		# return the list of symbols which has to be understood correctly.
+		if symbs:
+			return unlistOne(map(symbol, removeNone(symbs.groups())))
+		
+		# A list of numbers. The list follows python syntax: (1,2,3) or [1,2,3]
+		list_open_bracket = r"[(\[]"
+		list_close_bracket = r"[)\]]"
+		list_sep = "," # comma seperates values
+		nums = re.match(list_open_bracket +"("+ "(?:" + lang.anum + "\s*"+list_sep+"\s*)+" + lang.anum +")"+ list_close_bracket + lang.linecomment, text, re.IGNORECASE)
+		if nums:
+			bracket_content = first(nums.groups())
+			all_numbers = re.findall(lang.anum, bracket_content)
+			return map(lang.num2py, all_numbers)
+		
+		
+		# this does not work because of
+		
+		"""
+		"""
+		
+		return text
+		"""
 		
 		# We use python's parser for both understanding the data structure
 		# and removing pythonic line comments such as "#".
@@ -380,20 +446,11 @@ class lang:
 		except (ValueError, SyntaxError):
 			# This is most likely a string or something weird
 			
-			if re.match(r"^(Yes|True|On)"+lang.linecomment, text, re.IGNORECASE):
-				return True
-			if re.match(r"^(No|False|Off)"+lang.linecomment, text, re.IGNORECASE):
-				return False
-			
-			# A symbol or a list of symbols.
-			symbs = re.match(r"^("+lang.symb+")(\s+"+lang.symb+")*"+lang.linecomment, text, re.IGNORECASE)
-			# If only one symbol is detected, return the symbol. Otherwise
-			# return the list of symbols which has to be understood correctly.
-			if symbs:
-				return unlistOne(map(symbol, removeNone(symbs.groups())))
+
 			
 			return text
 		return text
+		"""
 	
 	@classmethod
 	def rhs2string(cls, rhs):
@@ -401,6 +458,8 @@ class lang:
 			return rhs.canonical()
 		if isa(rhs,lang.evalstr):
 			return '"%s"' % rhs.text
+		elif isa(rhs, [str,unicode]):
+			return '"%s"' % rhs
 		if isa(rhs,lang.primitives):
 			return str(rhs)
 		else:
@@ -442,7 +501,7 @@ class Rel:
 
 	def evaluate_rhs(self, *arg):
 		if callable(self.r):
-			self.r = self.r.value(*arg)
+			self.r = self.r(*arg) # was self.r.value for some reason
 		return self.r
 	
 	def add_prefix(self, path): # to be updated or removed
@@ -514,7 +573,7 @@ class mexagraph:
 			if attr['op'] == self.P:
 				if right.value == first:
 					#print "Looking for %s, Found %s" % (left,first)
-					return self.get_path_down(left.except_base(), right)
+					return self.get_path_down(left.except_base(), right, silent_failure=silent_failure)
 				else:
 					#print "No success: %s != %s" % (right,first)
 					pass
@@ -639,7 +698,7 @@ class mexagraph:
 		pass
 		# TOD BE DONE.
 		
-	def evaluate_to_mexafile(self, left=term.root, stack=tuple(), max_rec=10):
+	def evaluate_to_mexafile(self, left=term.root, stack=tuple(), max_rec=10, sort_by='input'):
 		"""
 		Correctly resolves all equalities and directed equalities to an oplist aka a mexafile.
 		Current Limitations:
@@ -649,13 +708,24 @@ class mexagraph:
 		if max_rec == 0:
 			raise ValueError("self.Path is too deep. at %s, stack=%s" % (left,stack))
 		ret = []
-		for right, attr in self.G[left].iteritems():
+		# this is an absurd hack which uses the unique item numbering for restoring the
+		# order of the edges in the mexafile (ie. give them out in the order they were read in).
+		if sort_by == 'input':
+			### Sort by order of input:
+			sort_edges = unpack(lambda itm,attr: itm.counter if isa(itm,term) else itm)
+		elif sort_by == 'name':
+			### Sort by symbol name:
+			sort_edges = unpack(lambda itm,attr: itm.value if isa(itm,term) else itm)
+		else:
+			raise ValueError("sort_by=%s not understood, only input/name allowed."%sort_by)
+		
+		for right, attr in sorted(self.G[left].iteritems(), key=sort_edges):
 			if attr['op'] == self.P:
 				# put onto the stack:
 				newstack = stack + tuplize(Rel(left, right, self.P, attr['src']))
 				#right_path = symbol(right.value).add_prefix(left_path)
 				#print "At %s, %s: Visiting %s, %s" % (left, left_path, right, right_path)
-				ret += self.evaluate_to_mexafile(right, newstack, max_rec=max_rec-1)
+				ret += self.evaluate_to_mexafile(right, newstack, max_rec=max_rec-1, sort_by=sort_by)
 			elif attr['op'] == self.E:
 				if isa(right, term):
 					if right in [rel.l for rel in stack]:
@@ -665,7 +735,7 @@ class mexagraph:
 					else:
 						# follow the equals with same path
 						newstack = stack + tuplize(Rel(left, right, self.E, attr['src']))
-						ret += self.evaluate_to_mexafile(right, newstack, max_rec=max_rec-1)
+						ret += self.evaluate_to_mexafile(right, newstack, max_rec=max_rec-1, sort_by=sort_by)
 				else:
 					# make an attribute node.
 					newstack = stack + tuplize(Rel(left, right, self.E, attr['src']))
@@ -702,7 +772,7 @@ class mexafile:
 		return iter(self.ops)
 	def __len__(self):
 		return len(self.ops)
-	
+
 	def add_source(self, something): # chainable
 		for op in self.ops:
 			op.src.add_source(something)
@@ -737,6 +807,22 @@ class mexafile:
 			oplines = [oplines]
 		oplist = removeNone(sourceline.sourcemap(oplines, source_name).map(lang.Rel_from_textline))
 		return cls(oplist)
+	
+	def query(self, root='', exclude_root=False):
+		"""
+		Get the assignment tree based on some root (which may be string, list, symbol).
+		Returns a new operations instance.
+		Maintains the order of operations as they appear.
+		"""
+		if not isa(root,symbol): root = symbol(root)
+		# Search for all symbols which are *below* the root
+		# on symbols:
+		# tree = { lhs : rhs for lhs,rhs in self.symbols.iteritems() if root in lhs.ancestors() }
+		# on the oplist:
+		return mexafile([ op for op in self.ops 
+			if root in op.l.ancestors() # root="foo", include "foo/bar" and "foo/bar/baz"
+			or (root == op.l and not exclude_root)  # root="foo", include "foo" itself.
+		])
 	
 
 	def evaluate_symbol(self, symb, evaluator, inplace=True, eliminate=True, max_rec=10):
@@ -793,27 +879,35 @@ class mexafile:
 			if isa(op.r,list):
 				# we do support multiple RHS values, i.e. a syntax like
 				#  a += b c d  <=> equals(a, sourced([b,c,d], ...))
-				return flatten2d([append(o, operations) for o in op.r])
+				return flatten2d([append(Rel(op.l, op_ri,'append',op.src), operations) for op_ri in op.r])
 			
 			# name of the node to create below the lhs.
 			if isa(op.r, symbol):
 				name = op.r.node()
 			else:
-				# come up with some name describing this object
-				# TODO: Name should be improved.
-				name =  hex(abs(hash( op.r )%2**30))
+				# a dumb way to come up with a number:
+				op_nodes = operations.query(op.l)
+				op_nodes = potentialFlatten2D([opi.r for opi in op_nodes.ops])
+				try:
+					i_op_node = op_nodes.index(op.r)
+					#name = "n%iof%i" % (i_op_node, num_op_nodes)
+					name = "n%i" % i_op_node
+				except:
+					# something weird happened and we can only come up with a element-local name
+					name = "l" + hex(abs(hash( op.r )%2**30))
 				
 			return mexafile([ Rel(symbol(name).add_prefix(op.l), op.r, 'equals', op.src) ])
 		
 		def prepare_equal(op, operations):
-			if isa(op.r.value, list):
+			if isa(op.r, list):
 				# lists get created by rhs2python i.e. with something like a = (1,2,3)
 				def listToAppends(i,vi): #for i,vi in enumerate(op.r.value):
-					if isa(vi,symbol.primitives):
-						return Rel(symbol("l%d"%i).add_prefix(op.l), vi, 'equals', op.src.add_source("list expansion"))
+					if isa(vi,lang.primitives):
+						#return Rel(symbol("l%d"%i).add_prefix(op.l), vi, 'equals', op.src.add_source("list expansion"))
+						return Rel(op.l, vi, 'append', op.src.add_source("list expansion"))
 					else:
-						raise ValueError("self.evaluate_symbol('include', include)Found illegal non-primitive value in RHS of assignment operation "+str(op))
-				return map(listToAppends, enumerate(op.r.value))
+						raise ValueError("Found illegal non-primitive value in RHS of assignment operation: %s. You probably wanted to use the append += operation."%str(op))
+				return map(unpack(listToAppends), enumerate(op.r))
 			else:
 				return [op]
 		
@@ -822,9 +916,12 @@ class mexafile:
 			return operations.graph().evaluate_to_mexafile().ops
 		
 		self.evaluate_symbol('include', include, inplace=inplace)
+		self.evaluate_symbol('equals', prepare_equal, eliminate=False, inplace=inplace)
 		self.evaluate_symbol('append', append, inplace=inplace)
-		self.evaluate_symbol('equal', prepare_equal, eliminate=False, inplace=inplace)
 		self.evaluate_all_symbols(equalities, inplace=inplace)
+		
+		# + evaluate strings?
+		
 		# as a last step, should look for inconsistencies or check whether all data
 		# have correctly been evaluated.
 
@@ -837,11 +934,11 @@ class mexafile:
 		for rel in self.ops:
 			if rel.l == sv:
 				return rel.r
-		raise ValueError("Variable '%s' not defined but used in %s" % (varname,src.verbose()))
+		raise ValueError("Variable '%s' not defined but used in %s" % (varname,src))
 	
 	def resolver_for(self, rel):
 		"Returns a function for resolving a variable. Used for the evalstr() instances."
-		return lambda varname: operations.resolve_symbol(rel.r, varname, rel.src)
+		return lambda varname: self.resolve_symbol(varname, src=rel.src) # what about passing "rel.r" for local variables?
 
 	def add_prefix(self, path):
 		"Return a new operations list where each lhs is prefixed with path"
@@ -873,7 +970,15 @@ parser.add_argument('--outfile', nargs='?', type=argparse.FileType('w'), default
 	metavar='FILENAME', help="Output file to write to. If no file is given, write to stdout.")
 args = parser.parse_args()
 
+# appending stuff to any file, as a root
+global_mexa_information = [
+	# mexa = path to the current script directory
+	Rel(symbol("mexa"), os.path.dirname(os.path.realpath(__file__)), "equals", sourceline.from_python()),
+]
+# -> should move to include file lookup paths instead.
+
 mf = mexafile.from_filehandle(args.infile)
+mf.ops = global_mexa_information + mf.ops
 mf.evaluate()
 
 g = mf.graph()
@@ -894,11 +999,6 @@ mf.toGraph("graph")
 
 # could do here also --env which then adds all or requested environment variables below env/
 
-# appending stuff to any file, as a root
-#mf.ops += [
-	# mexa = path to the current script directory
-	# Rel(symbol("mexa"), os.path.dirname(os.path.realpath(__file__), "equals", sourceline.from_python())),
-#]
 
 #sys.exit() # stop here for the time being
 
