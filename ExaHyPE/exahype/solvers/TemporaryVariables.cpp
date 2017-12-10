@@ -21,8 +21,10 @@
 #include <cstring> //memset
 
 #include "tarch/Assertions.h"
+#include "tarch/multicore/MulticoreDefinitions.h"
 
 exahype::solvers::PredictionTemporaryVariables::PredictionTemporaryVariables() {}
+
 
 double* exahype::solvers::allocateArray( std::vector<int>& heapIndices, const int size ) {
   //don't need to allocate anything
@@ -32,7 +34,8 @@ double* exahype::solvers::allocateArray( std::vector<int>& heapIndices, const in
 
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
   const int heapIndex = exahype::DataHeap::getInstance().createData(size,size,
-      exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
+    exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired
+  );
   lock.free();
 
   auto& vector = exahype::DataHeap::getInstance().getData(heapIndex);
@@ -43,11 +46,16 @@ double* exahype::solvers::allocateArray( std::vector<int>& heapIndices, const in
   return vector.data();
 }
 
+
 void exahype::solvers::freeArrays( std::vector<int>& heapIndices ) {
   for (int i : heapIndices) {
     assertion(exahype::DataHeap::getInstance().isValidIndex(i));
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
-    exahype::DataHeap::getInstance().deleteData(i,true/*recycle*/);
+
+    const bool doRecycle = true;
+    exahype::DataHeap::getInstance().deleteData(
+      i,
+      doRecycle);
     lock.free();
   }
 

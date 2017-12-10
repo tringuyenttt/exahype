@@ -571,10 +571,12 @@ void exahype::plotters::plotPatchIfAPlotterIsActive(
     if (plotter->plotDataFromSolver(solverNumber)) {
       tarch::multicore::Lock lock(exahype::plotters::SemaphoreForPlotting);
       plotter->plotPatch(cellDescriptionsIndex,element);
+      lock.free();
     }
   }
 }
 
+// TODO(Dominic): Get rid of the return value and only do the "side effects"
 bool exahype::plotters::startPlottingIfAPlotterIsActive(double currentTimeStamp) {
   bool result = false;
   for (const auto& p : RegisteredPlotters) {

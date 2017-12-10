@@ -128,6 +128,10 @@ private:
 
   /**
    * No data needs to be synchronised between masters and workers.
+   *
+   * \note Make sure that you return true in a
+   * previous iteration in prepareSendToWorker
+   * where you performed a broadcast to the worker.
    */
   peano::CommunicationSpecification communicationSpecification() const;
 
@@ -195,13 +199,17 @@ private:
   void mergeWithWorkerThread(const SolutionUpdate& workerThread);
 #endif
 
-
-  //
-  // Below every method is nop.
-  //
-  // ==================================
-
 #ifdef Parallel
+  /**
+   * Nop.
+   */
+  void prepareSendToMaster(
+      exahype::Cell& localCell, exahype::Vertex* vertices,
+      const peano::grid::VertexEnumerator& verticesEnumerator,
+      const exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      const exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
    * Nop.
@@ -218,16 +226,24 @@ private:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
       int worker, const exahype::State& workerState,
       exahype::State& masterState);
+
   /**
-   * Nop.
+   * Has to return true in this iteration and in the previous iteration
+   * (by any other adapter).
    */
-  void prepareSendToMaster(
-      exahype::Cell& localCell, exahype::Vertex* vertices,
-      const peano::grid::VertexEnumerator& verticesEnumerator,
-      const exahype::Vertex* const coarseGridVertices,
+  bool prepareSendToWorker(
+      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
+      int worker);
+
+  //
+  // Below every method is nop.
+  //
+  // ==================================
 
   /**
    * Nop.
@@ -272,17 +288,7 @@ private:
       exahype::Cell& localCell, const exahype::Cell& masterOrWorkerCell,
       int fromRank, const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level);
-  /**
-   * Nop.
-   */
-  bool prepareSendToWorker(
-      exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      exahype::Vertex* const coarseGridVertices,
-      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      exahype::Cell& coarseGridCell,
-      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      int worker);
+
   /**
    * Nop.
    */

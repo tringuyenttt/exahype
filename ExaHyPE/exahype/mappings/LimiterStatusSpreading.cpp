@@ -28,14 +28,11 @@
 
 tarch::logging::Log exahype::mappings::LimiterStatusSpreading::_log("exahype::mappings::LimiterStatusSpreading");
 
-/**
- * @todo Please tailor the parameters to your mapping's properties.
- */
 peano::CommunicationSpecification
 exahype::mappings::LimiterStatusSpreading::communicationSpecification() const {
   return peano::CommunicationSpecification(
       peano::CommunicationSpecification::ExchangeMasterWorkerData::
-          SendDataAndStateBeforeFirstTouchVertexFirstTime, // TODO(Dominic): Cannot mask out Master-Worker exchange - technically I should be able too. Probably the reduction stuff.
+          MaskOutMasterWorkerDataAndStateExchange,
       peano::CommunicationSpecification::ExchangeWorkerMasterData::
           SendDataAndStateAfterLastTouchVertexLastTime,
       true);
@@ -144,7 +141,10 @@ void exahype::mappings::LimiterStatusSpreading::endIteration(exahype::State& sol
 
       limitingADERDG->updateNextMeshUpdateRequest(_solverFlags._meshUpdateRequest[solverNumber]);
       limitingADERDG->updateNextAttainedStableState(!limitingADERDG->getNextMeshUpdateRequest());
-      limitingADERDG->updateNextLimiterDomainChange(_solverFlags._limiterDomainChange[solverNumber]);
+      if (limitingADERDG->getNextMeshUpdateRequest()==true) {
+        limitingADERDG->updateNextLimiterDomainChange(
+            exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate);
+      }
 
       limitingADERDG->setNextMeshUpdateRequest();
       limitingADERDG->setNextLimiterDomainChange();
@@ -200,27 +200,22 @@ void exahype::mappings::LimiterStatusSpreading::enterCell(
     for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      const int element =
-          solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+      const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+      const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
       if (
-          spreadLimiterStatus(solver)
-          &&
+          spreadLimiterStatus(solver) &&
           element!=exahype::solvers::Solver::NotFound
       ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
         limitingADERDG->updateLimiterStatusDuringLimiterStatusSpreading(
-            fineGridCell.getCellDescriptionsIndex(),element);
+            cellDescriptionsIndex,element);
 
         bool meshUpdateRequest =
             limitingADERDG->
             evaluateLimiterStatusRefinementCriterion(
-                fineGridCell.getCellDescriptionsIndex(),element);
+                cellDescriptionsIndex,element);
 
         _solverFlags._meshUpdateRequest[solverNumber] |= meshUpdateRequest;
-        if (meshUpdateRequest) {
-          _solverFlags._limiterDomainChange[solverNumber] =
-              exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate;
-        }
       }
     }
 
@@ -243,6 +238,8 @@ bool exahype::mappings::LimiterStatusSpreading::prepareSendToWorker(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker) {
+  logTraceIn( "prepareSendToWorker(...)" );
+  logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
   return true;
 }
 
@@ -281,6 +278,8 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     const exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+  logTraceInWith2Arguments( "prepareSendToMaster(...)", localCell, verticesEnumerator.toString() );
+
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
@@ -291,6 +290,8 @@ void exahype::mappings::LimiterStatusSpreading::prepareSendToMaster(
           verticesEnumerator.getLevel());
     }
   }
+
+  logTraceOut( "prepareSendToMaster(...)" );
 }
 
 void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
@@ -305,6 +306,8 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
+  logTraceIn( "mergeWithMaster(...)" );
+
   // Merge global solver states
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -316,6 +319,8 @@ void exahype::mappings::LimiterStatusSpreading::mergeWithMaster(
           fineGridVerticesEnumerator.getLevel());
     }
   }
+
+  logTraceOut( "mergeWithMaster(...)" );
 }
 
 //

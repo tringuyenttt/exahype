@@ -124,9 +124,8 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     _localState = solverState;
 
-    bool plot = exahype::plotters::startPlottingIfAPlotterIsActive(
+    exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinSolverTimeStampOfAllSolvers());
-    assertion(!plot || exahype::State::getBatchState()==exahype::State::BatchState::NoBatch);
 
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       solver->setNextMeshUpdateRequest();
@@ -357,6 +356,7 @@ void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
@@ -366,8 +366,10 @@ void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
     receivedCell.receiveDataFromMasterPerCell(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
         receivedVerticesEnumerator.getCellCenter(),
+        receivedVerticesEnumerator.getCellSize(),
         receivedVerticesEnumerator.getLevel());
   }
+
 }
 
 void exahype::mappings::FusedTimeStep::mergeWithWorker(
@@ -375,8 +377,7 @@ void exahype::mappings::FusedTimeStep::mergeWithWorker(
     const tarch::la::Vector<DIMENSIONS, double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    localCell.mergeWithMasterDataPerCell(
-        receivedMasterCell,cellSize);
+    localCell.mergeWithMasterDataPerCell( cellSize );
   }
 }
 
@@ -397,8 +398,8 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
 
     localCell.reduceDataToMasterPerCell(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
-        localCell.getCellDescriptionsIndex(),
         verticesEnumerator.getCellCenter(),
+        verticesEnumerator.getCellSize(),
         verticesEnumerator.getLevel());
   }
 }

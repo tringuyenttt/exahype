@@ -239,11 +239,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   tarch::multicore::Core::getInstance().configure(numberOfThreads);
   tarch::multicore::logThreadAffinities();
 
-  #ifdef SharedTBBInvade
-  tarch::multicore::setMaxNumberOfRunningBackgroundThreads(-1);
-  #else
   tarch::multicore::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
-  #endif
 
   switch (_parser.getMulticoreOracleType()) {
   case Parser::MulticoreOracleType::Dummy:
@@ -253,12 +249,14 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
       new peano::datatraversal::autotuning::OracleForOnePhaseDummy(
          true,  //   bool useMultithreading                  = true,
          0,     //   int  grainSizeOfUserDefinedRegions      = 0,
-/*
-         #if defined(SharedOMP) // Pipelining does not pay off for OpenMP (yet)
-         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::DoNotSplit,
+
+     #if defined(SharedOMP) // Pipelining does not pay off for OpenMP (yet)
+         peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
          false, //  bool pipelineDescendProcessing          = false,
          false,  //   bool pipelineAscendProcessing           = false,
-         #elif defined(SharedTBBInvade)
+		 #else
+		 /*
+		 #elif defined(SharedTBBInvade)
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::DoNotSplit,
          false, //  bool pipelineDescendProcessing          = false,
          false,  //   bool pipelineAscendProcessing           = false,
@@ -267,7 +265,7 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
          peano::datatraversal::autotuning::OracleForOnePhaseDummy::SplitVertexReadsOnRegularSubtree::Split,
          true, //  bool pipelineDescendProcessing
          true, //   bool pipelineAscendProcessing
-//         #endif
+    #endif
          27, //   int  smallestProblemSizeForAscendDescend  = tarch::la::aPowI(DIMENSIONS,3*3*3*3/2),
          3, //   int  grainSizeForAscendDescend          = 3,
          1, //   int  smallestProblemSizeForEnterLeaveCell = tarch::la::aPowI(DIMENSIONS,9/2),
@@ -557,8 +555,6 @@ int exahype::runners::Runner::run() {
   if ( _parser.isValid() ) {
     initHeaps();
 
-    multiscalelinkedcell::HangingVertexBookkeeper::getInstance().disableInheritingOfCoarseGridIndices();
-
     exahype::State::FuseADERDGPhases                = _parser.getFuseAlgorithmicSteps();
     exahype::State::WeightForPredictionRerun        = _parser.getFuseAlgorithmicStepsFactor();
 
@@ -652,7 +648,7 @@ void exahype::runners::Runner::plotMeshSetupInfo(
   logInfo("createGrid()",
            "grid setup iteration #" << meshSetupIterations <<
            ", run one more iteration=" <<  repository.getState().continueToConstructGrid() ||
-                                            exahype::solvers::Solver::oneSolverHasNotAttainedStableState();
+                                            exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
    );
   #endif
 
@@ -1000,7 +996,7 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
   repository.iterate();
 }
 
-void exahype::runners::Runner::updateMeshAndSubdomains(
+void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
   // 1. All solvers drop their MPI messages and broadcast time step data
   repository.switchToBroadcastGlobalDataAndDropNeighbourMessages();
@@ -1013,6 +1009,11 @@ void exahype::runners::Runner::updateMeshAndSubdomains(
     repository.iterate(
         exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell(),false);
 
+    if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedGlobalRecomputation()) {
+      logInfo("updateMeshAndSubdomains(...)","one solver requested global recomputation");
+    }
+
+    // TODO(Dominic): Need a broadcast again if global recomputation
     logInfo("updateMeshAndSubdomains(...)","perform global rollback (if applicable)");
     repository.switchToGlobalRollback();
     repository.iterate(1,false);
@@ -1196,7 +1197,7 @@ void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
 
   if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ||
       exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalOrGlobalRecomputation()) {
-    updateMeshAndSubdomains(repository,true);
+    updateMeshOrLimiterDomain(repository,true);
   }
 
   if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
@@ -1231,7 +1232,7 @@ void exahype::runners::Runner::runOneTimeStepWithThreeSeparateAlgorithmicSteps(
 
   if (exahype::solvers::Solver::oneSolverRequestedMeshUpdate() ||
       exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalOrGlobalRecomputation()) {
-    updateMeshAndSubdomains(repository,false);
+    updateMeshOrLimiterDomain(repository,false);
   }
 
   printTimeStepInfo(1,repository);

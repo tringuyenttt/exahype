@@ -53,6 +53,13 @@ class exahype::mappings::FinaliseMeshRefinement {
   static tarch::logging::Log _log;
 
   /**
+   * Flag indicating that one solver requested
+   * a mesh update.
+   * Is set in beginIteration(...).
+   */
+  static bool OneSolverRequestedMeshUpdate;
+
+  /**
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
@@ -75,6 +82,15 @@ class exahype::mappings::FinaliseMeshRefinement {
 
  public:
   /**
+   * Reduce data from the worker to the master.
+   *
+   * \note Make sure that you return true in a
+   * previous iteration in prepareSendToWorker
+   * where you performed a broadcast to the worker.
+   */
+  peano::CommunicationSpecification communicationSpecification() const;
+
+  /**
    * Finalise the mesh refinement in all cell descriptions registered
    * for a cell.
    *
@@ -89,11 +105,11 @@ class exahype::mappings::FinaliseMeshRefinement {
   peano::MappingSpecification ascendSpecification(int level) const;
   peano::MappingSpecification descendSpecification(int level) const;
 
-  peano::CommunicationSpecification communicationSpecification() const;
-
   /**
    * Reset the following flags (to true):
    * exahype::mappings::MeshRefinement::IsFirstIteration
+   *
+   * Initialise the _oneSolverHasRequestedMeshUpdate flag.
    *
    * <h2> Time stepping </h2>
    * Start iteration/grid sweep.
@@ -307,6 +323,9 @@ class exahype::mappings::FinaliseMeshRefinement {
   /**
    * Return true since we want to reduce time step data from
    * the worker to the master.
+   *
+   * \note Has to return true in this iteration and in the previous iteration
+   * (by any other adapter).
    */
   bool prepareSendToWorker(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,

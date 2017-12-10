@@ -7,7 +7,7 @@ peano::CommunicationSpecification   exahype::adapters::MeshRefinementAndPlotGrid
     &  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.communicationSpecification()
     &  _map2AugmentedAMRTreePlot2d.communicationSpecification()
     &  _map2LoadBalancing.communicationSpecification()
-    &  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.communicationSpecification()
+    &  _map2LevelwiseAdjacencyBookkeeping.communicationSpecification()
 
   ;
 }
@@ -19,7 +19,7 @@ peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid::touc
     &  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.touchVertexLastTimeSpecification(level)
     &  _map2AugmentedAMRTreePlot2d.touchVertexLastTimeSpecification(level)
     &  _map2LoadBalancing.touchVertexLastTimeSpecification(level)
-    &  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.touchVertexLastTimeSpecification(level)
+    &  _map2LevelwiseAdjacencyBookkeeping.touchVertexLastTimeSpecification(level)
 
   ;
 }
@@ -31,7 +31,7 @@ peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid::touc
     &  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.touchVertexFirstTimeSpecification(level)
     &  _map2AugmentedAMRTreePlot2d.touchVertexFirstTimeSpecification(level)
     &  _map2LoadBalancing.touchVertexFirstTimeSpecification(level)
-    &  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.touchVertexFirstTimeSpecification(level)
+    &  _map2LevelwiseAdjacencyBookkeeping.touchVertexFirstTimeSpecification(level)
 
   ;
 }
@@ -43,7 +43,7 @@ peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid::ente
     &  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.enterCellSpecification(level)
     &  _map2AugmentedAMRTreePlot2d.enterCellSpecification(level)
     &  _map2LoadBalancing.enterCellSpecification(level)
-    &  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.enterCellSpecification(level)
+    &  _map2LevelwiseAdjacencyBookkeeping.enterCellSpecification(level)
 
   ;
 }
@@ -55,7 +55,7 @@ peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid::leav
     &  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.leaveCellSpecification(level)
     &  _map2AugmentedAMRTreePlot2d.leaveCellSpecification(level)
     &  _map2LoadBalancing.leaveCellSpecification(level)
-    &  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.leaveCellSpecification(level)
+    &  _map2LevelwiseAdjacencyBookkeeping.leaveCellSpecification(level)
 
   ;
 }
@@ -67,7 +67,7 @@ peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid::asce
     &  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.ascendSpecification(level)
     &  _map2AugmentedAMRTreePlot2d.ascendSpecification(level)
     &  _map2LoadBalancing.ascendSpecification(level)
-    &  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.ascendSpecification(level)
+    &  _map2LevelwiseAdjacencyBookkeeping.ascendSpecification(level)
 
   ;
 }
@@ -79,7 +79,7 @@ peano::MappingSpecification   exahype::adapters::MeshRefinementAndPlotGrid::desc
     &  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.descendSpecification(level)
     &  _map2AugmentedAMRTreePlot2d.descendSpecification(level)
     &  _map2LoadBalancing.descendSpecification(level)
-    &  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.descendSpecification(level)
+    &  _map2LevelwiseAdjacencyBookkeeping.descendSpecification(level)
 
   ;
 }
@@ -99,7 +99,7 @@ exahype::adapters::MeshRefinementAndPlotGrid::MeshRefinementAndPlotGrid(const Me
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1(masterThread._map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1) , 
   _map2AugmentedAMRTreePlot2d(masterThread._map2AugmentedAMRTreePlot2d) , 
   _map2LoadBalancing(masterThread._map2LoadBalancing) , 
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4(masterThread._map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4) 
+  _map2LevelwiseAdjacencyBookkeeping(masterThread._map2LevelwiseAdjacencyBookkeeping) 
 
 {
 }
@@ -110,7 +110,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::mergeWithWorkerThread(const M
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.mergeWithWorkerThread(workerThread._map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1);
   _map2AugmentedAMRTreePlot2d.mergeWithWorkerThread(workerThread._map2AugmentedAMRTreePlot2d);
   _map2LoadBalancing.mergeWithWorkerThread(workerThread._map2LoadBalancing);
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.mergeWithWorkerThread(workerThread._map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4);
+  _map2LevelwiseAdjacencyBookkeeping.mergeWithWorkerThread(workerThread._map2LevelwiseAdjacencyBookkeeping);
 
 }
 #endif
@@ -129,7 +129,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::createHangingVertex(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2AugmentedAMRTreePlot2d.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LoadBalancing.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2LevelwiseAdjacencyBookkeeping.createHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 
 }
@@ -148,7 +148,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::destroyHangingVertex(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2AugmentedAMRTreePlot2d.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LoadBalancing.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2LevelwiseAdjacencyBookkeeping.destroyHangingVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -166,7 +166,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::createInnerVertex(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2AugmentedAMRTreePlot2d.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LoadBalancing.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2LevelwiseAdjacencyBookkeeping.createInnerVertex(fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -184,7 +184,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::createBoundaryVertex(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2AugmentedAMRTreePlot2d.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LoadBalancing.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2LevelwiseAdjacencyBookkeeping.createBoundaryVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -202,7 +202,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::destroyVertex(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2AugmentedAMRTreePlot2d.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LoadBalancing.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2LevelwiseAdjacencyBookkeeping.destroyVertex( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -220,7 +220,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::createCell(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2AugmentedAMRTreePlot2d.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2LoadBalancing.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2LevelwiseAdjacencyBookkeeping.createCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -238,7 +238,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::destroyCell(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2AugmentedAMRTreePlot2d.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2LoadBalancing.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2LevelwiseAdjacencyBookkeeping.destroyCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -256,7 +256,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::mergeWithNeighbour(
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
    _map2AugmentedAMRTreePlot2d.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
    _map2LoadBalancing.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
+   _map2LevelwiseAdjacencyBookkeeping.mergeWithNeighbour( vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
 }
 
@@ -272,7 +272,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::prepareSendToNeighbour(
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.prepareSendToNeighbour( vertex, toRank, x, h, level );
    _map2AugmentedAMRTreePlot2d.prepareSendToNeighbour( vertex, toRank, x, h, level );
    _map2LoadBalancing.prepareSendToNeighbour( vertex, toRank, x, h, level );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.prepareSendToNeighbour( vertex, toRank, x, h, level );
+   _map2LevelwiseAdjacencyBookkeeping.prepareSendToNeighbour( vertex, toRank, x, h, level );
 
 }
 
@@ -288,7 +288,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::prepareCopyToRemoteNode(
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
    _map2AugmentedAMRTreePlot2d.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
    _map2LoadBalancing.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
+   _map2LevelwiseAdjacencyBookkeeping.prepareCopyToRemoteNode( localVertex, toRank, x, h, level );
 
 }
 
@@ -304,7 +304,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::prepareCopyToRemoteNode(
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
    _map2AugmentedAMRTreePlot2d.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
    _map2LoadBalancing.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
+   _map2LevelwiseAdjacencyBookkeeping.prepareCopyToRemoteNode( localCell, toRank, x, h, level );
 
 }
 
@@ -321,7 +321,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::mergeWithRemoteDataDueToForkO
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
    _map2AugmentedAMRTreePlot2d.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
    _map2LoadBalancing.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
+   _map2LevelwiseAdjacencyBookkeeping.mergeWithRemoteDataDueToForkOrJoin( localVertex, masterOrWorkerVertex, fromRank, x, h, level );
 
 }
 
@@ -338,7 +338,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::mergeWithRemoteDataDueToForkO
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
    _map2AugmentedAMRTreePlot2d.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
    _map2LoadBalancing.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
+   _map2LevelwiseAdjacencyBookkeeping.mergeWithRemoteDataDueToForkOrJoin( localCell, masterOrWorkerCell, fromRank, x, h, level );
 
 }
 
@@ -358,7 +358,7 @@ bool exahype::adapters::MeshRefinementAndPlotGrid::prepareSendToWorker(
    result |= _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
    result |= _map2AugmentedAMRTreePlot2d.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
    result |= _map2LoadBalancing.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
-   result |= _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
+   result |= _map2LevelwiseAdjacencyBookkeeping.prepareSendToWorker( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker );
 
   return result;
 }
@@ -377,7 +377,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::prepareSendToMaster(
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
    _map2AugmentedAMRTreePlot2d.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
    _map2LoadBalancing.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+   _map2LevelwiseAdjacencyBookkeeping.prepareSendToMaster( localCell, vertices, verticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -401,7 +401,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::mergeWithMaster(
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
    _map2AugmentedAMRTreePlot2d.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
    _map2LoadBalancing.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
+   _map2LevelwiseAdjacencyBookkeeping.mergeWithMaster( workerGridCell, workerGridVertices, workerEnumerator, fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell, worker, workerState, masterState );
 
 }
 
@@ -422,7 +422,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::receiveDataFromMaster(
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
    _map2AugmentedAMRTreePlot2d.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
    _map2LoadBalancing.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
+   _map2LevelwiseAdjacencyBookkeeping.receiveDataFromMaster( receivedCell, receivedVertices, receivedVerticesEnumerator, receivedCoarseGridVertices, receivedCoarseGridVerticesEnumerator, receivedCoarseGridCell, workersCoarseGridVertices, workersCoarseGridVerticesEnumerator, workersCoarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -438,7 +438,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::mergeWithWorker(
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
    _map2AugmentedAMRTreePlot2d.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
    _map2LoadBalancing.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
+   _map2LevelwiseAdjacencyBookkeeping.mergeWithWorker( localCell, receivedMasterCell, cellCentre, cellSize, level );
 
 }
 
@@ -454,7 +454,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::mergeWithWorker(
    _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
    _map2AugmentedAMRTreePlot2d.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
    _map2LoadBalancing.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
-   _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
+   _map2LevelwiseAdjacencyBookkeeping.mergeWithWorker( localVertex, receivedMasterVertex, x, h, level );
 
 }
 #endif
@@ -473,7 +473,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::touchVertexFirstTime(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2AugmentedAMRTreePlot2d.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LoadBalancing.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2LevelwiseAdjacencyBookkeeping.touchVertexFirstTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -491,7 +491,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::touchVertexLastTime(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2AugmentedAMRTreePlot2d.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
   _map2LoadBalancing.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
+  _map2LevelwiseAdjacencyBookkeeping.touchVertexLastTime( fineGridVertex, fineGridX, fineGridH, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfVertex );
 
 }
 
@@ -509,7 +509,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::enterCell(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2AugmentedAMRTreePlot2d.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2LoadBalancing.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2LevelwiseAdjacencyBookkeeping.enterCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -527,7 +527,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::leaveCell(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2AugmentedAMRTreePlot2d.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
   _map2LoadBalancing.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
+  _map2LevelwiseAdjacencyBookkeeping.leaveCell( fineGridCell, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell, fineGridPositionOfCell );
 
 }
 
@@ -539,7 +539,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::beginIteration(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.beginIteration( solverState );
   _map2AugmentedAMRTreePlot2d.beginIteration( solverState );
   _map2LoadBalancing.beginIteration( solverState );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.beginIteration( solverState );
+  _map2LevelwiseAdjacencyBookkeeping.beginIteration( solverState );
 
 }
 
@@ -551,7 +551,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::endIteration(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.endIteration( solverState );
   _map2AugmentedAMRTreePlot2d.endIteration( solverState );
   _map2LoadBalancing.endIteration( solverState );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.endIteration( solverState );
+  _map2LevelwiseAdjacencyBookkeeping.endIteration( solverState );
 
 }
 
@@ -570,7 +570,7 @@ void exahype::adapters::MeshRefinementAndPlotGrid::descend(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
   _map2AugmentedAMRTreePlot2d.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
   _map2LoadBalancing.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
+  _map2LevelwiseAdjacencyBookkeeping.descend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
 
 }
 
@@ -587,6 +587,6 @@ void exahype::adapters::MeshRefinementAndPlotGrid::ascend(
   _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
   _map2AugmentedAMRTreePlot2d.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
   _map2LoadBalancing.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
-  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
+  _map2LevelwiseAdjacencyBookkeeping.ascend( fineGridCells, fineGridVertices, fineGridVerticesEnumerator, coarseGridVertices, coarseGridVerticesEnumerator, coarseGridCell );
 
 }

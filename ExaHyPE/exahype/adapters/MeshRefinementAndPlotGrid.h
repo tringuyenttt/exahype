@@ -22,7 +22,7 @@
  #include "exahype/adapters/MeshRefinementAndPlotGrid2VTKGridVisualiser_1.h"
  #include "exahype/mappings/AugmentedAMRTreePlot2d.h"
  #include "exahype/mappings/LoadBalancing.h"
- #include "exahype/adapters/MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4.h"
+ #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 
 
@@ -46,13 +46,13 @@ class exahype::adapters::MeshRefinementAndPlotGrid {
     typedef adapters::MeshRefinementAndPlotGrid2VTKGridVisualiser_1 Mapping1;
     typedef mappings::AugmentedAMRTreePlot2d Mapping2;
     typedef mappings::LoadBalancing Mapping3;
-    typedef adapters::MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4 Mapping4;
+    typedef mappings::LevelwiseAdjacencyBookkeeping Mapping4;
 
      Mapping0  _map2MeshRefinement;
      Mapping1  _map2MeshRefinementAndPlotGrid2VTKGridVisualiser_1;
      Mapping2  _map2AugmentedAMRTreePlot2d;
      Mapping3  _map2LoadBalancing;
-     Mapping4  _map2MeshRefinementAndPlotGrid2MultiscaleLinkedCell_4;
+     Mapping4  _map2LevelwiseAdjacencyBookkeeping;
 
 
   public:

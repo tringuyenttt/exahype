@@ -30,7 +30,7 @@ def extract_runtimes(table,legacy):
          If true, use old adapter names: ADERDGTimeStep,... Not the new ones: FusedTimeStep,...
     '''
     nonfusedAdapters = [ 
-                          "NeighbourDataMerging",
+                          "BroadcastGlobalDataAndDropNeighbourMessages",
                           "SolutionUpdate",
                           "Prediction" # substract one; exclude initialisation
                        ]

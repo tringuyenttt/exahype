@@ -143,7 +143,7 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	endif
 	
 	#TODO SVENK shouldn't have to go O0
-	FCOMPILER_CFLAGS  += -O0 -r8 -cpp -auto
+	FCOMPILER_CFLAGS  += -O2 -r8 -cpp -auto
 	# REMOVING "-fast" as it induces compiler bugs!
 	LINK_FORTRAN	  += -lifcore
 

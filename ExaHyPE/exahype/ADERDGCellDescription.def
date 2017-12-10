@@ -80,7 +80,11 @@ class exahype::records::ADERDGCellDescription {
    */
   parallelise persistent int parentIndex;
   
-  persistent bool isAugmented;
+  /**
+   * Flag indicating that a cell description is augmented,
+   * i.e. is a parent of virtual subcells.
+   */
+  parallelise persistent bool isAugmented;
  
   /**
    * Type of a cell description.

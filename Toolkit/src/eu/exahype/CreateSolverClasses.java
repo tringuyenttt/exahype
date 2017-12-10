@@ -14,6 +14,8 @@ import eu.exahype.node.ALimitingAderdgSolver;
 import eu.exahype.node.AProfiling;
 import eu.exahype.node.AProject;
 import eu.exahype.node.PSolver;
+import eu.exahype.node.AArchitecture;
+import eu.exahype.node.PArchitecture;
 import eu.exahype.solvers.Solver;
 import eu.exahype.solvers.SolverFactory;
 import eu.exahype.variables.Variables;
@@ -56,7 +58,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
     }
 
     if (node.getArchitecture()!=null) {
-      _microarchitecture = node.getArchitecture().getText().toLowerCase();
+      _microarchitecture = ( (eu.exahype.node.AArchitecture)( node.getArchitecture() )).getIdentifier().getText().toLowerCase();
     }
     else {
       _microarchitecture = "noarch";

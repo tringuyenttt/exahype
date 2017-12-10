@@ -57,15 +57,20 @@ private:
   static tarch::logging::Log _log;
 
   /**
+   * A state indicating if the mesh refinement has attained a stable state
+   * for each solver.
+   */
+  std::vector<bool> _attainedStableState;
+
+  /**
+   * Prepare all local variables.
+   */
+  void prepareLocalVariables();
+
+  /**
    * I use a copy of the state to determine whether I'm allowed to refine or not.
    */
   State _localState;
-
-  /**
-   * A semaphore that is locked if a thread calls while solver->updateStateInEnterCell
-   * or solver->updateStateInLeaveCell
-   */
-  static tarch::multicore::BooleanSemaphore _semaphore;
 
   /**
    * TODO(Tobias): Add docu.
@@ -120,20 +125,20 @@ public:
   peano::MappingSpecification touchVertexLastTimeSpecification(int level) const;
 
   /**
-   * We merge the limite status between neighbouring cells.
+   * We merge the limiter status between neighbouring cells.
    * We thus avoid fine grid races.
    */
   peano::MappingSpecification touchVertexFirstTimeSpecification(int level) const;
 
   /**
-   * Traverse the cells in serial. Might
-   * be relaxed when all semaphores are in place.
+   * Avoid fine grid races.  Run through the whole tree.
+   * Might be relaxed if vertex semaphores are in place.
    */
   peano::MappingSpecification enterCellSpecification(int level) const;
 
   /**
-   * Traverse the cells in serial. Might
-   * be relaxed when all semaphores are in place.
+   * Avoid fine grid races.  Run through the whole tree.
+   * Might be relaxed if vertex semaphores are in place.
    */
   peano::MappingSpecification leaveCellSpecification(int level) const;
 
@@ -148,9 +153,40 @@ public:
 #if defined(SharedMemoryParallelisation)
   /**
    * We copy over the veto flag from the master thread
+   * Initialise the worker's local variables.
    */
   MeshRefinement(const MeshRefinement& masterThread);
+
+  /**
+   * Merge with the workers local variables.
+   */
+  void mergeWithWorkerThread(const MeshRefinement& workerThread);
 #endif
+
+  /**
+   * Initialise all heaps.
+   *
+   * For each solver, reset the grid update requested flag
+   * to false.
+   *
+   * Further zero the time step sizes of the solver.
+   *
+   * <h2>MPI</h2>
+   * Finish the previous synchronous sends and
+   * start synchronous sending again.
+   */
+  void beginIteration(exahype::State& solverState);
+
+  /**
+   * For each solver, set the grid update requested flag
+   * for the next iteration.
+   *
+   * <h2>MPI</h2>
+   * If this rank is the global master, update the
+   * initial grid refinement strategy.
+   */
+  void endIteration(exahype::State& solverState);
+
   /**
    * TODO(Tobias): Add docu.
    */
@@ -200,25 +236,13 @@ public:
    *
    * TODO(Dominic): Update the docu
    *
-   * We distinguish among three different refinement modes:
-   *
-   * RefinementMode | Action
-   * ---------------|------------------------------
-   * Initial        | In this refinement mode, we evaluate the user's refinement criterion
-   *                | as well as the limiter's physical admissibility detection (PAD) criterion
-   *                | if a LimitingADERDGSolver is employed.
-   *                | [LimitingADERDGSolver] We aggressively refine all cells that do not satisfy the PAD down
-   *                | to the finest level specified by the user for a solver.
-   *                | The user's refinement criterion is used
-   *                | to resolve other features of the solution more accurately.
-   * APriori        | Refine the mesh according to the user's refinement criterion
-   *                | after a solution update has been performed.
-   * APosteriori    | [LimitingADERDGSolver] Ensure that cells which have been newly marked as Troubled
-   *                | and their next two neighbours always reside on the finest level of the grid.
-   *
-   * Open Issues:
-   * * TODO(Dominic): The refinement criteria have to consider the maximum depth of the adaptive mesh (supplied by the user)
-   * * TODO(Dominic): We have to merge the LimiterStatusSpreading with the mesh refinement
+   * In this refinement mode, we evaluate the user's refinement criterion
+   * as well as the limiter's physical admissibility detection (PAD) criterion
+   * if a LimitingADERDGSolver is employed.
+   * LimitingADERDGSolver We aggressively refine all cells that do not satisfy the PAD down
+   * to the finest level specified by the user for a solver.
+   * The user's refinement criterion is used
+   * to resolve other features of the solution more accurately.
    */
   void enterCell(
       exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -248,6 +272,32 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
 
   /**
+   * After a fork, Peano erases the master's cells.
+   * We plugin into these erases and deallocate heap data
+   * before the cells are erased.
+   */
+  void destroyCell(
+      const exahype::Cell& fineGridCell,
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
+
+  /**
+   * For all solvers, merge the metadata of neighbouring patches.
+   */
+  void touchVertexFirstTime(
+      exahype::Vertex& fineGridVertex,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
+      exahype::Vertex* const coarseGridVertices,
+      const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
+      exahype::Cell& coarseGridCell,
+      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
+
+  /**
    * TODO(Tobias): Add docu.
    *
    * TODO(Dominic): Update docu.
@@ -260,30 +310,6 @@ public:
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
-
-  /**
-   * Initialise all heaps.
-   *
-   * For each solver, reset the grid update requested flag
-   * to false.
-   *
-   * Further zero the time step sizes of the solver.
-   *
-   * <h2>MPI</h2>
-   * Finish the previous synchronous sends and
-   * start synchronous sending again.
-   */
-  void beginIteration(exahype::State& solverState);
-
-  /**
-   * For each solver, set the grid update requested flag
-   * for the next iteration.
-   *
-   * <h2>MPI</h2>
-   * If this rank is the global master, update the
-   * initial grid refinement strategy.
-   */
-  void endIteration(exahype::State& solverState);
 
 
 #ifdef Parallel
@@ -417,12 +443,6 @@ public:
    * Nop
    */
   virtual ~MeshRefinement();
-#if defined(SharedMemoryParallelisation)
-  /**
-   * Nop.
-   */
-  void mergeWithWorkerThread(const MeshRefinement& workerThread);
-#endif
 /**
  * Nop.
  */
@@ -450,28 +470,6 @@ public:
   */
  void destroyVertex(
      const exahype::Vertex& fineGridVertex,
-     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-     const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
-     exahype::Vertex* const coarseGridVertices,
-     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-     exahype::Cell& coarseGridCell,
-     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex);
- /**
-  * Nop.
-  */
- void destroyCell(
-     const exahype::Cell& fineGridCell,
-     exahype::Vertex* const fineGridVertices,
-     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-     exahype::Vertex* const coarseGridVertices,
-     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-     exahype::Cell& coarseGridCell,
-     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell);
- /**
-  * Nop.
-  */
- void touchVertexFirstTime(
-     exahype::Vertex& fineGridVertex,
      const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
      const tarch::la::Vector<DIMENSIONS, double>& fineGridH,
      exahype::Vertex* const coarseGridVertices,

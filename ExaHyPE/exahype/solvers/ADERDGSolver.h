@@ -84,6 +84,17 @@ public:
   static int MinimumAugmentationStatusForRefining;
 
   /**
+   * Semaphore for fine grid cells restricting volume data to a
+   * coarse grid parent which is a computationally intense operation.
+   */
+  static tarch::multicore::BooleanSemaphore RestrictionSemaphore;
+
+  /**
+   * Semaphore for fine grid cells accessing a coarse grid parent.
+   */
+  static tarch::multicore::BooleanSemaphore CoarseGridSemaphore;
+
+  /**
    * Rank-local heap that stores ADERDGCellDescription instances.
    *
    * \note This heap might be shared by multiple ADERDGSolver instances
@@ -210,18 +221,14 @@ private:
    * as well as in markForAugmentation(...) which is called from within
    * enterCell(...)
    */
-  bool markForRefinement(
-      CellDescription& pFine);
+  bool markForRefinement(CellDescription& pFine);
 
   /**
    * TODO(Dominic): Add docu.
    *
    * \note Not thread-safe!
    */
-  bool markForAugmentation(
-      CellDescription& pFine,
-      const tarch::la::Vector<THREE_POWER_D, int>& neighbourCellDescriptionIndices,
-      const bool onMasterWorkerBoundary);
+  bool markForAugmentation(CellDescription& pFine);
 
   /*
    * Change the erasing children request to a change children to descendants
@@ -305,7 +312,7 @@ private:
    * Initialise cell description of type Cell.
    * Initialise the refinement event with None.
    *
-   * \note This operations is not thread-safe
+   * \note This operations is thread-safe
    */
   void addNewCell(
       exahype::Cell& fineGridCell,
@@ -325,6 +332,17 @@ private:
    *
    * Additionally, copies the information if a face is inside
    * from the parent to the new child cell.
+   *
+   * Reset an augmentation request if the child cell does hold
+   * a Descendant or EmptyDescendant cell description with
+   * the same solver number.
+   *
+   * This scenario occurs if an augmentation request is triggered in
+   * enterCell().
+   *
+   * A similar scenario can never occur for refinement requests
+   * since only cell descriptions of type Cell can be refined.
+   * Ancestors can never request refinement.
    *
    * \note This operations is not thread-safe
    */
