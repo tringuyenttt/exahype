@@ -68,6 +68,12 @@
 
 #include "peano/datatraversal/TaskSet.h"
 
+#ifdef SharedTBBInvade
+#include "shminvade/SHMController.h"
+#include "shminvade/SHMSharedMemoryBetweenTasks.h"
+#endif
+
+
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
 exahype::runners::Runner::Runner(Parser& parser) :
@@ -325,17 +331,14 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
 
   #if  defined(SharedTBBInvade)
   double localData[3] = { 0.0, 1.0, 1.0 };
-  SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
+  shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3*sizeof(double));
   logInfo( "initSharedMemoryConfiguration()", "initialised local shared memory region with dummies" );
 
   #if defined(Asserts)
-  int myIndexWithinSharedUserData;
-  int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
-  
-  for (int k=0; k<ranksOnThisNode; k++) {
-    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
-    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
-    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
+  for (int k=0; k<_parser.getRanksPerNode(); k++) {
+    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,0)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,0)) );
+    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,1)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,1)) );
+    logInfo( "initSharedMemoryConfiguration()", "getSharedUserData<double>(k,2)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,2)) );
   }
   #endif
   #endif
@@ -675,8 +678,12 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   repository.switchToMeshRefinement();
 
   while (
+    (
       repository.getState().continueToConstructGrid() ||
       exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
+    )
+    &&
+    (meshSetupIterations<32)
   ) {
     repository.iterate();
     meshSetupIterations++;
@@ -687,6 +694,10 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     meshUpdate = true;
   }
 
+  if (meshSetupIterations>=32) {
+    logWarning( "createMesh(...)", "it seems that grid construction has entered infinite loop. Stopped it manually" );
+  }
+
   // a few extra iterations for the cell status flag spreading
   logInfo("createGrid()", "more status spreading.");
   int extraIterations =
@@ -694,9 +705,13 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
           5, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
           exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell());
   while (
+    (
       extraIterations > 0
       || repository.getState().continueToConstructGrid()
       || exahype::solvers::Solver::oneSolverHasNotAttainedStableState() // Further mesh refinement is possible
+    )
+    &&
+    ( extraIterations>-6 )
   ) {
     meshUpdate |=
         repository.getState().continueToConstructGrid()
@@ -709,6 +724,10 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
     plotMeshSetupInfo(repository,meshSetupIterations);
+  }
+
+  if (extraIterations<-1) {
+    logWarning( "createMesh(...)", "it seems that additional grid construction steps run into infinite loop. Stopped it manually" );
   }
 
   logInfo("createGrid(Repository)", "finished grid setup after " << meshSetupIterations << " iterations" );
@@ -806,21 +825,20 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
 void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
   #if defined(SharedTBBInvade)
-  // get data from the other guys
-  int myIndexWithinSharedUserData;
-  int ranksOnThisNode = SHMController::getSingleton()->updateSharedUserData(&myIndexWithinSharedUserData);
+  int ranksOnThisNode              = shminvade::SHMSharedMemoryBetweenTasks::getInstance().getNumberOfRegisteredProcesses();
+  int myIndexWithinSharedUserData  = shminvade::SHMSharedMemoryBetweenTasks::getInstance().getProcessIndexInSharedDataTable();
 
   std::vector<double>  t1;
   std::vector<double>  f;
   std::vector<double>  s;
   for (int k=0; k<ranksOnThisNode; k++) {
-    t1.push_back( SHMController::getSingleton()->getSharedUserData<double>(k,0) );
-    f.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,1) );
-    s.push_back(  SHMController::getSingleton()->getSharedUserData<double>(k,2) );
+    t1.push_back( shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,0) );
+    f.push_back(  shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,1) );
+    s.push_back(  shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,2) );
 
-    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,0)) );
-    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,1)) );
-    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (SHMController::getSingleton()->getSharedUserData<double>(k,2)) );
+    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,0)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,0)) );
+    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,1)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,1)) );
+    logDebug( "preProcessTimeStepInSharedMemoryEnvironment()", "getSharedUserData<double>(k,2)=" << (shminvade::SHMSharedMemoryBetweenTasks::getInstance().getSharedUserData<double>(k,2)) );
   }
 
   // ask for an optimal number of cores for local rank
@@ -828,7 +846,7 @@ void exahype::runners::Runner::preProcessTimeStepInSharedMemoryEnvironment() {
     peano::performanceanalysis::SpeedupLaws::getOptimalNumberOfThreads(
       myIndexWithinSharedUserData,
       t1,f,s,
-      SHMInvadeRoot::get_max_available_cores(),
+      shminvade::SHMController::getInstance().getMaxAvailableCores(),
       tarch::parallel::Node::getInstance().getRank() % _parser.getRanksPerNode()
     ),
     2
@@ -880,7 +898,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   //
   //
   double localData[3] = { amdahlsLaw.getSerialTime(), amdahlsLaw.getSerialCodeFraction(), amdahlsLaw.getStartupCostPerThread() };
-  SHMController::getSingleton()->setSharedUserData(localData,3*sizeof(double));
+  shminvade::SHMSharedMemoryBetweenTasks::getInstance().setSharedUserData(localData,3);
 
   logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "ranksOnThisNode=" << ranksOnThisNode );
   logDebug( "postProcessTimeStepInSharedMemoryEnvironment()", "localData[0]=" << localData[0] );
@@ -893,6 +911,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
 
   if (_parser.getSharedMemoryConfiguration().find("no-invade")==std::string::npos) {
+    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "retreat from my threads/cores" );
     tarch::multicore::Core::getInstance().configure( 1, false );
   }
 

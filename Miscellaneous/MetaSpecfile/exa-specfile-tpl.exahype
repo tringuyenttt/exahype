@@ -88,16 +88,16 @@ exahype-project {{ project.project_name }}
     // Note, if this constant string does not run throught the toolkit, try to remove parts of it
     // until it runs. Then try to replace these parts. For instance, you must not use certain keywords
     // for identifiers or values, such as the keyword "parameters".
-    constants          = {{ solver.constants|link_in_list }}
+    constants          = {{ solver.constants|link_in_list|indent(width=25) }}
     {% endif -%}
 
-    {% for plotter_name, plotter in solver.plotters.items() %}
-    plot {{plotter.type}}  {{plotter_name}}
+    {% for plotter in solver.plotters|tolist %}
+    plot {{plotter.type}}  {{plotter.name}}
       variables const = {{plotter.variables|count_variables }}
       time      = {{plotter.time}}
       repeat    = {{plotter.repeat}}
       output    = {{plotter.output}}
-      select    = {% if "select" in plotter %}{{plotter.select}},{% endif %}{{ plotter|link_in_list }}
+      select    = {% if "select" in plotter %}{{plotter.select}},{% endif %}{{ plotter|link_in_list|indent(width=18) }}
     end plot
     {% endfor %}
   end solver

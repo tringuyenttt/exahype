@@ -45,13 +45,14 @@ do
   fi
   prefix+="-$mesh"
 
-  for nodes in 10 28 82
+  for nodes in 29 758   # 3d
+  #for nodes in 10 28 82 # 2d
   do
-    for tasksPerNode in 1 2 4 8 # ham7
+    for tasksPerNode in 1 2 4 # ham7
     #for tasksPerNode in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 # ham6
     do 
       let tasks=$nodes*$tasksPerNode
-      let coresPerTask=24/$tasksPerNode # ham7
+      let coresPerTask=28/$tasksPerNode # ham7
       #let coresPerTask=16/$tasksPerNode # ham6
 
       # Create script
@@ -61,6 +62,7 @@ do
      
       sed -i -r 's,--nodes(\s*)=(\s*)([0-9]*),--nodes\1=\2'$nodes',' $newScript
       sed -i -r 's,--ntasks-per-node(\s*)=(\s*)([0-9]*),--ntasks-per-node\1=\2'$tasksPerNode',' $newScript
+      sed -i -r 's,--cpus-per-task(\s*)=(\s*)([0-9]*),--cpus-per-task\1=\2'$coresPerTask',' $newScript
       
       sed -i -r 's,sharedMem=None,sharedMem='$sharedMem',' $newScript
       sed -i 's,'$project'-no-output-regular-0,'$prefix',g' $newScript

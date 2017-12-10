@@ -10,7 +10,7 @@ import networkx as nx
 
 # batteries:
 import os, re, sys, ast, inspect, argparse, base64, pprint, subprocess, collections, types, operator
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from argparse import Namespace as namespace
 from itertools import izip, islice, product
 from functools import wraps
@@ -1273,23 +1273,85 @@ class structured_mexafile(io_mexafile):
 class mexafile_to_exahype_specfile(io_mexafile):
 	default_root = 'exahype' # the root container in a mexa file where the hierarchy begins
 	
+	# Inclusion of solver constants (aka simulation parameters) and plotter select statements
+	# (aka plotter configuration) into ExaHyPE specfiles:
+	#  - embedded: Failsafe, encodes a whole mexafile in a discrete and easily embeddable string
+	#  - referenced: Reference to an external mexa file (something we don't want to do in practise)
+	#  - adapted: Try to generate redable specfile constants. Reparsing can be inaccurate, i.e.
+	#    strings are not correctly escaped.
+	parameter_styles = ['embedded', 'adapted', 'referenced']
+	default_parameter_style = 'embedded'
+	
 	@classmethod
 	def arguments(cls, parser):
 		io_mexafile.arguments(parser, add_root=False)
 		parser.add_argument('--root', default=cls.default_root, help='Root container in the mexa file where the hierarchy begins')
 		parser.add_argument('--debug', action='store_true', default=False, help='Print debug output')
+		parser.add_argument('--parameter-style', choices=cls.parameter_styles, default=cls.default_parameter_style, help='Method to note constants/simulation parameters in specfile')
 
-
-	def __init__(self, root, debug, *args, **kwargs):
+	def __init__(self, root, debug, parameter_style, *args, **kwargs):
 		super(mexafile_to_exahype_specfile,self).__init__(*args, **kwargs)
 		self.root = root
 		self.debug = debug
-		self.embed_config = True
+		self.parameter_style = parameter_style
 		self.tplfile = './exa-specfile-tpl.exahype'
 		#self.tplfile = './debug-project.jinja'
 		self.exahype_base = self.mf.query(root)
 		self.native = self.exahype_base.tree(backref=True)
 		self.write(self.exaspecfile(mf_tree=self.native))
+	
+	def encode_parameters(self, path):
+		ret = OrderedDict() # is a k:v list in any case
+		
+		join_multiline = False # allow the parameter string to cover multiple lines
+		join_kv_tpl = "%s:%s"  # how to merge key and value
+		
+		
+		ret['mexa-ref'] = path
+		ret['mexa-style'] = self.parameter_style
+		if self.parameter_style == 'referenced':
+			ret['mexa-filename'] = 'PUT-MEXA-FILENAME-HERE' # todo
+		elif self.parameter_style == 'embedded':
+			# embed the configuration as a string, suitable for the specfile constants
+			# parameters
+			mf = self.mf.query(path).remove_prefix(path)
+			encoding = 'quotedprintable'
+			ret['mexa-encoding'] = encoding
+			ret['mexa-content'] = encoded_mexafile.dump(mf, encoding=encoding)
+		elif self.parameter_style == 'adapted':
+			# adapt the simple mexa file content to the specfile config tokens.
+			mf = self.mf.query(path).remove_prefix(path)
+			
+			# Strings must be treated with special care. They must not whitespace other "weird"
+			# characters. Therefore, they are encoded.
+			encoding = 'quotedprintable'
+			encode_str = encoded_mexafile.quoted_printable
+			ret['mexa-start'] = 'start'
+			ret['mexa-encoding'] = encoding
+			join_multiline = True
+			join_kv_tpl = "%s: %s" # Allow some whitespace
+				
+			for l,r,op,src in mf:
+				assert op=='equals'
+				assert not isa(r,symbol), "Expect symbols to be removed"
+				assert not isa(r,lang.evalstr), "Expect RHS strings to be evaluated."
+				
+				if isa(r, [str,unicode]):
+					re = encode_str(r)  # in the specfile language, strings are not enclosed in " or '
+				elif isa(r, bool):
+					re = 'on' if r else 'off'
+				else:
+					re = str(r) # hope that this are only numbers.
+				ret[l.canonical()] = re
+			
+			# help the buggy tokenizer
+			ret['mexa-end'] = 'end'
+		else:
+			raise ValueError("Parameter style not understood: %s" % self.parameter_style)
+		
+		# join ret to a specfile config string
+		joinstr = ",\n" if join_multiline else ","
+		return joinstr.join([ "%s:%s" % (k,v) for k,v in ret.iteritems() ])
 	
 	def exaspecfile(self, mf_tree):
 		"Return an ExaHyPE specfile which corresponds to these data"
@@ -1360,19 +1422,11 @@ class mexafile_to_exahype_specfile(io_mexafile):
 			else:
 				raise ValueError("Missing backref key '%s' in node '%s'" % (backref_key, str(node)))
 			
-		@jinja_filter
-		def embed(node, encoding):
-			# embed the configuration as a string, suitable for the specfile constants
-			# parameters
-			root = resolve_path(node)
-			mf = self.mf.query(root).remove_prefix(root)
-			return encoded_mexafile.dump(mf, encoding='quotedprintable')
 		
 		@jinja_filter
 		def link_in_list(node):
-			# This can be either resolve_path or embed. Here we do both for simplicity
-			encoding = 'quotedprintable'
-			return 'mexa:embedded,mexaref:%s,mexaformat:%s,mexacontent:%s' % (resolve_path(node), encoding, embed(node,encoding) )
+			symb = resolve_path(node)
+			return self.encode_parameters(symb)
 		
 		@jinja_filter
 		def as_float(txt):
