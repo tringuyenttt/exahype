@@ -678,8 +678,12 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   repository.switchToMeshRefinement();
 
   while (
+    (
       repository.getState().continueToConstructGrid() ||
       exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
+    )
+    &&
+    (meshSetupIterations<32)
   ) {
     repository.iterate();
     meshSetupIterations++;
@@ -688,6 +692,10 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
 
     plotMeshSetupInfo(repository,meshSetupIterations);
     meshUpdate = true;
+  }
+
+  if (meshSetupIterations>=32) {
+    logWarning( "createMesh(...)", "it seems that grid construction has entered infinite loop. Stopped it manually" );
   }
 
   // a few extra iterations for the cell status flag spreading
