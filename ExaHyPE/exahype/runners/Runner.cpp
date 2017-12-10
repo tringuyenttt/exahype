@@ -911,6 +911,7 @@ void exahype::runners::Runner::postProcessTimeStepInSharedMemoryEnvironment() {
   assertion2( amdahlsLaw.getStartupCostPerThread()>=0.0, amdahlsLaw.getStartupCostPerThread(),  amdahlsLaw.toString() );
 
   if (_parser.getSharedMemoryConfiguration().find("no-invade")==std::string::npos) {
+    logInfo( "postProcessTimeStepInSharedMemoryEnvironment()", "retreat from my threads/cores" );
     tarch::multicore::Core::getInstance().configure( 1, false );
   }
 
