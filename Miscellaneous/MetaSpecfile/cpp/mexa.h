@@ -168,7 +168,7 @@ namespace mexa {
 		T get(symbol leaf, std::string type_as_str) const;
 		
 		/// Read a string at the questioned symbol
-		std::string get_string(symbol leaf) const;
+		virtual std::string get_string(symbol leaf) const;
 		
 		/// Read a boolean value at the questioned symbol
 		bool get_bool(symbol leaf) const;
@@ -178,6 +178,30 @@ namespace mexa {
 		
 		/// Read a floating point value (double).
 		double get_double(symbol leaf) const;
+		
+		///////////////////////////////
+		// high level vector getters
+		///////////////////////////////
+		
+		// An abstract getter for a vector type
+		template<typename T>
+		std::vector<T> get_vec(symbol node, std::string type_as_str) const;
+		
+		/// Read a vector of doubles from a node.
+		std::vector<double> get_double_vec(symbol node) const;
+		
+		/// Read a vector of ints from a node.
+		std::vector<int> get_int_vec(symbol node) const;
+		
+		/// Read a vector of strings from a node.
+		std::vector<std::string> get_string_vec(symbol node) const;
+		
+		/// Read a vector of booleans from a node.
+		std::vector<bool> get_bool_vec(symbol node) const;
+		
+		/// Reads a multiline string (a joined vector of strings) from a node.
+		/// This effectively allows embedding files.
+		std::string get_multiline_string(symbol node) const;
 	};
 
 
@@ -224,6 +248,31 @@ namespace mexa {
 	 **/
 	mexafile fromMap(const std::map<std::string, std::string>& list, const std::string source_description="unknown");
 	
+	/**
+	 * This subclass is neccessary to represent a special dialect of mexafiles where
+	 * strings are not correctly "enclosed" but just given as-is. In the ordinary mexa
+	 * language, RHS strings without enclosing ticks are treated as symbols. Since this
+	 * is the simple-mexa language here without references (i.e. no symbols on the RHS)
+	 * anyway, it's in principle fine to treat strings blank. That also means that proper
+	 * comment handling is no more possible (i.e. a string "foo#bar" or "foo//bar" can
+	 * no more be stored), but that's the spirit of the ExaHyPE specification language.
+	 **/
+	struct mexafile_with_improper_strings : public mexafile {
+		std::string get_string(symbol leaf) const override;
+	};
+
+	/**
+	 * This is exactly like @see fromOrderedMap(), it only returns a subclass.
+	 * We do not allow an exahype::Parser::ParserView instance here for not having a
+	 * reference to the ExaHyPE code at this place (seperation of code bases).
+	 * The usage boils down to as simple as
+	 *
+	 *  exahype::Parser::ParserView view(parser.getParserView(0)); // obtain it
+	 *  mexafile foo = exa::fromSpecfile(view.getAllAsOrderedMap(), "specfile.filename...");
+	 *
+	 **/
+	mexafile_with_improper_strings fromSpecfile(const std::vector<std::pair<std::string, std::string>>& list, const std::string source_description="unknown");
+
 } // ns mexa
 
 #endif /* MEXA_META_EXAHYPE_PARFILE_CPP_IMPL_HEADER */

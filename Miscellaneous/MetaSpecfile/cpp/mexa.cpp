@@ -449,7 +449,69 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 	int mexafile::get_int(symbol leaf) const { return get<int>(leaf, "int"); }
 	
 	double mexafile::get_double(symbol leaf) const { return get<double>(leaf, "double"); }
+	
+	
+	// An abstract getter for a vector type
+	template<typename T>
+	std::vector<T> mexafile::get_vec(symbol node, std::string type_as_str) const {
+		std::vector<T> ret;
+		int itemcount = 1; // just for error output
+		for(auto it : query(node).assignments) {
+			symbol& leaf(it.first);
+			sourced& rhs(it.second);
+			T value;
+			if(!parse(rhs.line, value)) {
+				std::stringstream errmsg;
+				errmsg << "While reading in the " << type_as_str << " vector at '" << node.toString() << "', the " << itemcount << ". symbol " << leaf.toString() << " with value '" << rhs.line << "' cannote be casted as " << type_as_str << ". It was given on " << rhs.src.toString();
+				throw std::runtime_error(errmsg.str());
+			}
+			ret.push_back(value);
+			itemcount++;
+		}
+		return ret;
+	}
+	
+	std::vector<double> mexafile::get_double_vec(symbol node) const { return get_vec<double>(node, "double"); }
+	std::vector<int> mexafile::get_int_vec(symbol node) const { return get_vec<int>(node, "int");  }
+	
+	// specialization
+	std::vector<bool> mexafile::get_bool_vec(symbol node) const {
+		std::vector<bool> ret;
+		for(auto it : query(node).assignments) {
+			symbol& leaf(it.first);
+			ret.push_back( get_bool(leaf) );
+		}
+		return ret;
+	}
+	
+	// specialization
+	std::vector<std::string> mexafile::get_string_vec(symbol node) const {
+		std::vector<std::string> ret;
+		for(auto it : query(node).assignments) {
+			symbol& leaf(it.first);
+			ret.push_back( get_string(leaf) );
+		}
+		return ret;
+	}
+	
+	// specialization
+	std::string mexafile::get_multiline_string(symbol node) const {
+		std::string ret;
+		for(auto it : query(node).assignments) {
+			symbol& leaf(it.first);
+			ret += get_string(leaf) + "\n";
+		}
+		return ret;
+	}
 // end of class mexafile
+
+// specialization: 
+std::string mexa::mexafile_with_improper_strings::get_string(symbol leaf) const {
+	contains(leaf, true);
+	// as there are not string enclosement characters or comments to be treated
+	// or anything else, just pass it as it is.
+	return get_item(leaf).line;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -498,24 +560,31 @@ mexafile mexa::fromEmbedded(const std::string& format, const std::string& conten
 	}
 }
 
-mexafile mexa::fromOrderedMap(const std::vector<std::pair<std::string, std::string>>& strlist, const std::string source_description) {
-	mexafile mf;
+template<typename OUT, typename IN>
+OUT fromIterable(const IN& pair_iterable, const std::string source_description) {
+	OUT mf;
 	int linecounter = 1; // counting like humans
-	for(auto it : strlist) {
+	for(auto it : pair_iterable) {
 		sourcemap src(source_description, linecounter++);
 		mf.add_item(symbol(it.first), sourced(it.second,src));
 	}
 	return mf;
 }
 
-mexafile mexa::fromMap(const std::map<std::string, std::string>& strmap, const std::string source_description) {
-	mexafile mf;
-	int linecounter = 1; // counting like humans
-	for(auto it : strmap) {
-		sourcemap src(source_description, linecounter++);
-		mf.add_item(symbol(it.first), sourced(it.second,src));
-	}
-	return mf;
+typedef std::map<std::string, std::string> dict;
+typedef std::vector<std::pair<std::string, std::string>> ordered_dict;
+
+mexafile mexa::fromOrderedMap(const ordered_dict& strlist, const std::string source_description) {
+	return fromIterable<mexafile, ordered_dict>(strlist, source_description);
+}
+
+mexafile mexa::fromMap(const dict& strmap, const std::string source_description) {
+	return fromIterable<mexafile, dict>(strmap, source_description);
+}
+
+mexafile_with_improper_strings mexa::fromSpecfile(const ordered_dict& strlist, const std::string source_description) {
+	return fromIterable<mexafile_with_improper_strings, ordered_dict>(strlist, source_description);
+	
 }
 
 ///////////////////////////////////////////////////////////////////////////////

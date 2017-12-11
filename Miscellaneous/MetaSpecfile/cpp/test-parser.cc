@@ -37,4 +37,8 @@ int main(int argc, char** argv) {
 	
 	//std::cout << "mf=" << mf.query_root("boundaries").toString();
 	std::cout << "mf=" << mf.toString();
+	
+	std::vector<double> pos = mf.get_double_vec("shocktube/right/bmag");
+	for(auto j : pos)
+		std::cout << "vector value: " << j << "\n";
 }
