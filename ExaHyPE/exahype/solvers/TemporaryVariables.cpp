@@ -36,9 +36,9 @@ double* exahype::solvers::allocateArray( std::vector<int>& heapIndices, const in
   const int heapIndex = exahype::DataHeap::getInstance().createData(size,size,
     exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired
   );
+  auto& vector = exahype::DataHeap::getInstance().getData(heapIndex);
   lock.free();
 
-  auto& vector = exahype::DataHeap::getInstance().getData(heapIndex);
   assertionEquals(static_cast<int>(vector.size()),size);
   std::fill(vector.begin(),vector.end(),0.0);
 
