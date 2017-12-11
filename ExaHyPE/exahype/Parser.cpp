@@ -1352,6 +1352,44 @@ bool exahype::Parser::ParserView::isValueValidBool(
   }
 }
 
+std::vector< std::pair<std::string, std::string> > exahype::Parser::ParserView::getAllAsOrderedMap() const {
+  std::vector< std::pair<std::string, std::string> > retvec;
+
+  std::string token;
+  std::regex  COLON_SEPARATED(R"(^(.+?):(.+?),?$)");
+  std::smatch match;
+
+  token = _parser.getTokenAfter("solver", _solverNumberInSpecificationFile + 1, "constants", 1, 0);
+  std::regex_search(token, match, COLON_SEPARATED);
+
+  int i = 1;
+  while (match.size() > 1) {
+    retvec.push_back( make_pair(match.str(1), match.str(2)) );
+    token = _parser.getTokenAfter("solver", _solverNumberInSpecificationFile + 1, "constants", 1, i++);
+    std::regex_search(token, match, COLON_SEPARATED);
+  }
+  return retvec;
+}
+
+std::map<std::string, std::string> exahype::Parser::ParserView::getAllAsMap() const {
+  std::map<std::string, std::string> retmap;
+
+  std::string token;
+  std::regex  COLON_SEPARATED(R"(^(.+?):(.+?),?$)");
+  std::smatch match;
+
+  token = _parser.getTokenAfter("solver", _solverNumberInSpecificationFile + 1, "constants", 1, 0);
+  std::regex_search(token, match, COLON_SEPARATED);
+
+  int i = 1;
+  while (match.size() > 1) {
+    retmap[match.str(1)] = match.str(2);
+    token = _parser.getTokenAfter("solver", _solverNumberInSpecificationFile + 1, "constants", 1, i++);
+    std::regex_search(token, match, COLON_SEPARATED);
+  }
+  return retmap;
+}
+
 
 int exahype::Parser::getRanksPerNode() {
   const std::string RanksPerNode = "ranks-per-node";
