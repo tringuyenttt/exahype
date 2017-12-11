@@ -682,8 +682,8 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
       repository.getState().continueToConstructGrid() ||
       exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
     )
-    &&
-    (meshSetupIterations<32)
+//    &&
+//    (meshSetupIterations<32) // Turn back if you experience infinite mesh refinement loops
   ) {
     repository.iterate();
     meshSetupIterations++;

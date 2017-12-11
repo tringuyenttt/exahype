@@ -69,13 +69,13 @@ peano::MappingSpecification
 exahype::mappings::MeshRefinement::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::Serial,true);
 }
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::leaveCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::Serial,true);
 }
 
 // Nop.
