@@ -17,6 +17,10 @@ from functools import wraps
 #from future.utils import raise_from # no batteries
 
 # helpers and shorthands:
+def warn(msg):
+	# instead, should go to https://stackoverflow.com/a/14981125
+	# from __future__ import print_function
+	print >> sys.stderr, msg
 
 baseflags = re.IGNORECASE
 match = lambda pattern,string,flags=0: re.match(pattern,string,baseflags+flags)
@@ -648,6 +652,7 @@ class mexagraph:
 			assert isa(l,symbol)
 			l = self.insert_path(l, src=src)
 			
+			needspatch = False
 			if isa(r,symbol):
 				oldr = r # for debugging
 				target = self.get_path_up(r, l, include_start=False) # check if variable exists
@@ -664,13 +669,14 @@ class mexagraph:
 			#    iterative process with correction steps.
 
 				assert l != r, "Produced weird graph because l=%s, oldr=%s, new r=%s for op=%s\n" % (l, oldr, r, op)
+				needspatch = True
 			
 			# map equals and subsets together
 			if op == 'equals':
-				self.G.add_edge(l, r, op=self.E, src=src, patched=False)
-				self.G.add_edge(r, l, op=self.E, src=src, patched=False) # TODO: Should comment the source.
+				self.G.add_edge(l, r, op=self.E, src=src, patched=not needspatch)
+				self.G.add_edge(r, l, op=self.E, src=src, patched=not needspatch) # TODO: Should comment the source.
 			elif op == 'subsets':
-				self.G.add_edge(l, r, op=self.E, src=src, patched=False)
+				self.G.add_edge(l, r, op=self.E, src=src, patched=not needspatch)
 			else:
 				self.G.add_edge(l, r, op=op, src=src)
 				
@@ -690,8 +696,8 @@ class mexagraph:
 				if attr['op'] == self.E and not attr['patched']:
 					#for (ln, lattr), (rn, rattr) in product(self.G[l].iteritems(), self.G[r].iteritems()):
 					for (ln, lattr), (rn, rattr) in product(equivalent_adjacency_iter(l), equivalent_adjacency_iter(r)):
-						if isa(ln, term) and isa(rn,term) \
-						   and lattr['op'] == self.P and rattr['op'] == self.P \
+						if lattr['op'] == self.P and rattr['op'] == self.P \
+						   and isa(ln, term) and isa(rn,term) \
 						   and ln != rn and ln.value == rn.value \
 						   and not self.G.has_edge(ln, rn):
 							self.G.add_edge(ln, rn, op=self.E, src=attr['src'], patched=False) # TODO: Comment source
@@ -1307,17 +1313,17 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		join_kv_tpl = "%s:%s"  # how to merge key and value
 		
 		
-		ret['mexa-ref'] = path
-		ret['mexa-style'] = self.parameter_style
+		ret['mexa/ref'] = path
+		ret['mexa/style'] = self.parameter_style
 		if self.parameter_style == 'referenced':
-			ret['mexa-filename'] = 'PUT-MEXA-FILENAME-HERE' # todo
+			ret['mexa/filename'] = 'PUT-MEXA-FILENAME-HERE' # todo
 		elif self.parameter_style == 'embedded':
 			# embed the configuration as a string, suitable for the specfile constants
 			# parameters
 			mf = self.mf.query(path).remove_prefix(path)
 			encoding = 'quotedprintable'
-			ret['mexa-encoding'] = encoding
-			ret['mexa-content'] = encoded_mexafile.dump(mf, encoding=encoding)
+			ret['mexa/encoding'] = encoding
+			ret['mexa/content'] = encoded_mexafile.dump(mf, encoding=encoding)
 		elif self.parameter_style == 'adapted':
 			# adapt the simple mexa file content to the specfile config tokens.
 			mf = self.mf.query(path).remove_prefix(path)
@@ -1326,10 +1332,17 @@ class mexafile_to_exahype_specfile(io_mexafile):
 			# characters. Therefore, they are encoded.
 			encoding = 'quotedprintable'
 			encode_str = encoded_mexafile.quoted_printable
-			ret['mexa-start'] = 'start'
-			ret['mexa-encoding'] = encoding
+			ret['mexa/encoding'] = encoding
 			join_multiline = True
 			join_kv_tpl = "%s: %s" # Allow some whitespace
+			
+			# in the ExaHyPE toolkit grammar, certain identifiers and RHS values generate problems
+			# if they are in the token list, i.e. they are reserved expressions in the language.
+			# We can extract these reserved tokens from the SableCC grammar for the specfile:
+			#   cat exahype.grammar  | grep -E "^\s*token_" | grep "=" | cut -d'=' -f2 | tr -d "'; " | paste -d" " -s
+			reserved_tokens = "end exahype-project const peano-kernel-path peano-toolbox-path exahype-path output-directory architecture log-file computational-domain dimension width offset maximum-mesh-size maximum-mesh-depth time-stepping end-time solver ADER-DG Finite-Volumes Limiting-ADER-DG variables parameters naming-scheme constants order patch-size kernel type terms optimisation kernel limiter-type limiter-optimisation language limiter-language dmp-observables dmp-relaxation-parameter dmp-difference-scaling steps-till-cured helper-layers plot variable time repeat output select shared-memory cores properties-file identifier distributed-memory configure buffer-size timeout master-worker-communication neighbour-communication global-optimisation fuse-algorithmic-steps fuse-algorithmic-steps-factor timestep-batch-factor skip-reduction-in-batched-time-steps disable-amr-if-grid-has-been-stationary-in-previous-iteration double-compression spawn-double-compression-as-background-thread profiling profiler metrics deep-profiling profiling-output likwid_inc likwid_lib ipcm_inc ipcm_lib"
+			reserved_token_list = reserved_tokens.split()
+
 				
 			for l,r,op,src in mf:
 				assert op=='equals'
@@ -1342,10 +1355,16 @@ class mexafile_to_exahype_specfile(io_mexafile):
 					re = 'on' if r else 'off'
 				else:
 					re = str(r) # hope that this are only numbers.
-				ret[l.canonical()] = re
-			
-			# help the buggy tokenizer
-			ret['mexa-end'] = 'end'
+				
+				identifier = l.canonical()
+				
+				# at the moment, warn only. Proper escaping is subject to future extension of this code.
+				if identifier in reserved_tokens:
+					warn("Warning: Key '%s' is a reserved token in the ExaHyPE toolkit. Will probably generate problems. You should probably switch to parameter_style=embedded" % identifier)
+				if re in reserved_tokens:
+					warn("Warning: Value '%s' (at key %s) is a reserved token in the ExaHyPE toolkit. Will probably generate problems. You should probably switch to parameter_style=embedded" % (re,identifier))
+				
+				ret[identifier] = re
 		else:
 			raise ValueError("Parameter style not understood: %s" % self.parameter_style)
 		
