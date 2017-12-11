@@ -20,15 +20,19 @@ OFILES := $(filter-out $(EXAHYPE_INC)/exahype/main.o,$(OFILES))
 OFILES := $(filter-out $(EXAHYPE_INC)/exahype/Version.o,$(OFILES))
 
 
-all: libexahype.a
+parsertest: libexahype.a
 	g++ -c -g3 --std=c++11 -D$(DIMSTRING) -I$(PEANO_INC) -I$(EXAHYPE_INC) -Wall \
 		test-parser.cc
-		
-	g++ -O0 -otest-parser.out test-parser.o libexahype.a
+	g++ -c -g3 --std=c++11 mexa.cpp
+
+	g++ -O0 -otest-parser.out test-parser.o mexa.o libexahype.a
 
 libexahype.a:
 	# All object files as an archive. This speeds up linking enormously.
 	ar cr libexahype.a $(OFILES)
+	
+mexatest:
+	g++ -std=c++11 mexa.cpp -Wall -DMEXA_TEST_MAIN -osimple-mexa.out
 
 clean:
 	rm -f *.a *.o *.out

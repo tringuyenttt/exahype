@@ -306,6 +306,24 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 
 
 // CLASS mexafile
+	void mexafile::add_item(const symbol key, const sourced value) {
+		assignments.push_back( std::make_pair(key,value) );
+	}
+	
+	sourced mexafile::get_item(const symbol leaf) const {
+		for(auto it: assignments)
+			if(leaf == it.first)
+				return it.second;
+			
+		// element not found
+		std::stringstream errmsg;
+		errmsg << "Leaf '" << leaf.toString() << "' not in assignment list. ";
+		if(assignments.empty()) errmsg << "The assignment list is empty";
+		else errmsg << "The assignment list is given by: " << toString();
+		throw std::runtime_error((errmsg).str());
+	}
+
+
 	mexafile mexafile::query(const symbol root) const {
 		// todo
 		// Search for all symbols which are *below* the root
@@ -314,7 +332,7 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 			// check case root="foo", include "foo/bar" and "foo/bar/baz"
 			// check case root="foo", include "foo" itself.
 			if(::contains(it.first.ancestors(), root) || root == it.first) {
-				res.assignments[it.first] = it.second;
+				res.add_item(it.first, it.second);
 			}
 		}
 		return res;
@@ -331,7 +349,7 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 	mexafile mexafile::prefix_add(const symbol root) const {
 		mexafile res;
 		for(auto it : assignments) {
-			res.assignments[ root.prefix_add(it.first) ] = it.second;
+			res.add_item(root.prefix_add(it.first), it.second);
 		}
 		return res;
 	}
@@ -339,7 +357,7 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 	mexafile mexafile::prefix_remove(const symbol root) const {
 		mexafile res;
 		for(auto it: assignments) {
-			res.assignments[ root.prefix_remove(it.first) ] = it.second;
+			res.add_item(root.prefix_remove(it.first), it.second);
 		}
 		return res;
 	}
@@ -352,8 +370,11 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 	}
 
 	// contains helper
-	bool mexafile::contains(symbol leaf, bool doRaise) {
-		bool res = ::contains(assignments,leaf);
+	bool mexafile::contains(symbol leaf, bool doRaise) const {
+		bool res = false;
+		for(auto it : assignments)
+			if(leaf == it.first)
+				res = true;
 		if(!res && doRaise) {
 			std::stringstream errmsg;
 			errmsg << "Leaf '" << leaf.toString() << "' not in assignment list. ";
@@ -367,10 +388,10 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 	//// getters
 
 	template<typename T>
-	T mexafile::get(symbol leaf, std::string type_as_str) {
+	T mexafile::get(symbol leaf, std::string type_as_str) const {
 		T value;
 		contains(leaf, true);
-		sourced& rhs = assignments[leaf];
+		sourced rhs = get_item(leaf);
 		if(!parse(rhs.line, value)) {
 			std::stringstream errmsg;
 			errmsg << "Leaf '" << leaf.toString() << "' with value '"<< rhs.line << "' cannot be casted as '" << type_as_str << "'. It was given on " <<  rhs.src.toString();
@@ -379,9 +400,9 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 		return value;
 	}
 	
-	std::string mexafile::get_string(symbol leaf) {
+	std::string mexafile::get_string(symbol leaf) const {
 		contains(leaf, true);
-		std::string& line = assignments[leaf].line;
+		std::string line = get_item(leaf).line;
 		// check for string enclosement characters
 		ltrim(line);
 		const int quotation_length = 1; // length of the string enclosing quotation: one character
@@ -394,25 +415,25 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 		
 		if(!start_quotation_given) {
 			std::stringstream errmsg;
-			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must start with \"double\" or 'single' quotation marks. It was given on " <<  assignments[leaf].src.toString();
+			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must start with \"double\" or 'single' quotation marks. It was given on " <<  get_item(leaf).src.toString();
 			throw std::runtime_error(errmsg.str());
 		}
 		if(!end_quotation_given) {
 			std::stringstream errmsg;
-			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must end with in \"double\" or 'single' quotation marks. It was given on " <<  assignments[leaf].src.toString();
+			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must end with in \"double\" or 'single' quotation marks. It was given on " <<  get_item(leaf).src.toString();
 			throw std::runtime_error(errmsg.str());
 		}
 		if(!rest_of_line.empty()) {
 			std::stringstream errmsg;
-			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must be enclosed with in \"double\" or 'single' quotation marks. Only comments can be given afterwards on the same line. It was given on " <<  assignments[leaf].src.toString();
+			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must be enclosed with in \"double\" or 'single' quotation marks. Only comments can be given afterwards on the same line. It was given on " <<  get_item(leaf).src.toString();
 			throw std::runtime_error(errmsg.str());
 		}
 		return string_content;
 	}
 	
-	bool mexafile::get_bool(symbol leaf) {
+	bool mexafile::get_bool(symbol leaf) const {
 		contains(leaf, true);
-		std::string value = assignments[leaf].line;
+		std::string value = get_item(leaf).line;
 		stripComment(value); toLower(value); strip(value);
 		bool isTrue = (value == "yes") || (value == "true") || (value == "on");
 		bool isFalse = (value == "no") || (value == "false") || (value == "off");
@@ -420,14 +441,14 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 		if(!isTrue &&  isFalse) return false;
 		else {
 			std::stringstream errmsg;
-			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as bool, allowed values are only true/yes/on and false/no/off. It was given on " <<  assignments[leaf].src.toString();
+			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as bool, allowed values are only true/yes/on and false/no/off. It was given on " <<  get_item(leaf).src.toString();
 			throw std::runtime_error(errmsg.str());
 		}
 	}
 	
-	int mexafile::get_int(symbol leaf) { return get<int>(leaf, "int"); }
+	int mexafile::get_int(symbol leaf) const { return get<int>(leaf, "int"); }
 	
-	double mexafile::get_double(symbol leaf) { return get<double>(leaf, "double"); }
+	double mexafile::get_double(symbol leaf) const { return get<double>(leaf, "double"); }
 // end of class mexafile
 
 
@@ -438,7 +459,7 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 ///////////////////////////////////////////////////////////////////////////////
 
 
-mexafile mexa::SimpleMexa(std::istream& fh, const std::string filename_or_desc) {
+mexafile mexa::fromFile(std::istream& fh, const std::string filename_or_desc) {
 	mexafile mf;
 	std::string line;
 	int linecounter = 1; // count for humans
@@ -451,12 +472,12 @@ mexafile mexa::SimpleMexa(std::istream& fh, const std::string filename_or_desc) 
 		// We do this crazy joining in case of "=" signs are in the RHS
 		std::string rhs = join(parts,"=",parts.begin()+1,parts.end());
 		strip(rhs);
-		mf.assignments[lhs] = sourced(rhs,src);
+		mf.add_item(lhs, sourced(rhs,src));
 	}
 	return mf;
 }
 
-bool mexa::MexaHasMagicString(std::istream& fh) {
+bool mexa::hasMagicString(std::istream& fh) {
 	std::string firstline;
 	if(!std::getline(fh, firstline) || firstline.empty())
 		return false; // could not even read first line.
@@ -465,16 +486,36 @@ bool mexa::MexaHasMagicString(std::istream& fh) {
 }
 
 
-mexafile mexa::SimpleMexa_fromEmbedded(const std::string& format, const std::string& content, const std::string filename_or_desc) {
+mexafile mexa::fromEmbedded(const std::string& format, const std::string& content, const std::string filename_or_desc) {
 	if(format == "quotedprintable") {
 		std::stringstream is(unescape_quotedprintable(content));
-		if(!MexaHasMagicString(is)) {
+		if(!hasMagicString(is)) {
 			throw std::runtime_error("Could not detect Mexa file.");
 		}
-		return SimpleMexa(is, format+":"+filename_or_desc);
+		return fromFile(is, format+":"+filename_or_desc);
 	} else {
 		throw std::runtime_error("Format not supported so far, only quotedprintable is supported.");
 	}
+}
+
+mexafile mexa::fromOrderedMap(const std::vector<std::pair<std::string, std::string>>& strlist, const std::string source_description) {
+	mexafile mf;
+	int linecounter = 1; // counting like humans
+	for(auto it : strlist) {
+		sourcemap src(source_description, linecounter++);
+		mf.add_item(symbol(it.first), sourced(it.second,src));
+	}
+	return mf;
+}
+
+mexafile mexa::fromMap(const std::map<std::string, std::string>& strmap, const std::string source_description) {
+	mexafile mf;
+	int linecounter = 1; // counting like humans
+	for(auto it : strmap) {
+		sourcemap src(source_description, linecounter++);
+		mf.add_item(symbol(it.first), sourced(it.second,src));
+	}
+	return mf;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -487,7 +528,7 @@ mexafile mexa::SimpleMexa_fromEmbedded(const std::string& format, const std::str
 int main() {
 	std::string filename = "simple-mexa.tmp.par";
 	std::ifstream infile(filename);
-	mexafile mf = SimpleMexa(infile, filename);
+	mexafile mf = mexa::fromFile(infile, filename);
 	
 	std::string query = "exahype/solvers/solver/constants";
 	printf("Querying %s:\n", query.c_str());
@@ -507,7 +548,7 @@ int main() {
 	//printf("17 = %d\n", z);
 	
 	// Works
-	mexafile mf2 = SimpleMexa_fromEmbedded("quotedprintable","%23%23MEXA%2Dsimple%20configuration%20file%0Avariables%20%3D%20%22rho%3A1%2Cvel%3A3%2CE%3A1%2CB%3A3%2Cpsi%3A1%2Clapse%3A1%2Cshift%3A3%2Cgij%3A6%2Ccoordinates%3A3%2Ccheck%3A1%22%0Atime%20%3D%200%2E0%0Arepeat%20%3D%200%2E001%0Aoutput%20%3D%20%22%2E%2Foutput%2Fglobal%2Dintegrals%22%0Aprimitives%20%3D%20True%0Aconserved%20%3D%20True%0Aerrors%20%3D%20True%0A","test");
+	mexafile mf2 = mexa::fromEmbedded("quotedprintable","%23%23MEXA%2Dsimple%20configuration%20file%0Avariables%20%3D%20%22rho%3A1%2Cvel%3A3%2CE%3A1%2CB%3A3%2Cpsi%3A1%2Clapse%3A1%2Cshift%3A3%2Cgij%3A6%2Ccoordinates%3A3%2Ccheck%3A1%22%0Atime%20%3D%200%2E0%0Arepeat%20%3D%200%2E001%0Aoutput%20%3D%20%22%2E%2Foutput%2Fglobal%2Dintegrals%22%0Aprimitives%20%3D%20True%0Aconserved%20%3D%20True%0Aerrors%20%3D%20True%0A","test");
 	printf(mf2.toString().c_str());
 }
 #endif 

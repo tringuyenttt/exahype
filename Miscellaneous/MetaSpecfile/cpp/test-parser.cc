@@ -1,38 +1,12 @@
 #include <stdio.h>
+#include <iostream>
 
-// back to access private members for the time being.
-//#define private public
-//#define protected public
+#include "mexa.h"
 
 #include "exahype/Parser.h"
 
 #include <utility> // pair
-
-typedef std::pair<std::string, std::string> kv;
-typedef std::vector<kv> ordered_map; // poor man's.
-
-/*
-ordered_map get_all_tokens(exhype::Parser& _parser, const std::string& key) const {
-  std::string token;
-  std::regex  COLON_SEPARATED(R"((.+):(.+))");
-  std::smatch match;
-
-  token = _parser.getTokenAfter("solver", _solverNumberInSpecificationFile + 1, "constants", 1, 0);
-  std::regex_search(token, match, COLON_SEPARATED);
-
-  int i = 1;
-  while (match.size() > 1) {
-    if (match.str(1).compare(key)==0) {
-      logDebug("getValue()", "solver " << _solverNumberInSpecificationFile + 1 << ": found constant '" << key << "' with value '" << match.str(2) << "'.");
-      return match.str(2);
-    }
-    token = _parser.getTokenAfter("solver", _solverNumberInSpecificationFile + 1, "constants", 1, i++);
-    std::regex_search(token, match, COLON_SEPARATED);
-  }
-  logDebug("hasKey()", "solver " << _solverNumberInSpecificationFile + 1 << ": cannot find constant '" << key << "'.");
-  return "";
-}
-*/
+#include <regex> 
 
 int main(int argc, char** argv) {
 	std::string progname = argv[0];
@@ -58,5 +32,9 @@ int main(int argc, char** argv) {
 	}
 	
 	exahype::Parser::ParserView view(parser.getParserView(0));
-
+	
+	mexa::mexafile mf = mexa::fromOrderedMap(view.getAllAsOrderedMap(), "specfile");
+	
+	//std::cout << "mf=" << mf.query_root("boundaries").toString();
+	std::cout << "mf=" << mf.toString();
 }

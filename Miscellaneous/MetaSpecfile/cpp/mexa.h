@@ -9,6 +9,7 @@
 #include <cctype>
 #include <algorithm>
 #include <map>
+#include <utility>
 #include <vector>
 #include <cstring>
 #include <string>
@@ -98,7 +99,26 @@ namespace mexa {
 	 * actual getters for several C++ types. In case of errors, we rely on exceptions.
 	 **/
 	struct mexafile {
-		std::map<symbol, sourced> assignments;
+		typedef std::pair<symbol,sourced> kv;
+		typedef std::vector<kv> orded_kv_map;
+		
+		/**
+		 * The list of key-value pairs is our implementation of an Ordered Map
+		 * which replaces the more obvious std::map<symbol, sourced>.
+		 **/
+		orded_kv_map assignments;
+		
+		/**
+		 * Add an item to the ordered assignment list.
+		 **/
+		void add_item(const symbol key, const sourced value);
+		
+		/**
+		 * Obtain an item from the ordered assignment list.
+		 * We return a copy in order to let this be a const function.
+		 **/
+		sourced get_item(const symbol key) const;
+		
 
 		/**
 		 * Returns a string representation which actually is a valid simple-mexa
@@ -110,7 +130,7 @@ namespace mexa {
 		 * Returns true if this file holds the questioned symbol.
 		 * @arg doRaise if true, raise an exception if symbol not given
 		 **/
-		bool contains(symbol leaf, bool doRaise=false);
+		bool contains(symbol leaf, bool doRaise=false) const;
 
 		///////////////////////////////
 		// querying
@@ -145,19 +165,19 @@ namespace mexa {
 
 		/// An abstract getter for a templated type
 		template<typename T>
-		T get(symbol leaf, std::string type_as_str);
+		T get(symbol leaf, std::string type_as_str) const;
 		
 		/// Read a string at the questioned symbol
-		std::string get_string(symbol leaf);
+		std::string get_string(symbol leaf) const;
 		
 		/// Read a boolean value at the questioned symbol
-		bool get_bool(symbol leaf);
+		bool get_bool(symbol leaf) const;
 		
 		/// Read an integer
-		int get_int(symbol leaf);
+		int get_int(symbol leaf) const;
 		
 		/// Read a floating point value (double).
-		double get_double(symbol leaf);
+		double get_double(symbol leaf) const;
 	};
 
 
@@ -169,14 +189,14 @@ namespace mexa {
 	* 
 	* (One could also come up with a parser for the full mexa file format.)
 	**/
-	mexafile SimpleMexa(std::istream& fh, const std::string filename_or_desc="unknown");
+	mexafile fromFile(std::istream& fh, const std::string filename_or_desc="unknown");
 
 	/// A magic byte you can/should/might want to put at the beginning of a mexa file.
 	constexpr const char* magicString = "##mexa";
 	
 	/// Reads the first line of a (potential) Mexa string and checks for the magic string.
 	/// This line is then removed from the istream unless you rewind.
-	bool MexaHasMagicString(std::istream& fh);
+	bool hasMagicString(std::istream& fh);
 
 	/**
 	 * Read a simple-mexa file from an embedded, i.e. encoded, place. Typical formats
@@ -187,9 +207,22 @@ namespace mexa {
 	 * This is your entry point if you want to read mexa files out of ExaHyPE specification
 	 * files (embedding).
 	 **/
-	mexafile SimpleMexa_fromEmbedded(
+	mexafile fromEmbedded(
 		const std::string& format, const std::string& content,
 		const std::string filename_or_desc="unknown");
+	
+
+	/**
+	 * Create a mexafile from an "ordered map" holding k:v data.
+	 * @param source_description is used in case of errors to trace back the errnous input.
+	 **/
+	mexafile fromOrderedMap(const std::vector<std::pair<std::string, std::string>>& list, const std::string source_description="unknown");
+	
+	/**
+	 * Create a mexafile from a regular STL map holding k:v data.
+	 * @param source_description is used in case of errors to trace back the errnous input.
+	 **/
+	mexafile fromMap(const std::map<std::string, std::string>& list, const std::string source_description="unknown");
 	
 } // ns mexa
 
