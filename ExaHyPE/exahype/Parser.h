@@ -130,7 +130,7 @@ class exahype::Parser {
     bool isValueValidString(const std::string& key) const;
   };
 
- public:
+ private:
   static tarch::logging::Log _log;
 
   static const std::string   _noTokenFound;
