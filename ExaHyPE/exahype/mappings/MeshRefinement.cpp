@@ -113,7 +113,7 @@ void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
     if (solver->getMeshUpdateRequest()) {
       _attainedStableState[solverNumber] =
-          _attainedStableState[solverNumber] || workerThread._attainedStableState[solverNumber];
+          _attainedStableState[solverNumber] && workerThread._attainedStableState[solverNumber];
     }
   }
 }
@@ -495,7 +495,8 @@ void exahype::mappings::MeshRefinement::leaveCell(
           fineGridVerticesEnumerator,
           solverNumber);
 
-      _attainedStableState[solverNumber] = isStable;
+      _attainedStableState[solverNumber] =
+          _attainedStableState[solverNumber] && isStable;
     }
   }
 
