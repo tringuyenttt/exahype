@@ -1,22 +1,19 @@
 #!/bin/bash
 #SBATCH --job-name="ExaHyPE"
-#SBATCH -o ExaHyPE-EulerFlow.%A.out
-#SBATCH -e ExaHyPE-EulerFlow.%A.err
+#SBATCH -o ExaHyPE-CCZ4.%A.out
+#SBATCH -e ExaHyPE-CCZ4.%A.err
 #SBATCH -t 01:59:00
 #SBATCH --exclusive
 #SBATCH --cluster=mpp3
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=28
-#SBATCH --mail-user=jean-matthieu.gallard@tum.de
-#SBATCH --mail-type=ALL
+#SBATCH --cpus-per-task=64
+##SBATCH --mail-user=jean-matthieu.gallard@tum.de
+##SBATCH --mail-type=ALL
 #SBATCH --array=1,2,4,8,16,32,64
 
 source /etc/profile.d/modules.sh
-
-
-module load tbb/2017
-module load likwid/4.0
+source env-CoolMUC-nompi.sh
 
 nodes=1
 tasks=1
@@ -31,24 +28,26 @@ if (( coresPerTask==1 )); then
 fi
 
 prefix=CCZ4-no-output-regular-0-p3
-out=multicore/results/$prefix-$sharedMem-$compiler-n$nodes-t$tasksPerNode-c$coresPerTask.out
+out1=multicore/results/$prefix-TBB-$compiler-n$nodes-t$tasksPerNode-c$coresPerTask.out
+out2=multicore/results/$prefix-OMP-$compiler-n$nodes-t$tasksPerNode-c$coresPerTask.out
 
-script=multicore/hamilton.slurm-script
+script=multicore/coolmuc.slurm-script
 spec=multicore/$prefix-t$tasksPerNode-c$coresPerTask.exahype
 
 # pipe some information into output files
-echo "Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`" >$out
-module list 2>$out
-echo "" >> $out
-cat $script >>$out
-echo "" >> $out
-cat $spec >> $out
+#echo "Timestamp (YYYY/MM/dd:hh:mm:ss): `date +%Y/%m/%d:%H:%M:%S`" >$out
+#module list 2>$out
+#echo "" >> $out
+#cat $script >>$out
+#echo "" >> $out
+#cat $spec >> $out
 #cat $out > ${out}.likwid
 
 #ExaHyPE-CCZ4-p3-$sharedMem-$compiler --version >> $out
 
 # execute the job
-./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> $out
+./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> $out1  # Leave as $sharedMem so single core works
+./ExaHyPE-CCZ4-p3-OMP-$compiler $spec >> $out2
 
 # if (( coresPerTask==1 )); then
   # likwid-perfctr -f -C 0 -g MEM      ./ExaHyPE-CCZ4-p3-$sharedMem-$compiler $spec >> ${out}.likwid
