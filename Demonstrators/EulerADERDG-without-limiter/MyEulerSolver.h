@@ -31,13 +31,9 @@ class EulerADERDG::MyEulerSolver : public EulerADERDG::AbstractMyEulerSolver {
 
     /**
      * Our setup starts from a homogeneous density and velocity distribution,
-     * but imposes some energy patterns a priori. This pattern has to be the
-     * same for the limiter and the ADER-DG solution. Therefore, I outsource
-     * it into this routine which also is accessed by the FV code.
+     * but imposes some energy patterns a priori.
      */
     static double getInitialProfile(const double* const x);
-
-    static std::pair<double,double> getMinMaxOfInitialProfile();
 
   public:
     MyEulerSolver(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs);
