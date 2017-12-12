@@ -618,7 +618,7 @@ void exahype::runners::Runner::initSolvers() const {
   }
 }
 
-void exahype::runners::Runner::plotMeshSetupInfo(
+void exahype::runners::Runner::printMeshSetupInfo(
     exahype::repositories::Repository& repository,
     const int meshSetupIterations) const {
   #if defined(TrackGridStatistics) && defined(Asserts)
@@ -682,20 +682,14 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
       repository.getState().continueToConstructGrid() ||
       exahype::solvers::Solver::oneSolverHasNotAttainedStableState()
     )
-//    &&
-//    (meshSetupIterations<32) // Turn back if you experience infinite mesh refinement loops
   ) {
     repository.iterate();
     meshSetupIterations++;
 
     repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
-    plotMeshSetupInfo(repository,meshSetupIterations);
+    printMeshSetupInfo(repository,meshSetupIterations);
     meshUpdate = true;
-  }
-
-  if (meshSetupIterations>=32) {
-    logWarning( "createMesh(...)", "it seems that grid construction has entered infinite loop. Stopped it manually" );
   }
 
   // a few extra iterations for the cell status flag spreading
@@ -723,7 +717,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
 
     repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
-    plotMeshSetupInfo(repository,meshSetupIterations);
+    printMeshSetupInfo(repository,meshSetupIterations);
   }
 
   if (extraIterations<-1) {

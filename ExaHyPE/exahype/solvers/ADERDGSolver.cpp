@@ -1136,7 +1136,7 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
   }
 
   if (vetoErasing) {
-    int coarseGridCellElement = tryGetElement(fineGridCellDescription.getParentIndex(),
+    const int coarseGridCellElement = tryGetElement(fineGridCellDescription.getParentIndex(),
                                               fineGridCellDescription.getSolverNumber());
     if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
       auto& coarseGridCellDescription = getCellDescription(

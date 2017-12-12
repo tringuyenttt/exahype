@@ -49,13 +49,10 @@ double* exahype::solvers::allocateArray( std::vector<int>& heapIndices, const in
 
 void exahype::solvers::freeArrays( std::vector<int>& heapIndices ) {
   for (int i : heapIndices) {
-    assertion(exahype::DataHeap::getInstance().isValidIndex(i));
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
-
+    assertion(exahype::DataHeap::getInstance().isValidIndex(i));
     const bool doRecycle = true;
-    exahype::DataHeap::getInstance().deleteData(
-      i,
-      doRecycle);
+    exahype::DataHeap::getInstance().deleteData(i,doRecycle);
     lock.free();
   }
 

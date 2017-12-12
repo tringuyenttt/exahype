@@ -136,7 +136,7 @@ class exahype::runners::Runner {
   /**
    * Plot some information about the current mesh setup iteration.
    */
-  void plotMeshSetupInfo(
+  void printMeshSetupInfo(
       exahype::repositories::Repository& repository,
       const int meshSetupIterations) const;
 
