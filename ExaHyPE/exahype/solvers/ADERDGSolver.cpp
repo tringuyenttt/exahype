@@ -1922,16 +1922,18 @@ bool exahype::solvers::ADERDGSolver::predictorCanBeProcessedAsBackgroundTask(
   exahype::solvers::Solver::SubcellPosition subcellPosition =
       exahype::amr::computeSubcellPositionOfCellOrAncestor
       <CellDescription,Heap>(cellDescription);
-  auto& parentCellDescription =
-      exahype::solvers::ADERDGSolver::getCellDescription(
-          subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
+  if ( subcellPosition.parentElement!=NotFound ) {
+    auto& parentCellDescription =
+          exahype::solvers::ADERDGSolver::getCellDescription(
+              subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
 
-  canBeProcessedAsBackgroundTask &=
-      subcellPosition.parentElement==exahype::solvers::Solver::NotFound ||
-      cellDescription.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-      parentCellDescription.getHelperStatus()==0 ||
-      !exahype::amr::onBoundaryOfParent(
-          subcellPosition.subcellIndex,subcellPosition.levelDifference);
+    canBeProcessedAsBackgroundTask &=
+        subcellPosition.parentElement==exahype::solvers::Solver::NotFound ||
+        cellDescription.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
+        parentCellDescription.getHelperStatus()==0 ||
+        !exahype::amr::onBoundaryOfParent(
+            subcellPosition.subcellIndex,subcellPosition.levelDifference);
+  }
 
   return canBeProcessedAsBackgroundTask;
 }
