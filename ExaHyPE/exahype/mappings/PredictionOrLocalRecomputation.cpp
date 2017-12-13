@@ -246,32 +246,35 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if (fineGridCell.isInitialised()) {
+    const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
+
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined3);
     pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+      const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
       if ( element!=exahype::solvers::Solver::NotFound ) {
 
         if ( performLocalRecomputation( solver ) ) {
           auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
           limitingADERDG->recomputeSolutionLocally(
-              fineGridCell.getCellDescriptionsIndex(),element);
+              cellDescriptionsIndex,element);
 
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
           if (exahype::State::fuseADERDGPhases()) {
             limitingADERDG->recomputePredictorLocally(
-                fineGridCell.getCellDescriptionsIndex(),element,
+                cellDescriptionsIndex,element,
+                exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+                    fineGridVertices,fineGridVerticesEnumerator),
                 _predictionTemporaryVariables);
             admissibleTimeStepSize = limitingADERDG->startNewTimeStepFused(
-                fineGridCell.getCellDescriptionsIndex(),element,
+                cellDescriptionsIndex,element,
                 exahype::State::isFirstIterationOfBatchOrNoBatch(),
                 exahype::State::isLastIterationOfBatchOrNoBatch());
           } else {
             admissibleTimeStepSize = limitingADERDG->startNewTimeStep(
-                fineGridCell.getCellDescriptionsIndex(),element);
+                cellDescriptionsIndex,element);
           }
-
           _minTimeStepSizes[solverNumber] = std::min(
               admissibleTimeStepSize, _minTimeStepSizes[solverNumber]);
           _minCellSizes[solverNumber] = std::min(
@@ -279,13 +282,17 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           _maxCellSizes[solverNumber] = std::max(
               fineGridVerticesEnumerator.getCellSize()[0],_maxCellSizes[solverNumber]);
 
-          limitingADERDG->determineMinAndMax(fineGridCell.getCellDescriptionsIndex(),element);
+          limitingADERDG->determineMinAndMax(cellDescriptionsIndex,element);
         }
         else if ( performPrediction(solver) ) {
           exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
-              solver,fineGridCell.getCellDescriptionsIndex(),element,_predictionTemporaryVariables);
+              solver,cellDescriptionsIndex,element,
+              exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+                  fineGridVertices,fineGridVerticesEnumerator),
+              _predictionTemporaryVariables);
 
-          solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
+          solver->prolongateDataAndPrepareDataRestriction(
+              cellDescriptionsIndex,element);
         }
 
       }
@@ -294,14 +301,12 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
 
     if ( OneSolverRequestedLocalRecomputation ) {
       exahype::Cell::validateThatAllNeighbourMergesHaveBeenPerformed(
-          fineGridCell.getCellDescriptionsIndex(),
-          fineGridVerticesEnumerator);
+          cellDescriptionsIndex,fineGridVerticesEnumerator);
     }
     exahype::Cell::resetNeighbourMergeFlags(
-        fineGridCell.getCellDescriptionsIndex());
+        cellDescriptionsIndex);
     exahype::Cell::resetFaceDataExchangeCounters(
-        fineGridCell.getCellDescriptionsIndex(),
-        fineGridVertices,fineGridVerticesEnumerator);
+        cellDescriptionsIndex,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }

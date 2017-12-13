@@ -132,7 +132,10 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
         element!=exahype::solvers::Solver::NotFound
     ) {
       exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
-          solver,fineGridCell.getCellDescriptionsIndex(),element,temporaryVariables);
+          solver,fineGridCell.getCellDescriptionsIndex(),element,
+          exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+              fineGridVertices,fineGridVerticesEnumerator),
+          temporaryVariables);
 
       solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
     }

@@ -102,6 +102,9 @@ void exahype::mappings::PredictionRerun::beginIteration(
   _localState = solverState;
 
   exahype::solvers::initialiseTemporaryVariables(_predictionTemporaryVariables);
+
+  // background threads
+  exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
 }
 
 void exahype::mappings::PredictionRerun::endIteration(

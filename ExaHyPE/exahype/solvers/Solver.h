@@ -1473,12 +1473,16 @@ class exahype::solvers::Solver {
    * Either runs the ADERDGSolver triad or
    * performs an FV update. Performs some additional
    * tasks.
+   *
+   * \param[in] isAdjacentToRemoteRank Flag indicating that the cell hosting the
+   *                                   cell description is adjacent to a remote rank.
    */
   virtual UpdateResult fusedTimeStep(
       const int cellDescriptionsIndex,
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
+      const bool isAdjacentToRemoteRank,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,

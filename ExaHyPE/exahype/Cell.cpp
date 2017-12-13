@@ -24,6 +24,8 @@
 
 #include "exahype/plotters/Plotter.h"
 
+#include "exahype/amr/AdaptiveMeshRefinement.h"
+
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
@@ -123,7 +125,7 @@ void exahype::Cell::resetFaceDataExchangeCounters(
   for (auto& p : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
       int listingsOfRemoteRank =
-          countListingsOfRemoteRankAtFace(
+          countListingsOfRemoteRankAtInsideFace(
               faceIndex,fineGridVertices,fineGridVerticesEnumerator);
       if (listingsOfRemoteRank==0) {
         listingsOfRemoteRank = TWO_POWER_D;
@@ -137,7 +139,7 @@ void exahype::Cell::resetFaceDataExchangeCounters(
   for (auto& p : exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(cellDescriptionsIndex)) {
     for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
       int listingsOfRemoteRank =
-          countListingsOfRemoteRankAtFace(
+          countListingsOfRemoteRankAtInsideFace(
               faceIndex,fineGridVertices,fineGridVerticesEnumerator);
       if (listingsOfRemoteRank==0) {
         listingsOfRemoteRank = TWO_POWER_D;
@@ -183,6 +185,26 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Cell::computeFaceBarycentre(
   faceBarycentre[direction] = cellOffset[direction] + orientation * cellSize[direction];
 
   return faceBarycentre;
+}
+
+bool exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+    exahype::Vertex* const verticesAroundCell,
+    const peano::grid::VertexEnumerator& verticesEnumerator) {
+  bool result = false;
+#ifdef Parallel
+  tarch::la::Vector<DIMENSIONS,int> center(1);
+  dfor2(v) // Loop over vertices.
+    if (verticesAroundCell[ verticesEnumerator(v) ].isAdjacentToRemoteRank()) {
+      dfor2(a) // Loop over adjacent ranks. Does also include own rank.
+        result |= tarch::la::countEqualEntries(v+a,center)==DIMENSIONS-1 && // offset in one direction from center=>face neighbour
+                  verticesAroundCell[ verticesEnumerator(v) ].isInside() &&
+                  verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]!=
+                      tarch::parallel::Node::getInstance().getRank();
+      enddforx //a
+    }
+  enddforx // v
+#endif
+  return result;
 }
 
 void exahype::Cell::setupMetaData() {
@@ -289,26 +311,7 @@ int exahype::Cell::getNumberOfFiniteVolumeCellDescriptions() const {
 
 
 #ifdef Parallel
-bool exahype::Cell::isAdjacentToRemoteRank(
-    exahype::Vertex* const verticesAroundCell,
-    const peano::grid::VertexEnumerator& verticesEnumerator) {
-  tarch::la::Vector<DIMENSIONS,int> center(1);
-  dfor2(v) // Loop over vertices.
-  if (verticesAroundCell[ verticesEnumerator(v) ].isAdjacentToRemoteRank()) {
-    dfor2(a) // Loop over adjacent ranks. Does also include own rank.
-            if (tarch::la::countEqualEntries(v+a,center)==DIMENSIONS-1 && // offset in one direction from center=>face neighbour
-                verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]!=
-                    tarch::parallel::Node::getInstance().getRank()) {
-              return true;
-            }
-    enddforx //a
-  }
-  enddforx // v
-
-  return false;
-}
-
-int exahype::Cell::countListingsOfRemoteRankAtFace(
+int exahype::Cell::countListingsOfRemoteRankAtInsideFace(
     const int faceIndex,
     exahype::Vertex* const verticesAroundCell,
     const peano::grid::VertexEnumerator& verticesEnumerator) {

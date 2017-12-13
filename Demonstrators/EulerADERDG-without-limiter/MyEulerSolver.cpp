@@ -54,23 +54,6 @@ void EulerADERDG::MyEulerSolver::eigenvalues(const double* const Q,const int d,d
   eigs.j(u_n,u_n,u_n);
 }
 
-
-std::pair<double,double> EulerADERDG::MyEulerSolver::getMinMaxOfInitialProfile() {
-  std::pair<double,double> result(std::numeric_limits<double>::max(),std::numeric_limits<double>::min());
-
-  for (int x=0; x< static_cast<int>(LogoExaHyPE.width); x++)
-  for (int y=0; y< static_cast<int>(LogoExaHyPE.height); y++) {
-    int index = y*LogoExaHyPE.width+x;
-    result.first  = std::min( result.first,  static_cast<double>(LogoExaHyPE.pixel_data[index]) );
-    result.second = std::max( result.second, static_cast<double>(LogoExaHyPE.pixel_data[index]) );
-  }
-
-  assertion( result.first<=result.second );
-
-  return result;
-}
-
-
 double EulerADERDG::MyEulerSolver::getInitialProfile(const double* const x) {
   tarch::la::Vector<DIMENSIONS,double> myX( x[0] - 0.06, 1.0-x[1] - 0.25 ); // translate
   myX *= static_cast<double>(LogoExaHyPE.width);
@@ -82,8 +65,6 @@ double EulerADERDG::MyEulerSolver::getInitialProfile(const double* const x) {
     myIntX(1) > 0 && myIntX(1) < static_cast<int>(LogoExaHyPE.height)
   ) {
     double value =  LogoExaHyPE.pixel_data[myIntX(1)*LogoExaHyPE.width+myIntX(0)];
-    value -= getMinMaxOfInitialProfile().first;
-    value /= (getMinMaxOfInitialProfile().second - getMinMaxOfInitialProfile().first);
     assertion(value>=0.0);
     assertion(value<=1.0);
     return (2.0-value);

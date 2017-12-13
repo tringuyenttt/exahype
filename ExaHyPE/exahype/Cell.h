@@ -196,6 +196,19 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const int direction, const int orientation);
 
   /**
+   * Returns true if the cell corresponding
+   * to the vertices \p verticesAroundCell
+   * is neighbour to a remote rank
+   * via one of the faces.
+   * Only inside faces are checked, i.e. faces where
+   * at least one vertex is inside.
+   * Boundary and outside vertices are ignored.
+   */
+  static bool isAdjacentToRemoteRankAtInsideFace(
+      exahype::Vertex* const               verticesAroundCell,
+      const peano::grid::VertexEnumerator& verticesEnumerator);
+
+  /**
    * Returns meta data describing the surrounding cell descriptions. The
    * routine is notably used by the automated adapters to derive adjacency
    * information on the cell level.
@@ -286,7 +299,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    */
   bool isInitialised() const;
 
-
   #ifdef Parallel
   /**
    * \return true if the cell is inside and the
@@ -300,17 +312,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const tarch::la::Vector<DIMENSIONS,double>& cellSize ) const;
 
   /**
-   * Returns true if the cell corresponding
-   * to the vertices \p verticesAroundCell
-   * is neighbour to a remote rank
-   * via one of the faces.
-   */
-  static bool isAdjacentToRemoteRank(
-      exahype::Vertex* const               verticesAroundCell,
-      const peano::grid::VertexEnumerator& verticesEnumerator);
-
-  /**
-   * Count the listings of remote ranks sharing a vertex
+   * Count the listings of remote ranks sharing an inside vertex
    * adjacent to the face \p faceIndex of a cell with this rank.
    * In case all vertices adjacent to the face are inside of the domain,
    * this value is either 0 or 2^{d-1}.
@@ -340,7 +342,7 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    * TODO(Dominic): We currently check for uniqueness of the
    * remote rank. This might however not be necessary.
    */
-  static int countListingsOfRemoteRankAtFace(
+  static int countListingsOfRemoteRankAtInsideFace(
       const int                            faceIndex,
       exahype::Vertex* const               verticesAroundCell,
       const peano::grid::VertexEnumerator& verticesEnumerator);
