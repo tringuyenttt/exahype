@@ -1914,6 +1914,28 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
   }
 }
 
+bool exahype::solvers::ADERDGSolver::predictorCanBeProcessedAsBackgroundTask(
+    CellDescription& cellDescription) {
+  bool canBeProcessedAsBackgroundTask = !cellDescription.getIsAugmented();
+
+  // this might be the expensive part (mostly integer stuff though)
+  exahype::solvers::Solver::SubcellPosition subcellPosition =
+      exahype::amr::computeSubcellPositionOfCellOrAncestor
+      <CellDescription,Heap>(cellDescription);
+  auto& parentCellDescription =
+      exahype::solvers::ADERDGSolver::getCellDescription(
+          subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
+
+  canBeProcessedAsBackgroundTask &=
+      subcellPosition.parentElement==exahype::solvers::Solver::NotFound ||
+      cellDescription.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
+      parentCellDescription.getHelperStatus()==0 ||
+      !exahype::amr::onBoundaryOfParent(
+          subcellPosition.subcellIndex,subcellPosition.levelDifference);
+
+  return canBeProcessedAsBackgroundTask;
+}
+
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     CellDescription& cellDescription,
     const bool isAdjacentToRemoteRank,
@@ -1954,83 +1976,79 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     // face DoF (basisSize**(DIMENSIONS-1))
     double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
     double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
-
     for (int i=0; i<getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
     } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
 
-    deltaDistribution(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources);
-    // luh, t, dt, cell cell center, cell size, data allocation for forceVect
-
-    //TODO JMG move everything to inverseDx and use Peano to get it when Dominic implemente it
-    #ifdef OPT_KERNELS
-    double* dx = &cellDescription.getSize()[0];
-    #if DIMENSIONS==2
-    double inverseDx[2];
-    #else
-    double inverseDx[3];
-    inverseDx[2] = 1.0/dx[2];
-    #endif
-    inverseDx[0] = 1.0/dx[0];
-    inverseDx[1] = 1.0/dx[1];
-    spaceTimePredictor(
-        lQhbnd,
-        lFhbnd,
-        tempSpaceTimeUnknowns,
-        tempSpaceTimeFluxUnknowns,
-        tempUnknowns,
-        tempFluxUnknowns,
-        luh,
-        &inverseDx[0], //TODO JMG use cellDescription.getInverseSize() when implemented
-        cellDescription.getPredictorTimeStepSize(),
-        tempPointForceSources);
-    
-    volumeIntegral(
-        lduh,
-        tempSpaceTimeFluxUnknowns[0],
-        tempFluxUnknowns,
-        &inverseDx[0]); //TODO JMG use cellDescription.getInverseSize() when implemented
-    #else //OPT_KERNELS not defined
-    spaceTimePredictor(
-        lQhbnd,
-        lFhbnd,
-        tempSpaceTimeUnknowns,
-        tempSpaceTimeFluxUnknowns,
-        tempUnknowns,
-        tempFluxUnknowns,
-        luh,
-        cellDescription.getSize(),
-        cellDescription.getPredictorTimeStepSize(),
-        tempPointForceSources);
-    
-    volumeIntegral(
-        lduh,
-        tempSpaceTimeFluxUnknowns[0],
-        tempFluxUnknowns,
-        cellDescription.getSize());
-    #endif
-
-    for (int i=0; i<getTempSpaceTimeUnknownsSize(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
-      assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeUnknowns[0][i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
-    for (int i=0; i<getSpaceTimeFluxUnknownsPerCell(); i++) {
-      assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeFluxUnknowns[0][i]), cellDescription.toString(),"performPredictionAndVolumeIntegral",i);
-    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
-
-    #if defined(Debug) || defined(Asserts)
-    if(usePaddedData_nVar()) {
-      //TODO JMG add assert ignoring padding
-    } else {
-      //    for (int i=0; i<getDataPerCell(); i++) {
-      //    assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempUnknowns[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-      //    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
-      //    for (int i=0; i<getFluxUnknownsPerCell(); i++) {
-      //      assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempFluxUnknowns[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-      //    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+    if (
+        false // TODO(Dominic): uncomment
+        &&
+        predictorCanBeProcessedAsBackgroundTask(cellDescription)
+        #ifdef Parallel
+        &&
+        isAdjacentToRemoteRank==false
+        #endif
+    ) {
+      // TODO(Dominic):
+      // Get rid of the temporary variables -> Make stack arrays.
+      // Wait for background tasks to finish in touchVertexFirst, beginIteration
+      PredictionTask myPredictionTask( *this, cellDescription );
+      peano::datatraversal::TaskSet spawnedSet( myPredictionTask, false );
     }
-    #endif
+    else {
+      deltaDistribution(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources);
+      // luh, t, dt, cell cell center, cell size, data allocation for forceVect
 
-    validateNoNansInADERDGSolver(cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
+      #ifdef OPT_KERNELS
+      auto& invDx = tarch::la::invertEntries(cellDescription.getSize());
+      spaceTimePredictor(
+          lQhbnd,lFhbnd,
+          tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
+          luh,
+          invDx.data(),
+          cellDescription.getPredictorTimeStepSize(),
+          tempPointForceSources);
+
+      volumeIntegral(
+          lduh,
+          tempSpaceTimeFluxUnknowns[0],
+          tempFluxUnknowns,
+          invDx.data());
+      #else // OPT_KERNELS not defined
+      spaceTimePredictor(
+          lQhbnd,lFhbnd,
+          tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
+          luh,
+          cellDescription.getSize(),cellDescription.getPredictorTimeStepSize(),tempPointForceSources);
+
+      volumeIntegral(
+          lduh,
+          tempSpaceTimeFluxUnknowns[0],tempFluxUnknowns,
+          cellDescription.getSize());
+      #endif
+
+      for (int i=0; i<getTempSpaceTimeUnknownsSize(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
+        assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeUnknowns[0][i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
+      } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+      for (int i=0; i<getSpaceTimeFluxUnknownsPerCell(); i++) {
+        assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeFluxUnknowns[0][i]), cellDescription.toString(),"performPredictionAndVolumeIntegral",i);
+      } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+
+      #if defined(Debug) || defined(Asserts)
+      if(usePaddedData_nVar()) {
+        //TODO JMG add assert ignoring padding
+      } else {
+        //    for (int i=0; i<getDataPerCell(); i++) {
+        //    assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempUnknowns[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
+        //    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+        //    for (int i=0; i<getFluxUnknownsPerCell(); i++) {
+        //      assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempFluxUnknowns[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
+        //    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+      }
+      #endif
+
+      validateNoNansInADERDGSolver(cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
+    }
   }
 }
 
@@ -4224,6 +4242,27 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
   out <<  ")";
 }
 
+exahype::solvers::ADERDGSolver::PredictionTask::PredictionTask(
+  ADERDGSolver&     solver,
+  CellDescription&  cellDescription
+):
+  _solver(solver),
+  _cellDescription(cellDescription) {
+}
+
+void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
+//  // volume DoF (basisSize**(DIMENSIONS))
+//  double* luh  = DataHeap::getInstance().getData(_cellDescription.getSolution()).data();
+//  double* lduh = DataHeap::getInstance().getData(_cellDescription.getUpdate()).data();
+//  // face DoF (basisSize**(DIMENSIONS-1))
+//  double* lQhbnd = DataHeap::getInstance().getData(_cellDescription.getExtrapolatedPredictor()).data();
+//  double* lFhbnd = DataHeap::getInstance().getData(_cellDescription.getFluctuation()).data();
+//  for (int i=0; i<_solver.getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
+//    assertion3(
+//        tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),_cellDescription.toString(),
+//        "exahype::solvers::ADERDGSolver::PredictionTask::operator()",i);
+//  } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set
+}
 
 exahype::solvers::ADERDGSolver::CompressionTask::CompressionTask(
   ADERDGSolver&                             solver,

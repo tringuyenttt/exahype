@@ -286,39 +286,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
    */
   bool isInitialised() const;
 
-  /**
-   * Evaluates if the predictor can be processed as a
-   * background task for this cell.
-   *
-   * This is the case if the following conditions hold:
-   *
-   * - The cell's (inside) faces are not adjacent to a remote boundary,
-   *   i.e. no data has to send to a neighbouring rank.
-   *
-   * - A cell description is not augmented. Otherwise it
-   *   needs to prolongate face data such that its
-   *   children can compute their
-   *
-   * - A cell description is not at the boundary
-   *   of a parent Ancestor which needs to solve Riemann
-   *   problems with its neighbours.
-   *
-   * The (later) goal of this method will be too prioritise
-   * certain cells --- especially the ones at the remote boundary --
-   * over other cells which do not need to finish computation before
-   * the next local neighbour merge.
-   * Cells at the remote boundary have to directly send out
-   * data such that their neighbours can receive the new boundary
-   * values in the next iteration.
-   *
-   * TODO(Dominic): If this method appears to be too expensive then
-   * it might make sense to precompute the flag after the grid setup and
-   * store it persistently on the patches.
-   */
-  bool predictorCanBeProcessedAsBackgroundTask(
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const;
-
   #ifdef Parallel
   /**
    * \return true if the cell is inside and the

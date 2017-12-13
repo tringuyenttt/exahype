@@ -233,47 +233,6 @@ bool exahype::Cell::isInitialised() const {
   return _cellData.getCellDescriptionsIndex()!=multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
 }
 
-
-bool exahype::Cell::predictorCanBeProcessedAsBackgroundTask(
-    exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
-
-  if (
-      isInitialised()
-      #ifdef Parallel
-      &&
-      !isAdjacentToRemoteRankAtInsideFace(
-          fineGridVertices,fineGridVerticesEnumerator)
-      #endif
-  ) {
-    bool canBeProcessedAsBackgroundTask = true;
-
-    for (auto& cellDescription : exahype::solvers::ADERDGSolver::Heap::getInstance().
-        getData(getCellDescriptionsIndex())) {
-      canBeProcessedAsBackgroundTask &= !cellDescription.getIsAugmented();
-
-      // this might be the expensive part (mostly integer stuff though)
-      exahype::solvers::Solver::SubcellPosition subcellPosition =
-          exahype::amr::computeSubcellPositionOfCellOrAncestor
-          <exahype::solvers::ADERDGSolver::CellDescription,
-           exahype::solvers::ADERDGSolver::Heap>(cellDescription);
-      auto& parentCellDescription =
-          exahype::solvers::ADERDGSolver::getCellDescription(
-              subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-
-      canBeProcessedAsBackgroundTask &=
-          subcellPosition.parentElement==exahype::solvers::Solver::NotFound ||
-          cellDescription.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-          parentCellDescription.getHelperStatus()==0 ||
-          !exahype::amr::onBoundaryOfParent(
-              subcellPosition.subcellIndex,subcellPosition.levelDifference);
-    }
-    return canBeProcessedAsBackgroundTask;
-  } else {
-    return false;
-  }
-}
-
 int exahype::Cell::getCellDescriptionsIndex() const {
   return _cellData.getCellDescriptionsIndex();
 }
