@@ -13,7 +13,7 @@
  
 /**
 
- The GRMHD PDE in the C++ formulation with FV solver.
+  The GRMHD PDE in the C++ formulation with ADERDG solver.
 
  */
 exahype-project GRMHD
@@ -22,19 +22,19 @@ exahype-project GRMHD
   exahype-path const               = ./ExaHyPE
   output-directory const           = ./ApplicationExamples/GRMHD/GRMHD_cpp
   architecture const               = noarch
-  log-file                         = whatever.log
+  log-file                         = logs/whatever.log
 
   computational-domain
     dimension const                = 2
     width                          = 1.0, 1.0
     offset                         = 0.0, 0.0
-    end-time                       = 10.0
+    end-time                       = 10000.0
   end computational-domain
   
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 1
+    cores                    = 8
     properties-file          = sharedmemory.properties
   end shared-memory  
   
@@ -52,53 +52,32 @@ exahype-project GRMHD
     skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
     double-compression = 0.0
-    spawn-double-compression-as-background-thread = off
+    spawn-double-compression-as-background-thread = on
   end global-optimisation
 
-  solver Finite-Volumes GRMHDSolver_FV
-    /* NOTE: Since exahype currently does not compute the derivatives of
-     * the parameters, we cannot put the material parameters extra.
-     * Also currently dont store ,detg:1
-     **/
+  solver Limiting-ADER-DG GRMHDSolver
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1
-    //parameters const               = pos:3,check:1
-    patch-size const               = 8
-    maximum-mesh-size              = 0.11111133333339
-    maximum-mesh-depth             = 0
+    order const                    = 3
+    maximum-mesh-size              = 6.6666669
+    maximum-mesh-depth             = 2
     time-stepping                  = global
-    type const         = godunov
-    terms const        = flux,ncp,source
+    type const = nonlinear
+    terms const = flux,ncp,source
     optimisation const = generic
     language const                 = C
-    constants  = foo:bar,blo:dez
 
-    plot vtk::Cartesian::vertices::ascii ConservedWriter
-      variables const = 23
-      time      = 0.0
-      repeat    = 0.00590278
-      output    = ./vtk-output/conserved
-    end plot
+    // musclhancock doesnt work in the moment
+    limiter-type const             = godunov
+    limiter-optimisation const     = generic
+    limiter-language const         = C
+    dmp-observables                = 2
+    dmp-relaxation-parameter       = 1e-2 
+    dmp-difference-scaling         = 1e-3 
+    steps-till-cured               = 0
 
-    plot vtk::Cartesian::cells::ascii IntegralsWriter
-      variables const = 0
-      time = 1000.0
-      repeat = 0.000001
-      output = ./output/global-integrals
-    end plot
-    
-    plot vtu::Legendre::vertices::ascii PrimitiveWriter
-      variables const = 23
-      time      = 0.0
-      repeat    = 0.000666667
-      output    = ./vtk-output/primitive
-    end plot
+    constants                      = dummy:dummy
 
-    plot vtk::Cartesian::cells::ascii IntegralsWriter
-      variables const = 0
-      time = 1000.0
-      repeat = 0.000001
-      output = ./output/global-integrals
-    end plot
+    // plotters go here
 
   end solver
 end exahype-project

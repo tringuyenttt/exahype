@@ -70,7 +70,7 @@ exahype-project GRMHD
     terms const        = flux,ncp,source
     optimisation const = generic
     language const                 = C
-    //constants  = foo:bar,blo:dez
+    constants  = foo:bar,blo:dez
 
     plot vtk::Cartesian::vertices::binary ConservedWriter
       variables const = 23

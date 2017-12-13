@@ -70,4 +70,21 @@ struct AlfenWaveCons : public AlfenWave {
 		}
 };
 
+struct GRMHD_Shocktube : public InitialDataCode {
+	tarch::logging::Log _log;
+	typedef SVEC::GRMHD::Primitives::Stored state;
+	struct stateFromParameters : public state {
+		void readParameters(const mexa::mexafile& parameters);
+		std::string toString() const;
+		
+	};
+
+	stateFromParameters prims_right, prims_left;
+	double sep_x;
+	
+	GRMHD_Shocktube(); // start with reasonable defaults
+	void readParameters(const mexa::mexafile& parameters) override;
+	void Interpolate(const double* x, double t, double* Q);
+};
+
 #endif /* ANALYTICAL_ID_GRMHD_OCT17 */

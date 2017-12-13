@@ -1,7 +1,11 @@
-// shared between ADERDG and FV solvers
+// shared stuff between ADERDG and FV solvers.
+// This file is only for quick debugging. Evventually everything here
+// will move to a better place.
+// -- svenk.
 
 #include "GRMHDSolver_ADERDG_Variables.h"
 #include <fenv.h> // enable nan tracker
+#include "Parameters/mexa.h"
 
 constexpr double magicCheck = 123456789.0123456789;
 
@@ -10,9 +14,10 @@ inline void enableNanCatcher() {
 }
 
 template<class BC>
-inline void setupProblem(BC* bc) {
+inline void setupProblem(BC* bc, exahype::Parser::ParserView& constants) {
 	static tarch::logging::Log _log("InitialDataCode");
 
+	/// BEGIN OLD STRING MAP VIEW SECTION TO BE REMOVED
 	std::string text_bc, exact_bc, neutronstar_bc;
 	std::string idname;
 	
@@ -36,11 +41,20 @@ inline void setupProblem(BC* bc) {
 		//printf("Could not setup BC string.\n");
 		std::abort();
 	}
+	/// BEGIN OLD STRING MAP VIEW SECTION TO BE REMOVED
+	// TODO: BC parameter parser.
+	
+	// new: Interface between mexa and ParserView:
+	mexa::mexafile mf = mexa::fromOrderedMap(constants.getAllAsOrderedMap(), "specfile");
 	
 	if(!GlobalInitialData::getInstance().setIdByName(idname)) {
 		logError("setupProblem", "Could not set Initial Data '" << idname << "'.");
 		std::abort();
 	}
+	
+	GlobalInitialData::getInstance().readParameters(mf.query("initialdata"));
+	
+	// todo: Read also BC from mf.
 }
 
 // overwrite ADM variables in order to avoid diffusion.

@@ -64,4 +64,68 @@ AlfenWave::AlfenWave(const double* const x, const double t, double* Q) : VacuumI
 	DFOR(i) Si.lo(i) = vel.up(i);
 } // AlfenWave
 
+// The Shocktube solution:
+
+void GRMHD_Shocktube::stateFromParameters::readParameters(const mexa::mexafile& parameters) {
+	std::vector<double> vec;
+	
+	rho = parameters.get_double("rho");
+	press = parameters.get_double("press");
+	
+	vec = parameters.get_double_vec("vel", 3);
+	DFOR(i) vel.up(i) = vec[i];
+
+	phi = 0;
+	vec = parameters.get_double_vec("Bmag", 3);
+	DFOR(i) Bmag.up(i) = vec[i];
+
+	alpha = parameters.get_double("alpha");
+	vec = parameters.get_double_vec("beta", 3);
+	DFOR(i) beta.up(i) = vec[i];
+	
+	// Metric is always unity here.
+	SYMFOR(i,j) gam.lo(i,j) = SVEC::sym::delta(i,j);
+}
+
+std::string GRMHD_Shocktube::stateFromParameters::toString() const {
+	// something like this should instead be part of SVEC.
+	std::stringstream s2s; // state2string
+	s2s << "rho = " << rho << ",";
+	DFOR(i) s2s << "vel.up[" << i << "] = " << vel.up(i) << ",";
+	s2s << "press = " << press << ",";
+	DFOR(i) s2s << "Bmag.up[" << i << "] = " << Bmag.up(i) << ",";
+	s2s << "phi = " << phi << ",";
+	s2s << "alpha = " << alpha << ",";
+	DFOR(i) s2s << "beta.up[" << i << "] = " << beta.up(i) << ",";
+	SYMFOR(i,j) s2s << "gam.lo[" << i << "," << j << "] = " << gam.lo(i,j);
+	return s2s.str();
+}
+
+GRMHD_Shocktube::GRMHD_Shocktube() :
+	_log("InitialData::GRMHD_Shocktube") {
+	// start with reasonable defaults
+}
+
+void GRMHD_Shocktube::readParameters(const mexa::mexafile& parameters) {
+	prims_right.readParameters(parameters.query("right"));
+	prims_left.readParameters(parameters.query("left"));
+	sep_x = parameters.get_double("sep_x");
+	
+	logInfo("readParameters()", "Read setup for GMRHD Shocktube at sep_x="<< sep_x);
+	logInfo("readParameters()", "State at right: {" << prims_right.toString() << "}");
+	logInfo("readParameters()", "State at left: {" << prims_left.toString() << "}");
+}
+
+
+void GRMHD_Shocktube::Interpolate(const double* x, double t, double* Q) {
+	bool is_right = x[0] > sep_x;
+	GRMHD_Shocktube::state prims_local(is_right ? prims_right : prims_left);
+	
+	SVEC::GRMHD::Prim2Cons(Q, prims_local.V);
+	
+	// if you would only copy prims -> prims.
+	// local_state.copy_hydro(Q); // Undefined today, but easy to implement
+	// local_state.copy_magneto(Q);
+	// local_state.copy_adm(Q);
+}
 

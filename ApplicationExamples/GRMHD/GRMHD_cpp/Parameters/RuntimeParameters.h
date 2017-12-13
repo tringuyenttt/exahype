@@ -1,6 +1,17 @@
 #ifndef __GRMHD_RUNTIME_PARAMETERS__
 #define __GRMHD_RUNTIME_PARAMETERS__
 
+/*
+ * RuntimeParameters was an approach to parse strings such as
+ * 
+ *   {foo:bar,baz:bla}
+ *
+ * i.e. select statements or untokenized strings. We do not encounter such
+ * strings any more and the successor of this technique is the mexa.h
+ * interface for hierarchical data.
+ *
+ */
+
 namespace RuntimeParameters {
 
 // abstract class

@@ -26,11 +26,11 @@ BoundaryConditionsADERDG* aderdg_bc;
 
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG" );
 
-void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs) { // ,  exahype::Parser::ParserView constants) {
+void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
 	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
 	aderdg_bc = new BoundaryConditionsADERDG(this);
-	setupProblem<BoundaryConditionsADERDG>(aderdg_bc);
+	setupProblem<BoundaryConditionsADERDG>(aderdg_bc, constants);
 }
 
 

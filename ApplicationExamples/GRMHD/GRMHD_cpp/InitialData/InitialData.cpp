@@ -2,23 +2,40 @@
 #include "InitialData/InitialData.h"
 #include "tarch/logging/Log.h"
 
+#include <algorithm> // transform
+#include <cctype> // tolower
 
-InitialDataCode* InitialDataCode::getInstanceByName(const std::string& idname) {
-	if(idname == "AlfenWave") 	return new AnalyticalID<AlfenWaveCons>;
-	if(idname == "PizzaTOV")	return new pizzatov();
-	if(idname == "RNSID") 		return new rnsid();
+/// String to lowercase, inplace.
+namespace IDtools {
+	
+void toLower(std::string& data) {
+	std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+}
+
+} // IDtools
+
+using namespace IDtools;
+
+InitialDataCode* InitialDataCode::getInstanceByName(std::string idname) {
+	toLower(idname);
+	if(idname == "alfenwave") 	return new AnalyticalID<AlfenWaveCons>;
+	if(idname == "pizzatov")	return new pizzatov();
+	if(idname == "rnsid") 		return new rnsid();
+	if(idname == "shocktube") 	return new GRMHD_Shocktube();
 	return nullptr;
 }
 
 GlobalInitialData& GlobalInitialData::getInstance() {
 	static GlobalInitialData* me = nullptr;
-	if(!me) me = new GlobalInitialData(nullptr);
+	if(!me) me = new GlobalInitialData(nullptr, "null");
 	return *me;
 }
 
-bool GlobalInitialData::setIdByName(const std::string& name) {
-	static tarch::logging::Log _log("InitialDataCode");
+bool GlobalInitialData::setIdByName(const std::string& _name) {
+	static tarch::logging::Log _log("GlobalInitialData");
+	name = _name;
 	if(id) logWarning("setIdByName()", "Have already set global initial data, now overwriting with "<< name << ".");
+	
 	id = InitialDataCode::getInstanceByName(name);
 	if(id) {
 		logInfo("setIdByName()", "Successfully loaded "<< name << " Initial Data.");
@@ -27,6 +44,13 @@ bool GlobalInitialData::setIdByName(const std::string& name) {
 		logError("setIdByName()", "Requested Initial Data '"<< name << "' not known.");
 		return false;
 	}
+}
+
+void GlobalInitialData::readParameters(const mexa::mexafile& parameters) {
+	static tarch::logging::Log _log("GlobalInitialData");
+	if(!id) logError("readParameters()", "GlobalInitialData not defined, please call setIdByName() first.");
+	
+	id->readParameters(parameters);
 }
 
 #include "PDE/PDE.h"

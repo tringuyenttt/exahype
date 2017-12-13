@@ -65,8 +65,7 @@ exahype-project GRMHD
     terms const = flux,ncp,source
     optimisation const = generic
     language const                 = C
-    // constants                      = dummy:dummy
-    /* not yet working: constants aka left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact */
+    constants                      = dummy:dummy
 
     plot vtk::Legendre::vertices::ascii ConservedWriter
       variables const = 23

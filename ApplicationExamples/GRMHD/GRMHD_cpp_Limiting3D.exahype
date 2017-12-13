@@ -75,9 +75,7 @@ exahype-project GRMHD
     dmp-difference-scaling         = 1e-3 
     steps-till-cured               = 0
 
-    // Constants are currently working for FV solvers, but not for ADERDG solvers, therefore removing everywhere
-    //constants                      = dummy:dummy
-    /* not yet working: constants aka left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact */
+    constants                      = dummy:dummy
 
     // plotters go here
 

@@ -5,7 +5,7 @@
 #include "GRMHDSolver_FV_Variables.h" // just for GRMHD-specific variable names
 #include "InitialData/InitialData.h"
 #include "PDE/PDE.h"
-#include "RuntimeParameters.h"
+#include "Parameters/RuntimeParameters.h"
 
 
 #define FV_BOUNDARY_SIGNATURE \

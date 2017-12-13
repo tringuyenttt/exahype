@@ -18,9 +18,9 @@ using namespace GRMHD;
 
 tarch::logging::Log GRMHD::GRMHDSolver_FV::_log( "GRMHD::GRMHDSolver_FV" );
 
-void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs) { //, exahype::Parser::ParserView& constants) {
+void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
 	fv_bc  = new BoundaryConditionsFV(this);
-	setupProblem<BoundaryConditionsFV>(fv_bc);
+	setupProblem<BoundaryConditionsFV>(fv_bc, constants);
 }
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {

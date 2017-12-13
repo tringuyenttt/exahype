@@ -104,6 +104,7 @@ BaseShocktube/Coord/offset_y = 0.0
 BaseShocktube/Coord/offset_z = 0.0
 BaseShocktube/end_time = 0.4
 BaseShocktube/order = 3
+BaseShocktube/sep_x = 0.5  # where to seperate left and right.
 
 # TBD:
 BaseShocktube/maximum_mesh_size = 0.0
@@ -121,6 +122,14 @@ BaseShocktube/Boundaries/back = "illegal"
 # The RP1 shocktube
 
 Shocktubes/RP1 <= BaseShocktube
+Shocktubes/RP1/gamma_C = 2.0
+
+Shocktubes/RP1/adm/alpha = 1.0
+Shocktubes/RP1/adm/beta/x = 0
+Shocktubes/RP1/adm/beta/y = 0
+Shocktubes/RP1/adm/beta/z = 0
+
+Shocktubes/RP1/right < adm
 Shocktubes/RP1/right/rho = 0.125
 Shocktubes/RP1/right/vel/x = 0
 Shocktubes/RP1/right/vel/y = 0
@@ -130,6 +139,7 @@ Shocktubes/RP1/right/Bmag/x = 0.5
 Shocktubes/RP1/right/Bmag/y = -1.0
 Shocktubes/RP1/right/Bmag/z = 0.0
 
+Shocktubes/RP1/left < adm
 Shocktubes/RP1/left/rho = 1.0
 Shocktubes/RP1/left/vel/x = 0
 Shocktubes/RP1/left/vel/y = 0
@@ -139,11 +149,7 @@ Shocktubes/RP1/left/Bmag/x = 0.5
 Shocktubes/RP1/left/Bmag/y = +1.0
 Shocktubes/RP1/left/Bmag/z = 0.0
 
-Shocktubes/RP1/alpha = 1.0
-Shocktubes/RP1/beta/x = 0
-Shocktubes/RP1/beta/y = 0
-Shocktubes/RP1/beta/z = 0
-Shocktubes/RP1/gamma_C = 2.0
+
 
 # collect simulation steering data
 
