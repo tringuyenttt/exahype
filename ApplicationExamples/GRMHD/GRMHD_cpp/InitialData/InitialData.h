@@ -20,20 +20,24 @@ struct InitialDataCode {
 void InitialData(const double* x, double t, double* Q);
 
 // global initial data
-struct GlobalInitialData {
+class GlobalInitialData {
+	tarch::logging::Log _log;
+public:
+	/// The pointer is by default null, meaning no ID can be used. The setIdByName method
+	/// sets this id pointer, finally.
 	InitialDataCode* id;
 	std::string name; ///< set by setIdByName
 	
-	GlobalInitialData(InitialDataCode* _id, std::string _name) : id(_id), name(_name) {}
+	GlobalInitialData(InitialDataCode* _id, std::string _name) : _log("GlobalInitialData"), id(_id), name(_name) {}
 	
-	// Returns true in case of success
+	/// Returns true in case of success
 	bool setIdByName(const std::string& name);
+	
+	/// Tries to read ID from parameters. In case of problems, raises exceptions.
+	void setByParameters(const mexa::mexafile& parameters, const std::string idnamekey="name");
 	
 	/// Gives a singleton instance
 	static GlobalInitialData& getInstance();
-	
-	/// Read the parameters for the id.
-	void readParameters(const mexa::mexafile& parameters);
 	
 	// as a shorthand
 	static InitialDataCode& getInitialDataCode() { return *(getInstance().id); }

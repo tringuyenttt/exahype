@@ -46,11 +46,18 @@ bool GlobalInitialData::setIdByName(const std::string& _name) {
 	}
 }
 
-void GlobalInitialData::readParameters(const mexa::mexafile& parameters) {
-	static tarch::logging::Log _log("GlobalInitialData");
-	if(!id) logError("readParameters()", "GlobalInitialData not defined, please call setIdByName() first.");
-	
-	id->readParameters(parameters);
+void GlobalInitialData::setByParameters(const mexa::mexafile& parameters, const std::string idnamekey) {
+	if(!parameters.contains(idnamekey)) {
+		logError("setByParameters()", "Need parameter key '" << idnamekey << "' to be set to a valid initial data function.");
+		std::abort();
+	}
+	bool couldSetId = setIdByName(parameters.get_string(idnamekey));
+	if(!couldSetId) {
+		logError("setByParameters()", "Could not create Initial Data. Cannot solve an initial value problem without initial data.");
+		std::abort();
+	} else {
+		id->readParameters(parameters);
+	}
 }
 
 #include "PDE/PDE.h"

@@ -1,5 +1,8 @@
 #include "GRMHDSolver_FV.h"
+#include "GRMHDSolver_FV_Variables.h"
+
 #include <algorithm> // fill_n
+
 #include "peano/utils/Dimensions.h"
 
 #include "PDE/PDE-GRMHD-ExaHyPE.h"
@@ -7,20 +10,20 @@
 #define ExaGRMHD SVEC::GRMHD::ExaHyPEAdapter
 
 #include "InitialData/InitialData.h"
-#include "BoundaryConditions_FV.h"
-#include "GRMHDSolver_FV_Variables.h"
+#include "BoundaryConditions.h"
 #include "DebuggingHelpers.h"
 
 constexpr int nVar = GRMHD::AbstractGRMHDSolver_FV::NumberOfVariables;
 constexpr int nDim = DIMENSIONS;
-BoundaryConditionsFV* fv_bc;
 using namespace GRMHD;
 
 tarch::logging::Log GRMHD::GRMHDSolver_FV::_log( "GRMHD::GRMHDSolver_FV" );
 
 void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
-	fv_bc  = new BoundaryConditionsFV(this);
-	setupProblem<BoundaryConditionsFV>(fv_bc, constants);
+	mexa::mexafile mf = mexa::fromOrderedMap(constants.getAllAsOrderedMap(), "specfile");
+	
+	GlobalInitialData::getInstance().setByParameters(mf.query("initialdata"));
+	GlobalBoundaryConditions::getInstance().initializeFV(this).readParameters(mf.query("boundaries"));
 }
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
@@ -122,7 +125,7 @@ void GRMHD::GRMHDSolver_FV::boundaryValues(
 	// SET BV for all 9 variables + 11 parameters.
 	
 	// Let it be managed by user parameters
-	fv_bc->apply(FV_BOUNDARY_CALL);
+	GlobalBoundaryConditions::getInstance().apply(FV_BOUNDARY_CALL);
 	
 	// EXACT FV AlfenWave BC
 	// InitialData(x, t, stateOut);

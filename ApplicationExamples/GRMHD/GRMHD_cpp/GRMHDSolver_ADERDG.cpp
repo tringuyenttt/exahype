@@ -1,36 +1,39 @@
 #include "GRMHDSolver_ADERDG.h"
+#include "GRMHDSolver_ADERDG_Variables.h"
+
 #include <algorithm> // fill_n
 #include <cstring> // memset
 
 #include "kernels/KernelUtils.h" // matrix indexing
 #include "kernels/GaussLegendreQuadrature.h"
-
 #include "peano/utils/Dimensions.h" // Defines DIMENSIONS
+
 //namespace GRMHD { constexpr int nVar = GRMHDSolver_FV::NumberOfVariables; } // ensure this is 19 or so
 #include "InitialData/InitialData.h"
-#include "BoundaryConditions_ADERDG.h"
-
 #include "PDE/PDE-GRMHD-ExaHyPE.h"
+#include "DebuggingHelpers.h"
+#include "BoundaryConditions.h"
+
 //namespace SVEC::GRMHD::ExaHyPEAdapter = ExaGRMHD;
 #define ExaGRMHD SVEC::GRMHD::ExaHyPEAdapter
 using namespace tensish;
 
-#include "GRMHDSolver_ADERDG_Variables.h"
-#include "DebuggingHelpers.h"
+
 
 constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 constexpr int order = GRMHD::AbstractGRMHDSolver_ADERDG::Order;
 constexpr int basisSize = order + 1;
 constexpr int nDim = DIMENSIONS;
-BoundaryConditionsADERDG* aderdg_bc;
 
 tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG" );
 
 void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
 	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
-	aderdg_bc = new BoundaryConditionsADERDG(this);
-	setupProblem<BoundaryConditionsADERDG>(aderdg_bc, constants);
+	mexa::mexafile mf = mexa::fromOrderedMap(constants.getAllAsOrderedMap(), "specfile");
+	
+	GlobalInitialData::getInstance().setByParameters(mf.query("initialdata"));
+	GlobalBoundaryConditions::getInstance().initializeDG(this).readParameters(mf.query("boundaries"));
 }
 
 
@@ -168,7 +171,7 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
 	*/
 	
 	// Let it be managed by user parameters
-	aderdg_bc->apply(ADERDG_BOUNDARY_CALL);
+	GlobalBoundaryConditions::getInstance().apply(ADERDG_BOUNDARY_CALL);
 	
 	/*
 	// employ time-integrated exact BC for AlfenWave.
