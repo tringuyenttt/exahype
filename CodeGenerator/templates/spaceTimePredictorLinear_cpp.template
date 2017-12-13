@@ -50,58 +50,35 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
     const tarch::la::Vector<DIMENSIONS, double>& inverseDx,
     const double dt
 ) {
-  
-  // Define constants
-  // constexpr int numberOfVariables  = SolverType::NumberOfVariables;
-  // constexpr int numberOfParameters = SolverType::NumberOfParameters;
-  // constexpr int numberOfData       = numberOfVariables+numberOfParameters;
-  // constexpr int basisSize          = SolverType::Order+1;
-  // constexpr int basisSize2         = basisSize * basisSize;
-  // constexpr int basisSize3         = basisSize2 * basisSize;
-  // constexpr int basisSize4         = basisSize2 * basisSize2;
-  // constexpr int order              = basisSize - 1;
-  
-  //constexpr int sourceIndex = DIMENSIONS;
-
+ 
   const double invDt = 1. / dt;
   
-  // Matrices
-  
-  // double* PSi = tempPointForceSources[0];    // nullptr if bnot usePointSource,  size: basisSize3 * (basisSize + 1) * numberOfVariables
-  // idx5 idx_PSi(basisSize + 1, basisSize, basisSize, basisSize, numberOfVariables);
-  
-  // double* PSderivatives = tempPointForceSources[1]; // nullptr if bnot usePointSource, size: basisSize3 * (basisSize + 1) * numberOfVariables
-  // double* tmp_PSderivatives = tempSpaceTimeFluxUnknowns[0]; 
-  // idx5 idx_PSderivatives(basisSize, basisSize, basisSize, basisSize, numberOfVariables); //no need for 0th time derivative
   double* tmp_PSderivatives = lFi; // it's actually lFi used here as a temp array //TODO do something cleaner?
   
-  // double* lQi = tempSpaceTimeUnknowns[0]; // size: basisSize3 * (basisSize + 1) * numberOfData;
-  // idx5 idx_lQi(basisSize + 1, basisSize, basisSize, basisSize, numberOfData);
-  // std::fill_n(lQi, basisSize3 * (basisSize + 1) * numberOfData, 0.);
   std::memset(lQi, 0, {{(nDof+1)*(nDof**nDim)*nDataPad}}*sizeof(double));
-  
-  // double* lFi = tempSpaceTimeFluxUnknowns[0]; // size: basisSize4 * DIMENSIONS+1 * numberOfVariables
-  // idx6 idx_lFi(basisSize, basisSize, basisSize, basisSize, DIMENSIONS+1, numberOfVariables);
-  // std::fill_n(lFi,basisSize4*(DIMENSIONS+1)*numberOfVariables, 0.);
   std::memset(lFi, 0, {{nDim*nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
   
-  // double* gradQ = tempSpaceTimeFluxUnknowns[1]; //  nullptr if not useNCP, size: basisSize4 * DIMENSIONS * numberOfVariables
-  // idx6 idx_gradQ(basisSize, basisSize, basisSize, basisSize, DIMENSIONS, numberOfVariables);
-  
+ 
 {% if useNCP %}
   std::memset(gradQ, 0, {{nDim*nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
   std::memset(lSi  , 0, {{nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
 {% endif %}
 
-  //idx4 idx_luh(basisSize, basisSize, basisSize, numberOfData);
- 
   // local tmp array
-  double fluxDerivative[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); 
-  //idx2 idx_fluxDerivative(basisSize, numberOfVariables);
-  
+{% if useFlux %}
+  double fluxDerivative[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+{% endif %}
+{% if useNCP %}
   double ncpResult[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); 
-  //idx2 idx_ncpResult(DIMENSIONS, numberOfVariables);
   double gradQNoPad[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); 
+{% endif %}
+  double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  
+  // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
+  #pragma simd
+  for (int it = 0; it < {{nDof*nDofPad}}; it++) {
+    dudxT_by_dx[it] = inverseDx[0] * dudx_T[it];
+  }
   
   //***************************
   //**** Cauchy-Kovalewski ****
@@ -187,16 +164,11 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
         for (int n = 0; n < {{nVar}}; n++) {
           for (int x = 0; x < {{nDof}}; x++) {
-            fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D*nDof}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] * dudx_T[l*{{nDofPad}}+x] * inverseDx[0] ;
+            fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D*nDof}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] * dudxT_by_dx[l*{{nDofPad}}+x];
           }
         }
       }
       std::copy_n(fluxDerivative, {{nDof*nVarPad}}, lFi+(i*{{nDof3D*nDof}}+yz)*{{nDof*nVarPad}}); 
-      // for (int l = 0; l < basisSize; l++) {
-        // for (int n = 0; n < numberOfVariables; n++) {
-          // lFi[idx_lFi(0, i, yz, l, n)] = fluxDerivative[l*{{nVarPad}}+n];
-        // }
-      // }
     }
 
     //dflux2 dy
@@ -206,7 +178,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
         for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
           for (int n = 0; n < {{nVar}}; n++) {
             for (int y = 0; y < {{nDof}}; y++) {
-              fluxDerivative[l*{{nVarPad}}+n] += lFi[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] * dudx_T[l*{{nDofPad}}+y] * inverseDx[1] ;
+              fluxDerivative[l*{{nVarPad}}+n] += lFi[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+y];
               
             }
           }
@@ -227,7 +199,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
         for (int n = 0; n < {{nVar}}; n++) {
           for (int z = 0; z < {{nDof}}; z++) {
-            fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] * dudx_T[l*{{nDofPad}}+z] * inverseDx[2]; 
+            fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+z]; 
           }
         }
       }
@@ -239,15 +211,15 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       }
     }
 {% endif %}
-
 {% endif %} {# useFlux #}
+
 {% if useNCP %}
     // Compute the derivatives in x direction (independent from the y and z derivatives)
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
       for (int x = 0; x < {{nDof}}; x++) { // TODO use Libxsmm
         for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
           for (int l = 0; l < {{nDof}}; l++) {
-            gradQ[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] += lQi[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+l)*{{nDataPad}}+n] * dudx_T[x*{{nDofPad}}+l] * inverseDx[0];
+            gradQ[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] += lQi[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+l)*{{nDataPad}}+n] * dudxT_by_dx[x*{{nDofPad}}+l];
           }
         }
       }
@@ -259,7 +231,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
         for (int y = 0; y < {{nDof}}; y++) { //TODO use Libxsmm
           for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
             for (int l = 0; l < {{nDof}}; l++) {
-              gradQ[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] += lQi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nDataPad}}+n] * dudx_T[y*{{nDofPad}}+l] * inverseDx[1];
+              gradQ[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] += lQi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nDataPad}}+n] * dudxT_by_dx[y*{{nDofPad}}+l];
             }
           }
         }
@@ -272,7 +244,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       for (int z = 0; z < {{nDof}}; z++) {     
         for (int n = 0; n < {{nVar}}; n++) {// Skip parameters
           for (int l = 0; l < {{nDof}}; l++) {
-            gradQ[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] += lQi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * dudx_T[z*{{nDofPad}}+l] * inverseDx[2];
+            gradQ[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] += lQi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * dudxT_by_dx[z*{{nDofPad}}+l];
           }
         }
       }
@@ -337,15 +309,10 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
     
   } //i
 
+  
   //*****************************
   //**** Averaging over time ****
   //*****************************
-  
-  //double* lQhi = tempUnknowns;
-  //idx4 idx_lQhi(basisSize, basisSize, basisSize, numberOfData);
-  
-  //double* lFhi = tempFluxUnknowns;
-  //idx5 idx_lFhi(DIMENSIONS+1, basisSize, basisSize, basisSize, numberOfVariables);
 
   // Immediately compute the time-averaged space-time polynomials
   // Fortran: lQhi(:,:,:,:) = lQi(:,:,:,:,1)
@@ -362,36 +329,12 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
     dtavFac *= dt / (i + 2);
   }
 
- 
-  // lFhi(m,l,k,j,i) = lFi(m,i,l,k,j,1)
-  // for (int i = 0; i < DIMENSIONS; i++) {
-    // for (int j = 0; j < basisSize; j++) {
-      // for (int k = 0; k < basisSize; k++) {
-        // for (int l = 0; l < basisSize; l++) {
-          // for (int m = 0; m < numberOfVariables; m++) {
-            // lFhi[idx_lFhi(i, j, k, l, m)] = lFi[idx_lFi(0, j, k, l, i, m)];
-          // }
-        // }
-      // }
-    // }
-  // }  
   std::copy_n(lFi, {{(nDof**nDim)*nVarPad}}, lFhi); //x
   std::copy_n(lFi+{{1*nDof*(nDof**nDim)*nVarPad}}, {{(nDof**nDim)*nVarPad}}, lFhi+{{1*(nDof**nDim)*nVarPad}}); //y
 {% if nDim==3 %}
   std::copy_n(lFi+{{2*nDof*(nDof**nDim)*nVarPad}}, {{(nDof**nDim)*nVarPad}}, lFhi+{{2*(nDof**nDim)*nVarPad}}); //z
 {% endif %}
 
-  // if(useSource){
-    // for (int j = 0; j < basisSize; j++) {
-      // for (int k = 0; k < basisSize; k++) {
-        // for (int l = 0; l < basisSize; l++) {
-          // for (int m = 0; m < numberOfVariables; m++) {
-            // lFhi[idx_lFhi(sourceIndex, j, k, l, m)] = lFi[idx_lFi(0, j, k, l, sourceIndex, m)];
-          // }
-        // }
-      // }
-    // }
-  // }
 {% if useSource %}
   std::copy_n(lSi, {{(nDof**nDim)*nVarPad}}, lShi); //source
 {% endif %}
@@ -412,18 +355,6 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 {% endif %}
       }
     }
-
-    // if(useSource){
-      // for (int k = 0; k < basisSize; k++) {
-        // for (int l = 0; l < basisSize; l++) {
-          // for (int m = 0; m < basisSize; m++) {
-            // for (int n = 0; n < numberOfVariables; n++) {
-              // lFhi[idx_lFhi(sourceIndex, k, l, m, n)] += dtavFac * lFi[idx_lFi(i, k, l, m, sourceIndex, n)];
-            // }
-          // }
-        // }
-      // }
-    // }
     
     dtavFac *= dt / (i + 2);
   }
@@ -445,15 +376,13 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
   }
 {% endif %}
 
+
   //***********************
   //**** Extrapolation ****
   //***********************
   
-  //idx4 idx_lQhbnd(2 * DIMENSIONS, basisSize, basisSize, numberOfData);
   std::memset(lQhbnd, 0, {{2*nDim*nDof*nDof3D*nDataPad}}*sizeof(double));
-
-  //idx4 idx_lFhbnd(2 * DIMENSIONS, basisSize, basisSize, numberOfVariables);
-  std::memset(lFhbnd, 0, {{2*nDim*nDof*nDof3D*nVarPad}}*sizeof(double));
+  std::memset(lFhbnd, 0, {{2*nDim*nDof*nDof3D*nVarPad }}*sizeof(double));
 
   // x-direction: face 1 (left) and face 2 (right)
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
@@ -481,8 +410,6 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
   // y-direction: face 3 (left) and face 4 (right)
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int x = 0; x < {{nDof}}; x++) {
-      // lQhbnd(:,j,i,3) = lQhi(:,j,:,i) * FLCoeff(:)
-      // lQhbnd(:,j,i,4) = lQhi(:,j,:,i) * FRCoeff(:)
       for (int y = 0; y < {{nDof}}; y++) {
         #pragma simd
         for (int n = 0; n < {{nDataPad}}; n++) {
@@ -492,8 +419,6 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
           lQhbnd[(z*{{nDof3D}}+x)*{{nDataPad}}+n+{{3*nDof*nDof3D*nDataPad}}] += lQhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nDataPad}}+n] * FRCoeff[y];
         }
       }
-      // lFhbnd(:,j,i,3) = lFhi(:,j,:,i,2) * FLCoeff(:)
-      // lFhbnd(:,j,i,4) = lFhi(:,j,:,i,2) * FRCoeff(:)
       for (int y = 0; y < {{nDof}}; y++) {
         #pragma simd
         for (int n = 0; n < {{nVarPad}}; n++) {
@@ -509,8 +434,6 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 
   // z-direction: face 5 (left) and face 6 (right)
   for (int xy = 0; xy < {{nDof*nDof3D}}; xy++) {
-    // lQhbnd(:,j,i,5) = lQhi(:,j,i,:) * FLCoeff(:)
-    // lQhbnd(:,j,i,6) = lQhi(:,j,i,:) * FRCoeff(:)
     for (int z = 0; z < {{nDof}}; z++) {
       for (int n = 0; n <{{nDataPad}}; n++) {
         // left
@@ -519,8 +442,6 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
         lQhbnd[xy*{{nDataPad}}+n+{{5*nDof*nDof3D*nDataPad}}] += lQhi[(z*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * FRCoeff[z];
       }
     }
-    // lFhbnd(:,j,i,5) = lFhi(:,j,i,:,3) * FLCoeff(:)
-    // lFhbnd(:,j,i,6) = lFhi(:,j,i,:,3) * FRCoeff(:)
     for (int z = 0; z < {{nDof}}; z++) {
       for (int n = 0; n < {{nVarPad}}; n++) {
         // left
@@ -532,4 +453,4 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
   }
 {% endif %}
   
-} //
+}
