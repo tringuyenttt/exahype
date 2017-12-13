@@ -1,8 +1,6 @@
 #ifndef __CurvilinearTransformation_CLASS_HEADER__
 #define __CurvilinearTransformation_CLASS_HEADER__
 
-
-
 class CurvilinearTransformation{
 
  public:
@@ -137,11 +135,19 @@ class CurvilinearTransformation{
   double* back_bnd_y[2];
   double* back_bnd_z[2];
 
+  double a_x;
+  double a_y;
+  double a_z;
+  double b_x;
+  double b_y;
+  double b_z;
+
   double fault(double y, double z,double a_y, double b_y, double a_z, double b_z);
-  double topography(double x, double z,double a_x, double b_x,double a_z, double b_z);
-
-
-
+  double topography(double x, double z,double a_x, double b_x,double a_z, double b_z, double depth);
+  
+/* #if defined(USE_ASAGI) */
+/*   double topography_fromASAGI(double x, double z, double* topography, easi::ArraysAdapter& adapter, easi::Component* model); */
+/* #endif   */
 
   void getInterpolatedFace_fromBottomAndTop( int n_block, int n_left_right, int n_top_bottom, int face,
 					   double* top_bnd_x, double* top_bnd_y, double* top_bnd_z,
