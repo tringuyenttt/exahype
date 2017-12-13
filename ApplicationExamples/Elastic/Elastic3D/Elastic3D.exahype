@@ -31,13 +31,13 @@ exahype-project  ElasticWaveEquation3D
     dimension const          = 3
     width                    = 1.0, 1.0, 1.0
     offset                   = 0.0, 0.0, 0.0
-    end-time                 = 0.1
+    end-time                 = 0.001
   end computational-domain
 
   shared-memory
     identifier               = dummy
     configure                = {}
-    cores                    = 4
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory	       
 
@@ -64,7 +64,7 @@ exahype-project  ElasticWaveEquation3D
     parameters const  = rho:1,c:2,jacobian:1,metric_derivative:9,curve_grid:3
     order const       = 5
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size = 0.15
+    maximum-mesh-size = 0.05
 //    maximum-mesh-size = 0.15
     time-stepping     = globalfixed
     type const = linear

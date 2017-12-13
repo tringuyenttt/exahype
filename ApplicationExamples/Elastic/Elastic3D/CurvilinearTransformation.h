@@ -109,6 +109,7 @@ class CurvilinearTransformation{
   const double dx;
   const double fault_position;
 
+  double* lagrange_basis_at_nodes;
   double* denominator_lagrange;
   double* unif_mesh;
 
@@ -149,13 +150,13 @@ class CurvilinearTransformation{
 
   void interpolate(double x, double y, double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes, double& result);
   
-  void interpolate3D(double x, double y, double z, double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes,double& result);
+  void interpolate3D(int x, int y, int z, double* dest_mesh, int num_nodes,double& result);
 
-  double lagrangeBasis(double x,double* points,int i,int num_points);
+  double lagrangeBasis(double x,int i,int num_points);
 
   void getValuesAtQuadNodes(double* orig_mesh_x , double* orig_mesh_y, double* dest_mesh, int num_nodes, double* results);
 
-  void getValuesAtQuadNodes3D(double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes, double* results);
+  void getValuesAtQuadNodes3D(double* dest_mesh, int num_nodes, double* results);
 
   void computeDerivatives_x(int i, int j, double* values , int num_nodes, double& der_x, double dx);
 

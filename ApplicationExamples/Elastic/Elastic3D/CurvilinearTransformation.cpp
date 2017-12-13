@@ -7,6 +7,12 @@
 #include "kernels/GaussLegendreQuadrature.h"
 #endif
 
+#if defined(USE_ASAGI)
+#include "easi/YAMLParser.h"
+#include "easi/ResultAdapter.h"
+#include "reader/asagi_reader.h"
+#endif
+
 
 // void Linear::CurvilinearTransformation::test(){
 //   return;
@@ -95,6 +101,26 @@ CurvilinearTransformation::CurvilinearTransformation(const int a_num_nodes,const
     }
     denominator_lagrange[i] = 1.0/temp;
   }
+
+
+  
+  kernels::idx2 id_xy(num_nodes,num_nodes); //nodes,polynome
+  lagrange_basis_at_nodes = new double[num_nodes*num_nodes];
+  kernels::initGaussLegendreNodesAndWeights(std::set<int>()); //empty set as it is not used in function
+
+  for(int i=0; i< num_nodes ; i++){
+    for (int j = 0 ; j< num_nodes ; j ++){
+#if defined(_GLL)
+      lagrange_basis_at_nodes[id_xy(j,i)]
+	=lagrangeBasis(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-j],i,num_nodes);
+#else
+      lagrange_basis_at_nodes[id_xy(j,i)]
+	=lagrangeBasis(kernels::gaussLegendreNodes[num_nodes-1][j],i,num_nodes);
+#endif
+    }
+  }
+
+  
 }
 
 void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSIONS,double>& center,
@@ -791,17 +817,39 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
       
     }
   }
-   //given top surface
+#if defined(USE_ASAGI)
+  constexpr int chunksize=1;
+  AsagiReader asagiReader("");
+  easi::YAMLParser parser(3,&asagiReader);
+  easi::Component* model = parser.parse("topography.yaml");
+  double topography[chunksize];
+
+  easi::ArraysAdapter adapter;
+  adapter.addBindingPoint("z",topography);
+
+#endif
+
+  //given top surface
   for(int k = 0 ; k< nz; k++){  
     for(int i = 0 ; i< nx; i++){
       
       x = top_bnd_x[id_xz(k,i)];
       z = top_bnd_z[id_xz(k,i)];
-	
+#if !defined(USE_ASAGI)	
       top_bnd_y[id_xz(k,i)] = -topography(x, z, 0.0, 1.0, 0.0, 1.0);
+#else
+      easi::Query query(1,3);
+      query.x(0,0)=x;
+      query.x(0,1)=z;
+      query.x(0,2)=0;
+      
+      model->evaluate(query,adapter);
+
+      top_bnd_y[id_xz(k,i)] = -topography[0];
+#endif
     }
   }
-  
+ 
 
   {
   double* top_edge_y = new double[nz];
@@ -1596,7 +1644,7 @@ void CurvilinearTransformation::transFiniteInterpolation(int mx, int my, int j_m
 // }
 
 
-double CurvilinearTransformation::lagrangeBasis(double x,double* points,int i,int num_points){
+double CurvilinearTransformation::lagrangeBasis(double x,int i,int num_points){
   double result=1;
 
   for (int j = 0 ; j< i ; j ++){
@@ -1610,14 +1658,12 @@ double CurvilinearTransformation::lagrangeBasis(double x,double* points,int i,in
   }
 
   result*= denominator_lagrange[i];
-
-   
+  
   return result;
 }
 
 
-
-void CurvilinearTransformation::interpolate3D(double x, double y, double z, double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes,double& result){
+void CurvilinearTransformation::interpolate3D(int x, int y ,int z, double* dest_mesh, int num_nodes,double& result){
 
   double a_x=0;
   double a_y=0;
@@ -1626,18 +1672,15 @@ void CurvilinearTransformation::interpolate3D(double x, double y, double z, doub
   result=0;
   
   kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes);
-
-
+  kernels::idx2 id_xy(num_nodes,num_nodes); //nodes,polynome
 
   for (int k = 0 ; k< num_nodes ; k++){    
     for (int j = 0 ; j< num_nodes ; j ++){
       for (int i = 0 ; i< num_nodes ; i ++){
-	                  // unifMesh
-	a_x=lagrangeBasis(x,orig_mesh_x,i,num_nodes);
-	                  // unifMesh
-	a_y=lagrangeBasis(y,orig_mesh_y,j,num_nodes);
-	                  // unifMesh
-	a_z=lagrangeBasis(z,orig_mesh_z,k,num_nodes);
+	a_x=lagrange_basis_at_nodes[id_xy(x,i)];
+	a_y=lagrange_basis_at_nodes[id_xy(y,j)];
+	a_z=lagrange_basis_at_nodes[id_xy(z,k)];
+	
 	result += dest_mesh[id_xyz(k,j,i)] * a_x*a_y*a_z;
       }
     }
@@ -1658,8 +1701,8 @@ void CurvilinearTransformation::interpolate(double x, double y, double* orig_mes
   
   for (int j = 0 ; j< num_nodes ; j ++){
     for (int i = 0 ; i< num_nodes ; i ++){
-      a_x=lagrangeBasis(x,orig_mesh_x,i,num_nodes);
-      a_y=lagrangeBasis(y,orig_mesh_y,j,num_nodes);
+      a_x=lagrangeBasis(x,i,num_nodes);
+      a_y=lagrangeBasis(y,j,num_nodes);
       result += dest_mesh[id_xy(j,i)] * a_x*a_y;
     }
   }
@@ -1667,7 +1710,7 @@ void CurvilinearTransformation::interpolate(double x, double y, double* orig_mes
 
 
 
-void CurvilinearTransformation::getValuesAtQuadNodes3D(double* orig_mesh_x , double* orig_mesh_y, double* orig_mesh_z, double* dest_mesh, int num_nodes, double* results){
+void CurvilinearTransformation::getValuesAtQuadNodes3D(double* dest_mesh, int num_nodes, double* results){
   // unifMesh unifMesh unifMesh
 
   kernels::idx3 id_xyz(num_nodes,num_nodes,num_nodes);
@@ -1676,21 +1719,7 @@ void CurvilinearTransformation::getValuesAtQuadNodes3D(double* orig_mesh_x , dou
   for (int k = 0 ; k< num_nodes ; k ++){
     for (int j = 0 ; j< num_nodes ; j ++){
       for (int i = 0 ; i< num_nodes ; i ++){
-#if defined(_GLL)
-	interpolate3D(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-i],
-		      kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-j],
-		      kernels::gaussLobattoNodes[num_nodes-1][num_nodes-1-k],
-		      // unifMesh unifMesh unifMesh
-		      orig_mesh_x,orig_mesh_y,orig_mesh_z,
-		      dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
-	#else
-	interpolate3D(kernels::gaussLegendreNodes[num_nodes-1][i],
-		      kernels::gaussLegendreNodes[num_nodes-1][j],
-		      kernels::gaussLegendreNodes[num_nodes-1][k],
-		      // unifMesh unifMesh unifMesh
-		      orig_mesh_x,orig_mesh_y,orig_mesh_z,dest_mesh,
-		      num_nodes,results[id_xyz(k,j,i)]);
-	#endif
+	interpolate3D(i,j,k,dest_mesh,num_nodes,results[id_xyz(k,j,i)]);
       }
     }
   }
@@ -1831,15 +1860,9 @@ void CurvilinearTransformation::metricDerivativesAndJacobian3D(int num_nodes,
 				  double dx, double dy, double dz
 				  ){
 
-  double* unif_mesh= new double[num_nodes];
-
-  for(int i = 0; i< num_nodes ; i++){
-    unif_mesh[i]=i*1.0/(num_nodes-1);
-  }
-
-  getValuesAtQuadNodes3D(unif_mesh,unif_mesh,unif_mesh,curvilinear_x,num_nodes,gl_vals_x);
-  getValuesAtQuadNodes3D(unif_mesh,unif_mesh,unif_mesh,curvilinear_y,num_nodes,gl_vals_y);
-  getValuesAtQuadNodes3D(unif_mesh,unif_mesh,unif_mesh,curvilinear_z,num_nodes,gl_vals_z);  
+  getValuesAtQuadNodes3D(curvilinear_x,num_nodes,gl_vals_x);
+  getValuesAtQuadNodes3D(curvilinear_y,num_nodes,gl_vals_y);
+  getValuesAtQuadNodes3D(curvilinear_z,num_nodes,gl_vals_z);  
 
   double x_der_x; 
   double x_der_y;
