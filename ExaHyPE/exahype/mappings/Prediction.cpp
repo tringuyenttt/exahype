@@ -131,17 +131,11 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
         solver->isPerformingPrediction(algorithmSection) &&
         element!=exahype::solvers::Solver::NotFound
     ) {
-      bool isAdjacentToRemoteRank =
-            #ifdef Parallel
-            exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
-                fineGridVertices,fineGridVerticesEnumerator);
-            #else
-            false;
-            #endif
-
       exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           solver,fineGridCell.getCellDescriptionsIndex(),element,
-          isAdjacentToRemoteRank,temporaryVariables);
+          exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+              fineGridVertices,fineGridVerticesEnumerator),
+          temporaryVariables);
 
       solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
     }

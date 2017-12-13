@@ -187,6 +187,26 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Cell::computeFaceBarycentre(
   return faceBarycentre;
 }
 
+bool exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+    exahype::Vertex* const verticesAroundCell,
+    const peano::grid::VertexEnumerator& verticesEnumerator) {
+  bool result = false;
+#ifdef Parallel
+  tarch::la::Vector<DIMENSIONS,int> center(1);
+  dfor2(v) // Loop over vertices.
+    if (verticesAroundCell[ verticesEnumerator(v) ].isAdjacentToRemoteRank()) {
+      dfor2(a) // Loop over adjacent ranks. Does also include own rank.
+        result |= tarch::la::countEqualEntries(v+a,center)==DIMENSIONS-1 && // offset in one direction from center=>face neighbour
+                  verticesAroundCell[ verticesEnumerator(v) ].isInside() &&
+                  verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]!=
+                      tarch::parallel::Node::getInstance().getRank();
+      enddforx //a
+    }
+  enddforx // v
+#endif
+  return result;
+}
+
 void exahype::Cell::setupMetaData() {
   assertion1(!exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),toString());
 
@@ -291,26 +311,6 @@ int exahype::Cell::getNumberOfFiniteVolumeCellDescriptions() const {
 
 
 #ifdef Parallel
-bool exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
-    exahype::Vertex* const verticesAroundCell,
-    const peano::grid::VertexEnumerator& verticesEnumerator) {
-  bool result = false;
-
-  tarch::la::Vector<DIMENSIONS,int> center(1);
-  dfor2(v) // Loop over vertices.
-    if (verticesAroundCell[ verticesEnumerator(v) ].isAdjacentToRemoteRank()) {
-      dfor2(a) // Loop over adjacent ranks. Does also include own rank.
-        result |= tarch::la::countEqualEntries(v+a,center)==DIMENSIONS-1 && // offset in one direction from center=>face neighbour
-                  verticesAroundCell[ verticesEnumerator(v) ].isInside() &&
-                  verticesAroundCell[ verticesEnumerator(v) ].getAdjacentRanks()[aScalar]!=
-                      tarch::parallel::Node::getInstance().getRank();
-      enddforx //a
-    }
-  enddforx // v
-
-  return result;
-}
-
 int exahype::Cell::countListingsOfRemoteRankAtInsideFace(
     const int faceIndex,
     exahype::Vertex* const verticesAroundCell,

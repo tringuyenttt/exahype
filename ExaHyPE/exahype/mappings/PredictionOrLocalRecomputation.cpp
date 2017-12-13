@@ -262,17 +262,10 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
 
           double admissibleTimeStepSize = std::numeric_limits<double>::max();
           if (exahype::State::fuseADERDGPhases()) {
-            bool isAdjacentToRemoteRank =
-                  #ifdef Parallel
-                  exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
-                      fineGridVertices,fineGridVerticesEnumerator);
-                  #else
-                  false;
-                  #endif
-
             limitingADERDG->recomputePredictorLocally(
                 cellDescriptionsIndex,element,
-                isAdjacentToRemoteRank,
+                exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+                    fineGridVertices,fineGridVerticesEnumerator),
                 _predictionTemporaryVariables);
             admissibleTimeStepSize = limitingADERDG->startNewTimeStepFused(
                 cellDescriptionsIndex,element,
@@ -292,17 +285,11 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
           limitingADERDG->determineMinAndMax(cellDescriptionsIndex,element);
         }
         else if ( performPrediction(solver) ) {
-          bool isAdjacentToRemoteRank =
-              #ifdef Parallel
-              exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
-                  fineGridVertices,fineGridVerticesEnumerator);
-              #else
-              false;
-              #endif
-
           exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
               solver,cellDescriptionsIndex,element,
-              isAdjacentToRemoteRank,_predictionTemporaryVariables);
+              exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+                  fineGridVertices,fineGridVerticesEnumerator),
+              _predictionTemporaryVariables);
 
           solver->prolongateDataAndPrepareDataRestriction(
               cellDescriptionsIndex,element);
