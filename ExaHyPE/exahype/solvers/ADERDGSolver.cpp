@@ -1029,7 +1029,7 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
     // to a worker/master rank???
     #ifdef Parallel
     fineGridCellDescription.setAdjacentToRemoteRank(
-        exahype::Cell::isAdjacentToRemoteRank(fineGridVertices,fineGridVerticesEnumerator));
+        exahype::Cell::isAdjacentToRemoteRankAtInsideFace(fineGridVertices,fineGridVerticesEnumerator));
     #endif
 
     // Ensure we have allocated enough memory.
