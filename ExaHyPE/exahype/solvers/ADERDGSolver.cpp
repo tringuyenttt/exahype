@@ -1969,20 +1969,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     assertion2(cellDescription.getPredictorTimeStamp()>=0,
         cellDescription.toString(),toString());
 
-    // persistent fields
-    // volume DoF (basisSize**(DIMENSIONS))
-    double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
-    double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
-    // face DoF (basisSize**(DIMENSIONS-1))
-    double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
-    double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
-    for (int i=0; i<getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
-      assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
-
     if (
-        false // TODO(Dominic): uncomment
-        &&
         predictorCanBeProcessedAsBackgroundTask(cellDescription)
         #ifdef Parallel
         &&
@@ -1992,10 +1979,21 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
       // TODO(Dominic):
       // Get rid of the temporary variables -> Make stack arrays.
       // Wait for background tasks to finish in touchVertexFirst, beginIteration
-      PredictionTask myPredictionTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( myPredictionTask, false );
+      PredictionTask predictionTask( *this, cellDescription );
+      peano::datatraversal::TaskSet spawnedSet( predictionTask, false ); // TODO(Dominic): Long running or not?
     }
-    else {
+    else { // TODO(Dominic): Just run predictionTask manually as soon as we know there is not much difference in speed
+      // persistent fields
+      // volume DoF (basisSize**(DIMENSIONS))
+      double* luh  = DataHeap::getInstance().getData(cellDescription.getSolution()).data();
+      double* lduh = DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
+      // face DoF (basisSize**(DIMENSIONS-1))
+      double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
+      double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
+      for (int i=0; i<getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
+        assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
+      } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+
       deltaDistribution(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources);
       // luh, t, dt, cell cell center, cell size, data allocation for forceVect
 
@@ -4251,17 +4249,103 @@ exahype::solvers::ADERDGSolver::PredictionTask::PredictionTask(
 }
 
 void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
-//  // volume DoF (basisSize**(DIMENSIONS))
-//  double* luh  = DataHeap::getInstance().getData(_cellDescription.getSolution()).data();
-//  double* lduh = DataHeap::getInstance().getData(_cellDescription.getUpdate()).data();
-//  // face DoF (basisSize**(DIMENSIONS-1))
-//  double* lQhbnd = DataHeap::getInstance().getData(_cellDescription.getExtrapolatedPredictor()).data();
-//  double* lFhbnd = DataHeap::getInstance().getData(_cellDescription.getFluctuation()).data();
-//  for (int i=0; i<_solver.getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
-//    assertion3(
-//        tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),_cellDescription.toString(),
-//        "exahype::solvers::ADERDGSolver::PredictionTask::operator()",i);
-//  } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set
+  // temporary fields
+  std::vector<int> dataHeapIndices;
+  dataHeapIndices.reserve(8);
+  //
+  double** tempSpaceTimeUnknowns = new double*[2];
+  for (int i=0; i<2; ++i) { // max; see spaceTimePredictorNonlinear
+    tempSpaceTimeUnknowns[i] = allocateArray( dataHeapIndices,
+            _solver.getTempSpaceTimeUnknownsSize() );
+  }
+  //
+  double** tempSpaceTimeFluxUnknowns = new double*[2];
+  //lFi
+  tempSpaceTimeFluxUnknowns[0] = allocateArray( dataHeapIndices,
+      _solver.getTempSpaceTimeFluxUnknowns0Size() );
+  //gradQ, might be not required if ncp is not used
+  tempSpaceTimeFluxUnknowns[1] = allocateArray( dataHeapIndices,
+      _solver.getTempSpaceTimeFluxUnknowns1Size() );
+  //
+  double* tempUnknowns = allocateArray( dataHeapIndices,
+      _solver.getTempUnknownsSize() );
+  //
+  double* tempFluxUnknowns = allocateArray( dataHeapIndices,
+      _solver.getTempFluxUnknownsSize() );
+  //
+  double** tempPointForceSources = new double*[2];
+  tempPointForceSources[0] = allocateArray( dataHeapIndices,
+      _solver.getTempPointForceSourcesSize() ); //PSi
+  tempPointForceSources[1] = allocateArray( dataHeapIndices,
+      _solver.getTempPointForceSourcesSize() ); //forceVectorSourceN
+
+  // persistent fields
+  double* luh  = DataHeap::getInstance().getData(_cellDescription.getSolution()).data();
+  double* lduh = DataHeap::getInstance().getData(_cellDescription.getUpdate()).data();
+  double* lQhbnd = DataHeap::getInstance().getData(_cellDescription.getExtrapolatedPredictor()).data();
+  double* lFhbnd = DataHeap::getInstance().getData(_cellDescription.getFluctuation()).data();
+
+  for (int i=0; i<_solver.getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
+    assertion3(
+        tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),_cellDescription.toString(),
+        "exahype::solvers::ADERDGSolver::PredictionTask::operator()",i);
+  } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set
+
+  _solver.deltaDistribution(_cellDescription.getCorrectorTimeStamp(),_cellDescription.getCorrectorTimeStepSize(), _cellDescription.getOffset()+0.5*_cellDescription.getSize(),_cellDescription.getSize(),tempPointForceSources);
+  // luh, t, dt, cell cell center, cell size, data allocation for forceVect
+
+  #ifdef OPT_KERNELS
+  auto& invDx = tarch::la::invertEntries(_cellDescription.getSize());
+  _solver.spaceTimePredictor(
+      lQhbnd,lFhbnd,
+      tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
+      luh,
+      invDx.data(),
+      _cellDescription.getPredictorTimeStepSize(),
+      tempPointForceSources);
+
+  _solver.volumeIntegral(
+      lduh,
+      tempSpaceTimeFluxUnknowns[0],
+      tempFluxUnknowns,
+      invDx.data());
+  #else // OPT_KERNELS not defined
+  _solver.spaceTimePredictor(
+      lQhbnd,lFhbnd,
+      tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
+      luh,
+      _cellDescription.getSize(),_cellDescription.getPredictorTimeStepSize(),tempPointForceSources);
+
+  _solver.volumeIntegral(
+      lduh,
+      tempSpaceTimeFluxUnknowns[0],tempFluxUnknowns,
+      _cellDescription.getSize());
+  #endif
+
+  for (int i=0; i<_solver.getTempSpaceTimeUnknownsSize(); i++) { // _cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
+    assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeUnknowns[0][i]),_cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
+  } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+  for (int i=0; i<_solver.getSpaceTimeFluxUnknownsPerCell(); i++) {
+    assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeFluxUnknowns[0][i]), _cellDescription.toString(),"performPredictionAndVolumeIntegral",i);
+  } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+
+  #if defined(Debug) || defined(Asserts)
+  if(usePaddedData_nVar()) {
+    //TODO JMG add assert ignoring padding
+  } else {
+    //    for (int i=0; i<getDataPerCell(); i++) {
+    //    assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempUnknowns[i]),_cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
+    //    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+    //    for (int i=0; i<getFluxUnknownsPerCell(); i++) {
+    //      assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempFluxUnknowns[i]),_cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
+    //    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+  }
+  #endif
+
+  _solver.validateNoNansInADERDGSolver(_cellDescription,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral [post]");
+
+  // clean up
+  freeArrays(dataHeapIndices);
 }
 
 exahype::solvers::ADERDGSolver::CompressionTask::CompressionTask(

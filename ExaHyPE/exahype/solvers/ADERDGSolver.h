@@ -629,6 +629,19 @@ private:
       const int parentIndex);
 
 #endif
+
+  class PredictionTask {
+  private:
+    ADERDGSolver&    _solver;
+    CellDescription& _cellDescription;
+  public:
+    PredictionTask(
+        ADERDGSolver&     solver,
+        CellDescription&  cellDescription);
+
+    void operator()();
+  };
+
   /**
    * Determine average of each unknown
    *
@@ -699,18 +712,6 @@ private:
       );
 
       void operator()();
-  };
-
-  class PredictionTask {
-  private:
-    ADERDGSolver&    _solver;
-    CellDescription& _cellDescription;
-  public:
-    PredictionTask(
-        ADERDGSolver&     solver,
-        CellDescription&  cellDescription);
-
-    void operator()();
   };
 
 public:
