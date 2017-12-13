@@ -17,15 +17,15 @@
 
 #include "mexa.h"
 
-using namespace mexa;
-
 ///////////////////////////////////////////////////////////////////////////////
 /////
 ///// String and vector helper routines
 /////
 ///////////////////////////////////////////////////////////////////////////////
 
-
+namespace mexa {
+namespace tools {
+	
 /// string to lowercase
 void toLower(std::string& data) {
 	std::transform(data.begin(), data.end(), data.begin(), ::tolower);
@@ -250,6 +250,12 @@ std::string unescape_quotedprintable(const std::string& input, char escape='%') 
 	return unescaped;
 }
 
+} // ns tools
+} // ns mexa
+
+using namespace mexa;
+using namespace tools; // mexa::tools
+
 ///////////////////////////////////////////////////////////////////////////////
 /////
 ///// Class methods
@@ -450,13 +456,26 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 	
 	double mexafile::get_double(symbol leaf) const { return get<double>(leaf, "double"); }
 	
+	template<typename T>
+	void assert_vec_size(symbol node, const mexafile& queried_node, std::string type_as_str, size_t require_length, std::vector<T> vec) {
+		if(require_length > 0) { // asked for a require_length
+			if(vec.size() != require_length) {
+				std::stringstream errmsg;
+				errmsg << "Having read in a " << type_as_str << "-vector with size "<<vec.size()<<" from '" << node.toString() << "', but a vector of size "<< require_length<< " is required. The vector values are given by: [";
+				for(auto j : vec) errmsg << j << ",";
+				errmsg << "] and where read by " << queried_node.toString();
+				throw std::runtime_error(errmsg.str());
+			}
+		}
+	}
 	
 	// An abstract getter for a vector type
 	template<typename T>
-	std::vector<T> mexafile::get_vec(symbol node, std::string type_as_str) const {
+	std::vector<T> mexafile::get_vec(symbol node, std::string type_as_str, size_t require_length) const {
 		std::vector<T> ret;
 		int itemcount = 1; // just for error output
-		for(auto it : query(node).assignments) {
+		mexa::mexafile mq = query(node);
+		for(auto it : mq.assignments) {
 			symbol& leaf(it.first);
 			sourced& rhs(it.second);
 			T value;
@@ -468,36 +487,42 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 			ret.push_back(value);
 			itemcount++;
 		}
+		assert_vec_size(node, mq, type_as_str, require_length, ret);
 		return ret;
 	}
 	
-	std::vector<double> mexafile::get_double_vec(symbol node) const { return get_vec<double>(node, "double"); }
-	std::vector<int> mexafile::get_int_vec(symbol node) const { return get_vec<int>(node, "int");  }
+	std::vector<double> mexafile::get_double_vec(symbol node, size_t require_length) const { return get_vec<double>(node, "double"); }
+	std::vector<int> mexafile::get_int_vec(symbol node, size_t require_length) const { return get_vec<int>(node, "int");  }
 	
 	// specialization
-	std::vector<bool> mexafile::get_bool_vec(symbol node) const {
+	std::vector<bool> mexafile::get_bool_vec(symbol node, size_t require_length) const {
 		std::vector<bool> ret;
-		for(auto it : query(node).assignments) {
+		mexa::mexafile mq = query(node);
+		for(auto it : mq.assignments) {
 			symbol& leaf(it.first);
 			ret.push_back( get_bool(leaf) );
 		}
+		assert_vec_size(node, mq, "bool", require_length, ret);
 		return ret;
 	}
 	
 	// specialization
-	std::vector<std::string> mexafile::get_string_vec(symbol node) const {
+	std::vector<std::string> mexafile::get_string_vec(symbol node, size_t require_length) const {
 		std::vector<std::string> ret;
-		for(auto it : query(node).assignments) {
+		mexa::mexafile mq = query(node);
+		for(auto it : mq.assignments) {
 			symbol& leaf(it.first);
 			ret.push_back( get_string(leaf) );
 		}
+		assert_vec_size(node, mq, "string", require_length, ret);
 		return ret;
 	}
 	
 	// specialization
 	std::string mexafile::get_multiline_string(symbol node) const {
 		std::string ret;
-		for(auto it : query(node).assignments) {
+		mexa::mexafile mq = query(node);
+		for(auto it : mq.assignments) {
 			symbol& leaf(it.first);
 			ret += get_string(leaf) + "\n";
 		}

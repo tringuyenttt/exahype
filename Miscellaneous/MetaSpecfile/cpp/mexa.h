@@ -185,19 +185,19 @@ namespace mexa {
 		
 		// An abstract getter for a vector type
 		template<typename T>
-		std::vector<T> get_vec(symbol node, std::string type_as_str) const;
+		std::vector<T> get_vec(symbol node, std::string type_as_str, size_t require_length=-1) const;
 		
 		/// Read a vector of doubles from a node.
-		std::vector<double> get_double_vec(symbol node) const;
+		std::vector<double> get_double_vec(symbol node, size_t require_length=-1) const;
 		
 		/// Read a vector of ints from a node.
-		std::vector<int> get_int_vec(symbol node) const;
+		std::vector<int> get_int_vec(symbol node, size_t require_length=-1) const;
 		
 		/// Read a vector of strings from a node.
-		std::vector<std::string> get_string_vec(symbol node) const;
+		std::vector<std::string> get_string_vec(symbol node, size_t require_length=-1) const;
 		
 		/// Read a vector of booleans from a node.
-		std::vector<bool> get_bool_vec(symbol node) const;
+		std::vector<bool> get_bool_vec(symbol node, size_t require_length=-1) const;
 		
 		/// Reads a multiline string (a joined vector of strings) from a node.
 		/// This effectively allows embedding files.
