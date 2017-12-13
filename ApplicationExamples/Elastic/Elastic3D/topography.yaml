@@ -1,0 +1,20 @@
+!AffineMap
+matrix:
+  x: [1.0, 0.0, 0.0]
+  y: [0.0, 1.0, 0.0]
+translation:
+  x: 0.0
+  y: 0.0
+components: !ASAGI
+  file: tohoku_gebco_ucsb3_500m_hawaii_bath_small.nc
+  parameters: [z]
+  var: z
+  components: !AffineMap
+    matrix:
+      z: [1.0]
+    translation:
+      z: 5000.0
+
+
+
+
