@@ -1854,6 +1854,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
+    const bool isAdjacentToRemoteRank,
     double** tempSpaceTimeUnknowns,
     double** tempSpaceTimeFluxUnknowns,
     double*  tempUnknowns,
@@ -1868,6 +1869,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 
   performPredictionAndVolumeIntegral(
       cellDescription,
+      isAdjacentToRemoteRank,
       tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,
       tempUnknowns,tempFluxUnknowns,
       tempPointForceSources);
@@ -1883,6 +1885,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     exahype::solvers::Solver* solver,
     const int cellDescriptionsIndex,
     const int element,
+    const bool isAdjacentToRemoteRank,
     exahype::solvers::PredictionTemporaryVariables& temporaryVariables) {
   exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
 
@@ -1902,6 +1905,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     auto& cellDescription =  ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
     aderdgSolver->performPredictionAndVolumeIntegral(
         cellDescription,
+        isAdjacentToRemoteRank,
         temporaryVariables._tempSpaceTimeUnknowns    [cellDescription.getSolverNumber()],
         temporaryVariables._tempSpaceTimeFluxUnknowns[cellDescription.getSolverNumber()],
         temporaryVariables._tempUnknowns             [cellDescription.getSolverNumber()],
@@ -1912,6 +1916,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     CellDescription& cellDescription,
+    const bool isAdjacentToRemoteRank,
     double** tempSpaceTimeUnknowns,
     double** tempSpaceTimeFluxUnknowns,
     double*  tempUnknowns,
@@ -2468,16 +2473,14 @@ void exahype::solvers::ADERDGSolver::prolongateDataAndPrepareDataRestriction(
       exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
   if (
-      cellDescription.getType()==CellDescription::Type::Ancestor
-      &&
+      cellDescription.getType()==CellDescription::Type::Ancestor &&
       cellDescription.getHelperStatus()>=MinimumHelperStatusForAllocatingBoundaryData
   ) {
     prepareFaceDataOfAncestor(cellDescription);
-  } else if (
-      cellDescription.getType()==CellDescription::Type::Descendant
-      &&
-      cellDescription.getHelperStatus()>=MinimumHelperStatusForAllocatingBoundaryData
-      &&
+  }
+  else if (
+      cellDescription.getType()==CellDescription::Type::Descendant &&
+      cellDescription.getHelperStatus()>=MinimumHelperStatusForAllocatingBoundaryData &&
       isValidCellDescriptionIndex(cellDescription.getParentIndex())
   ) {
     exahype::solvers::Solver::SubcellPosition

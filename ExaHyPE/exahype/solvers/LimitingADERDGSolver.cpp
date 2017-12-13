@@ -774,6 +774,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
+    const bool isAdjacentToRemoteRank,
     double** tempSpaceTimeUnknowns,
     double** tempSpaceTimeFluxUnknowns,
     double*  tempUnknowns,
@@ -795,6 +796,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::LimitingADERDGSolver::f
   if (cellDescription.getLimiterStatus()<_solver->getMinimumLimiterStatusForTroubledCell()) {
     _solver->performPredictionAndVolumeIntegral(
         cellDescription,
+        isAdjacentToRemoteRank,
         tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,
         tempUnknowns,tempFluxUnknowns,tempPointForceSources);
   }
@@ -1387,6 +1389,7 @@ void exahype::solvers::LimitingADERDGSolver::recomputeSolutionLocally(
 void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
     const int cellDescriptionsIndex,
     const int element,
+    const bool isAdjacentToRemoteRank,
     exahype::solvers::PredictionTemporaryVariables& predictionTemporaryVariables) {
   SolverPatch& solverPatch = ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
 
@@ -1403,6 +1406,7 @@ void exahype::solvers::LimitingADERDGSolver::recomputePredictorLocally(
     ) {
       _solver->performPredictionAndVolumeIntegral(
           solverPatch,
+          isAdjacentToRemoteRank,
           predictionTemporaryVariables._tempSpaceTimeUnknowns    [solverPatch.getSolverNumber()],
           predictionTemporaryVariables._tempSpaceTimeFluxUnknowns[solverPatch.getSolverNumber()],
           predictionTemporaryVariables._tempUnknowns             [solverPatch.getSolverNumber()],
