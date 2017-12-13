@@ -243,8 +243,12 @@ void exahype::mappings::FusedTimeStep::enterCell(
                 fineGridCell.getCellDescriptionsIndex(),element,
                 exahype::State::isFirstIterationOfBatchOrNoBatch(),
                 exahype::State::isLastIterationOfBatchOrNoBatch(),
+                #ifdef Parallel
                 exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
                     fineGridVertices,fineGridVerticesEnumerator),
+                #else
+                false,
+                #endif
                 _predictionTemporaryVariables._tempSpaceTimeUnknowns    [solverNumber],
                 _predictionTemporaryVariables._tempSpaceTimeFluxUnknowns[solverNumber],
                 _predictionTemporaryVariables._tempUnknowns             [solverNumber],
