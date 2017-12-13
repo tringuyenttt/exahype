@@ -131,8 +131,13 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
         solver->isPerformingPrediction(algorithmSection) &&
         element!=exahype::solvers::Solver::NotFound
     ) {
+      bool isAdjacentToRemoteRank =
+          exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+              fineGridVertices,fineGridVerticesEnumerator);
+
       exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
-          solver,fineGridCell.getCellDescriptionsIndex(),element,temporaryVariables);
+          solver,fineGridCell.getCellDescriptionsIndex(),element,
+          isAdjacentToRemoteRank,temporaryVariables);
 
       solver->prolongateDataAndPrepareDataRestriction(fineGridCell.getCellDescriptionsIndex(),element);
     }

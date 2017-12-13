@@ -1,22 +1,3 @@
-template<class CellDescription>
-void
-exahype::amr::resetErasingOrDeaugmentingRequestIfParent(
-    CellDescription& coarseGridCellDescription) {
-  switch (coarseGridCellDescription.getRefinementEvent()) {
-    case CellDescription::DeaugmentingRequested:
-      assertion1(coarseGridCellDescription.getType()==CellDescription::Descendant,coarseGridCellDescription.toString());
-      coarseGridCellDescription.setRefinementEvent(CellDescription::None);
-      break;
-    case CellDescription::ErasingRequested:
-      assertion1(coarseGridCellDescription.getType()==CellDescription::Cell,
-                 coarseGridCellDescription.toString());
-      coarseGridCellDescription.setRefinementEvent(CellDescription::ChangeToDescendantRequested);
-      break;
-    default:
-      break;
-  }
-}
-
 template <class CellDescription,class CellDescriptionHeap>
 exahype::solvers::Solver::SubcellPosition
 exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor(

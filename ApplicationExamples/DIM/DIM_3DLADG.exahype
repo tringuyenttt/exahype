@@ -34,7 +34,7 @@ exahype-project DIM
   shared-memory
     identifier               = dummy
     configure                = {whatever,stuff}
-    cores                    = 4
+    cores                    = 1
     properties-file          = sharedmemory.properties
   end shared-memory  
   
@@ -78,7 +78,7 @@ exahype-project DIM
     plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 14
       time      = 0.0
-      repeat    = 1e-2
+      repeat    = 1e-1
       output    = ./vtk-output/primitives
     end plot
   end solver
