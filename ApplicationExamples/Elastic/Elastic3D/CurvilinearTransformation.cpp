@@ -11,7 +11,24 @@
 #include "easi/YAMLParser.h"
 #include "easi/ResultAdapter.h"
 #include "reader/asagi_reader.h"
+
+double topography_fromASAGI(double x, double z, double* topography, easi::ArraysAdapter& adapter, easi::Component* model){
+  
+  double topo;
+  
+  easi::Query query(1,3);
+  query.x(0,0)=x;
+  query.x(0,1)=z;
+  query.x(0,2)=0;
+  
+  model->evaluate(query,adapter);
+  
+  topo = -topography[0];
+
+  return topo;
+}
 #endif
+
 
 
 // void Linear::CurvilinearTransformation::test(){
@@ -21,7 +38,16 @@
 CurvilinearTransformation::CurvilinearTransformation(const int a_num_nodes,const double a_dx ):
   num_nodes(a_num_nodes),
   dx(a_dx),
-  fault_position(0.5)
+  fault_position(500.),
+  a_x(0.),
+  a_y(0.),
+  a_z(0.),
+  b_x(1000.),
+  b_y(100.),
+  b_z(1000)
+  //  b_x(10.),
+  //  b_y(10.),
+  //  b_z(10.)
 {
   int ne_x = std::round(1/dx); //number of elements in x direction on whole domain
   int ne_y = ne_x;
@@ -31,20 +57,29 @@ CurvilinearTransformation::CurvilinearTransformation(const int a_num_nodes,const
   int ny = ne_y *(num_nodes-1) + 1; //global number of nodes in y direction considering collocation
   int nz = ne_z *(num_nodes-1) + 1; //global number of nodes in z direction considering collocation
 
+
   double block_width_x;
-  double block_width_y=1.0;
-  double block_width_z=1.0;
+  double block_width_y=b_y-a_y;
+  double block_width_z=b_z-a_z;
+
+  double recWidth_x = b_x-a_x; //width in x of the rectangle
+
+  //relative position of the fault on the unit square
+  double fault_ref = (fault_position-a_x)/(recWidth_x);
+
 
   for(int n=0 ; n<2 ; ++n ){
     ne_x = std::round(1/dx);
+    
     if(n == 0){
-      block_width_x=fault_position;
-      ne_x = std::round((ne_x+1)*fault_position);
+      block_width_x=(fault_position-a_x);
+      ne_x = std::round((ne_x+1)*fault_ref);
       nx =  ne_x *(num_nodes-1)+1;
     }else{
-      block_width_x=1.0-fault_position;
-      ne_x = ne_x-std::round((ne_x+1)*fault_position);
+      double ne_x0 = std::round((ne_x+1)*fault_ref);
+      ne_x = std::round(1/dx)-ne_x0;
       nx =  ne_x *(num_nodes-1)+1;
+      block_width_x= (b_x-fault_position);
     }
 
     left_bnd_x[n]= new double[ny*nz];
@@ -72,7 +107,7 @@ CurvilinearTransformation::CurvilinearTransformation(const int a_num_nodes,const
     back_bnd_z[n]= new double[nx*ny];
 
     getBoundaryCurves3D_cutOffTopography_withFault( num_nodes,
-						    nx,ny,nz,n,fault_position,       
+						    nx,ny,nz,n,fault_position,
 						    block_width_x,  block_width_y ,  block_width_z ,
 						    left_bnd_x[n],  left_bnd_y[n],  left_bnd_z[n],
 						    right_bnd_x[n],  right_bnd_y[n],  right_bnd_z[n],
@@ -120,7 +155,9 @@ CurvilinearTransformation::CurvilinearTransformation(const int a_num_nodes,const
     }
   }
 
-  
+
+
+
 }
 
 void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSIONS,double>& center,
@@ -140,15 +177,20 @@ void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSION
   int nz = ne_z *(num_nodes-1) + 1; //global number of nodes in z direction considering collocation
   
   double block_width_x;
-  double block_width_y=1.0;
-  double block_width_z=1.0;
+  double block_width_y=b_y-a_y;
+  double block_width_z=b_z-a_z;
+
+  double recWidth_x = b_x-a_x; //width in x of the rectangle
+
+  //relative position of the fault on the unit square
+  double fault_ref = (fault_position-a_x)/(recWidth_x);
 
   double offset_x=center[0]-0.5*dx[0];
   double offset_y=center[1]-0.5*dx[1];
   double offset_z=center[2]-0.5*dx[2];
 
   //defines which block we are in
-  int n = offset_x >  fault_position ? 1 : 0 ; //1: Water Column 0: Solid
+  int n = getBlock(center,dx);
   
   double width_x=dx[0];
   double width_y=dx[1];
@@ -159,23 +201,23 @@ void CurvilinearTransformation::genCoordinates(const tarch::la::Vector<DIMENSION
   int i_m; 
   int j_m; 
   int k_m;  
+
   
   if(n == 0){
-    block_width_x=fault_position;
-    ne_x = std::round((ne_x+1)*fault_position);
+    block_width_x=(fault_position-a_x);
+    ne_x = std::round((ne_x+1)*fault_ref);
     nx =  ne_x *(num_nodes-1)+1;
-
 
     i_m =  std::round((offset_x)/width_x) *(num_nodes-1);
     j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
     k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
   }else{
-    block_width_x=1.0-fault_position;
-    ne_x = ne_x-std::round((ne_x+1)*fault_position);
+    double ne_x0 = std::round((ne_x+1)*fault_ref);
+    ne_x = std::round(1/dx[0])-ne_x0;
     nx =  ne_x *(num_nodes-1)+1;
+    block_width_x= (b_x-fault_position);
 
-
-    i_m =  std::floor((offset_x-fault_position)/width_x) *(num_nodes-1);
+    i_m =  std::floor((offset_x-fault_ref)/width_x) *(num_nodes-1);
     j_m =  std::round((offset_y)/width_y) *(num_nodes-1);
     k_m =  std::round((offset_z)/width_z) *(num_nodes-1);    
   }
@@ -295,19 +337,15 @@ double CurvilinearTransformation::fault(double y, double z,double a_y, double b_
 }
 
 
-double CurvilinearTransformation::topography(double x, double z,double a_x, double b_x,double a_z, double b_z){
-
+double CurvilinearTransformation::topography(double x, double z,double a_x, double b_x,double a_z, double b_z, double depth){
   double pi = 3.14159265359;
   double angle = 60.0/360.0 * 2 * pi;
-
   double Lx = b_x-a_x;
   double Lz = b_z-a_z;
-
   double topo;
 
-  topo = 1.0*(0.1*(x + z) + 0.1*(std::sin(4*pi*x/Lx+3.34)*std::cos(4*pi*x/Lx)
+  topo = 1.0*(0.1*(x + z) + 0.25*depth*(std::sin(4*pi*x/Lx+3.34)*std::cos(4*pi*x/Lx)
 				 * std::sin(4*pi*z/Lz+3.34)*std::cos(4*pi*z/Lz)));
-  //  topo=0;
   return topo;
 }  
 
@@ -459,7 +497,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_fixedTopFace(int num_points,
 }
 
 
-
+//TODO: not working with new width definition !
 void CurvilinearTransformation::getBoundaryCurves3D_fixedTopFace_forBlock(int num_points,
 					       int nx, int ny, int nz, int n,
 					       double width_x, double width_y , double width_z,	      
@@ -479,7 +517,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_fixedTopFace_forBlock(int nu
   double dz= 10*width_y/(nz-1);
   double dy= 10*width_z/(ny-1);
 
-  double depth=10.0;
+  double depth=b_y;
 
   double x;
   double z;
@@ -488,6 +526,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_fixedTopFace_forBlock(int nu
   kernels::idx2 id_xy(ny,nx); // back front
   kernels::idx2 id_xz(nz,nx); // botton top
   kernels::idx2 id_yz(nz,ny); // left right
+
   
   //given top surface
   for(int k = 0 ; k< nz; k++){  
@@ -509,7 +548,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_fixedTopFace_forBlock(int nu
       x = top_bnd_x[id_xz(k,i)];
       z = top_bnd_z[id_xz(k,i)];
 
-      top_bnd_y[id_xz(k,i)] -= topography(x, z, 0.0, 10.0, 0.0, 10.0);
+      top_bnd_y[id_xz(k,i)] -= topography(x, z, a_x, b_x, a_z, b_z,  depth);
     }
   }
   
@@ -565,7 +604,10 @@ void CurvilinearTransformation::getBoundaryCurves3D_fixedTopFace_forBlock(int nu
 
 
 
+
 void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(int num_points,
+				      //				      double offset_x, double offset_y, double offset_z,
+				      //				      double width_x, double width_y , double width_z ,
 						    int nx, int ny, int nz, int n,double fault_position,
 						    double width_x, double width_y , double width_z,	      
 						    double* left_bnd_x, double* left_bnd_y, double* left_bnd_z,
@@ -580,10 +622,10 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 
 
   double dx= width_x/(nx-1);
-  double dz= width_y/(nz-1);
-  double dy= width_z/(ny-1);
+  double dz= width_z/(nz-1);
+  double dy= width_y/(ny-1);
 
-  double depth=1.0;
+  double depth= b_y;
 
   kernels::idx2 id_xy(ny,nx); // back front
   kernels::idx2 id_xz(nz,nx); // botton top
@@ -599,17 +641,28 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
   double z;
   double y;
 
+#if defined(USE_ASAGI)
+  constexpr int chunksize = 1;
+  AsagiReader asagiReader("");
+  easi::YAMLParser parser(3,&asagiReader);
+  easi::Component* model = parser.parse("topography.yaml");
+  static double topography[chunksize];
+  static easi::ArraysAdapter adapter;
+  //Easi binding point for topography
+  adapter.addBindingPoint("z",topography);
+#endif
+
   
   //given top surface
   for(int k = 0 ; k< nz; k++){  
     for(int i = 0 ; i< nx; i++){
       
-      top_bnd_y[id_xz(k,i)] = 0;      
-      top_bnd_z[id_xz(k,i)] = 0+dz*k;
+      top_bnd_y[id_xz(k,i)] = a_y;      
+      top_bnd_z[id_xz(k,i)] = a_z+dz*k;
          
       if(n == 0){
 	
-	top_bnd_x[id_xz(k,i)] = 0+dx*i;
+	top_bnd_x[id_xz(k,i)] = a_x+dx*i;
       
       }else{
 	
@@ -620,7 +673,11 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
       x = top_bnd_x[id_xz(k,i)];
       z = top_bnd_z[id_xz(k,i)];
       
-      top_bnd_y[id_xz(k,i)] -= topography(x, z, 0.0, 1.0, 0.0, 1.0);
+#if !defined(USE_ASAGI)      
+      top_bnd_y[id_xz(k,i)] -= topography(x, z, a_x, b_x, a_z, b_z,  depth);
+#else
+      top_bnd_y[id_xz(k,i)] -= topography_fromASAGI(x,z,topography, adapter, model);
+#endif      
     }
   }
   
@@ -632,6 +689,10 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
       bottom_bnd_y[id_xz(k,i)] = depth;      
       bottom_bnd_z[id_xz(k,i)] = top_bnd_z[id_xz(k,i)];
       bottom_bnd_x[id_xz(k,i)] = top_bnd_x[id_xz(k,i)];
+      // if(n == 0) {
+      // 	std::cout<<bottom_bnd_x[id_xz(k, i)]<<std::endl;
+      // }
+      
     }
   }  
   
@@ -639,11 +700,11 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
   for(int k = 0 ; k< nz; k++){
     for(int j = 0 ; j< ny; j++){
       
-      left_bnd_y[id_yz(k,j)] = -0.0 + 1.0*dy*j;
-      left_bnd_z[id_yz(k,j)] = 0.0 +dz*k;
+      left_bnd_y[id_yz(k,j)] = a_y + dy*j;
+      left_bnd_z[id_yz(k,j)] = a_z +dz*k;
 
       if(n==0){
-  	left_bnd_x[id_yz(k,j)] = 0.0;
+  	left_bnd_x[id_yz(k,j)] = a_x;
       }else{
 	
 	y = left_bnd_y[id_yz(k,j)];
@@ -652,10 +713,10 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
   	left_bnd_x[id_yz(k,j)] = fault_position;
 
 	// synthetic fault not compatible with computational geometry
-	Y1[id_yz(k,j)] = -0.3 + 1.3*dy*j;
-	Z1[id_yz(k,j)] = 0.0 + dz*k;
+	Y1[id_yz(k,j)] = a_y-(b_y-a_y)*0.3 + 1.3*dy*j;
+	Z1[id_yz(k,j)] = a_z + dz*k;
 
-	X1[id_yz(k,j)] = fault_position - fault(Y1[id_yz(k,j)], Z1[id_yz(k,j)], 0.0, 1., 0, 1);
+	X1[id_yz(k,j)] = fault_position - fault(Y1[id_yz(k,j)], Z1[id_yz(k,j)], a_y, b_y, a_z, b_z);
 	
       }
       
@@ -665,8 +726,8 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
   //and the fault surface
   for(int k = 0 ; k< nz; k++){
     for(int j = 0 ; j< ny; j++){
-      right_bnd_y[id_yz(k,j)] = 0.0 + dy*j;
-      right_bnd_z[id_yz(k,j)] = 0.0 + dz*k;
+      right_bnd_y[id_yz(k,j)] = a_y + dy*j;
+      right_bnd_z[id_yz(k,j)] = a_z + dz*k;
 
       if(n==0){
 	
@@ -676,12 +737,12 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 	right_bnd_x[id_yz(k,j)] = fault_position;
 
 	// synthetic fault not compatible with computational geometry
-	Y1[id_yz(k,j)] = -0.3 + 1.3*dy*j;
-	Z1[id_yz(k,j)] = 0.0 + dz*k;
+	Y1[id_yz(k,j)] = a_y-(b_y-a_y)*0.3 + 1.3*dy*j;
+	Z1[id_yz(k,j)] = a_z + dz*k;
 	
-	X1[id_yz(k,j)] = fault_position - fault(Y1[id_yz(k,j)], Z1[id_yz(k,j)], 0, 1., 0., 1.);
+	X1[id_yz(k,j)] = fault_position - fault(Y1[id_yz(k,j)], Z1[id_yz(k,j)], a_y, b_y, a_z, b_z);
       }else{
-	right_bnd_x[id_yz(k,j)] = 1.0;
+	right_bnd_x[id_yz(k,j)] = b_x;
       }
     }
   }
@@ -725,20 +786,20 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
     double* right_edge_x = new double[nx];
 
     if (n == 0) {
-      double distance_x_left=(right_bnd_x[id_yz(0,ny-1)]-0.0)/(nx-1);
-      double distance_x_right=(right_bnd_x[id_yz(nz-1,ny-1)]-0.0)/(nx-1);
+      double distance_x_left=(right_bnd_x[id_yz(0,ny-1)]-a_x)/(nx-1);
+      double distance_x_right=(right_bnd_x[id_yz(nz-1,ny-1)]-a_x)/(nx-1);
       
       for (int k = 0; k < nz; k++){
 	
 	top_edge_x[k] = right_bnd_x[id_yz(k,ny-1)];
-	bottom_edge_x[k] = 0.0;
+	bottom_edge_x[k] = a_x;
 	
       }
       
       for (int i = 0; i < nx; i++){
 	
-	left_edge_x[i] = 0 + i*distance_x_left;
-	right_edge_x[i] = 0 + i*distance_x_right;
+	left_edge_x[i] = a_x + i*distance_x_left;
+	right_edge_x[i] = a_x + i*distance_x_right;
 	
 	
       }
@@ -746,20 +807,20 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
       transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, bottom_bnd_x);
       
       
-      distance_x_left=(right_bnd_x[id_yz(0,0)]-0.0)/(nx-1);
-      distance_x_right=(right_bnd_x[id_yz(nz-1,0)]-0.0)/(nx-1);
+      distance_x_left=(right_bnd_x[id_yz(0,0)]-a_x)/(nx-1);
+      distance_x_right=(right_bnd_x[id_yz(nz-1,0)]-a_x)/(nx-1);
       
       for (int k = 0; k < nz; k++){
 	
 	top_edge_x[k] = right_bnd_x[id_yz(k,0)];
-	bottom_edge_x[k] = 0.0;
+	bottom_edge_x[k] = a_x;
 	
       }
       
       for (int i = 0; i < nx; i++){
 	
-	left_edge_x[i] = 0 + i*distance_x_left;
-	right_edge_x[i] = 0 + i*distance_x_right;
+	left_edge_x[i] = a_x + i*distance_x_left;
+	right_edge_x[i] = a_x + i*distance_x_right;
 	
 	
       }
@@ -770,12 +831,12 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
     }
     
     if (n == 1) {
-      double distance_x_left=(1.0 - left_bnd_x[id_yz(0,ny-1)])/(nx-1);
-      double distance_x_right=(1.0 - left_bnd_x[id_yz(nz-1,ny-1)])/(nx-1);
+      double distance_x_left=(b_x - left_bnd_x[id_yz(0,ny-1)])/(nx-1);
+      double distance_x_right=(b_x - left_bnd_x[id_yz(nz-1,ny-1)])/(nx-1);
       
       for (int k = 0; k < nz; k++){
 	
-	top_edge_x[k] = 1.0;
+	top_edge_x[k] = b_x;
 	bottom_edge_x[k] = left_bnd_x[id_yz(k,ny-1)];
 	
       }
@@ -794,12 +855,12 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
       transFiniteInterpolation_singleCoordinate(nx, nz, bottom_edge_x, top_edge_x, left_edge_x, right_edge_x, bottom_bnd_x);
       
       
-      distance_x_left=(1.0 - left_bnd_x[id_yz(0,0)])/(nx-1);
-      distance_x_right=(1.0 - left_bnd_x[id_yz(nz-1,0)])/(nx-1);
+      distance_x_left=(b_x - left_bnd_x[id_yz(0,0)])/(nx-1);
+      distance_x_right=(b_x - left_bnd_x[id_yz(nz-1,0)])/(nx-1);
       
       for (int k = 0; k < nz; k++){
 	
-	top_edge_x[k] = 1.0;
+	top_edge_x[k] = b_x;
 	bottom_edge_x[k] = left_bnd_x[id_yz(k,0)];   
 	
       }
@@ -817,39 +878,20 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
       
     }
   }
-#if defined(USE_ASAGI)
-  constexpr int chunksize=1;
-  AsagiReader asagiReader("");
-  easi::YAMLParser parser(3,&asagiReader);
-  easi::Component* model = parser.parse("topography.yaml");
-  double topography[chunksize];
-
-  easi::ArraysAdapter adapter;
-  adapter.addBindingPoint("z",topography);
-
-#endif
-
-  //given top surface
+   //given top surface
   for(int k = 0 ; k< nz; k++){  
     for(int i = 0 ; i< nx; i++){
       
       x = top_bnd_x[id_xz(k,i)];
       z = top_bnd_z[id_xz(k,i)];
-#if !defined(USE_ASAGI)	
-      top_bnd_y[id_xz(k,i)] = -topography(x, z, 0.0, 1.0, 0.0, 1.0);
+#if !defined(USE_ASAGI)      
+      top_bnd_y[id_xz(k,i)] -= topography(x, z, a_x, b_x, a_z, b_z,  depth);
 #else
-      easi::Query query(1,3);
-      query.x(0,0)=x;
-      query.x(0,1)=z;
-      query.x(0,2)=0;
-      
-      model->evaluate(query,adapter);
-
-      top_bnd_y[id_xz(k,i)] = -topography[0];
-#endif
+      top_bnd_y[id_xz(k,i)] -= topography_fromASAGI(x,z,topography, adapter, model);
+#endif      
     }
   }
- 
+  
 
   {
   double* top_edge_y = new double[nz];
@@ -1017,7 +1059,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 
     for (int j = 0; j < ny; j++){
 
-      bottom_edge_x[j] = 0.0;
+      bottom_edge_x[j] = a_x;
       top_edge_x[j] = right_bnd_x[id_yz(nz-1,j)];
      
    }
@@ -1026,8 +1068,8 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
     for (int i = 0; i < nx; i++){
 
 
-       left_edge_x[i] = 0 + i*distance_x_left;
-      right_edge_x[i] = 0 + i*distance_x_right;
+       left_edge_x[i] = a_x + i*distance_x_left;
+      right_edge_x[i] = a_x + i*distance_x_right;
 
      
    }
@@ -1043,7 +1085,7 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
     for (int j = 0; j < ny; j++){
 
       top_edge_x[j] = right_bnd_x[id_yz(0,j)];
-      bottom_edge_x[j] = 0.0;
+      bottom_edge_x[j] = a_x;
 
      
    }
@@ -1051,8 +1093,8 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 
     for (int i = 0; i < nx; i++){
 
-      left_edge_x[i] = 0 + i*distance_x_left;
-      right_edge_x[i] = 0 + i*distance_x_right;
+      left_edge_x[i] = a_x + i*distance_x_left;
+      right_edge_x[i] = a_x + i*distance_x_right;
  
      
    }
@@ -1063,15 +1105,15 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
 
     if (n == 1)
       {
-    double distance_x_left=(1.0-left_bnd_x[id_yz(nz-1,0)])/(nx-1);
-    double distance_x_right=(1.0-left_bnd_x[id_yz(nz-1,ny-1)])/(nx-1);
+    double distance_x_left=(b_x-left_bnd_x[id_yz(nz-1,0)])/(nx-1);
+    double distance_x_right=(b_x-left_bnd_x[id_yz(nz-1,ny-1)])/(nx-1);
 
 
 
     for (int j = 0; j < ny; j++){
 
       bottom_edge_x[j] = left_bnd_x[id_yz(nz-1,j)];
-      top_edge_x[j] = 1.0;
+      top_edge_x[j] = b_x;
      
    }
 
@@ -1089,13 +1131,13 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
     transFiniteInterpolation_singleCoordinate(nx, ny, bottom_edge_x,  top_edge_x, left_edge_x, right_edge_x,  back_bnd_x);
 
 
-    distance_x_left=(1.0-left_bnd_x[id_yz(0,0)])/(nx-1);
-    distance_x_right=(1.0-left_bnd_x[id_yz(0,ny-1)])/(nx-1);
+    distance_x_left=(b_x-left_bnd_x[id_yz(0,0)])/(nx-1);
+    distance_x_right=(b_x-left_bnd_x[id_yz(0,ny-1)])/(nx-1);
 
 
     for (int j = 0; j < ny; j++){
 
-      top_edge_x[j] = 1.0;
+      top_edge_x[j] = b_x;
       bottom_edge_x[j] = left_bnd_x[id_yz(0,j)];
      
    }
@@ -1116,14 +1158,12 @@ void CurvilinearTransformation::getBoundaryCurves3D_cutOffTopography_withFault(i
     for(int j = 0 ; j< ny; j++){
       for(int i = 0 ; i< nx; i++){
 	
-	front_bnd_z[id_xy(j,i)] = 0;
-	back_bnd_z[id_xy(j,i)] = 1.0;
+	front_bnd_z[id_xy(j,i)] = a_z;
+	back_bnd_z[id_xy(j,i)] = b_z;
       }
     }
-
   
 }
-
 
 
 
@@ -2123,13 +2163,13 @@ double  CurvilinearTransformation::interpol2d_dG(int my, int mz, int nmy, int np
 int CurvilinearTransformation::getBlock(const tarch::la::Vector<DIMENSIONS,double>& center,
 					const tarch::la::Vector<DIMENSIONS,double>& dx){
 
-  double offset_x=center[0]-0.5*dx[0];
-  double offset_y=center[1]-0.5*dx[1];
-  double offset_z=center[2]-0.5*dx[2];
+  double recWidth_x = b_x-a_x; //width in x of the rectangle
 
+  //relative position of the fault on the unit square
+  double fault_ref = (fault_position-a_x)/(recWidth_x);
 
   //defines which block we are in
-  int n = offset_x >  fault_position ? 1 : 0 ; //1: Water Column 0: Solid
+  int n = center[0] > fault_ref ? 1 : 0 ;
 
   return n;
 }

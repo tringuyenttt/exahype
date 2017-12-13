@@ -1,20 +1,11 @@
 !AffineMap
 matrix:
-  x: [1.0, 0.0, 0.0]
-  y: [0.0, 1.0, 0.0]
+  x: [0.059, 0.0, 0.0]
+  y: [0.0, 0.075, 0.0]
 translation:
-  x: 0.0
-  y: 0.0
+  x: 0.5
+  y: 0.5
 components: !ASAGI
-  file: tohoku_gebco_ucsb3_500m_hawaii_bath_small.nc
+  file: wasatch_200m.nc
   parameters: [z]
   var: z
-  components: !AffineMap
-    matrix:
-      z: [1.0]
-    translation:
-      z: 5000.0
-
-
-
-

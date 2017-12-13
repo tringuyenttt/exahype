@@ -1978,7 +1978,10 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     ) {
       // TODO(Dominic):
       // Get rid of the temporary variables -> Make stack arrays.
-      // Wait for background tasks to finish in touchVertexFirst, beginIteration
+      tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
+      _NumberOfTriggeredTasks++;
+      lock.free();
+
       PredictionTask predictionTask( *this, cellDescription );
       peano::datatraversal::TaskSet spawnedSet( predictionTask, false ); // TODO(Dominic): Long running or not?
     }
@@ -4346,6 +4349,11 @@ void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
 
   // clean up
   freeArrays(dataHeapIndices);
+
+  tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
+  _NumberOfTriggeredTasks--;
+  assertion( _NumberOfTriggeredTasks>=0 );
+  lock.free();
 }
 
 exahype::solvers::ADERDGSolver::CompressionTask::CompressionTask(
