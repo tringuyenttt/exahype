@@ -69,7 +69,7 @@ peano::MappingSpecification
 exahype::mappings::MeshRefinement::enterCellSpecification(int level) const {
   return peano::MappingSpecification(
       peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::AvoidFineGridRaces,true);
+      peano::MappingSpecification::Serial,true);
 }
 peano::MappingSpecification
 exahype::mappings::MeshRefinement::leaveCellSpecification(int level) const {
@@ -299,17 +299,14 @@ void exahype::mappings::MeshRefinement::ensureRegularityOnCoarserGrids(
           exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers()) // ensure boundary regularity
   ) {
     dfor2(v)
-      bool hasToRefineForRegularity =
+
+      if (
           !fineGridVertices[fineGridVerticesEnumerator(v)].isHangingNode()
           #ifdef Parallel
           &&
           !fineGridVertices[fineGridVerticesEnumerator(v)].isRemote( _localState, true, false)
           #endif
-          &&
-          fineGridVertices[ fineGridVerticesEnumerator(v) ].getRefinementControl()==
-              Vertex::Records::RefinementControl::Unrefined;
-
-      if (hasToRefineForRegularity) {
+      ) {
         refineSafely(
            fineGridVertices[fineGridVerticesEnumerator(v)],
            fineGridVerticesEnumerator.getCellSize(),
@@ -412,18 +409,13 @@ void exahype::mappings::MeshRefinement::enterCell(
   // Refine all adjacent vertices if necessary and possible.
   if (oneSolverRequestsRefinement) {
     dfor2(v)
-      if (
-          fineGridVertices[ fineGridVerticesEnumerator(v) ].getRefinementControl()==
-          exahype::Vertex::Records::RefinementControl::Unrefined
-          &&
-          !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode() // TODO(Dominic): Should not be necessary
-      ) {
-        refineSafely(
-            fineGridVertices[ fineGridVerticesEnumerator(v) ],
-            fineGridVerticesEnumerator.getCellSize(),
-            fineGridVerticesEnumerator.getLevel(),
-            false);
-      }
+      assertion(!fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode());
+
+      refineSafely(
+          fineGridVertices[ fineGridVerticesEnumerator(v) ],
+          fineGridVerticesEnumerator.getCellSize(),
+          fineGridVerticesEnumerator.getLevel(),
+          false);
     enddforx
   }
 
@@ -437,24 +429,25 @@ void exahype::mappings::MeshRefinement::eraseVerticesButPreserveRegularityOnCoar
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
   dfor2(v)
-      bool hasToRefineForRegularity =
-      tarch::la::oneGreater(
-          fineGridVerticesEnumerator.getCellSize(),exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers())
+    bool hasToRefineForRegularity =
       #ifdef Parallel
+      fineGridVertices[ fineGridVerticesEnumerator(v) ].isRemote( _localState, true, false)
       &&
-      !fineGridVertices[ fineGridVerticesEnumerator(v) ].isRemote( _localState, true, false)
       #endif
-      &&
-      !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode();
+      tarch::la::oneGreater(
+          fineGridVerticesEnumerator.getCellSize(),
+          exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers());
 
-      if (
-          hasToRefineForRegularity==false
-          &&
-          fineGridVertices[ fineGridVerticesEnumerator(v) ].getRefinementControl() ==
-              Vertex::Records::RefinementControl::Refined
-      ) {
-        fineGridVertices[ fineGridVerticesEnumerator(v) ].erase();
-      }
+    if (
+        hasToRefineForRegularity==false
+        &&
+        !fineGridVertices[ fineGridVerticesEnumerator(v) ].isHangingNode()
+        &&
+        fineGridVertices[ fineGridVerticesEnumerator(v) ].getRefinementControl() ==
+            Vertex::Records::RefinementControl::Refined
+    ) {
+      fineGridVertices[ fineGridVerticesEnumerator(v) ].erase();
+    }
   enddforx
 }
 
