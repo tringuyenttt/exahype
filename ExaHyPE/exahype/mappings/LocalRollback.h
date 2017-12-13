@@ -52,7 +52,7 @@ private:
    * Flag indicating if one solver requested a local recomputation.
    * Is initialised in beginIteration(...).
    */
-  bool _oneSolverRequestedLocalRecomputation = false;
+  static bool OneSolverRequestedLocalRecomputation;
 
   /**
    * \return if we perform a local recomputation for this solver.

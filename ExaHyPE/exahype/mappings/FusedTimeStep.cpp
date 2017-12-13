@@ -356,6 +356,7 @@ void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
     const peano::grid::VertexEnumerator& workersCoarseGridVerticesEnumerator,
     exahype::Cell& workersCoarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
+
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     exahype::Cell::mergeWithGlobalDataFromMaster(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
@@ -368,6 +369,7 @@ void exahype::mappings::FusedTimeStep::receiveDataFromMaster(
         receivedVerticesEnumerator.getCellSize(),
         receivedVerticesEnumerator.getLevel());
   }
+
 }
 
 void exahype::mappings::FusedTimeStep::mergeWithWorker(
@@ -396,8 +398,8 @@ void exahype::mappings::FusedTimeStep::prepareSendToMaster(
 
     localCell.reduceDataToMasterPerCell(
         tarch::parallel::NodePool::getInstance().getMasterRank(),
-        localCell.getCellDescriptionsIndex(),
         verticesEnumerator.getCellCenter(),
+        verticesEnumerator.getCellSize(),
         verticesEnumerator.getLevel());
   }
 }

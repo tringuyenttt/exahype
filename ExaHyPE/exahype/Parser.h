@@ -22,6 +22,7 @@ class Parser;
 
 #include <map>
 #include <vector>
+#include <utility> // pair
 
 #include "peano/utils/Globals.h"
 #include "tarch/la/Vector.h"
@@ -105,6 +106,23 @@ class exahype::Parser {
      * operation.
      */
     std::string getValueAsString(const std::string& key) const;
+
+    /**
+     * Returns the contents of this ParserView as a map, i.e. the keys
+     * mapped to the values which remain as strings (uncasted to their
+     * native description, i.e. bool,int,double).
+     * 
+     * @see getAllAsOrderedMap()
+     **/
+    std::map<std::string, std::string> getAllAsMap() const;
+
+    /**
+     * Returns the contents of this ParserView as an "ordered map", i.e
+     * a vector of key -> value pairs.
+     * 
+     * @see getAllAsMap()
+     **/
+    std::vector< std::pair<std::string, std::string> > getAllAsOrderedMap() const;
 
     bool isValueValidBool(const std::string& key) const;
     bool isValueValidInt(const std::string& key) const;

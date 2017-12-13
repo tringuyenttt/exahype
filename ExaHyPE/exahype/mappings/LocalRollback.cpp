@@ -82,6 +82,8 @@ exahype::mappings::LocalRollback::descendSpecification(int level) const {
 tarch::logging::Log exahype::mappings::LocalRollback::_log(
     "exahype::mappings::LocalRollback");
 
+bool exahype::mappings::LocalRollback::OneSolverRequestedLocalRecomputation = false;
+
 exahype::mappings::LocalRollback::LocalRollback() {
   // do nothing
 }
@@ -99,7 +101,7 @@ void exahype::mappings::LocalRollback::mergeWithWorkerThread(
 
 void exahype::mappings::LocalRollback::beginIteration(
     exahype::State& solverState) {
-  _oneSolverRequestedLocalRecomputation =
+  OneSolverRequestedLocalRecomputation =
       exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation();
 }
 
@@ -114,7 +116,7 @@ bool exahype::mappings::LocalRollback::performLocalRecomputation(
 
 void exahype::mappings::LocalRollback::endIteration(
     exahype::State& solverState) {
-  if ( _oneSolverRequestedLocalRecomputation ) {
+  if ( OneSolverRequestedLocalRecomputation ) {
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if (
@@ -146,15 +148,15 @@ void exahype::mappings::LocalRollback::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if (
-      _oneSolverRequestedLocalRecomputation &&
+      OneSolverRequestedLocalRecomputation &&
       fineGridCell.isInitialised()
   ) {
     const int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
     auto grainSize = peano::datatraversal::autotuning::Oracle::getInstance().parallelise(numberOfSolvers, peano::datatraversal::autotuning::MethodTrace::UserDefined10);
-    pfor(i, 0, numberOfSolvers, grainSize.getGrainSize())
-      auto solver = exahype::solvers::RegisteredSolvers[i];
+    pfor(solverNumber, 0, numberOfSolvers, grainSize.getGrainSize())
+      auto solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
-      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),i);
+      const int element = solver->tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
       if (element!=exahype::solvers::Solver::NotFound) {
         if( performLocalRecomputation( solver ) ) {
           auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
@@ -187,7 +189,7 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   if (
-      _oneSolverRequestedLocalRecomputation &&
+      OneSolverRequestedLocalRecomputation &&
       vertex.hasToCommunicate(h)
   ) {
     dfor2(dest)

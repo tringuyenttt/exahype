@@ -607,6 +607,13 @@ void exahype::solvers::Solver::startNewTimeStepForAllSolvers(
     if (exahype::solvers::RegisteredSolvers[solverNumber]->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
       auto* limitingADERDGSolver = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
       limitingADERDGSolver->updateNextLimiterDomainChange(solverFlags._limiterDomainChange[solverNumber]);
+      if (
+          limitingADERDGSolver->getNextMeshUpdateRequest() &&
+          limitingADERDGSolver->getNextLimiterDomainChange()==exahype::solvers::LimiterDomainChange::Irregular
+      ) {
+        limitingADERDGSolver->updateNextLimiterDomainChange(
+            exahype::solvers::LimiterDomainChange::IrregularRequiringMeshUpdate);
+      }
     }
     // cell sizes (for AMR)
     solver->updateNextMinCellSize(minCellSizes[solverNumber]);

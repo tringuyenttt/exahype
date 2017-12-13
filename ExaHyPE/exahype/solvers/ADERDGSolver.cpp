@@ -75,6 +75,10 @@ int exahype::solvers::ADERDGSolver::MaximumAugmentationStatus                = 4
 int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForAugmentation = 3;
 int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForRefining     = 3;
 
+tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSemaphore;
+
+tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSemaphore;
+
 void exahype::solvers::ADERDGSolver::addNewCellDescription(
   const int cellDescriptionsIndex,
   const int                                      solverNumber,
@@ -156,7 +160,9 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setExtrapolatedPredictorCompressed(-1);
   newCellDescription.setFluctuationCompressed(-1);
 
+  tarch::multicore::Lock lock(exahype::HeapSemaphore);
   ADERDGSolver::Heap::getInstance().getData(cellDescriptionsIndex).push_back(newCellDescription);
+  lock.free();
 }
 
 /**
@@ -196,17 +202,18 @@ bool exahype::solvers::ADERDGSolver::holdsFaceData(const CellDescription& cellDe
 
 void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(CellDescription& cellDescription) {
 
-  if ((cellDescription.getType()==CellDescription::Erased ||
+  if (
+      (cellDescription.getType()==CellDescription::Erased ||
       cellDescription.getType()==CellDescription::Type::Descendant ||
       cellDescription.getType()==CellDescription::Type::Ancestor)
       &&
       DataHeap::getInstance().isValidIndex(cellDescription.getSolution())
   ) {
+    tarch::multicore::Lock lock(exahype::HeapSemaphore);
+
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolution()));
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolution()));
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()));
-
-    tarch::multicore::Lock lock(exahype::HeapSemaphore);
 
     if (cellDescription.getUpdate()>=0) {
       DataHeap::getInstance().deleteData(cellDescription.getUpdate());
@@ -243,6 +250,8 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(CellDe
     cellDescription.setPreviousSolutionCompressed(-1);
     cellDescription.setSolutionCompressed(-1);
     cellDescription.setUpdateCompressed(-1);
+
+    lock.free();
   }
 
   if (
@@ -300,6 +309,8 @@ void exahype::solvers::ADERDGSolver::ensureNoUnnecessaryMemoryIsAllocated(CellDe
 
     cellDescription.setExtrapolatedPredictorCompressed(-1);
     cellDescription.setFluctuationCompressed(-1);
+
+    lock.free();
   }
 }
 
@@ -310,6 +321,7 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
       !DataHeap::getInstance().isValidIndex(cellDescription.getSolution())
   ) {
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
+
     assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getUpdate()));
     // Allocate volume DoF for limiter
     const int dataPerNode     = getNumberOfVariables()+getNumberOfParameters();
@@ -320,9 +332,7 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
     cellDescription.setUpdate( DataHeap::getInstance().createData( unknownsPerCell, unknownsPerCell ) );
 
     assertionEquals(DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).size(),static_cast<unsigned int>(dataPerCell));
-    assertionEquals(DataHeap::getInstance().getData(cellDescription.getUpdate()).capacity(),static_cast<unsigned int>(unknownsPerCell));
     assertionEquals(DataHeap::getInstance().getData(cellDescription.getUpdate()).size(),static_cast<unsigned int>(unknownsPerCell));
-    assertionEquals(DataHeap::getInstance().getData(cellDescription.getSolution()).capacity(),static_cast<unsigned int>(dataPerCell));
 
     cellDescription.setUpdateCompressed(-1);
     cellDescription.setSolutionCompressed(-1);
@@ -349,6 +359,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
     );
 
     cellDescription.setCompressionState(CellDescription::Uncompressed);
+
+    lock.free();
   }
 
   assertion1(cellDescription.getType()!=CellDescription::Type::Cell ||
@@ -367,6 +379,7 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
     assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()));
 
     tarch::multicore::Lock lock(exahype::HeapSemaphore);
+
     // Allocate face DoF
     const int dataPerBnd = getBndTotalSize();
     const int dofPerBnd  = getBndFluxTotalSize();
@@ -411,6 +424,8 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(CellDescri
         DataHeap::getInstance().getData( cellDescription.getSolutionMax() )[i] = -std::numeric_limits<double>::max();
       }
     }
+
+    lock.free();
   }
 }
 
@@ -1010,39 +1025,23 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
         fineGridCellDescription.toString(),fineGridCell.toString(),
         coarseGridCell.toString()); // see mergeCellDescriptionsWithRemoteData.
 
-    // actions requiring adjacency info
-    const tarch::la::Vector<TWO_POWER_D_TIMES_TWO_POWER_D,int>&
-      indicesAdjacentToFineGridVertices =
-          VertexOperations::readCellDescriptionsIndex(
-                          fineGridVerticesEnumerator,fineGridVertices);
+    // TODO(Dominic): Does this information indicate that a cell adjacent
+    // to a worker/master rank???
+    #ifdef Parallel
+    fineGridCellDescription.setAdjacentToRemoteRank(
+        exahype::Cell::isAdjacentToRemoteRank(fineGridVertices,fineGridVerticesEnumerator));
+    #endif
 
-    if (multiscalelinkedcell::adjacencyInformationIsConsistent(
-        indicesAdjacentToFineGridVertices)) {
-      const tarch::la::Vector<THREE_POWER_D, int> neighbourCellDescriptionIndices =
-          multiscalelinkedcell::getIndicesAroundCell(
-              indicesAdjacentToFineGridVertices);
+    // Ensure we have allocated enough memory.
+    updateHelperStatus(fineGridCellDescription);
+    ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
+    ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
 
-      // TODO(Dominic): Does this information indicate that a cell adjacent
-      // to a worker/master rank???
-
-      #ifdef Parallel
-      fineGridCellDescription.setAdjacentToRemoteRank(
-          exahype::Cell::isAdjacentToRemoteRank(fineGridVertices,fineGridVerticesEnumerator));
-      #endif
-
-      // Ensure we have allocated enough memory.
-      updateHelperStatus(fineGridCellDescription);
-      ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
-      ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
-
-      // marking for augmentation
-      updateAugmentationStatus(fineGridCellDescription);
-      result._refinementRequested |= // TODO(Dominic): Change to the template version.
-          markForAugmentation(
-              fineGridCellDescription,
-              neighbourCellDescriptionIndices,
-              fineGridCell.isAssignedToRemoteRank());
-    }
+    // marking for augmentation
+    updateAugmentationStatus(fineGridCellDescription);
+    result._refinementRequested |=
+        markForAugmentation(fineGridCellDescription);
+    // TODO(Dominic): Change to the template version if more solvers
   }
 
   // Coarse grid cell based adaptive mesh refinement operations.
@@ -1058,7 +1057,6 @@ exahype::solvers::Solver::UpdateStateInEnterCellResult exahype::solvers::ADERDGS
         coarseGridCellDescription,
         fineGridCell.getCellDescriptionsIndex());
 
-    // TODO(Dominic): Pass limiter status flag down to the new cell
     addNewDescendantIfAugmentingRequested(
             fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
             coarseGridCellDescription,coarseGridCell.getCellDescriptionsIndex());
@@ -1138,20 +1136,22 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
   }
 
   if (vetoErasing) {
-    int coarseGridCellElement = tryGetElement(fineGridCellDescription.getParentIndex(),
+    const int coarseGridCellElement = tryGetElement(fineGridCellDescription.getParentIndex(),
                                               fineGridCellDescription.getSolverNumber());
     if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
-      auto& coarseGridCellDescription = getCellDescription(fineGridCellDescription.getParentIndex(),
-                                                           coarseGridCellElement);
+      auto& coarseGridCellDescription = getCellDescription(
+          fineGridCellDescription.getParentIndex(),coarseGridCellElement);
 
-      if (coarseGridCellDescription.getRefinementEvent()==CellDescription::ErasingChildrenRequested ||
-          coarseGridCellDescription.getRefinementEvent()==CellDescription::ChangeChildrenToDescendantsRequested) {
-        tarch::multicore::Lock lock(HeapSemaphore);
+      tarch::multicore::Lock lock(CoarseGridSemaphore);
+      if (
+          coarseGridCellDescription.getRefinementEvent()==CellDescription::ErasingChildrenRequested ||
+          coarseGridCellDescription.getRefinementEvent()==CellDescription::ChangeChildrenToDescendantsRequested
+      ) {
         coarseGridCellDescription.setRefinementEvent(CellDescription::None);
-        lock.free();
         assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
                    coarseGridCellDescription.toString());
       }
+      lock.free();
     }
   }
 
@@ -1159,9 +1159,7 @@ bool exahype::solvers::ADERDGSolver::markForRefinement(
 }
 
 bool exahype::solvers::ADERDGSolver::markForAugmentation(
-    CellDescription& fineGridCellDescription,
-    const tarch::la::Vector<THREE_POWER_D, int>& neighbourCellDescriptionIndices,
-    const bool assignedToRemoteRank) {
+    CellDescription& fineGridCellDescription) {
   const int coarseGridElement = tryGetElement(
       fineGridCellDescription.getParentIndex(),
       fineGridCellDescription.getSolverNumber());
@@ -1171,9 +1169,12 @@ bool exahype::solvers::ADERDGSolver::markForAugmentation(
   if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
     CellDescription& coarseGridCellDescription =
         getCellDescription(fineGridCellDescription.getParentIndex(),coarseGridElement);
+
+    tarch::multicore::Lock lock(CoarseGridSemaphore);
     if (coarseGridCellDescription.getRefinementEvent()==CellDescription::DeaugmentingChildrenRequestedTriggered) {
       coarseGridCellDescription.setRefinementEvent(CellDescription::DeaugmentingChildrenRequested);
     }
+    lock.free();
   }
 
   // Then do fine grid cell stuff
@@ -1219,6 +1220,7 @@ bool exahype::solvers::ADERDGSolver::markForAugmentation(
     if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
       auto& coarseGridCellDescription = getCellDescription(fineGridCellDescription.getParentIndex(),
                                                            coarseGridCellElement);
+      tarch::multicore::Lock lock(CoarseGridSemaphore);
       if (coarseGridCellDescription.getRefinementEvent()==CellDescription::DeaugmentingChildrenRequested) {
         coarseGridCellDescription.setRefinementEvent(CellDescription::None);
 
@@ -1228,6 +1230,7 @@ bool exahype::solvers::ADERDGSolver::markForAugmentation(
                    coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
                    coarseGridCellDescription.toString());
       }
+      lock.free();
     }
   }
 
@@ -1237,9 +1240,8 @@ bool exahype::solvers::ADERDGSolver::markForAugmentation(
 void exahype::solvers::ADERDGSolver::vetoErasingOrDeaugmentingChildrenRequest(
     CellDescription& coarseGridCellDescription,
     const int fineGridCellDescriptionsIndex) {
-  const int fineGridCellElement =
-      tryGetElement(fineGridCellDescriptionsIndex,
-          coarseGridCellDescription.getSolverNumber());
+  const int fineGridCellElement = tryGetElement(
+      fineGridCellDescriptionsIndex,coarseGridCellDescription.getSolverNumber());
   if (fineGridCellElement!=exahype::solvers::Solver::NotFound) {
     CellDescription& fineGridCellDescription =
        getCellDescription(fineGridCellDescriptionsIndex,fineGridCellElement);
@@ -1250,53 +1252,28 @@ void exahype::solvers::ADERDGSolver::vetoErasingOrDeaugmentingChildrenRequest(
         || fineGridCellDescription.getHasToHoldDataForMasterWorkerCommunication()
         #endif
     ) {
+      tarch::multicore::Lock lock(CoarseGridSemaphore);
       switch (coarseGridCellDescription.getRefinementEvent()) {
-      case CellDescription::DeaugmentingChildrenRequested:
+      case CellDescription::DeaugmentingChildrenRequested: {
         assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
                    coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
                    coarseGridCellDescription.toString());
+
         coarseGridCellDescription.setRefinementEvent(CellDescription::None);
-        break;
-      case CellDescription::ErasingChildrenRequested:
+      }  break;
+      case CellDescription::ErasingChildrenRequested: {
         assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Ancestor,
             coarseGridCellDescription.toString());
 
         coarseGridCellDescription.setRefinementEvent(
             CellDescription::ChangeChildrenToDescendantsRequested);
-        break;
+      } break;
       default:
         break;
       }
+      lock.free();
     }
   }
-
-
-  // TODO(Dominic): Old code for reference
-//  const int coarseGridCellParentElement = tryGetElement(coarseGridCellDescription.getParentIndex(),
-//                                                  coarseGridCellDescription.getSolverNumber());
-//  const int fineGridCellElement = tryGetElement(fineGridCellDescriptionsIndex,
-//                                          coarseGridCellDescription.getSolverNumber());
-//  if (fineGridCellElement!=exahype::solvers::Solver::NotFound &&
-//      coarseGridCellParentElement!=exahype::solvers::Solver::NotFound) {
-//    CellDescription& coarseGridCellDescriptionParent =
-//        getCellDescription(coarseGridCellDescription.getParentIndex(),coarseGridCellParentElement);
-//
-//        switch (coarseGridCellDescriptionParent.getRefinementEvent()) {
-//          case CellDescription::DeaugmentingChildrenRequested:
-//            assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Descendant,coarseGridCellDescription.toString());
-//            coarseGridCellDescriptionParent.setRefinementEvent(CellDescription::None);
-//            break;
-//          case CellDescription::ErasingChildrenRequested:
-//            assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell,
-//                       coarseGridCellDescription.toString());
-//
-//            coarseGridCellDescriptionParent.setRefinementEvent(
-//                CellDescription::ChangeChildrenToDescendantsRequested);
-//            break;
-//          default:
-//            break;
-//        }
-//  }
 }
 
 void exahype::solvers::ADERDGSolver::addNewCell(
@@ -1316,6 +1293,7 @@ void exahype::solvers::ADERDGSolver::addNewCell(
               coarseGridCellDescriptionsIndex,
               fineGridVerticesEnumerator.getCellSize(),
               fineGridVerticesEnumerator.getVertexPosition());
+
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   CellDescription& fineGridCellDescription =
@@ -1332,57 +1310,53 @@ void exahype::solvers::ADERDGSolver::addNewDescendantIfAugmentingRequested(
      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
      CellDescription& coarseGridCellDescription,
      const int coarseGridCellDescriptionsIndex) {
-  if (coarseGridCellDescription.getRefinementEvent()==CellDescription::AugmentingRequested ||
-      coarseGridCellDescription.getRefinementEvent()==CellDescription::Augmenting) {
+  const int fineGridElement = tryGetElement(
+      fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
+
+  // read and modify coarse grid
+  tarch::multicore::Lock lock(CoarseGridSemaphore);
+  const bool augmentingRequested =
+      coarseGridCellDescription.getRefinementEvent()==CellDescription::AugmentingRequested;
+  const bool augmenting =
+      coarseGridCellDescription.getRefinementEvent()==CellDescription::Augmenting;
+
+  if (augmenting || augmentingRequested) {
     assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell ||
                coarseGridCellDescription.getType()==CellDescription::Type::Descendant,
                coarseGridCellDescription.toString());
-    const int fineGridElement =
-        tryGetElement(fineGridCell.getCellDescriptionsIndex(),
-                      coarseGridCellDescription.getSolverNumber());
-
     coarseGridCellDescription.setRefinementEvent(CellDescription::None);
-    if (fineGridElement==exahype::solvers::Solver::NotFound) {
-      fineGridCell.addNewCellDescription( // (EmptyDescendant),None
-          coarseGridCellDescription.getSolverNumber(),
-          CellDescription::Type::Descendant,
-          CellDescription::None,
-          fineGridVerticesEnumerator.getLevel(),
-          coarseGridCellDescriptionsIndex,
-          fineGridVerticesEnumerator.getCellSize(),
-          fineGridVerticesEnumerator.getVertexPosition());
-      const int fineGridElement =
-          tryGetElement(fineGridCell.getCellDescriptionsIndex(),
-                        coarseGridCellDescription.getSolverNumber());
-      CellDescription& fineGridCellDescription =
-          getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-      fineGridCellDescription.setIsInside(coarseGridCellDescription.getIsInside());
-
+    if ( fineGridElement==exahype::solvers::Solver::NotFound ) {
       coarseGridCellDescription.setRefinementEvent(CellDescription::Augmenting);
-    } else if (fineGridElement!=exahype::solvers::Solver::NotFound &&
-               coarseGridCellDescription.getRefinementEvent()==CellDescription::AugmentingRequested){
-      /**
-       * Reset an augmentation request if the child cell does hold
-       * a Descendant or EmptyDescendant cell description with
-       * the same solver number.
-       *
-       * This scenario occurs if an augmentation request is triggered in
-       * enterCell() or mergeWithNeighbourMetadata(...).
-       *
-       * A similar scenario can never occur for refinement requests
-       * since only cell descriptions of type Cell can be refined.
-       * Ancestors and EmptyAncestors can never request refinement.
-       * TODO(Dominic): Add to docu.
-       */
+    } else if ( augmentingRequested ) {
       coarseGridCellDescription.setRefinementEvent(CellDescription::None);
 
       #if defined(Debug) || defined(Asserts)
       CellDescription& fineGridCellDescription =
-                getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
+          getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
       #endif
       assertion1(fineGridCellDescription.getType()==CellDescription::Type::Descendant,
                  fineGridCellDescription.toString());
     }
+  }
+  lock.free();
+
+  // work on fine grid
+  if (
+      (augmentingRequested || augmenting) &&
+      fineGridElement==exahype::solvers::Solver::NotFound
+  ) {
+    fineGridCell.addNewCellDescription( // (EmptyDescendant),None
+        coarseGridCellDescription.getSolverNumber(),
+        CellDescription::Type::Descendant,
+        CellDescription::None,
+        fineGridVerticesEnumerator.getLevel(),
+        coarseGridCellDescriptionsIndex,
+        fineGridVerticesEnumerator.getCellSize(),
+        fineGridVerticesEnumerator.getVertexPosition());
+
+    CellDescription& fineGridCellDescription =
+        getCellDescriptions(fineGridCell.getCellDescriptionsIndex()).back();
+    fineGridCellDescription.setIsInside(coarseGridCellDescription.getIsInside());
   }
 }
 
@@ -1394,23 +1368,30 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
     CellDescription& coarseGridCellDescription,
     const int coarseGridCellDescriptionsIndex,
     const bool initialGrid) {
-  if (coarseGridCellDescription.getRefinementEvent()==CellDescription::RefiningRequested ||
-      coarseGridCellDescription.getRefinementEvent()==CellDescription::Refining) {
+  // read and modify coarse grid
+  tarch::multicore::Lock lock(CoarseGridSemaphore);
+  bool refiningOrRefiningRequested =
+      coarseGridCellDescription.getRefinementEvent()==CellDescription::RefiningRequested ||
+      coarseGridCellDescription.getRefinementEvent()==CellDescription::Refining;
+  if ( refiningOrRefiningRequested ) {
     assertion1(coarseGridCellDescription.getType()==CellDescription::Type::Cell,
                coarseGridCellDescription.toString());
-    const int fineGridCellElement =
-        tryGetElement(fineGridCell.getCellDescriptionsIndex(),
-                      coarseGridCellDescription.getSolverNumber());
+    coarseGridCellDescription.setRefinementEvent(CellDescription::Refining);
+  }
+  lock.free();
 
-    if (fineGridCellElement==exahype::solvers::Solver::NotFound) {
+
+  // work on fine grid
+  if ( refiningOrRefiningRequested ) {
+    const int fineGridCellElement = tryGetElement(
+        fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
+
+    if ( fineGridCellElement==exahype::solvers::Solver::NotFound ) {
       addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
                  coarseGridCellDescriptionsIndex,
                  coarseGridCellDescription.getSolverNumber());
-      const int newFineGridCellElement =
-          tryGetElement(fineGridCell.getCellDescriptionsIndex(),
-                        coarseGridCellDescription.getSolverNumber());
       CellDescription& fineGridCellDescription =
-          getCellDescription(fineGridCell.getCellDescriptionsIndex(),newFineGridCellElement);
+          getCellDescriptions(fineGridCell.getCellDescriptionsIndex()).back();
       fineGridCellDescription.setIsInside(coarseGridCellDescription.getIsInside());
 
       prolongateVolumeData(
@@ -1431,8 +1412,6 @@ bool exahype::solvers::ADERDGSolver::addNewCellIfRefinementRequested(
       prolongateVolumeData(
           fineGridCellDescription,coarseGridCellDescription,fineGridPositionOfCell,initialGrid);
     }
-
-    coarseGridCellDescription.setRefinementEvent(CellDescription::Refining);
     return true;
   }
   return false;
@@ -1484,9 +1463,11 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
   // according to the PAD, we don't want to have a too broad refined area.
   // We thus do not flag children cells with troubled
   //
-  if (!initialGrid
+  if (
+      !initialGrid
       &&
-      coarseGridCellDescription.getLimiterStatus()>=_minimumLimiterStatusForTroubledCell) {
+      coarseGridCellDescription.getLimiterStatus()>=_minimumLimiterStatusForTroubledCell
+  ) {
     fineGridCellDescription.setLimiterStatus(_minimumLimiterStatusForTroubledCell);
     fineGridCellDescription.setIterationsToCureTroubledCell(coarseGridCellDescription.getIterationsToCureTroubledCell());
   }
@@ -1499,19 +1480,12 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
         const int solverNumber) const {
   const int element = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  if (element!=exahype::solvers::Solver::NotFound) {
+  if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
-
-    const tarch::la::Vector<TWO_POWER_D_TIMES_TWO_POWER_D,int>&
-      indicesAdjacentToFineGridVertices =
-          VertexOperations::readCellDescriptionsIndex(
-              fineGridVerticesEnumerator,fineGridVertices);
-
-    return cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None
-       && multiscalelinkedcell::adjacencyInformationIsConsistent(indicesAdjacentToFineGridVertices);
+    return cellDescription.getRefinementEvent()==CellDescription::RefinementEvent::None;
+  } else {
+    return true;
   }
-
-  return true;
 }
 
 bool exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
@@ -1534,7 +1508,7 @@ bool exahype::solvers::ADERDGSolver::updateStateInLeaveCell(
 
     const int coarseGridCellElement =
         tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
-    if (coarseGridCellElement!=exahype::solvers::Solver::NotFound) {
+    if ( coarseGridCellElement!=exahype::solvers::Solver::NotFound ) {
       assertion3(fineGridCellDescription.getParentIndex()==coarseGridCell.getCellDescriptionsIndex(),
                  fineGridCellDescription.toString(),fineGridCell.toString(),
                  coarseGridCell.toString()); // see mergeCellDescriptionsWithRemoteData.
@@ -1647,18 +1621,29 @@ void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
     const int fineGridCellElement,
     const tarch::la::Vector<DIMENSIONS,int>& fineGridPositionOfCell,
     CellDescription& coarseGridCellDescription) {
-  if (coarseGridCellDescription.getRefinementEvent()==CellDescription::ErasingChildren) {
+  tarch::multicore::Lock lock(CoarseGridSemaphore);
+  const bool erasingChildren =
+      coarseGridCellDescription.getRefinementEvent()==CellDescription::ErasingChildren;
+  const bool changeChildredToDescendants =
+      coarseGridCellDescription.getRefinementEvent()==CellDescription::ChangeChildrenToDescendants;
+  const bool deaugmentingChildren =
+      coarseGridCellDescription.getRefinementEvent()==CellDescription::DeaugmentingChildren;
+  lock.free();
+
+  if ( erasingChildren ) {
     CellDescription& fineGridCellDescription = getCellDescription(
           cellDescriptionsIndex,fineGridCellElement);
 
     // restrict values.
+    tarch::multicore::Lock lock(RestrictionSemaphore);
     restrictVolumeData(
         coarseGridCellDescription,
         fineGridCellDescription,
         fineGridPositionOfCell);
     // TODO(Dominic): Reconsider for anarchic time stepping.
-//    coarseGridCellDescription.setCorrectorTimeStamp(fineGridCellDescription.getCorrectorTimeStamp());
-//    coarseGridCellDescription.setPredictorTimeStamp(fineGridCellDescription.getPredictorTimeStamp());
+    // coarseGridCellDescription.setCorrectorTimeStamp(fineGridCellDescription.getCorrectorTimeStamp());
+    // coarseGridCellDescription.setPredictorTimeStamp(fineGridCellDescription.getPredictorTimeStamp());
+    lock.free();
 
     // erase cell description // or change to descendant
     fineGridCellDescription.setType(CellDescription::Erased);
@@ -1668,25 +1653,29 @@ void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
 
     getCellDescriptions(cellDescriptionsIndex).erase(
         getCellDescriptions(cellDescriptionsIndex).begin()+fineGridCellElement);
-  } else if (coarseGridCellDescription.getRefinementEvent()==CellDescription::ChangeChildrenToDescendants) {
+  }
+  else if ( changeChildredToDescendants ) {
     CellDescription& fineGridCellDescription = getCellDescription(
         cellDescriptionsIndex,fineGridCellElement);
 
     // restrict values.
+    tarch::multicore::Lock lock(RestrictionSemaphore);
     restrictVolumeData(
         coarseGridCellDescription,
         fineGridCellDescription,
         fineGridPositionOfCell);
     // TODO(Dominic): Reconsider for anarchic time stepping.
-//    coarseGridCellDescription.setCorrectorTimeStamp(fineGridCellDescription.getCorrectorTimeStamp());
-//    coarseGridCellDescription.setPredictorTimeStamp(fineGridCellDescription.getPredictorTimeStamp());
+    // coarseGridCellDescription.setCorrectorTimeStamp(fineGridCellDescription.getCorrectorTimeStamp());
+    // coarseGridCellDescription.setPredictorTimeStamp(fineGridCellDescription.getPredictorTimeStamp());
+    lock.free();
 
     // erase cell description // or change to descendant
     fineGridCellDescription.setType(CellDescription::Type::Descendant);
     fineGridCellDescription.setHelperStatus(0);
     fineGridCellDescription.setFacewiseHelperStatus(0); // implicit conversion
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
-  } else if (coarseGridCellDescription.getRefinementEvent()==CellDescription::DeaugmentingChildren) {
+  }
+  else if ( deaugmentingChildren ) {
     CellDescription& fineGridCellDescription = getCellDescription(
           cellDescriptionsIndex,fineGridCellElement);
 
@@ -1964,7 +1953,6 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     for (int i=0; i<getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
     } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
-
 
     deltaDistribution(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources);
     // luh, t, dt, cell cell center, cell size, data allocation for forceVect
@@ -2527,7 +2515,7 @@ void exahype::solvers::ADERDGSolver::restrictLimiterStatus(
         ADERDGSolver::getCellDescription(parentCellDescriptionsIndex,parentElement);
     if(parentCellDescription.getType()==CellDescription::Type::Ancestor) {
       parentCellDescription.setLimiterStatus(ADERDGSolver::_minimumLimiterStatusForTroubledCell);
-      cellDescription.setFacewiseLimiterStatus(0);
+      parentCellDescription.setFacewiseLimiterStatus(0);
     }
   }
 }
@@ -3517,7 +3505,6 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
   CellDescription::Type neighbourType =
       static_cast<CellDescription::Type>(neighbourMetadata[exahype::NeighbourCommunicationMetadataCellType].getU());
   if(neighbourType==CellDescription::Type::Cell || cellDescription.getType()==CellDescription::Type::Cell){
-    tarch::multicore::Lock lock(exahype::HeapSemaphore);
     assertion2(holdsFaceData(cellDescription),cellDescription.toString(),tarch::parallel::Node::getInstance().getRank());
 
     const int dataPerFace = getBndFaceSize();
@@ -4250,9 +4237,10 @@ void exahype::solvers::ADERDGSolver::CompressionTask::operator()() {
   _solver.putUnknownsIntoByteStream(_cellDescription);
 
   tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-  _cellDescription.setCompressionState(CellDescription::Compressed);
-  _NumberOfTriggeredTasks--;
-  assertion( _NumberOfTriggeredTasks>=0 );
+    _cellDescription.setCompressionState(CellDescription::Compressed);
+    _NumberOfTriggeredTasks--;
+    assertion( _NumberOfTriggeredTasks>=0 );
+  lock.free();
 }
 
 
@@ -4263,7 +4251,7 @@ void exahype::solvers::ADERDGSolver::compress(CellDescription& cellDescription) 
       cellDescription.setCompressionState(CellDescription::CurrentlyProcessed);
 
       tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-      _NumberOfTriggeredTasks++;
+        _NumberOfTriggeredTasks++;
       lock.free();
 
       CompressionTask myTask( *this, cellDescription );
@@ -4286,11 +4274,11 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
 
   while (!madeDecision) {
     tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-    madeDecision = cellDescription.getCompressionState() != CellDescription::CurrentlyProcessed;
-    uncompress   = cellDescription.getCompressionState() == CellDescription::Compressed;
-    if (uncompress) {
-      cellDescription.setCompressionState( CellDescription::CurrentlyProcessed );
-    }
+      madeDecision = cellDescription.getCompressionState() != CellDescription::CurrentlyProcessed;
+      uncompress   = cellDescription.getCompressionState() == CellDescription::Compressed;
+      if (uncompress) {
+        cellDescription.setCompressionState( CellDescription::CurrentlyProcessed );
+      }
     lock.free();
 
     tarch::multicore::BooleanSemaphore::sendTaskToBack();
@@ -4312,7 +4300,8 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
     computeHierarchicalTransform(cellDescription,1.0);
 
     tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-    cellDescription.setCompressionState(CellDescription::Uncompressed);
+      cellDescription.setCompressionState(CellDescription::Uncompressed);
+    lock.free();
   }
 }
 
@@ -4498,8 +4487,8 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       cellDescription.setBytesPerDoFInPreviousSolution(compressionOfPreviousSolution);
       if (compressionOfPreviousSolution<7) {
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        cellDescription.setPreviousSolutionCompressed( CompressedDataHeap::getInstance().createData(0,0) );
-        assertion( cellDescription.getPreviousSolutionCompressed()>=0 );
+          cellDescription.setPreviousSolutionCompressed( CompressedDataHeap::getInstance().createData(0,0) );
+          assertion( cellDescription.getPreviousSolutionCompressed()>=0 );
         lock.free();
 
         const int numberOfEntries = getDataPerCell();
@@ -4507,22 +4496,24 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
         #if defined(TrackGridStatistics)
         lock.lock();
-        PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).size() * 8.0;
-        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getPreviousSolutionCompressed() ).size();
+          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).size() * 8.0;
+          PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getPreviousSolutionCompressed() ).size();
         lock.free();
         #endif
 
         #if !defined(ValidateCompressedVsUncompressedData)
         lock.lock();
-        DataHeap::getInstance().deleteData( cellDescription.getPreviousSolution(), true );
-        cellDescription.setPreviousSolution( -1 );
+          DataHeap::getInstance().deleteData( cellDescription.getPreviousSolution(), true );
+          cellDescription.setPreviousSolution( -1 );
+        lock.free();
         #endif
       }
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).size() * 8.0;
-        PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).size() * 8.0;
+          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).size() * 8.0;
+          PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getPreviousSolution() ).size() * 8.0;
+        lock.free();
         #endif
       }
     },
@@ -4530,8 +4521,8 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       cellDescription.setBytesPerDoFInSolution(compressionOfSolution);
       if (compressionOfSolution<7) {
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        cellDescription.setSolutionCompressed(CompressedDataHeap::getInstance().createData(0,0));
-        assertion1( cellDescription.getSolutionCompressed()>=0, cellDescription.getSolutionCompressed() );
+          cellDescription.setSolutionCompressed(CompressedDataHeap::getInstance().createData(0,0));
+          assertion1( cellDescription.getSolutionCompressed()>=0, cellDescription.getSolutionCompressed() );
         lock.free();
 
         const int numberOfEntries = getDataPerCell();
@@ -4540,22 +4531,24 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
         #if defined(TrackGridStatistics)
         lock.lock();
-        PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getSolution() ).size() * 8.0;
-        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getSolutionCompressed() ).size();
+          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getSolution() ).size() * 8.0;
+          PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getSolutionCompressed() ).size();
         lock.free();
         #endif
 
         #if !defined(ValidateCompressedVsUncompressedData)
         lock.lock();
-        DataHeap::getInstance().deleteData( cellDescription.getSolution(), true );
-        cellDescription.setSolution( -1 );
+          DataHeap::getInstance().deleteData( cellDescription.getSolution(), true );
+          cellDescription.setSolution( -1 );
+        lock.free();
         #endif
       }
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getSolution() ).size() * 8.0;
-        PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getSolution() ).size() * 8.0;
+          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getSolution() ).size() * 8.0;
+          PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getSolution() ).size() * 8.0;
+        lock.free();
         #endif
       }
     },
@@ -4563,8 +4556,8 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       cellDescription.setBytesPerDoFInUpdate(compressionOfUpdate);
       if (compressionOfUpdate<7) {
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        cellDescription.setUpdateCompressed( CompressedDataHeap::getInstance().createData(0,0) );
-        assertion( cellDescription.getUpdateCompressed()>=0 );
+          cellDescription.setUpdateCompressed( CompressedDataHeap::getInstance().createData(0,0) );
+          assertion( cellDescription.getUpdateCompressed()>=0 );
         lock.free();
 
         const int numberOfEntries = getUnknownsPerCell();
@@ -4572,22 +4565,24 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
         #if defined(TrackGridStatistics)
         lock.lock();
-        PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getUpdate() ).size() * 8.0;
-        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getUpdateCompressed() ).size();
+          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getUpdate() ).size() * 8.0;
+          PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getUpdateCompressed() ).size();
         lock.free();
         #endif
 
         #if !defined(ValidateCompressedVsUncompressedData)
         lock.lock();
-        DataHeap::getInstance().deleteData( cellDescription.getUpdate(), true );
-        cellDescription.setUpdate( -1 );
+          DataHeap::getInstance().deleteData( cellDescription.getUpdate(), true );
+          cellDescription.setUpdate( -1 );
+        lock.free();
         #endif
       }
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getUpdate() ).size() * 8.0;
-        PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getUpdate() ).size() * 8.0;
+          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getUpdate() ).size() * 8.0;
+          PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getUpdate() ).size() * 8.0;
+        lock.free();
         #endif
       }
     },
@@ -4595,8 +4590,8 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       cellDescription.setBytesPerDoFInExtrapolatedPredictor(compressionOfExtrapolatedPredictor);
       if (compressionOfExtrapolatedPredictor<7) {
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        cellDescription.setExtrapolatedPredictorCompressed( CompressedDataHeap::getInstance().createData(0,0) );
-        assertion( cellDescription.getExtrapolatedPredictorCompressed()>=0 );
+          cellDescription.setExtrapolatedPredictorCompressed( CompressedDataHeap::getInstance().createData(0,0) );
+          assertion( cellDescription.getExtrapolatedPredictorCompressed()>=0 );
         lock.free();
 
         const int numberOfEntries = getDataPerCellBoundary();
@@ -4604,22 +4599,24 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
         #if defined(TrackGridStatistics)
         lock.lock();
-        PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).size() * 8.0;
-        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictorCompressed() ).size();
+          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).size() * 8.0;
+          PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictorCompressed() ).size();
         lock.free();
         #endif
 
         #if !defined(ValidateCompressedVsUncompressedData)
         lock.lock();
-        DataHeap::getInstance().deleteData( cellDescription.getExtrapolatedPredictor(), true );
-        cellDescription.setExtrapolatedPredictor( -1 );
+          DataHeap::getInstance().deleteData( cellDescription.getExtrapolatedPredictor(), true );
+          cellDescription.setExtrapolatedPredictor( -1 );
+        lock.free();
         #endif
       }
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).size() * 8.0;
-        PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).size() * 8.0;
+          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).size() * 8.0;
+          PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getExtrapolatedPredictor() ).size() * 8.0;
+        lock.free();
         #endif
       }
     },
@@ -4627,8 +4624,8 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       cellDescription.setBytesPerDoFInFluctuation(compressionOfFluctuation);
       if (compressionOfFluctuation<7) {
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        cellDescription.setFluctuationCompressed( CompressedDataHeap::getInstance().createData(0,0) );
-        assertion( cellDescription.getFluctuationCompressed()>=0 );
+          cellDescription.setFluctuationCompressed( CompressedDataHeap::getInstance().createData(0,0) );
+          assertion( cellDescription.getFluctuationCompressed()>=0 );
         lock.free();
 
         const int numberOfEntries = getUnknownsPerCellBoundary();
@@ -4636,22 +4633,24 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
 
         #if defined(TrackGridStatistics)
         lock.lock();
-        PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getFluctuation() ).size() * 8.0;
-        PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getFluctuationCompressed() ).size();
+          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getFluctuation() ).size() * 8.0;
+          PipedCompressedBytes   += CompressedDataHeap::getInstance().getData( cellDescription.getFluctuationCompressed() ).size();
         lock.free();
         #endif
 
         #if !defined(ValidateCompressedVsUncompressedData)
         lock.lock();
-        DataHeap::getInstance().deleteData( cellDescription.getFluctuation(), true );
-        cellDescription.setFluctuation( -1 );
+          DataHeap::getInstance().deleteData( cellDescription.getFluctuation(), true );
+          cellDescription.setFluctuation( -1 );
+        lock.free();
         #endif
       }
       else {
         #if defined(TrackGridStatistics)
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getFluctuation() ).size() * 8.0;
-        PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getFluctuation() ).size() * 8.0;
+          PipedUncompressedBytes += DataHeap::getInstance().getData( cellDescription.getFluctuation() ).size() * 8.0;
+          PipedCompressedBytes   += DataHeap::getInstance().getData( cellDescription.getFluctuation() ).size() * 8.0;
+        lock.free();
         #endif
       }
     },
@@ -4671,42 +4670,42 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
 
   {
     tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-    cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
-    cellDescription.setSolution( DataHeap::getInstance().createData(         dataPointsPerCell, dataPointsPerCell ) );
-    cellDescription.setUpdate( DataHeap::getInstance().createData(           unknownsPerCell,   unknownsPerCell ) );
+      cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
+      cellDescription.setSolution( DataHeap::getInstance().createData(         dataPointsPerCell, dataPointsPerCell ) );
+      cellDescription.setUpdate( DataHeap::getInstance().createData(           unknownsPerCell,   unknownsPerCell ) );
 
-    cellDescription.setExtrapolatedPredictor( DataHeap::getInstance().createData( unknownsPerCellBoundary, unknownsPerCellBoundary ) );
-    cellDescription.setFluctuation( DataHeap::getInstance().createData(           unknownsPerCellBoundary, unknownsPerCellBoundary ) );
+      cellDescription.setExtrapolatedPredictor( DataHeap::getInstance().createData( unknownsPerCellBoundary, unknownsPerCellBoundary ) );
+      cellDescription.setFluctuation( DataHeap::getInstance().createData(           unknownsPerCellBoundary, unknownsPerCellBoundary ) );
     lock.free();
 
     if (cellDescription.getPreviousSolution()==-1) {
       waitUntilAllBackgroundTasksHaveTerminated();
       lock.lock();
-      cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
+        cellDescription.setPreviousSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       lock.free();
     }
     if (cellDescription.getSolution()==-1) {
       waitUntilAllBackgroundTasksHaveTerminated();
       lock.lock();
-      cellDescription.setSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
+        cellDescription.setSolution( DataHeap::getInstance().createData( dataPointsPerCell, dataPointsPerCell ) );
       lock.free();
     }
     if (cellDescription.getUpdate()==-1) {
       waitUntilAllBackgroundTasksHaveTerminated();
       lock.lock();
-      cellDescription.setUpdate( DataHeap::getInstance().createData( unknownsPerCell, unknownsPerCell ) );
+        cellDescription.setUpdate( DataHeap::getInstance().createData( unknownsPerCell, unknownsPerCell ) );
       lock.free();
     }
     if (cellDescription.getExtrapolatedPredictor()==-1) {
       waitUntilAllBackgroundTasksHaveTerminated();
       lock.lock();
-      cellDescription.setExtrapolatedPredictor( DataHeap::getInstance().createData(unknownsPerCellBoundary ) );
+        cellDescription.setExtrapolatedPredictor( DataHeap::getInstance().createData(unknownsPerCellBoundary ) );
       lock.free();
     }
     if (cellDescription.getFluctuation()==-1) {
       waitUntilAllBackgroundTasksHaveTerminated();
       lock.lock();
-      cellDescription.setFluctuation( DataHeap::getInstance().createData( unknownsPerCellBoundary, unknownsPerCellBoundary ) );
+        cellDescription.setFluctuation( DataHeap::getInstance().createData( unknownsPerCellBoundary, unknownsPerCellBoundary ) );
       lock.free();
     }
   }
@@ -4747,8 +4746,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
         const int numberOfEntries = getDataPerCell();
         glueTogether(numberOfEntries, cellDescription.getPreviousSolution(), cellDescription.getPreviousSolutionCompressed(), cellDescription.getBytesPerDoFInPreviousSolution());
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        CompressedDataHeap::getInstance().deleteData( cellDescription.getPreviousSolutionCompressed(), true );
-        cellDescription.setPreviousSolutionCompressed( -1 );
+          CompressedDataHeap::getInstance().deleteData( cellDescription.getPreviousSolutionCompressed(), true );
+          cellDescription.setPreviousSolutionCompressed( -1 );
+        lock.free();
       }
     },
     [&]() -> void {
@@ -4758,8 +4758,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
         const int numberOfEntries = getDataPerCell();
         glueTogether(numberOfEntries, cellDescription.getSolution(), cellDescription.getSolutionCompressed(), cellDescription.getBytesPerDoFInSolution());
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        CompressedDataHeap::getInstance().deleteData( cellDescription.getSolutionCompressed(), true );
-        cellDescription.setSolutionCompressed( -1 );
+          CompressedDataHeap::getInstance().deleteData( cellDescription.getSolutionCompressed(), true );
+          cellDescription.setSolutionCompressed( -1 );
+        lock.free();
       }
     },
     [&]() -> void {
@@ -4769,8 +4770,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
         const int numberOfEntries = getUnknownsPerCell();
         glueTogether(numberOfEntries, cellDescription.getUpdate(), cellDescription.getUpdateCompressed(), cellDescription.getBytesPerDoFInUpdate());
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        CompressedDataHeap::getInstance().deleteData( cellDescription.getUpdateCompressed(), true );
-        cellDescription.setUpdateCompressed( -1 );
+          CompressedDataHeap::getInstance().deleteData( cellDescription.getUpdateCompressed(), true );
+          cellDescription.setUpdateCompressed( -1 );
+        lock.free();
       }
     },
     [&]() -> void {
@@ -4780,8 +4782,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
         const int numberOfEntries = getDataPerCellBoundary();
         glueTogether(numberOfEntries, cellDescription.getExtrapolatedPredictor(), cellDescription.getExtrapolatedPredictorCompressed(), cellDescription.getBytesPerDoFInExtrapolatedPredictor());
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        CompressedDataHeap::getInstance().deleteData( cellDescription.getExtrapolatedPredictorCompressed(), true );
-        cellDescription.setExtrapolatedPredictorCompressed( -1 );
+          CompressedDataHeap::getInstance().deleteData( cellDescription.getExtrapolatedPredictorCompressed(), true );
+          cellDescription.setExtrapolatedPredictorCompressed( -1 );
+        lock.free();
       }
     },
     [&]() -> void {
@@ -4791,8 +4794,9 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
         const int numberOfEntries = getUnknownsPerCellBoundary();
         glueTogether(numberOfEntries, cellDescription.getFluctuation(), cellDescription.getFluctuationCompressed(), cellDescription.getBytesPerDoFInFluctuation());
         tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
-        CompressedDataHeap::getInstance().deleteData( cellDescription.getFluctuationCompressed(), true );
-        cellDescription.setFluctuationCompressed( -1 );
+          CompressedDataHeap::getInstance().deleteData( cellDescription.getFluctuationCompressed(), true );
+          cellDescription.setFluctuationCompressed( -1 );
+        lock.free();
       }
     },
     true

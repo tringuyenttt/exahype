@@ -16,20 +16,24 @@ Written by SvenK in Nov 2017.
 """
 
 # batteries:
-import os, re, sys, ast, inspect, argparse, base64, pprint
-from argparse import Namespace
+import os, re, sys, ast, inspect, argparse, base64, pprint, itertools, collections
+from argparse import Namespace as namespace
 from collections import namedtuple
 from itertools import izip
 #from future.utils import raise_from # no batteries
 
-# helpers and shorthands:
+###
+### Helper functions and shorthands
+###
+
 baseflags = re.IGNORECASE
 match = lambda pattern,string,flags=0: re.match(pattern,string,baseflags+flags)
 unpack = lambda f: lambda p: f(*p)
 # The identity function. Don't mix up with pythons internal "id"
 idfunc = lambda x: x
-# A nicer first list access
+# A nicer functional list access thing
 first = lambda x: x[0]
+last = lambda x: x[-1]
 # Removes all None from a list
 removeNone = lambda l: [ x for x in l if x is not None ]
 removeFalse = lambda l: [ x for x in l if x ]
@@ -47,9 +51,9 @@ flatten2d = lambda l: [item for sublist in l for item in sublist]
 unique = lambda l: list(set(l))
 # unique items while preserve the order
 def unique_preserve(seq):
-    seen = set()
-    seen_add = seen.add
-    return [x for x in seq if not (x in seen or seen_add(x))]
+	seen = set()
+	seen_add = seen.add
+	return [x for x in seq if not (x in seen or seen_add(x))]
 # invert dictionary
 invdict = lambda d: {v: k for k, v in d.iteritems()}
 # an own isninstance function which also allows mapping if types is a list.
@@ -77,8 +81,6 @@ def raise_exception(e):
 # returns string until first occurance of character, not including the character
 untilCharacter = lambda txt, char: first(txt.partition(char))
 #
-
-
 def quoted_printable(s, escape='%'):
 	"""
 	Returns a quoted printable version of the string s with escape character %, no maximum line length
@@ -86,81 +88,97 @@ def quoted_printable(s, escape='%'):
 	"""
 	# sourcecode inspired by quopri, https://github.com/python/cpython/blob/2.7/Lib/quopri.py
 	HEX = '0123456789ABCDEF'
-	def quote(c):
-		"""Quote a single character."""
-		i = ord(c)
-		return escape + HEX[i//16] + HEX[i%16]
-	def needsquote(c):
-		"""Whether character needs to be quoted"""
-		return not ('0' <= c <= '9' or 'a' <= c <= 'z' or 'A' <= c <= 'Z')
+	quote = lambda c: escape + HEX[ord(c)//16] + HEX[ord(c)%16] # quote a single character
+	needsquote = lambda c: not ('0' <= c <= '9' or 'a' <= c <= 'z' or 'A' <= c <= 'Z') # Whether character needs to be quoted
 	return "".join([ quote(c) if needsquote(c) else c for c in s])
 
-# atoms:
+###
+### Definition of the symbol classes
+###
+
 class symbol:
-	# primitive types which we allow to store. We also allow lists of
-	# these types
+	"""
+	A symbol is an hierarchical identifier, similar to symbols in LISP and Mathematica.
+	Symbols are the atoms of the mexa language.
+	Symbols are treated as immutable: There is no method to change them after construction.
+	In Mexa, symbols always appear as the LHS of an relation (operation).
+	"""
+	
+	# primitive types which we allow to store on the RHS.
 	primitives = [int,float,str,unicode,bool]
 
 	def __init__(self,name=''):
 		""""
 		Creates a symbol from a name such as Foo/Bar/Baz or a path such
-		as ['Foo','Bar','Baz'].
+		as ['Foo','Bar','Baz']. Without argument, this gives the root symbol
+		symbol().
+		Since a symbol is immutable, we can store a string and list version at the
+		same time for lookup efficiency.
 		"""
-		if isa(name,list):
-			self.path = map(str.lower, map(str.strip, name))
+		if isa(name,(list,tuple)):
+			self._path = map(str.lower, map(str.strip, name))
 		elif isa(name, symbol):
-			self.path = name.path # kind of copy constructor
+			self._path = name._path # kind of copy constructor, but only references to other list.
 		else:
 			name = str(name).lower() # in order to get case-insensitive
-			self.path = map(str.strip, re.split('::|/', name))
+			self._path = map(str.strip, re.split(lang.symb_split_or, name))
 		# in case of roots and merged paths and so on
-		self.path = removeFalse(self.path)
+		self._path = removeFalse(self._path)
+		# make the path immutable
+		self._path = tuple(self._path)
+		# Compute a string representation, useful for path computations
+		self._canonical = "/".join(self._path)
 		
 	def canonical(self):
 		"Canonical string representation with a specific seperator"
-		return "/".join(self.path)
+		return self._canonical
 	def __repr__(self):
 		return "symbol(%s)" % self.canonical()
 	def isRoot(self):
-		return len(self.path) == 0
+		return len(self._path) == 0
 	
 	def node(self):
 		if self.isRoot():
 			return self
-		return symbol(self.path[-1])
+		return symbol(self._path[-1])
 	def parent(self):
 		if self.isRoot():
 			raise ValueError("Symbol is already root")
-		return symbol(self.path[:-1])
+		return symbol(self._path[:-1])
 	def ancestors(self):
 		"""
 		Lists all parenting symbols, for instance for /a/b/c it is the
 		list [/, /a, /a/b].
 		"""
-		return [symbol(self.path[:i]) for i,_ in enumerate(self.path)]
+		return [symbol(self._path[:i]) for i,_ in enumerate(self._path)]
 	
-	def prefix_symbol(self, other):
+	def add_prefix(self, other, inplace=False): # should be named add_prefix
 		"Returns a new symbol wich is prefixed by self."
-		return symbol(self.path + other.path)
+		if not isa(other,symbol): other = symbol(other)
+		newpath = other._path + self._path;
+		if inplace:
+			self._path = newpath
+			return self
+		else:	return symbol(newpath)
+	
+	def remove_prefix(self, other, inplace=False):
+		"Returns a new symbol which has removed the common prefix"
+		if not isa(other,symbol): other = symbol(other)
+		newpath = remove_comstr_prefix(self.canonical(), other.canonical())
+		if inplace:
+			self._path = newpath
+			return self
+		else:	return symbol(newpath)
 
-	# DEPRECATED: Use operations.... instead
-	def prefix_oplist(self, oplist):
-		"Prefix each lhs on the oplist with "
-		return [ type(op)(self.prefix_symbol(op.lhs), op.rhs) for op in oplist ]
-	
-	# DEPRECATED: Use operations..... instead
-	def remove_prefix_oplist(self, oplist):
-		"Remove the prefix of self on every item in oplist"
-		return [ type(op)(symbol(remove_comstr_prefix(op.lhs.canonical(), self.canonical())), op.rhs) for op in oplist]
-	
 	# allow symbols to be dict keys:
 	def __hash__(self):
-		return hash(tuple(self.path))
+		return hash(tuple(self._path))
 	def __eq__(self, other):
 		return self.canonical() == other.canonical()
 	def __lt__(self, other): # sortable
 		return self.canonical() < other.canonical()
-	
+
+# deprecated:
 def hasnosymbol(rhs):
 	# todo: assert that lists are no more supported.
 	if type(rhs) in symbol.primitives:
@@ -203,6 +221,7 @@ def rhs2python(text, context=None):
 			text = re.sub(lang.stringvarsimple, replmatch, text, count=0, flags=baseflags)
 			text = re.sub(lang.stringvarcomplex, replmatch, text, count=0, flags=baseflags)
 			return rhs2python(text, context=context)
+		promise_rhs2python.__repr__ = "evalstr(%s)" % text
 		# if we already have an operations context, directly evaluate the variables.
 		# Otherweise, return the closure.
 		return promise_rhs2python(context) if context else promise_rhs2python
@@ -241,13 +260,20 @@ def rhs2python(text, context=None):
 	return text
 
 class operation:
+	"""
+	An operation is a relationship which relates lhs and rhs together. We make use of
+	Python types here extensively, i.e. operationships are differed by their type.
+	Operations shall always have symbols as their lhs and should have sourced instances
+	as their right hand sides, i.e. an operation is of type tuple<symbol,sourced>.
+	"""
+	
 	def __init__(self, lhs, rhs):
 		self.lhs, self.rhs = lhs, rhs
 	def __repr__(self):
 		return "%s(%s, %s)" % (self.__class__.__name__, self.lhs, self.rhs)
 	def iscomplete(self):
 		return hasnosymbol(self.rhs)
-
+	
 	def as_tuple(op, symbolmapper): # was op2tuple
 		""""
 		Extract an op to a plain python object, stripping the objects and relation in it
@@ -290,6 +316,19 @@ class operation:
 			s_rhs = delim+str(op.rhs.value)+delim
 		return "%s %s %s" % (s_lhs, s_op, s_rhs)
 	
+	def add_prefix(self, path):
+		"Return a new operation where lhs is prefixed with path"
+		return self.__class__( self.lhs.add_prefix(path), self.rhs)
+	
+	def remove_prefix(self, path):
+		"Return a new operation list where each lhs has a common prefix with path removed"
+		return self.__class__( self.lhs.remove_prefix(path), self.rhs)
+	
+	def strip_source(self):
+		"Return a new operation where the source is dropped, if present"
+		value = self.rhs.value if isa(self.rhs, sourced) else self.rhs
+		return self.__class__( self.lhs, value)
+	
 	@classmethod
 	def from_textline(cls, srcline): # was line2operation
 		"""
@@ -317,6 +356,14 @@ class operation:
 		"""
 		raise ValueError("Evaluate not implemented for %s" % str(self))
 	
+	#@classmethod
+	#def register(cls, operations):
+	#	"""
+	#	Called once in an operations instance: Register this type of relationships
+	#	within the operations.
+	#	"""
+	#	raise ValueError("Registration not implemented for %s" % str(cls))
+	
 	def evaluate_rhs(self, context):
 		# since rhs2python is already called in from_textline
 		if callable(self.rhs.value):
@@ -339,68 +386,151 @@ class equals(operation):
 	  i.e. a=b will affect not only a but also b if both
 	  are nodes (trees), not leafs.
 	"""
-	
-	### This is still wrong. we need to compute equivalence classes.
-	
 	def evaluate(op, operations):
-		ret = []
+		# init:
+		if not hasattr(operations, "equals_persistent"):
+			# prepare persistent data structures on operations
+			operations.equals_persistent = namespace()
+			operations.equals_persistent.node_classes = equivalence_classes()
+			#unnneeded so far# equals_node_isListed = dict() # maps symbol -> bool
+		node_classes = operations.equals_persistent.node_classes # abbreviation
 		
+		# work:
 		if isa(op.rhs.value, list):
-			for i,vi in enumerate(op.rhs.value):
+			# lists get created by rhs2python i.e. with something like a = (1,2,3)
+			def listToAppends(i,vi): #for i,vi in enumerate(op.rhs.value):
 				if isa(vi,symbol.primitives):
-					ret.append(equals(
-						op.lhs.prefix_symbol("l%d"%i),
-						sourced(vi, "list assignment rule")
-					))
+					return equals(
+						symbol("l%d"%i).add_prefix(op.lhs),
+						sourced(vi, "list assignment rule"))
 				else:
 					raise ValueError("Found illegal non-primitive value in RHS of assignment operation "+str(op))
-			return
+			return map(listToAppends, enumerate(op.rhs.value))
 		elif isa(op.rhs.value, symbol):
-			if operations.is_leaf(op.rhs):
-				# assignment target is a leaf: Trivially copy data
-				op.rhs = operations.symbols[op.rhs.value]
-			else:
-				# assignment target is a tree on its own:
-				# 1. Merge the two trees
-				L = operations.query(op.lhs).remove_prefix(op.lhs)
-				R = operations.query(op.rhs.value).remove_prefix(op.rhs.value)
-				raise ValueError("Need to come up with equivalence classes")
+			# sort equality into operation
+			node_classes.add_operation(op)
+			# flag operation for being analyzed in a later sweep.
+			# The undirected equivalence is encoded in the resolution of it.
+			return [
+				# the ordinary interpretation "a=b means b sets a"
+				#extends(op.lhs, node_classes.get_sourced_resolver(op.rhs)),
+				extends_symmetric(op.lhs, op.rhs)
+				# the reverse and mathematical interpretation, "a=b means also a sets b"
+				###extends(op.rhs.value, op.rhs.derive(value=node_classes.get_resolver(op.lhs), src="LHS")),
+			]
 		elif isa(op.rhs.value,symbol.primitives):
 			# no more replacement.
-			return assign_lateron(op.lhs,op.rhs)
+			return [define(op.lhs,op.rhs)]
 		else:
 			raise ValueError("Illegal non-primitive assignment at RHS of "+str(op))
 
-class equivalence_class(operation):
-	"""
-	equivalence_class(a, source([a,b,c,d],...)) means, that a is in an equivalence
-	class with all the RHS partners.
-	"""
-
-class assign_lateron(operation):
-	"""
-	The simple-mexa assignment operation. In principle, we identify
-	this also with the "=" operator.
+class subsets(operation):
+	""""
+	An equality in only one direction:
+	a < b means a gets all properties from b but not the other way around such as a = b.
+	Similarly to equals(), this property is transitive: a < b < c means also a < c. Therefore,
+	we also come up with a directed equivalence class (hierarchy graph).
 	"""
 	
 	def evaluate(op, operations):
-		raise ValueError("By construction, the asign type is supposed to be no more replaced but final. Don't call this.")
+		# init:
+		if not hasattr(operations, "subsets_persistent"):
+			# prepare persistent data structures on operations
+			operations.subsets_persistent = namespace()
+			operations.subsets_persistent.node_graph = hierarchy_graph()
+		node_graph = operations.subsets_persistent.node_graph # abbreviation
+		
+		
+		# ensure that we extend only from symbols
+		if not isa(op.rhs.value, symbol):
+			raise ValueError("We only can extend from other symbols. In %s" % str(op))
+
+		node_graph.add_operation(op)
+		# flag operation for being analyzed in a later sweep
+		return [
+			extends(op.lhs, node_graph.get_sourced_resolver(op.rhs))
+		]
+
+		### DO THIS IN A SECOND STEP: 
+		### include another tree structure
+		##queried_symbol = op.rhs.value
+		##ext_oplist = operations.query(queried_symbol)
+		##return op.lhs.prefix_oplist(queried_symbol.remove_prefix_oplist(ext_oplist))
+
+class extends(operation):
+	"""
+	extends(a,b) means that a is extended by b.
+	This relationship is generated by equals(a,b) => [ extends(a,b), extends(b,a) ]
+	and                              subsets(a,b) => [ extends(a,b) ]
+	
+	When evaluating the extend operation, we make use of the delayed equivalence resolver, i.e.
+	this is a seconds-step operation.
+	"""
+	def evaluate(op, operations):
+		ret = []
+		
+		if not isa(op.rhs.value, equivalence_resolver.delayed_resolver):
+			raise ValueError("extend excepts a delayed equivalence resolver. Got instead: %s" % str(op.rhs))
+		
+		for symb in op.rhs.value.get():
+			# basically inherit from all these symbols
+			#import ipdb; ipdb.set_trace()
+			ret += operations.query(symb, exclude_root=True).remove_prefix(symb).add_prefix(op.lhs).ops
+		return ret
+
+class extends_symmetric(operation):
+	def evaluate(op, operations):
+		ret = []
+		
+		if not isa(op.rhs.value, symbol):
+			raise ValueError("extend_symmetric expects a symbol: %s" % str(op.rhs))
+		
+		# list<sourced<symbol>>
+		equals = operations.equals_persistent.node_classes.get(op.lhs)
+		
+		has_leaf = any([ operations.is_leaf(symb) for symb in equals ])
+		all_empty = all([ operations.is_empty_node(symb) for symb in equals ])
+
+		if has_leaf and all_empty:
+			for symb in equals:
+				if operations.is_leaf(symb):
+					ret += [define(op.lhs, operations.resolve_leaf(symb))]
+		elif (has_leaf and not all_empty):
+			raise ValueError("In the equivalence class of %s, there is a leaf but also nodes: %s" % (op.lhs, str(equals)))
+		elif (has_leaf and all_empty):
+			raise ValueError("There is no symbol for %s. All I have is: %s" % (op.lhs, str(equals)))
+		else:
+			for symb in equals:
+				# inherit like "a=b means b sets a"
+				ret += operations.query(symb, exclude_root=True).remove_prefix(symb).add_prefix(op.lhs).ops
+				# inherit the other way around -- quickly for the time being here.
+				# the reverse and mathematical interpretation, "a=b means also a sets b"
+				##### ret += operations.query(symb, exclude_root=True).remove_prefix(symb).add_prefix(op.rhs.value).ops
+		
+		if not len(ret):
+			raise ValueError("Replacement %s brought no result. Equivalence class contains %s. Maybe you forgot to define %s?" % (op.lhs, equals, op.rhs))
+		
+		return ret
+
+
+class define(operation):
+	"""
+	An actual definition. One-of-a-kind. The end poduct of equality evaluation.
+	"""
+	pass
+
 
 class append(operation):
 	"""
 	Appending is just an abbreviation for assigning.
+	Therefore this operation has a simple 1:1 replacement rule.
 	"""
-	
-	### This is still wrong. Instead, we need to exploit equivalence classes
-	### of the assignments as well as to resolve transitive relations
-	### between the append operations.
-	
 	def evaluate(op, operations):
 		# This algorithm reads as rule: "a/b += c/d" => "a/b/d = c/d"
 		
 		if isa(op.rhs.value,list):
 			# we do support multiple RHS values, i.e. a syntax like
-			#  a += b c d  <=> append(a, sourced([b,c,d], ...))
+			#  a += b c d  <=> equals(a, sourced([b,c,d], ...))
 			return flatten2d([o.evaluate(operations) for o in op.rhs.value])
 		
 		# name of the node to create below the lhs. This is by
@@ -408,23 +538,8 @@ class append(operation):
 		if not isa(op.rhs.value,symbol):
 			raise ValueError("Only support symbol for appending, got %s in %s" % (type(op.rhs.value), op))
 		name = op.rhs.value.node()
-		return [ equals(op.lhs.prefix_symbol(name), op.rhs) ]
+		return [ equals(op.lhs.add_prefix(name), op.rhs) ]
 	
-
-class extend(operation):
-	"An assignment in only one direction."
-	
-	def evaluate(op, operations):
-		# 4. Evaluate data structure extensions in-place:
-		# ensure that we extend only from symbols
-		if not isa(op.rhs.value, symbol):
-			raise ValueError("We only can extend from other symbols. In %s" % str(op))
-		
-		# include another tree structure
-		queried_symbol = op.rhs.value
-		ext_oplist = operations.query(queried_symbol)
-		return op.lhs.prefix_oplist(queried_symbol.remove_prefix_oplist(ext_oplist))
-
 class include(operation):
 	"Represents an inclusion"
 	
@@ -437,21 +552,23 @@ class include(operation):
 		
 		#print "DEBUGGING:"
 		#import ipdb; ipdb.set_trace()
-		inc_oplist = operations.from_filename(fname).evaluate(reduce_let=False).oplist
+		# WITH evaluation.
+		# inc_oplist = operations.from_filename(fname).evaluate(reduce_let=False).add_prefix(op.lhs).ops
+		# PROBLEM of evaluation in the other context is that we miss all equivalence classes etc.
+		inc_oplist = operations.from_filename(fname).add_prefix(op.lhs).ops
 		#print "Oplist to include:"
 		#pprint.pprint(inc_oplist)
 		#print "End of included oplist."
-		# allow including at any point
-		inc_oplist = op.lhs.prefix_oplist(inc_oplist)
-		####### self.oplist = replace_with_list_at(i, self.oplist, inc_oplist)
 		return inc_oplist
 
 # The registered operation symbols
-operation.symbols = { '=': equals, '<=': extend, '<<': include, '+=': append, ':=': let }
+operation.symbols = { '=': equals, '<=': subsets, '<<': include, '+=': append, ':=': let }
 
 # Regexps for defining the language
-lang = Namespace()
+lang = namespace()
 lang.opor = "|".join(map(re.escape, operation.symbols.keys())) # regex detecting operators
+lang.symb_split = ("::", "/")
+lang.symb_split_or = "|".join(map(re.escape, lang.symb_split))
 lang.symb = r"[a-z_][a-z_0-9:/]*" # regex defining a LHS symbol
 lang.comment = r"#" # comment character
 lang.linecomment = r"(?:" + lang.comment + r".*)?$" # allows a comment until end of line
@@ -472,23 +589,30 @@ class sourced:
 	def __repr__(self):
 		return "%s(%s, %s)" % (self.__class__.__name__, self.value, self.sources_as_str())
 	def add_source(self, src):
-		"Add a source information to this source. src should be a string."
-		self.sources += src
+		"Add a source information to this source. src should be a string or sourceline instance."
+		self.sources += [src]
 	def derive(self, value=None, src=None):
 		"Derive a new sourced object which contains a ref to value but a new source list"
 		if not value: value = self.value
-		src = self.src if not src else flatten2d([self.src, [src]])
+		src = self.sources if not src else flatten2d([self.sources, [src]])
 		return sourced(value, src)
 	def sources_as_str(self):
 		if len(self.sources)==1:
 			return self.sources[0]
 		else:
 			# TODO: Make this nicer
-			return ",".join(["%d:%s" for i,src in enumerate(self.sources)])
+			return " -> ".join(map(str, self.sources))
 		
 	# unused?:
 	def eval_string_within(self, operations):
 		return operations.evalstring(self.value, src)
+	
+	def __hash__(self): # usable as dict keys
+		return hash(self.value)
+	def __eq__(self, other): # comparable
+		return self.value == other.value
+	def __lt__(self, other): # sortable
+		return self.value < other.value
 
 class sourceline(namedtuple('sourceline', 'fname linenum text')):
 	"""
@@ -512,7 +636,7 @@ class sourceline(namedtuple('sourceline', 'fname linenum text')):
 	def from_unknown(cls, text="unknown"):
 		"Quickly create an instance without any known location"
 		return cls('unknown', 0, text)
-	
+
 class sourcemap:
 	"""
 	Allows to map an iterable with a given source name to inject sourceline objects.
@@ -534,6 +658,102 @@ class sourcemap:
 	def map(self,func):
 		return map(func, self.iter())
 
+class equivalence_resolver:
+	"""
+	Base class for the directed and undirected relationship classes
+	"""
+	def __init__(self):
+		self.edges = list()
+	def __repr__(self):
+		return "%s(%s)" % (self.__class__.__name__, pprint.pformat(self.edges,width=1))
+	def add(self, a):
+		raise ValueError("please implement")
+	def get(self, a):
+		raise ValueError("please implement")
+	def add_operation(self, op):
+		#print "%s.add(%s,%s)" % (self.__class__.__name__, str(op.lhs), str(op.rhs.value))
+		assert isa(op.lhs, symbol)
+		assert isa(op.rhs.value, symbol)
+		return self.add(op.lhs, op.rhs.value)
+	def get_resolver(self, a):
+		"""
+		Get a RHS object for delayed resolving.
+		"""
+		return equivalence_resolver.delayed_resolver(a, self)
+	def get_sourced_resolver(self, sourced_obj):
+		if isa(sourced_obj,sourced):
+			return sourced(self.get_resolver(sourced_obj.value), sourced_obj.sources)
+		else:
+			raise ValueError("Got %s, expected sourced() instance. Please use get_resolver instead." % str(sourced_obj))
+	class delayed_resolver:
+		"This is a functor or future or whatever with a readable repr."
+		def __init__(self, a, resolver):
+			self.a = a
+			self.resolver = resolver
+		def __repr__(self):
+			return "delayed:%s:resolver(%s)" % (self.resolver.__class__.__name__, pprint.pformat(self.a,width=1))
+		def get(self):
+			return self.resolver.get(self.a)
+
+class equivalence_classes(equivalence_resolver):
+	"""
+	Represents equivalence classes between elements. Equal elements are identified by their
+	equivalence class. This concrete algorithm here is not in particular fast.
+	Naming: We call "classes" = "edges".
+	"""
+	def add(self, a, b):
+		# first, add a new equivalence class:
+		self.edges.append({a,b})
+		# then cleanup over all cells and merge
+		for cx, cy in itertools.combinations(self.edges, 2):
+			if cx & cy: # nonempty intersection: merge two equivalence classes
+				# print "equal: %s, %s, %s" % (cx,cy,cx&cy)
+				self.edges.remove(cx)
+				cy.update(cx)
+				#print "Updating cy="+str(cy)
+		return self # chainable
+	def equivalent_nodes(self, a):
+		for cls in self.edges:
+			if a in cls:
+				return cls
+		return {a} # equivalence class with its own
+	def get(self, a):
+		"Return all equivalent nodes except the node itself"
+		assert isa(self.equivalent_nodes(a),set), "Broken equivalence_classes: "+str(self)
+		return self.equivalent_nodes(a) - {a}
+
+
+class hierarchy_graph(equivalence_resolver):
+	"""
+	The directed version of the equivalence_classes.
+	Again, this tries to preserve the order of data how they were inserted.
+	"""
+	def add(self, a, b):
+		"insert an edge (a -> b) which we denote as (a <= b)"
+		edge = (a,b)
+		if not edge in self.edges:
+			self.edges.append(edge)
+		return self
+	def parent(self, a):
+		"Returns the list of vertices which point to a"
+		return [ b for ai,b in self.edges if ai == a ]
+	def ancestors(self, a):
+		"""
+		Returns the list of all vertices which have a way to a.
+		The list includes him own (cf. symbol.ancestors) and doublers in case of a diamant graph form.
+		"""
+		if not self.parent(a):
+			return [a]
+		else :
+			return [a] + flatten2d([ self.ancestors(ap) for ap in self.parent(a) ])
+	def get(self, a):
+		"""
+		Resolve the graph: Get all ancestors of a, i.e. the list of v where a < v.
+		"""
+		vertlist = self.ancestors(a)
+		vertlist.remove(a) # don't include a itself
+		return unique_preserve(vertlist) # remove doublers
+
 class operations:
 	"""
 	Wraps a list of operations. Basically represents a mexafile.
@@ -545,6 +765,11 @@ class operations:
 		
 	def __repr__(self):
 		return '%s(%s)' % (self.__class__.__name__, pprint.pformat(self.ops,width=1))
+	
+	def __iter__(self):
+		return iter(self.ops)
+	def __len__(self):
+		return len(self.ops)
 	
 	def get_symbols(self):
 		"Returns the list of symbols which this operation list holds"
@@ -576,8 +801,16 @@ class operations:
 			oplines = [oplines]
 		oplist = removeNone(sourcemap(oplines, source_name).map(operation.from_textline))
 		return cls(oplist)
+	
+	def count_optypes(self):
+		"""
+		Returns a Counter for the kind of optypes which are available in this operations list.
+		Useful for debugging and statistics/short output.
+		Class names are strings for readability.
+		"""
+		return collections.Counter([ op.__class__.__name__ for op in self.ops ])
 		
-	def query(self, root=''):
+	def query(self, root='', exclude_root=False):
 		"""
 		Get the assignment tree based on some root (which may be string, list, symbol).
 		Returns a new operations instance.
@@ -590,25 +823,25 @@ class operations:
 		# on the oplist:
 		return operations([ op for op in self.ops 
 			if root in op.lhs.ancestors() # root="foo", include "foo/bar" and "foo/bar/baz"
-			or root == op.lhs             # root="foo", include "foo" itself.
+			or (root == op.lhs and not exclude_root)  # root="foo", include "foo" itself.
 		])
 	
-	def is_node(self, path):
+	def is_node(self, path, typefilter=[equals,define]):
 		"""
 		Can decide on a path or operation whether it is a node in the tree.
 		Each path is either node, leaf or ill.
 		"""
-		path_symbs = self.query(path).where_symbol(assign).get_symbols()
+		path_symbs = self.query(path).where_symbol(typefilter).get_symbols()
 		return len(path_symbs) > 1 and not symbol(path) in path_symbs
 		
-	def is_leaf(self, path): # was isLeaf
+	def is_leaf(self, path, typefilter=[equals,define]): # was isLeaf
 		"Can decide on a path or operation whether it is a leaf in the tree, i.e. has no more children"
-		path_symbs = self.query(path).where_symbol(assign).get_symbols()
+		path_symbs = self.query(path).where_symbol(typefilter).get_symbols()
 		return len(path_symbs) == 1 # and symbol(path) in path_symbs
 	
-	def is_ill(self, path):
+	def is_ill(self, path, typefilter=[equals,define]):
 		"Something which is neither leaf nor node: c in c=2,c/a=2"
-		path_symbs = self.query(path).where_symbol(assign).get_symbols()
+		path_symbs = self.query(path).where_symbol(typefilter).get_symbols()
 		return len(path_symbs) > 1 and symbol(path) in path_symbs
 
 	def get_leafs(self):
@@ -632,7 +865,7 @@ class operations:
 		"""
 		self.symbols = self.get_dict()
 
-	def get_dict(self, values='rhs', typefilter=[let,assign]):
+	def get_dict(self, values='rhs', typefilter=[let,equals,define]):
 		"""
 		was assigndict: Gave only the dictionary of assignments (as a filter).
 		"""
@@ -645,7 +878,7 @@ class operations:
 					raise ValueError("Allowed values for 'values' are 'rhs' and 'index', given: '%s'"%values)
 				
 				# only assign may be used once, let can be overwritten
-				if isa(op,assign) and op.lhs in symbols:
+				if isa(op,equals) and op.lhs in symbols:
 					from pprint import pprint #debugging
 					pprint(self.ops)
 					raise ValueError(
@@ -682,7 +915,7 @@ class operations:
 		for i,op in enumerate(self.ops):
 			op.rhs.add_source(sourceline(fname, i, line))
 	
-	def evaluate_symbol(self, symbol, inplace=False):
+	def evaluate_symbol(self, symbol, inplace=False, eliminate=True, inplace_max_iters=10):
 		"""
 		Evaluate a questioned symbol, where symbol is a class, for instance `append`.
 		Returns new operations object or does the evaluation inplace.
@@ -693,13 +926,20 @@ class operations:
 				new_oplist = op.evaluate(self)
 				# add/chain backtrace information where the oplist entries comes from
 				for i,op in enumerate(new_oplist):
-					op.rhs.add_source(sourceline(
-						"Evaluation of %s" % symbol.__name__,
-						i, str(op)
-					))
+					op.rhs.add_source("evaluation:%s" % symbol.__name__)
 				ret_oplist += new_oplist
 			else:
 				ret_oplist.append(op) # pass throught
+		
+		if eliminate and any([isa(op,symbol) for op in ret_oplist]):
+			# There are still instances of symbol in the oplist and we were
+			# asked to eliminate all of them. Recursively call ourselves,
+			# expecting that they vanish.
+			if inplace_max_iters == 0:
+				remaining = operations([op for op in ret_oplist if isa(op,symbol)])
+				raise ValueError("While trying to evaluate %s, reached maximum number of iterations. The user probably included cyclic links. These symbols remain: %s" % (str(symbol),str(remaining)))
+			return self.evaluate_symbol(symbol, inplace=inplace, eliminate=eliminate, inplace_max_iters=inplace_max_iters-1)
+		
 		if inplace:
 			self.ops = ret_oplist
 		else:
@@ -719,40 +959,72 @@ class operations:
 		
 		#self.check_tree_structure()
 
-		for symbol in [include, extend, append, assign]:
-			self.evaluate_symbol(symbol, inplace=True)
+		# eliminate the main symbols
+		for symbol in [include, append, equals, subsets]:#, equivalent_node]:
+			self.evaluate_symbol(symbol, inplace=True, eliminate=True)
+			# this is no more possible after elimination:
 			assert not any([isa(op,symbol) for op in self.ops]), "An %s has survived" % symbol.__class__.__name__
 			# For early failure:
-			self.check_tree_structure() # checks for tree consistency
+			# self.check_tree_structure() # checks for tree consistency
+			#  -> produces problems in case  a = b
+			#                                a/c = 2
 			self.set_symbols() # checks for doublings and enables search
+		
+		# the operations list consists now only of
+		#  defines = final primitives and
+		#  extends = variables to be resolved.
+		
+		# next and remaining steps is to replace all the extends.
+		### self.evaluate_symbol(extends, inplace=True)
 
+		self.check_tree_structure() # check now instead
 		self.symbols = self.set_symbols() # needed for variable access
 		self.evaluate_all_rhs()
 	
 		# evaluate() is chainable:
 		return self
 	
-	# probably no more used:
-	def filtertype(self, optype, return_indices=False):
-		"Typical optypes are assign or include. optype can be a list of optypes"
-		items = [op for op in self.oplist if isa(op,optype)]
-		indices = [i for i,op in enumerate(self.oplist) if isa(op,optype)]
-		return (items,indices) if return_indices else items
-	
 	def add_prefix(self, path):
 		"Return a new operations list where each lhs is prefixed with path"
-		return operations([ type(op)(path.prefix_symbol(op.lhs), op.rhs) for op in self.ops ])
+		if not isa(path,symbol): path = symbol(path)
+		return operations([ op.add_prefix(path) for op in self.ops ])
 	
 	def remove_prefix(self, path):
 		"Return a new operation list where each lhs has a common prefix with path removed"
-		return operations([ type(op)(symbol(remove_comstr_prefix(op.lhs.canonical(), path.canonical())), op.rhs) for op in self.ops])
+		if not isa(path,symbol): path = symbol(path)
+		return operations([ op.remove_prefix(path) for op in self.ops ])
 	
-	def where_symbol(self, symbol):
+	def strip_source(self):
+		"""
+		Returns a copy where all sourced instances from the RHS are stripped. Useful
+		for quickly looking into the data
+		"""
+		return operations([ op.strip_source() for op in self.ops ])
+	
+	def where_symbol(self, symbol): # replaces filtertype
 		"""
 		Returns a new instance where only operations with type symbol are given.
 		symbol may be a list of symbols.
 		"""
 		return operations([op for op in self.ops if isa(op,symbol)])
+	
+	def is_empty_node(self, varname):
+		"""
+		Returns whether this is a node without subnodes. May be a leaf, may also be an operation
+		which resolves to something once resolved.
+		"""
+		return self.query(varname, exclude_root=True).is_empty()
+	
+	def resolve_leaf(self, varname):
+		"""
+		Resolves a symbol to a leaf. It if is not defined or not a leaf, raises exception.
+		Use is_leaf() to check whether it is a leaf before. Returns the RHS.
+		"""
+		sv = symbol(varname)
+		value = [ op for op in self.ops if op.lhs == sv ]
+		if len(value) == 1:
+			return value[0].rhs
+		raise ValueError("Symbol %s is not a leaf but there match these objects: %s" % (str(sv), str(value)))
 	
 	def resolve_symbol(self, varname, relative_to=symbol(), src=sourceline.from_unknown()):
 		"""
@@ -773,10 +1045,12 @@ class operations:
 			raise ValueError("Variable %s value is '%s' and type %s which cannot be inserted at this place. We can only insert a primitive value like %s at this place (source: %s)" % (sv, value, type(value), symbol.primitives),src.verbose())
 		return str(value)
 
+	# todo: Move this function where it belongs to
 	def get_value_by_key(self, key_name):
 		"Returns a RHS value by the symbol key name, stripping source information"
 		return self.resolve(self.symbols[symbol(key_name)])
 	
+	# todo: Move this function where it belongs to
 	def resolve(self, irhs):
 		""""
 		Resolve a RHS object to some plain python object (also lists). For instance 
@@ -804,6 +1078,38 @@ class operations:
 			else:
 				raise ValueError("Don't understand rhs type of %s" % str(irhs))
 	
+	def outgoing_edges(self, node): # or: neighbours
+		# gives all edges starting from node, i.e. if there is find all rel(lhs,rhs) with lhs=node.
+		if not isa(node,symbol): node = symbol(node)
+		if isa(node,operation): node = node.lhs # as a service
+		return operations([ op for op in self if op.lhs == node ])
+	
+	def paths_from(self, op):
+		edges = self.outgoing_edges(op.rhs.value)
+		if edges:
+			return { op: [ opi for opi in self.paths_from(edges) ] }
+		else:
+			return [ op ]
+	
+	
+	def paths_from(self, node):
+		"""
+		Returns all paths starting from a node, i.e. a lhs in real(lhs,rhs).
+		Each path is a tuple of operations. A list of paths is returned
+		"""
+		edges = self.outgoing_edges(node)
+		prepend_each = lambda fst, lst: [fst] + lst
+		if len(edges):
+			return [ tuple(prepend_each(op, self.outgoing_edges(op.rhs.value).ops)) for op in edges ]
+		else:
+			return []
+
+
+
+###
+### Output
+###
+
 #
 # Todo: Clean all the output and representation stuff.
 #       We will no more have symbols in the oplist, so complexity reduces massively.
@@ -1110,6 +1416,8 @@ def encode(self, lang='json', style='linear', root=''):
 	elif lang=="xml":  return self.xml (style,root)
 	else: raise ValueError("Language %s not supported" % lang)
 	
+
+# TODO: Add a graphviz output option.
 
 # a basic frontend:
 

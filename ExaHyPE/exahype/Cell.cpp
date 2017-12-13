@@ -188,24 +188,23 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Cell::computeFaceBarycentre(
 void exahype::Cell::setupMetaData() {
   assertion1(!exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),toString());
 
-  const int cellDescriptionIndex = exahype::solvers::ADERDGSolver::Heap::getInstance().createData(0, 0);
-  assertion2(!exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(cellDescriptionIndex),cellDescriptionIndex,toString());
-  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().createDataForIndex(cellDescriptionIndex,0,0);
-
-  _cellData.setCellDescriptionsIndex(cellDescriptionIndex);
+  exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
+  tarch::multicore::Lock lock(exahype::HeapSemaphore);
+    const int cellDescriptionIndex = exahype::solvers::ADERDGSolver::Heap::getInstance().createData(0, 0);
+    assertion2(!exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(cellDescriptionIndex),cellDescriptionIndex,toString());
+    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().createDataForIndex(cellDescriptionIndex,0,0);
+    _cellData.setCellDescriptionsIndex(cellDescriptionIndex);
+  lock.free();
 }
 
 void exahype::Cell::shutdownMetaData() {
-  assertion1(
-      exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(
-          _cellData.getCellDescriptionsIndex()
-      ),
-      toString());
+  assertion1(exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),toString());
 
-  exahype::solvers::ADERDGSolver::Heap::getInstance().deleteData(_cellData.getCellDescriptionsIndex());
-  exahype::solvers::FiniteVolumesSolver::Heap::getInstance().deleteData(_cellData.getCellDescriptionsIndex());
-
-  _cellData.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  tarch::multicore::Lock lock(exahype::HeapSemaphore);
+    exahype::solvers::ADERDGSolver::Heap::getInstance().deleteData(_cellData.getCellDescriptionsIndex());
+    exahype::solvers::FiniteVolumesSolver::Heap::getInstance().deleteData(_cellData.getCellDescriptionsIndex());
+    _cellData.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  lock.free();
 }
 
 bool exahype::Cell::isEmpty() const {
@@ -248,9 +247,6 @@ void exahype::Cell::addNewCellDescription(
     const int parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
     const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
-  exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
-  tarch::multicore::Lock lock(exahype::HeapSemaphore);
-
   if (_cellData.getCellDescriptionsIndex() == multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
     setupMetaData();
   }
@@ -270,9 +266,6 @@ void exahype::Cell::addNewCellDescription(
     const int                                     parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
     const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
-  exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated();
-  tarch::multicore::Lock lock(exahype::HeapSemaphore);
-
   if (_cellData.getCellDescriptionsIndex() == multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
     setupMetaData();
   }

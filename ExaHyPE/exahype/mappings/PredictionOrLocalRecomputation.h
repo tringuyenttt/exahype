@@ -95,9 +95,9 @@ class exahype::mappings::PredictionOrLocalRecomputation {
 
   /**
    * Flag indicating if one solver requested a local recomputation.
-   * Is initialised in beginIteration(...).
+   * Is set in beginIteration(...).
    */
-  bool _oneSolverRequestedLocalRecomputation = false;
+  static bool OneSolverRequestedLocalRecomputation;
 
   /**
    * A minimum time step size for each solver.

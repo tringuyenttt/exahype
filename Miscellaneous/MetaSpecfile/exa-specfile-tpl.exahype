@@ -11,7 +11,7 @@
  * meta parameter framework.
  **/
 
-{% for project in exahype_projects -%}
+{% for project in exahype_projects|tolist -%}
 exahype-project {{ project.project_name }}
 
   peano-kernel-path const  = {{ project.peano_kernel_path }}
@@ -52,7 +52,7 @@ exahype-project {{ project.project_name }}
     spawn-double-compression-as-background-thread = {{ project.optimisation.spawn_double_compression }}
   end global-optimisation
 
-  {% for solver in project.solvers -%}
+  {% for solver in project.solvers|tolist -%}
   solver {{solver.type}} {{solver.name}}
     variables const    = {{ solver.variables }}
 
@@ -63,7 +63,7 @@ exahype-project {{ project.project_name }}
     {% elif solver.type == "Limiting-ADER-DG" %}
     order const        = {{ solver.order }}
     {% else %}
-       {{ error("Invalid plotter.type.") }}
+       {{ error("Invalid solver.type: " ~ solver.type) }}
     {% endif -%}
     {# #}
     maximum-mesh-size  = {{ solver.maximum_mesh_size|as_float }}
@@ -84,20 +84,27 @@ exahype-project {{ project.project_name }}
     steps-till-cured               = {{ solver.limiter.steps_till_cured }}
     {% endif -%}
     {# #}
+
     {% if "constants" in solver -%}
     // Note, if this constant string does not run throught the toolkit, try to remove parts of it
     // until it runs. Then try to replace these parts. For instance, you must not use certain keywords
     // for identifiers or values, such as the keyword "parameters".
-    constants          = {{ solver.constants|link_in_list }}
+    // You can also choose to encode all constants as BASE64 or similar to avoid problems with the
+    // restrictive toolkit specfile grammar.
+    constants          = {{ solver.constants|link_in_list|indent(width=25) }}
     {% endif -%}
 
-    {% for plotter in solver.plotters %}
+    {% for plotter in solver.plotters|tolist %}
     plot {{plotter.type}}  {{plotter.name}}
       variables const = {{plotter.variables|count_variables }}
       time      = {{plotter.time}}
       repeat    = {{plotter.repeat}}
       output    = {{plotter.output}}
-      select    = {% if "select" in plotter %}{{plotter.select}},{% endif %}{{ plotter|link_in_list }}
+      {%- if "parameters" in plotter %}
+      select    = {{ plotter.parameters|link_in_list|indent(width=18) }}
+      {%- elif "select" in plotter %}
+      select    = {{plotter.select}}
+      {%- endif %}
     end plot
     {% endfor %}
   end solver

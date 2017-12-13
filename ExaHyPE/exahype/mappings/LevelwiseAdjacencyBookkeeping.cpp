@@ -64,7 +64,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createHangingVertex(
 ) {
   VertexOperations::writeCellDescriptionsIndex(
       fineGridVertex,
-      multiscalelinkedcell::HangingVertexBookkeeper::getInstance().createVertexLinkMapForNewVertex());
+      multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForNewVertex());
 }
 
 
@@ -79,7 +79,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createInnerVertex(
 ) {
   VertexOperations::writeCellDescriptionsIndex(
       fineGridVertex,
-      multiscalelinkedcell::HangingVertexBookkeeper::getInstance().createVertexLinkMapForNewVertex());
+      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
 }
 
 
@@ -94,7 +94,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createBoundaryVertex(
 ) {
   VertexOperations::writeCellDescriptionsIndex(
       fineGridVertex,
-      multiscalelinkedcell::HangingVertexBookkeeper::getInstance().createVertexLinkMapForBoundaryVertex());
+      multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
 }
 
 void exahype::mappings::LevelwiseAdjacencyBookkeeping::createCell(
@@ -120,8 +120,10 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::enterCell(
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
   dfor2(k)
-    VertexOperations::writeCellDescriptionsIndex(
-        fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1, fineGridCell.getCellDescriptionsIndex());
+    if ( !fineGridVertices[fineGridVerticesEnumerator(k) ].isHangingNode() ) {
+      VertexOperations::writeCellDescriptionsIndex(
+          fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1, fineGridCell.getCellDescriptionsIndex());
+    }
   enddforx
 }
 
@@ -136,7 +138,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithNeighbour(
 ) {
   VertexOperations::writeCellDescriptionsIndex(
     vertex,
-    multiscalelinkedcell::HangingVertexBookkeeper::getInstance().updateCellIndicesInMergeWithNeighbour(
+    multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
       vertex.getAdjacentRanks(),
       VertexOperations::readCellDescriptionsIndex(vertex)
     )
@@ -161,14 +163,13 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithMaster(
   dfor2(k)
     VertexOperations::writeCellDescriptionsIndex(
       fineGridVertices[ fineGridVerticesEnumerator(k) ],
-      multiscalelinkedcell::HangingVertexBookkeeper::getInstance().updateCellIndicesInMergeWithNeighbour(
+      multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
         fineGridVertices[ fineGridVerticesEnumerator(k) ].getAdjacentRanks(),
         VertexOperations::readCellDescriptionsIndex(fineGridVertices[ fineGridVerticesEnumerator(k) ])
       )
     );
   enddforx
 }
-
 
 void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithWorker(
       exahype::Vertex&        localVertex,
@@ -179,13 +180,40 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithWorker(
 ) {
   VertexOperations::writeCellDescriptionsIndex(
     localVertex,
-    multiscalelinkedcell::HangingVertexBookkeeper::getInstance().updateCellIndicesInMergeWithNeighbour(
+    multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
       localVertex.getAdjacentRanks(),
       VertexOperations::readCellDescriptionsIndex(localVertex)
     )
   );
 }
 
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToForkOrJoin(
+  exahype::Cell&  localCell,
+  const exahype::Cell&  masterOrWorkerCell,
+  int                                       fromRank,
+  const tarch::la::Vector<DIMENSIONS,double>&  x,
+  const tarch::la::Vector<DIMENSIONS,double>&  h,
+  int                                       level
+) {
+  if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
+    localCell.setCellDescriptionsIndex(
+        multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  }
+}
+
+void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToForkOrJoin(
+  exahype::Vertex&  localVertex,
+  const exahype::Vertex&  masterOrWorkerVertex,
+  int                                       fromRank,
+  const tarch::la::Vector<DIMENSIONS,double>&  x,
+  const tarch::la::Vector<DIMENSIONS,double>&  h,
+  int                                       level
+) {
+  if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
+    exahype::VertexOperations::writeCellDescriptionsIndex(
+              localVertex,multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForNewVertex());
+  }
+}
 
 void exahype::mappings::LevelwiseAdjacencyBookkeeping::prepareSendToNeighbour(
       exahype::Vertex&  vertex,
@@ -213,28 +241,6 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::prepareCopyToRemoteNode(
       const tarch::la::Vector<DIMENSIONS,double>&   cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>&   cellSize,
       int                                           level
-) {
-}
-
-
-void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToForkOrJoin(
-  exahype::Vertex&  localVertex,
-  const exahype::Vertex&  masterOrWorkerVertex,
-  int                                       fromRank,
-  const tarch::la::Vector<DIMENSIONS,double>&  x,
-  const tarch::la::Vector<DIMENSIONS,double>&  h,
-  int                                       level
-) {
-}
-
-
-void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToForkOrJoin(
-  exahype::Cell&  localCell,
-  const exahype::Cell&  masterOrWorkerCell,
-  int                                       fromRank,
-  const tarch::la::Vector<DIMENSIONS,double>&  x,
-  const tarch::la::Vector<DIMENSIONS,double>&  h,
-  int                                       level
 ) {
 }
 

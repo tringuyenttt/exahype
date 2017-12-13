@@ -57,7 +57,7 @@ class exahype::mappings::FinaliseMeshRefinement {
    * a mesh update.
    * Is set in beginIteration(...).
    */
-  bool _oneSolverRequestedMeshUpdate = false;
+  static bool OneSolverRequestedMeshUpdate;
 
   /**
    * A minimum time step size for each solver.

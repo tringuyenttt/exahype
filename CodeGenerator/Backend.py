@@ -30,22 +30,7 @@ import subprocess
 import errno
 import time
 
-import KernelsHeaderGenerator
-import SpaceTimePredictorGenerator
-import VolumeIntegralGenerator
-import SurfaceIntegralGenerator
-import RiemannGenerator
-import SolutionUpdateGenerator
-import AdjustSolutionGenerator
-import StableTimeStepSizeGenerator
-import QuadratureGenerator
-import DGMatrixGenerator
-import ConfigurationParametersGenerator
-import BoundaryConditionsGenerator
-import ConverterGenerator
-import GemmsCPPGenerator
-import AMRRoutinesGenerator
-import DeltaDistributionGenerator
+from generators import *
 
 
 g_runtimes               = {}
