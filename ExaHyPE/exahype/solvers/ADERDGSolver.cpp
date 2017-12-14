@@ -4335,7 +4335,7 @@ void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
   } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
 
   #if defined(Debug) || defined(Asserts)
-  if(usePaddedData_nVar()) {
+  if(_solver.usePaddedData_nVar()) {
     //TODO JMG add assert ignoring padding
   } else {
     //    for (int i=0; i<getDataPerCell(); i++) {
