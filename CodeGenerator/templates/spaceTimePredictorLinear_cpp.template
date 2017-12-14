@@ -73,6 +73,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
   double gradQNoPad[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); 
 {% endif %}
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing temp array away
   
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
   #pragma simd
@@ -155,11 +156,14 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 {% if nDim == 3 %}
       F[2] = &lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}];
 {% endif %}
-      solver.{{solverName}}::flux(&lQi[(i*{{nDof**nDim}}+xyz)*{{nDataPad}}], F);
+      solver.{{solverName}}::flux(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, F);
     }
 
     //dflux1 dx
-    for (int yz = 0; yz < {{nDof3D*nDof}}; yz++) {
+    for (int yz = 0; yz < {{nDof3D*nDof}}; yz++) {    
+{% if useLibxsmm %}
+      {{gemm_flux_x}}(lFi+(i*{{nDof3D*nDof}}+yz)*{{nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
+{% else %}
       std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
       for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
         for (int n = 0; n < {{nVar}}; n++) {
@@ -168,12 +172,16 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
           }
         }
       }
+{% endif %}
       std::copy_n(fluxDerivative, {{nDof*nVarPad}}, lFi+(i*{{nDof3D*nDof}}+yz)*{{nDof*nVarPad}}); 
     }
 
     //dflux2 dy
     for (int z = 0; z < {{nDof3D}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
+{% if useLibxsmm %}
+        {{gemm_flux_y}}(lFi+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
+{% else %}
         std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
         for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
           for (int n = 0; n < {{nVar}}; n++) {
@@ -183,6 +191,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
             }
           }
         }
+{% endif %}
         for (int l = 0; l < {{nDof}}; l++) {
           #pragma simd
           for (int n = 0; n < {{nVarPad}}; n++) {
@@ -195,6 +204,9 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 
     //dflux3 dz
     for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
+{% if useLibxsmm %}      
+      {{gemm_flux_z}}(lFi+((i*{{nDof**3}}+xy)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
+{% else %}
       std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
       for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
         for (int n = 0; n < {{nVar}}; n++) {
@@ -203,6 +215,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
           }
         }
       }
+{% endif %}
       for (int l = 0; l < {{nDof}}; l++) {
         #pragma simd
         for (int n = 0; n < {{nVarPad}}; n++) {
@@ -258,7 +271,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 {% if nDim==3 %}
       std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, gradQNoPad+{{2*nVar}}); //z
 {% endif %}
-      solver.{{solverName}}::nonConservativeProduct(&lQi[(i*{{nDof**nDim}}+xyz)*{{nDataPad}}], &gradQNoPad[0], &ncpResult[0]);
+      solver.{{solverName}}::nonConservativeProduct(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, gradQNoPad, ncpResult);
       for(int d = 0; d < {{nDim}}; d++) {
         #pragma simd
         for (int n = 0; n < {{nVar}}; n++) {
@@ -267,6 +280,8 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       }
     }
 {% endif %} {# useNCP #}
+
+  doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
   
 {% if useMaterialParam %}
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
@@ -276,13 +291,13 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 {% if nDim == 3 %}
       F[2] = &lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}];
 {% endif %}
-      solver.{{solverName}}::multiplyMaterialParameterMatrix(&lQi[(i*{{nDof**nDim}}+xyz)*{{nDataPad}}], &F[0]);
+      solver.{{solverName}}::multiplyMaterialParameterMatrix(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, F);
     }
 {% endif %} {# useMaterialParam #}
 
 {% if useSource %}
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      solver.{{solverName}}::algebraicSource(&lQi[(i*{{nDof**nDim}}+xyz)*{{nDataPad}}], &lSi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}]);
+      solver.{{solverName}}::algebraicSource(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, lSi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}});
     }
 {% endif %} {# useSource #}
 

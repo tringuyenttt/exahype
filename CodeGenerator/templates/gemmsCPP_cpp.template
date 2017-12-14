@@ -14,16 +14,18 @@
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 #include "{{pathToOptKernel}}/Kernels.h" //for the libxsmm flop counter
 
+{% if useLibxsmm %}
 // amrRoutines gemms
 #include "{{pathToOptKernel}}/asm_amrRoutines.c"
 
-// picard gemms
+
+// spaceTimePredictor gemms
+#include "{{pathToOptKernel}}/asm_stp.c"
 {% if isLinear %}
 {% else %}
-#include "{{pathToOptKernel}}/asm_picard.c"
-
 {% if useFlux %}
 //volume integral gemms
 #include "{{pathToOptKernel}}/asm_volumeIntegral.c"
 {% endif %} {# useFlux #}
 {% endif %}
+{% endif %} {# useLibxsmm #}

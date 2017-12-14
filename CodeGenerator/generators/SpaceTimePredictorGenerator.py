@@ -37,7 +37,7 @@ class SpaceTimePredictorGenerator:
     m_filename_extrapolator = "extrapolatedPredictor.cpp"
     m_filename_linear       = "spaceTimePredictorLinear.cpp"
     
-    m_filename_asm_picard   = "asm_picard" 
+    m_filename_asm_picard   = "asm_stp" 
 
     
     def __init__(self, i_config):
@@ -45,11 +45,14 @@ class SpaceTimePredictorGenerator:
 
 
     def generateCode(self):
+        gemmName = "gemm_"+str(self.m_context["nVar"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])
         if(self.m_context["isLinear"]):
+            self.m_context["gemm_flux_x"] = gemmName+"_flux_x"
+            self.m_context["gemm_flux_y"] = gemmName+"_flux_y"
+            self.m_context["gemm_flux_z"] = gemmName+"_flux_z"
             TemplatingUtils.renderAsFile("spaceTimePredictorLinear_cpp.template", self.m_filename_linear, self.m_context)
         else:
             self.m_context["nDof_seq"] = range(0,self.m_context["nDof"])
-            gemmName = "gemm_"+str(self.m_context["nVar"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])
             self.m_context["gemm_rhs_x"] = gemmName+"_rhs_x"
             self.m_context["gemm_rhs_y"] = gemmName+"_rhs_y"
             self.m_context["gemm_rhs_z"] = gemmName+"_rhs_z"
@@ -65,151 +68,14 @@ class SpaceTimePredictorGenerator:
                 TemplatingUtils.renderAsFile("spaceTimePredictor_predictor_cpp.template", self.m_filename_predictor, self.m_context)
                 TemplatingUtils.renderAsFile("spaceTimePredictor_extrapolator_cpp.template", self.m_filename_extrapolator, self.m_context)
             
-            # generates gemms
-            if(self.m_context["useLibxsmm"]):
-                self.generateGemms()
+        # generates gemms
+        if(self.m_context["useLibxsmm"]):
+            self.generateGemms()
 
     def generateGemms(self):
         l_matmulList = []
-        if(self.m_context["useFlux"]):
-            l_matmul = MatmulConfig(    # M
-                                        self.m_context["nVar"],    \
-                                        # N
-                                        self.m_context["nDof"],    \
-                                        # K
-                                        self.m_context["nDof"],    \
-                                        # LDA
-                                        self.m_context["nVarPad"], \
-                                        # LDB
-                                        self.m_context["nDofPad"], \
-                                        # LDC
-                                        self.m_context["nVarPad"], \
-                                        # alpha
-                                        1,                         \
-                                        # beta
-                                        1,                         \
-                                        # alignment A
-                                        1,                         \
-                                        # alignment C
-                                        1,                         \
-                                        # name
-                                        "rhs_x",                   \
-                                        # prefetching
-                                        "nopf",                    \
-                                        # type
-                                        "gemm")
-            l_matmulList.append(l_matmul)
-            l_matmul = MatmulConfig(    # M
-                                        self.m_context["nVar"],                             \
-                                        # N
-                                        self.m_context["nDof"],                             \
-                                        # K
-                                        self.m_context["nDof"],                             \
-                                        # LDA
-                                        self.m_context["nVarPad"]* self.m_context["nDof"],     \
-                                        # LDB
-                                        self.m_context["nDofPad"], \
-                                        # LDC
-                                        self.m_context["nVarPad"] * self.m_context["nDof"],     \
-                                        # alpha
-                                        1,                                                 \
-                                        # beta
-                                        1,                                                 \
-                                        # alignment A
-                                        1,                                                 \
-                                        # alignment C
-                                        1,                                                 \
-                                        # name
-                                        "rhs_y",                                           \
-                                        # prefetching
-                                        "nopf",                                            \
-                                        # type
-                                        "gemm")
-            l_matmulList.append(l_matmul)
-            if(self.m_context["nDim"]>=3):
-                l_matmul = MatmulConfig(    # M
-                                            self.m_context["nVar"],                             \
-                                            # N
-                                            self.m_context["nDof"],                             \
-                                            # K
-                                            self.m_context["nDof"],                             \
-                                            # LDA
-                                            self.m_context["nVarPad"] * (self.m_context["nDof"]**2),     \
-                                            # LDB
-                                            self.m_context["nDofPad"],                          \
-                                            # LDC
-                                            self.m_context["nVarPad"] * (self.m_context["nDof"]**2),  \
-                                            # alpha
-                                            1,                                                 \
-                                            # beta
-                                            1,                                                 \
-                                            # alignment A
-                                            1,                                                 \
-                                            # alignment C
-                                            1,                                                 \
-                                            # name
-                                            "rhs_z",                                           \
-                                            # prefetching
-                                            "nopf",                                            \
-                                            # type
-                                            "gemm")
-                l_matmulList.append(l_matmul)
-        if(self.m_context["useNCP"]):
-            l_matmul = MatmulConfig(    # M
-                                        self.m_context["nVar"],    \
-                                        # N
-                                        self.m_context["nDof"],    \
-                                        # K
-                                        self.m_context["nDof"],    \
-                                        # LDA
-                                        self.m_context["nDataPad"] * self.m_context["nDof"], \
-                                        # LDB
-                                        self.m_context["nDofPad"], \
-                                        # LDC
-                                        self.m_context["nVarPad"] * self.m_context["nDim"] * self.m_context["nDof"], \
-                                        # alpha
-                                        1,                         \
-                                        # beta
-                                        1,                         \
-                                        # alignment A
-                                        1,                         \
-                                        # alignment C
-                                        1,                         \
-                                        # name
-                                        "gradQ_x",                   \
-                                        # prefetching
-                                        "nopf",                    \
-                                        # type
-                                        "gemm")
-            l_matmulList.append(l_matmul)
-            l_matmul = MatmulConfig(    # M
-                                        self.m_context["nVar"],    \
-                                        # N
-                                        self.m_context["nDof"],    \
-                                        # K
-                                        self.m_context["nDof"],    \
-                                        # LDA
-                                        self.m_context["nDataPad"] * (self.m_context["nDof"] ** 2), \
-                                        # LDB
-                                        self.m_context["nDofPad"], \
-                                        # LDC
-                                        self.m_context["nVarPad"] * self.m_context["nDim"] * (self.m_context["nDof"] ** 2), \
-                                        # alpha
-                                        1,                         \
-                                        # beta
-                                        1,                         \
-                                        # alignment A
-                                        1,                         \
-                                        # alignment C
-                                        1,                         \
-                                        # name
-                                        "gradQ_y",                   \
-                                        # prefetching
-                                        "nopf",                    \
-                                        # type
-                                        "gemm")
-            l_matmulList.append(l_matmul)
-            if(self.m_context["nDim"]>=3):
+        if(self.m_context["isLinear"]):
+            if(self.m_context["useFlux"]):
                 l_matmul = MatmulConfig(    # M
                                             self.m_context["nVar"],    \
                                             # N
@@ -217,11 +83,95 @@ class SpaceTimePredictorGenerator:
                                             # K
                                             self.m_context["nDof"],    \
                                             # LDA
-                                            self.m_context["nDataPad"] * (self.m_context["nDof"] ** 3), \
+                                            self.m_context["nVarPad"], \
                                             # LDB
                                             self.m_context["nDofPad"], \
                                             # LDC
-                                            self.m_context["nVarPad"] * self.m_context["nDim"] * (self.m_context["nDof"] ** 3), \
+                                            self.m_context["nVarPad"], \
+                                            # alpha
+                                            1,                         \
+                                            # beta, 0 => overwrite C
+                                            0,                         \
+                                            # alignment A
+                                            1,                         \
+                                            # alignment C
+                                            1,                         \
+                                            # name
+                                            "flux_x",                  \
+                                            # prefetching
+                                            "nopf",                    \
+                                            # type
+                                            "gemm")
+                l_matmulList.append(l_matmul)
+                l_matmul = MatmulConfig(    # M
+                                            self.m_context["nVar"],    \
+                                            # N
+                                            self.m_context["nDof"],    \
+                                            # K
+                                            self.m_context["nDof"],    \
+                                            # LDA
+                                            self.m_context["nVarPad"] * self.m_context["nDof"], \
+                                            # LDB
+                                            self.m_context["nDofPad"], \
+                                            # LDC
+                                            self.m_context["nVarPad"], \
+                                            # alpha
+                                            1,                         \
+                                            # beta, 0 => overwrite C
+                                            0,                         \
+                                            # alignment A
+                                            1,                         \
+                                            # alignment C
+                                            1,                         \
+                                            # name
+                                            "flux_y",                  \
+                                            # prefetching
+                                            "nopf",                    \
+                                            # type
+                                            "gemm")
+                l_matmulList.append(l_matmul)
+                if(self.m_context["nDim"]>=3):
+                    l_matmul = MatmulConfig(    # M
+                                                self.m_context["nVar"],    \
+                                                # N
+                                                self.m_context["nDof"],    \
+                                                # K
+                                                self.m_context["nDof"],    \
+                                                # LDA
+                                                self.m_context["nVarPad"] * (self.m_context["nDof"]**2), \
+                                                # LDB
+                                                self.m_context["nDofPad"], \
+                                                # LDC
+                                                self.m_context["nVarPad"], \
+                                                # alpha
+                                                1,                         \
+                                                # beta, 0 => overwrite C
+                                                0,                         \
+                                                # alignment A
+                                                1,                         \
+                                                # alignment C
+                                                1,                         \
+                                                # name
+                                                "flux_z",                  \
+                                                # prefetching
+                                                "nopf",                    \
+                                                # type
+                                                "gemm")
+                    l_matmulList.append(l_matmul)
+        else: #NonLinear
+            if(self.m_context["useFlux"]):
+                l_matmul = MatmulConfig(    # M
+                                            self.m_context["nVar"],    \
+                                            # N
+                                            self.m_context["nDof"],    \
+                                            # K
+                                            self.m_context["nDof"],    \
+                                            # LDA
+                                            self.m_context["nVarPad"], \
+                                            # LDB
+                                            self.m_context["nDofPad"], \
+                                            # LDC
+                                            self.m_context["nVarPad"], \
                                             # alpha
                                             1,                         \
                                             # beta
@@ -231,37 +181,176 @@ class SpaceTimePredictorGenerator:
                                             # alignment C
                                             1,                         \
                                             # name
-                                            "gradQ_z",                   \
+                                            "rhs_x",                   \
                                             # prefetching
                                             "nopf",                    \
                                             # type
                                             "gemm")
                 l_matmulList.append(l_matmul)
-        l_matmul = MatmulConfig(    # M
-                                    self.m_context["nVar"],                             \
-                                    # N
-                                    self.m_context["nDof"],                             \
-                                    # K
-                                    self.m_context["nDof"],                             \
-                                    # LDA
-                                    self.m_context["nVarPad"]*(self.m_context["nDof"]**self.m_context["nDim"]), \
-                                    # LDB
-                                    self.m_context["nDofPad"], \
-                                    # LDC
-                                    self.m_context["nVarPad"], \
-                                    # alpha
-                                    1,                                                 \
-                                    # beta
-                                    0,                                                 \
-                                    # alignment A
-                                    1,                                                 \
-                                    # alignment C
-                                    1,                                                 \
-                                    # name
-                                    "lqi",                                             \
-                                    # prefetching
-                                    "nopf",                                            \
-                                    # type
-                                    "gemm")
-        l_matmulList.append(l_matmul)
+                l_matmul = MatmulConfig(    # M
+                                            self.m_context["nVar"],                             \
+                                            # N
+                                            self.m_context["nDof"],                             \
+                                            # K
+                                            self.m_context["nDof"],                             \
+                                            # LDA
+                                            self.m_context["nVarPad"]* self.m_context["nDof"],     \
+                                            # LDB
+                                            self.m_context["nDofPad"], \
+                                            # LDC
+                                            self.m_context["nVarPad"] * self.m_context["nDof"],     \
+                                            # alpha
+                                            1,                                                 \
+                                            # beta
+                                            1,                                                 \
+                                            # alignment A
+                                            1,                                                 \
+                                            # alignment C
+                                            1,                                                 \
+                                            # name
+                                            "rhs_y",                                           \
+                                            # prefetching
+                                            "nopf",                                            \
+                                            # type
+                                            "gemm")
+                l_matmulList.append(l_matmul)
+                if(self.m_context["nDim"]>=3):
+                    l_matmul = MatmulConfig(    # M
+                                                self.m_context["nVar"],                             \
+                                                # N
+                                                self.m_context["nDof"],                             \
+                                                # K
+                                                self.m_context["nDof"],                             \
+                                                # LDA
+                                                self.m_context["nVarPad"] * (self.m_context["nDof"]**2),     \
+                                                # LDB
+                                                self.m_context["nDofPad"],                          \
+                                                # LDC
+                                                self.m_context["nVarPad"] * (self.m_context["nDof"]**2),  \
+                                                # alpha
+                                                1,                                                 \
+                                                # beta
+                                                1,                                                 \
+                                                # alignment A
+                                                1,                                                 \
+                                                # alignment C
+                                                1,                                                 \
+                                                # name
+                                                "rhs_z",                                           \
+                                                # prefetching
+                                                "nopf",                                            \
+                                                # type
+                                                "gemm")
+                    l_matmulList.append(l_matmul)
+            if(self.m_context["useNCP"]):
+                l_matmul = MatmulConfig(    # M
+                                            self.m_context["nVar"],    \
+                                            # N
+                                            self.m_context["nDof"],    \
+                                            # K
+                                            self.m_context["nDof"],    \
+                                            # LDA
+                                            self.m_context["nDataPad"] * self.m_context["nDof"], \
+                                            # LDB
+                                            self.m_context["nDofPad"], \
+                                            # LDC
+                                            self.m_context["nVarPad"] * self.m_context["nDim"] * self.m_context["nDof"], \
+                                            # alpha
+                                            1,                         \
+                                            # beta
+                                            1,                         \
+                                            # alignment A
+                                            1,                         \
+                                            # alignment C
+                                            1,                         \
+                                            # name
+                                            "gradQ_x",                   \
+                                            # prefetching
+                                            "nopf",                    \
+                                            # type
+                                            "gemm")
+                l_matmulList.append(l_matmul)
+                l_matmul = MatmulConfig(    # M
+                                            self.m_context["nVar"],    \
+                                            # N
+                                            self.m_context["nDof"],    \
+                                            # K
+                                            self.m_context["nDof"],    \
+                                            # LDA
+                                            self.m_context["nDataPad"] * (self.m_context["nDof"] ** 2), \
+                                            # LDB
+                                            self.m_context["nDofPad"], \
+                                            # LDC
+                                            self.m_context["nVarPad"] * self.m_context["nDim"] * (self.m_context["nDof"] ** 2), \
+                                            # alpha
+                                            1,                         \
+                                            # beta
+                                            1,                         \
+                                            # alignment A
+                                            1,                         \
+                                            # alignment C
+                                            1,                         \
+                                            # name
+                                            "gradQ_y",                   \
+                                            # prefetching
+                                            "nopf",                    \
+                                            # type
+                                            "gemm")
+                l_matmulList.append(l_matmul)
+                if(self.m_context["nDim"]>=3):
+                    l_matmul = MatmulConfig(    # M
+                                                self.m_context["nVar"],    \
+                                                # N
+                                                self.m_context["nDof"],    \
+                                                # K
+                                                self.m_context["nDof"],    \
+                                                # LDA
+                                                self.m_context["nDataPad"] * (self.m_context["nDof"] ** 3), \
+                                                # LDB
+                                                self.m_context["nDofPad"], \
+                                                # LDC
+                                                self.m_context["nVarPad"] * self.m_context["nDim"] * (self.m_context["nDof"] ** 3), \
+                                                # alpha
+                                                1,                         \
+                                                # beta
+                                                1,                         \
+                                                # alignment A
+                                                1,                         \
+                                                # alignment C
+                                                1,                         \
+                                                # name
+                                                "gradQ_z",                   \
+                                                # prefetching
+                                                "nopf",                    \
+                                                # type
+                                                "gemm")
+                    l_matmulList.append(l_matmul)
+            l_matmul = MatmulConfig(    # M
+                                        self.m_context["nVar"],                             \
+                                        # N
+                                        self.m_context["nDof"],                             \
+                                        # K
+                                        self.m_context["nDof"],                             \
+                                        # LDA
+                                        self.m_context["nVarPad"]*(self.m_context["nDof"]**self.m_context["nDim"]), \
+                                        # LDB
+                                        self.m_context["nDofPad"], \
+                                        # LDC
+                                        self.m_context["nVarPad"], \
+                                        # alpha
+                                        1,                                                 \
+                                        # beta
+                                        0,                                                 \
+                                        # alignment A
+                                        1,                                                 \
+                                        # alignment C
+                                        1,                                                 \
+                                        # name
+                                        "lqi",                                             \
+                                        # prefetching
+                                        "nopf",                                            \
+                                        # type
+                                        "gemm")
+            l_matmulList.append(l_matmul)
+            
         Backend.generateAssemblerCode(self.m_filename_asm_picard, l_matmulList)

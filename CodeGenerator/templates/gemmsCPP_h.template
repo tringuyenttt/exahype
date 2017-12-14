@@ -14,6 +14,8 @@
 #ifndef EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_
 #define EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_
 
+{% if useLibxsmm %}
+
 {% for namespaceName in codeNamespaceList %}
 namespace {{namespaceName}} {
 {% endfor %}
@@ -25,6 +27,13 @@ void {{gemm_prefix}}_{{nData}}_{{nDof}}_{{nDof}}_volume(const double* A, const d
 
 
 {% if isLinear %}
+{% if useFlux %}
+void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_flux_x(const double* A, const double* B, double* C);
+void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_flux_y(const double* A, const double* B, double* C);
+{% if nDim == 3 %} 
+void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_flux_z(const double* A, const double* B, double* C);
+{% endif %}
+{% endif %} {# useFlux #}
 {% else %}
 // picard gemms
 {% if useFlux %}
@@ -56,5 +65,7 @@ void {{gemm_prefix}}_{{nVar}}_{{nDof}}_{{nDof}}_lduh_z(const double* A, const do
 {% for namespaceName in codeNamespaceList %}
 }
 {% endfor %}
+
+{% endif %} {# useLibxsmm #}
 
 #endif //EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_
