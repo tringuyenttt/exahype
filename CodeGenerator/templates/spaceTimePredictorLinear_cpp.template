@@ -165,7 +165,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       {{gemm_flux_x}}(lFi+(i*{{nDof3D*nDof}}+yz)*{{nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
 {% else %}
       std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
-      for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
+      for (int l = 0; l < {{nDof}}; l++) {
         for (int n = 0; n < {{nVar}}; n++) {
           for (int x = 0; x < {{nDof}}; x++) {
             fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D*nDof}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] * dudxT_by_dx[l*{{nDofPad}}+x];
@@ -183,7 +183,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
         {{gemm_flux_y}}(lFi+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
 {% else %}
         std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
-        for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
+        for (int l = 0; l < {{nDof}}; l++) {
           for (int n = 0; n < {{nVar}}; n++) {
             for (int y = 0; y < {{nDof}}; y++) {
               fluxDerivative[l*{{nVarPad}}+n] += lFi[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+y];
@@ -208,7 +208,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       {{gemm_flux_z}}(lFi+((i*{{nDof**3}}+xy)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
 {% else %}
       std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
-      for (int l = 0; l < {{nDof}}; l++) { // TODO use Libxsmm
+      for (int l = 0; l < {{nDof}}; l++) {
         for (int n = 0; n < {{nVar}}; n++) {
           for (int z = 0; z < {{nDof}}; z++) {
             fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+z]; 
@@ -229,31 +229,42 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 {% if useNCP %}
     // Compute the derivatives in x direction (independent from the y and z derivatives)
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-      for (int x = 0; x < {{nDof}}; x++) { // TODO use Libxsmm
+{% if useLibxsmm %}
+      {{gemm_gradQ_x}}(lQi+(i*{{nDof*nDof3D}}+yz)*{{nDof*nDataPad}}, dudxT_by_dx, gradQ+(i*{{nDof*nDof3D}}+yz)*{{nDof*nVarPad}});
+{% else %}
+      for (int x = 0; x < {{nDof}}; x++) {
         for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
           for (int l = 0; l < {{nDof}}; l++) {
             gradQ[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] += lQi[((i*{{nDof*nDof3D}}+yz)*{{nDof}}+l)*{{nDataPad}}+n] * dudxT_by_dx[x*{{nDofPad}}+l];
           }
         }
       }
+{% endif %}
     }
 
     // y direction (independent from the x and z derivatives)
     for (int z = 0; z < {{nDof3D}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
-        for (int y = 0; y < {{nDof}}; y++) { //TODO use Libxsmm
+{% if useLibxsmm %}
+        {{gemm_gradQ_y}}(lQi+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nDataPad}}, dudxT_by_dx, gradQ+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}});
+{% else %}
+        for (int y = 0; y < {{nDof}}; y++) {
           for (int n = 0; n < {{nVar}}; n++) { // Skip parameters
             for (int l = 0; l < {{nDof}}; l++) {
               gradQ[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] += lQi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nDataPad}}+n] * dudxT_by_dx[y*{{nDofPad}}+l];
             }
           }
         }
+{% endif %}
       }
     }
 {% if nDim ==3 %}
 
     // z direction (independent from the x and y derivatives)
     for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
+{% if useLibxsmm %}
+      {{gemm_gradQ_z}}(lQi+(i*{{nDof3D*nDof*nDof}}+xy)*{{nDataPad}}, dudxT_by_dx, gradQ+(i*{{nDof3D*nDof*nDof}}+xy)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}});
+{% else %}
       for (int z = 0; z < {{nDof}}; z++) {     
         for (int n = 0; n < {{nVar}}; n++) {// Skip parameters
           for (int l = 0; l < {{nDof}}; l++) {
@@ -261,6 +272,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
           }
         }
       }
+{% endif %}
     }
 {% endif %}
   
