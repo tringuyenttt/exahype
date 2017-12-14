@@ -2003,12 +2003,12 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
       // luh, t, dt, cell cell center, cell size, data allocation for forceVect
 
       #ifdef OPT_KERNELS
-      auto& invDx = tarch::la::invertEntries(cellDescription.getSize());
+      tarch::la::Vector<DIMENSIONS,double> invDx = tarch::la::invertEntries(cellDescription.getSize());
       spaceTimePredictor(
           lQhbnd,lFhbnd,
           tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
           luh,
-          invDx.data(),
+          invDx,
           cellDescription.getPredictorTimeStepSize(),
           tempPointForceSources);
 
@@ -2016,7 +2016,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           lduh,
           tempSpaceTimeFluxUnknowns[0],
           tempFluxUnknowns,
-          invDx.data());
+          invDx);
       #else // OPT_KERNELS not defined
       spaceTimePredictor(
           lQhbnd,lFhbnd,
@@ -4300,12 +4300,12 @@ void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
   // luh, t, dt, cell cell center, cell size, data allocation for forceVect
 
   #ifdef OPT_KERNELS
-  auto& invDx = tarch::la::invertEntries(_cellDescription.getSize());
+  tarch::la::Vector<DIMENSIONS,double> invDx = tarch::la::invertEntries(_cellDescription.getSize());
   _solver.spaceTimePredictor(
       lQhbnd,lFhbnd,
       tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
       luh,
-      invDx.data(),
+      invDx,
       _cellDescription.getPredictorTimeStepSize(),
       tempPointForceSources);
 
@@ -4313,7 +4313,7 @@ void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
       lduh,
       tempSpaceTimeFluxUnknowns[0],
       tempFluxUnknowns,
-      invDx.data());
+      invDx);
   #else // OPT_KERNELS not defined
   _solver.spaceTimePredictor(
       lQhbnd,lFhbnd,
