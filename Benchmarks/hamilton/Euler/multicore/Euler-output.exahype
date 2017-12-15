@@ -14,15 +14,22 @@ exahype-project Euler
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
   output-directory const           = ./Benchmarks/hamilton/Euler
-  architecture const               = hsw
+  architecture const               = noarch
   log-file                         = mylogfile.log
 
   computational-domain
-    dimension const         = 3
+    dimension const         = 2
     width                   = 1.0, 1.0, 1.0
     offset                  = 0.0, 0.0, 0.0
-    end-time                = 0.1
+    end-time                = 0.3
   end computational-domain
+  
+  distributed-memory
+    identifier               = static_load_balancing
+    configure                = {hotspot,fair,ranks_per_node:1}
+    buffer-size              = 64
+    timeout                  = 60
+  end distributed-memory
   
   shared-memory
     identifier               = dummy
@@ -32,10 +39,11 @@ exahype-project Euler
   end shared-memory  
   
   global-optimisation
-    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps          = off
     fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
-    timestep-batch-factor           = 0.8
+    timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = on
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = off
     double-compression = 0.0
@@ -45,7 +53,8 @@ exahype-project Euler
   solver Limiting-ADER-DG EulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 3
-    maximum-mesh-size          = 0.038
+    maximum-mesh-size          = 0.12
+    maximum-mesh-depth         = 2
     time-stepping              = global
     type const                 = nonlinear
     terms const                = flux
@@ -57,8 +66,10 @@ exahype-project Euler
     dmp-observables            = 5
     dmp-relaxation-parameter   = 1e-4
     dmp-difference-scaling     = 1e-3
+    steps-till-cured           = 0
+    helper-layers              = 2
     // reference either: sod,entropywave,explosion,rarefactionwave
-    constants                = reference:entropywave
+    constants                  = reference:sod
     
     plot user::defined ErrorWriter
       variables const = 5
@@ -67,7 +78,7 @@ exahype-project Euler
       output          = not-available
     end plot
     
-    plot vtk::Cartesian::vertices::limited::ascii ErrorPlotter
+    plot vtu::Cartesian::vertices::limited::ascii ErrorPlotter
       // absErrorL1perCell[nvar],Q[nvar],QAnalytical[nvar]
       variables const = 15 
       time            = 0.0
