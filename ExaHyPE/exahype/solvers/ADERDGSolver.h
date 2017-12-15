@@ -1550,7 +1550,7 @@ public:
       exahype::solvers::Solver* solver,
       const int cellDescriptionsIndex,
       const int element,
-      const bool isAdjacentToRemoteRank,
+      const bool vetoSpawnPredictorAsBackgroundThread,
       exahype::solvers::PredictionTemporaryVariables& temporaryVariables);
 
   /**
@@ -1558,7 +1558,7 @@ public:
    * and (space-time) predictor values to the boundary and
    * computes the volume integral.
    *
-   * \param[in] isAdjacentToRemoteRank    Indicates that the cell holding the cell description is adjacent to a remote rank
+   * \param[in] vetoSpawnPredictorAsBackgroundThread    Indicates that the cell holding the cell description is adjacent to a remote rank
    * \param[in] tempSpaceTimeUnknows      Array of size 4 containing space-time predictor sized temporary arrays (see nonlinear predictor kernel).
    * \param[in] tempSpaceTimeFluxUnknowns Array of size 2 containing space-time predictor volume flux sized temporary arrays (see linear predictor kernel).
    * \param[in] tempUnknowns              Solution sized temporary array.
@@ -1569,7 +1569,7 @@ public:
    */
   void performPredictionAndVolumeIntegral(
       CellDescription& cellDescription,
-      const bool isAdjacentToRemoteRank,
+      const bool vetoSpawnPredictorAsBackgroundThread,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
@@ -1647,7 +1647,7 @@ public:
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool isAdjacentToRemoteRank,
+      const bool vetoSpawnPredictorAsBackgroundThread,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,

@@ -558,9 +558,9 @@ int exahype::runners::Runner::run() {
   if ( _parser.isValid() ) {
     initHeaps();
 
-    exahype::State::FuseADERDGPhases                = _parser.getFuseAlgorithmicSteps();
-    exahype::State::WeightForPredictionRerun        = _parser.getFuseAlgorithmicStepsFactor();
-    exahype::State::SpawnPredictorAsBackgroundThread  = _parser.getSpawnPredictorAsBackgroundTask();
+    exahype::State::FuseADERDGPhases                 = _parser.getFuseAlgorithmicSteps();
+    exahype::State::WeightForPredictionRerun         = _parser.getFuseAlgorithmicStepsFactor();
+    exahype::State::SpawnPredictorAsBackgroundThread = _parser.getSpawnPredictorAsBackgroundThread();
     #ifdef Parallel
     exahype::State::VirtuallyExpandBoundingBox =
         _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;

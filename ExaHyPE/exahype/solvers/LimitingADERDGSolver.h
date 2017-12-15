@@ -887,7 +887,7 @@ public:
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool isAdjacentToRemoteRank,
+      const bool vetoSpawnPredictorAsBackgroundThread,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
@@ -1080,13 +1080,13 @@ public:
    * We compute the new limiter status based on the merged limiter statuses associated
    * with the faces.
    *
-   * \param[in] isAdjacentToRemoteRank Flag indicating that the cell hosting the
+   * \param[in] vetoSpawnPredictorAsBackgroundThread Flag indicating that the cell hosting the
    *                                   cell description is adjacent to a remote rank.
    */
   void recomputePredictorLocally(
       const int cellDescriptionsIndex,
       const int element,
-      const bool isAdjacentToRemoteRank,
+      const bool vetoSpawnPredictorAsBackgroundThread,
       exahype::solvers::PredictionTemporaryVariables& predictionTemporaryVariables);
 
   void preProcess(
