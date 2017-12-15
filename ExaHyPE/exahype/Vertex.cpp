@@ -12,6 +12,9 @@
  **/
  
 #include "exahype/Vertex.h"
+
+#include "tarch/la/Scalar.h"
+
 #include "peano/utils/Loop.h"
 #include "peano/grid/Checkpoint.h"
 
@@ -40,6 +43,16 @@ exahype::Vertex::Vertex(const Base::DoNotCallStandardConstructor& value)
 exahype::Vertex::Vertex(const Base::PersistentVertex& argument)
     : Base(argument) {
   // do nothing
+}
+
+bool exahype::Vertex::equalUpToRelativeTolerance(
+    const tarch::la::Vector<DIMENSIONS,double>& first,
+    const tarch::la::Vector<DIMENSIONS,double>& second) {
+  constexpr double tolerance   = tarch::la::NUMERICAL_ZERO_DIFFERENCE;
+  double scaledTolerance =
+      tolerance * std::max( tarch::la::maxAbs(first), tarch::la::maxAbs(second) );
+  scaledTolerance = std::max( scaledTolerance, tolerance );
+  return tarch::la::equals( first, second, scaledTolerance );
 }
 
 tarch::la::Vector<TWO_POWER_D, int>
@@ -261,8 +274,8 @@ bool exahype::Vertex::hasToMergeNeighbours(
               exahype::Vertex::computeFaceBarycentre(x,h,direction,pos2);
 
     mergeNeighbours &= // ensure the barycentres match
-        tarch::la::equals(baryCentreFromPatch1,baryCentreFromPatch2) &&
-        tarch::la::equals(baryCentreFromPatch1,baryCentreFromVertex);
+        equalUpToRelativeTolerance(baryCentreFromPatch1,baryCentreFromPatch2) &&
+        equalUpToRelativeTolerance(baryCentreFromPatch1,baryCentreFromVertex);
 
     return mergeNeighbours;
   } else  {
@@ -315,7 +328,7 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
 
       tarch::la::Vector<DIMENSIONS,double> baryCentreFromVertex =
           exahype::Vertex::computeFaceBarycentre(x,h,direction,pos1);
-      mergeWithBoundaryData &= tarch::la::equals(baryCentreFromPatch1,baryCentreFromVertex);
+      mergeWithBoundaryData &= equalUpToRelativeTolerance(baryCentreFromPatch1,baryCentreFromVertex);
       return mergeWithBoundaryData;
     } else if (exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2)) {
       bool mergeWithBoundaryData =
@@ -334,7 +347,7 @@ bool exahype::Vertex::hasToMergeWithBoundaryData(
 
       tarch::la::Vector<DIMENSIONS,double> baryCentreFromVertex =
           exahype::Vertex::computeFaceBarycentre(x,h,direction,pos2);
-      mergeWithBoundaryData &= tarch::la::equals(baryCentreFromPatch2,baryCentreFromVertex);
+      mergeWithBoundaryData &= equalUpToRelativeTolerance(baryCentreFromPatch2,baryCentreFromVertex);
       return mergeWithBoundaryData;
     } else {
       return false;
@@ -526,7 +539,7 @@ bool exahype::Vertex::hasToSendMetadataToNeighbour(
           exahype::Cell::computeFaceBarycentre(patch.getOffset(),patch.getSize(),direction,orientation);
       tarch::la::Vector<DIMENSIONS,double> barycentreFromVertex =
           exahype::Vertex::computeFaceBarycentre(x,h,direction,src);
-      return tarch::la::equals(barycentreFromPatch,barycentreFromVertex);
+      return equalUpToRelativeTolerance(barycentreFromPatch,barycentreFromVertex);
     }
     else if (!exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(srcCellDescriptionIndex).empty()) {
       auto& patch = exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(srcCellDescriptionIndex)[0];
@@ -534,7 +547,7 @@ bool exahype::Vertex::hasToSendMetadataToNeighbour(
           exahype::Cell::computeFaceBarycentre(patch.getOffset(),patch.getSize(),direction,orientation);
       tarch::la::Vector<DIMENSIONS,double> barycentreFromVertex =
           exahype::Vertex::computeFaceBarycentre(x,h,direction,src);
-      return tarch::la::equals(barycentreFromPatch,barycentreFromVertex);
+      return equalUpToRelativeTolerance(barycentreFromPatch,barycentreFromVertex);
     } else {
       return false;
     }
@@ -612,7 +625,7 @@ bool exahype::Vertex::hasToMergeWithNeighbourMetadata(
           exahype::Cell::computeFaceBarycentre(patch.getOffset(),patch.getSize(),direction,orientation);
       tarch::la::Vector<DIMENSIONS,double> barycentreFromVertex =
           exahype::Vertex::computeFaceBarycentre(x,h,direction,dest);
-      return tarch::la::equals(barycentreFromPatch,barycentreFromVertex);
+      return equalUpToRelativeTolerance(barycentreFromPatch,barycentreFromVertex);
     }
     else if (!exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionIndex).empty()) {
       auto& patch = exahype::solvers::FiniteVolumesSolver::Heap::getInstance().getData(destCellDescriptionIndex)[0];
@@ -620,7 +633,7 @@ bool exahype::Vertex::hasToMergeWithNeighbourMetadata(
           exahype::Cell::computeFaceBarycentre(patch.getOffset(),patch.getSize(),direction,orientation);
       tarch::la::Vector<DIMENSIONS,double> barycentreFromVertex =
           exahype::Vertex::computeFaceBarycentre(x,h,direction,dest);
-      return tarch::la::equals(barycentreFromPatch,barycentreFromVertex);
+      return equalUpToRelativeTolerance(barycentreFromPatch,barycentreFromVertex);
     } else {
       return false;
     }

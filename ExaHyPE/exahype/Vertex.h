@@ -54,6 +54,14 @@ class exahype::Vertex : public peano::grid::Vertex<exahype::records::Vertex> {
    */
   static tarch::logging::Log _log;
 
+  /**
+   * Compare if two vectors are equal up to a relative
+   * tolerance.
+   */
+  static bool equalUpToRelativeTolerance(
+      const tarch::la::Vector<DIMENSIONS,double>& first,
+      const tarch::la::Vector<DIMENSIONS,double>& second);
+
   /*! Helper routine for mergeNeighbours.
    *
    * TODO(Dominic): Add docu.
