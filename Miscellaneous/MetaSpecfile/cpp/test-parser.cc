@@ -33,12 +33,23 @@ int main(int argc, char** argv) {
 	
 	exahype::Parser::ParserView view(parser.getParserView(0));
 	
-	mexa::mexafile mf = mexa::fromOrderedMap(view.getAllAsOrderedMap(), "specfile");
+	mexa::mexafile mf = mexa::fromSpecfile(view.getAllAsOrderedMap(), "specfile");
 	
-	//std::cout << "mf=" << mf.query_root("boundaries").toString();
 	std::cout << "mf=" << mf.toString();
 	
-	std::vector<double> pos = mf.get_double_vec("shocktube/right/bmag");
+	// Testing queries
+	// std::cout << "mf=" << mf.query_root("boundaries").toString();
+	
+	// testing vector
+	std::vector<double> pos = mf.vec("shocktube/right/bmag", 3).get_double();
+	//std::vector<int> pos = mf.vec("shocktube/right/bmag", 3).as_int();
 	for(auto j : pos)
 		std::cout << "vector value: " << j << "\n";
+	
+	// Testing strings
+	/*
+	mexa::mexafile mu  = mf.query_root_require("initialdata");
+	std::cout << "mu=" << mu.toString();
+	std::cout << "named=" << mu("name").toString();
+	*/
 }

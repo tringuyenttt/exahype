@@ -179,23 +179,10 @@ std::string remove_common_prefix(std::string a, std::string b) {
 	return startswith(a,b) ? a.substr(b.length(),a.length()) : a;
 }
 
-void stripComment(std::string& line) {
-	line.erase( std::find( line.begin(), line.end(), '#' ), line.end() );
-}
 
 // my small C++11 to_string-independent workaround.
 template <typename T> std::string toString( T Number ) {
 	std::ostringstream ss; ss << Number; return ss.str();
-}
-
-/// Parse stuff. Result value is true if output is usable and false if
-/// it could not succeed.
-template<typename T>
-bool parse(const std::string& input, T& output) {
-	std::istringstream in(input);
-	//in.exceptions(std::fstream::failbit);
-	in >> output;
-	return !(in.fail() || in.bad());
 }
 
 /// An ASCII hex '0-9a-FA-F' to integer resolving. Returns <0 in case of error.
@@ -308,18 +295,145 @@ using namespace tools; // mexa::tools
 // end of class symbol
 
 std::string sourcemap::toString() const { return filename + ":" + ::toString(linenumber); }
-std::string sourced::toString() const { return std::string("sourced(")+line+","+src.toString()+")"; }
 
+// My poor man's value variant type
+bool mexa::value::canCastTo(Type type) const {
+	bool targetIsNumerical = (type == mexa::value::Type::INT) || (type == mexa::value::Type::DOUBLE) || (type == mexa::value::Type::BOOL);
+	bool sourceIsNumerical = (a == mexa::value::Type::INT) || (a == mexa::value::Type::DOUBLE) || (a == mexa::value::Type::BOOL);
+	return targetIsNumerical && sourceIsNumerical;
+}
+
+template<typename T>
+T mexa::value::cast_as_numerical(mexa::value::Type type) const {
+	switch(a) {
+		case mexa::value::Type::INT: return get_int();
+		case mexa::value::Type::DOUBLE: return get_double();
+		case mexa::value::Type::BOOL: return get_bool();
+	}
+	// value cast error:
+	std::stringstream errmsg;
+	errmsg << "Value '"<<toString()<< "' not castable to " << mexa::value::type2str(type);
+	throw std::runtime_error(errmsg.str());
+}
+
+int mexa::value::as_int() const { return cast_as_numerical<int>(mexa::value::Type::INT); }
+double mexa::value::as_double() const { return cast_as_numerical<double>(mexa::value::Type::DOUBLE); }
+bool mexa::value::as_bool() const { return cast_as_numerical<bool>(mexa::value::Type::BOOL); }
+
+std::string mexa::value::as_string() const {
+	std::stringstream ret;
+	switch(a) {
+		case mexa::value::Type::INT: ret << get_int(); break;
+		case mexa::value::Type::DOUBLE: ret << get_double(); break;
+		case mexa::value::Type::BOOL: ret << get_bool(); break;
+		case mexa::value::Type::STRING: ret << get_string(); break;
+		case mexa::value::Type::UNDEF: ret << "---"; break;
+		default: ret << "error";
+	}
+	return ret.str();
+}
+
+std::string mexa::value::type2str(mexa::value::Type type) {
+	switch(type) {
+		case mexa::value::Type::INT: return "int";
+		case mexa::value::Type::DOUBLE: return "double";
+		case mexa::value::Type::BOOL: return "bool";
+		case mexa::value::Type::STRING: return "string";
+		case mexa::value::Type::UNDEF: return "undefined";
+		default: return "error";
+	}
+}
+
+void mexa::value::assertActive(mexa::value::Type requested) const {
+	if(!isActive(requested)) {
+		std::stringstream errmsg;
+		errmsg << "Value '"<<toString()<< "' does not hold a " << type2str(requested);
+		throw std::runtime_error(errmsg.str());
+	}
+}
+
+std::string mexa::value::toString() const {
+	std::stringstream ret;
+	ret << type2str(a) << "(" << as_string() << ")";
+	return ret.str();
+}
+
+// VECTOR VALUES
+
+template<typename T>
+std::vector<T> vector_value::get( T (value::*getter)() const , value::Type type, bool doCast) const {
+	std::vector<T> ret;
+	int itemcount = 1; // just for error output
+	mexa::mexafile mq = mf.query(node);
+	for(auto it : mq.assignments) {
+		bool isExact = it.val.isActive(type);
+		bool canCast = it.val.canCastTo(type);
+		if(doCast && canCast || !isExact) {
+			std::stringstream errmsg;
+			errmsg << "While reading in the " << value::type2str(type) << "-vector at '" << node.toString() << "', the " << itemcount << ". symbol " << it.key.toString() << " with value '" << it.val.toString() << "' cannote be casted as " << value::type2str(type) << ". It was given on " << it.src.toString();
+			throw std::runtime_error(errmsg.str());
+		}
+		T unpacked_value = (it.val.*getter)(); // should call e.g. value::get_int for T=int.
+		ret.push_back(unpacked_value);
+		itemcount++;
+	}
+	//assert_vec_size(node, mq, type_as_str, require_length, ret);
+	return ret;
+}
+
+std::vector<int> vector_value::get_int() const { return get(&value::get_int, value::Type::INT, false); }
+std::vector<double> vector_value::get_double() const { return get(&value::get_double, value::Type::DOUBLE, false); }
+std::vector<bool> vector_value::get_bool() const { return get(&value::get_bool, value::Type::BOOL, false); }
+std::vector<std::string> vector_value::get_string() const { return get(&value::get_string, value::Type::STRING, false); }
+std::vector<int> vector_value::as_int() const { return get(&value::as_int, value::Type::INT, true); }
+std::vector<double> vector_value::as_double() const { return get(&value::as_double, value::Type::DOUBLE, true); }
+std::vector<bool> vector_value::as_bool() const { return get(&value::as_bool, value::Type::BOOL, true); }
+std::vector<std::string> vector_value::as_string() const { return get(&value::as_string, value::Type::STRING, true); }
+
+
+// The multiline string is probably something we could reintroduce if required.
+/*	
+	// specialization
+	std::string mexafile::get_multiline_string(symbol node) const {
+		std::string ret;
+		mexa::mexafile mq = query(node);
+		for(auto it : mq.assignments) {
+			symbol& leaf(it.first);
+			ret += get_string(leaf) + "\n";
+		}
+		return ret;
+	}*/
+
+// CLASS assignment:
+assignment assignment::make(symbol key, value val, sourcemap src) {
+	assignment ret;
+	ret.key = key;
+	ret.val = val;
+	ret.src = src;
+	return ret;
+}
+
+std::string assignment::toString() const {
+	std::stringstream ret;
+	ret << "eq(",
+	ret << key.toString();
+	ret << ", ",
+	ret << val.toString();
+	ret << ", source=";
+	ret << src.toString();
+	ret << ")";
+	return ret.str();
+}
 
 // CLASS mexafile
-	void mexafile::add_item(const symbol key, const sourced value) {
-		assignments.push_back( std::make_pair(key,value) );
+	void mexafile::add(const symbol key, const value val, const sourcemap src) {
+		assignments.push_back(assignment::make(key,val,src));
 	}
 	
-	sourced mexafile::get_item(const symbol leaf) const {
+	value mexafile::get(const symbol leaf) const {
 		for(auto it: assignments)
-			if(leaf == it.first)
-				return it.second;
+			if(leaf == it.key)
+				return it.val;
 			
 		// element not found
 		std::stringstream errmsg;
@@ -328,6 +442,12 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 		else errmsg << "The assignment list is given by: " << toString();
 		throw std::runtime_error((errmsg).str());
 	}
+	
+	vector_value mexafile::vec(const symbol node, size_t required_length) const {
+		return vector_value(*this, node, required_length);
+	}
+	vector_value mexafile::vec(size_t required_length) const {
+		return vec(/*root*/symbol(), required_length); }
 
 
 	mexafile mexafile::query(const symbol root) const {
@@ -337,8 +457,8 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 		for(auto it : assignments) {
 			// check case root="foo", include "foo/bar" and "foo/bar/baz"
 			// check case root="foo", include "foo" itself.
-			if(::contains(it.first.ancestors(), root) || root == it.first) {
-				res.add_item(it.first, it.second);
+			if(::contains(it.key.ancestors(), root) || root == it.key) {
+				res.assignments.push_back(it);
 			}
 		}
 		return res;
@@ -352,26 +472,35 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 		return query(root).prefix_remove(root);
 	}
 	
+	mexafile mexafile::query_root_require(const symbol root) const {
+		mexafile rt = query_root(root);
+		if(rt.isEmpty()) {
+			std::stringstream errmsg;
+			errmsg << "Querying the node '" << root.toString() << "' yielded no result.";
+			errmsg << "The unqueried input assignment list is given by: " << toString();
+			throw std::runtime_error((errmsg).str());
+		}
+		return rt;
+	}
+	
 	mexafile mexafile::prefix_add(const symbol root) const {
 		mexafile res;
-		for(auto it : assignments) {
-			res.add_item(root.prefix_add(it.first), it.second);
-		}
+		for(auto it : assignments)
+			res.add(root.prefix_add(it.key), it.val, it.src);
 		return res;
 	}
 	
 	mexafile mexafile::prefix_remove(const symbol root) const {
 		mexafile res;
-		for(auto it: assignments) {
-			res.add_item(root.prefix_remove(it.first), it.second);
-		}
+		for(auto it: assignments)
+			res.add(root.prefix_remove(it.key), it.val, it.src);
 		return res;
 	}
 
 	std::string mexafile::toString() const {
 		std::string ret;
 		for(auto it : assignments)
-			ret += it.first.toString() + "=" + it.second.toString() + "\n";
+			ret += it.toString() + "\n";
 		return ret;
 	}
 
@@ -379,7 +508,7 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 	bool mexafile::contains(symbol leaf, bool doRaise) const {
 		bool res = false;
 		for(auto it : assignments)
-			if(leaf == it.first)
+			if(leaf == it.key)
 				res = true;
 		if(!res && doRaise) {
 			std::stringstream errmsg;
@@ -391,152 +520,141 @@ std::string sourced::toString() const { return std::string("sourced(")+line+","+
 		return res;
 	}
 	
-	//// getters
+//// PARSERS
 
-	template<typename T>
-	T mexafile::get(symbol leaf, std::string type_as_str) const {
-		T value;
-		contains(leaf, true);
-		sourced rhs = get_item(leaf);
-		if(!parse(rhs.line, value)) {
-			std::stringstream errmsg;
-			errmsg << "Leaf '" << leaf.toString() << "' with value '"<< rhs.line << "' cannot be casted as '" << type_as_str << "'. It was given on " <<  rhs.src.toString();
-			throw std::runtime_error(errmsg.str());
-		}
-		return value;
-	}
-	
-	std::string mexafile::get_string(symbol leaf) const {
-		contains(leaf, true);
-		std::string line = get_item(leaf).line;
-		// check for string enclosement characters
-		ltrim(line);
-		const int quotation_length = 1; // length of the string enclosing quotation: one character
-		bool start_quotation_given = (line.find_first_of("'\"") == 0);
-		unsigned int end_quotation_position = line.find_first_of(line[0], quotation_length);
-		bool end_quotation_given = (end_quotation_position != std::string::npos);
-		std::string string_content = line.substr(quotation_length, end_quotation_position-quotation_length);
-		std::string rest_of_line = line.substr(end_quotation_position+quotation_length);
-		stripComment(rest_of_line);
-		
-		if(!start_quotation_given) {
-			std::stringstream errmsg;
-			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must start with \"double\" or 'single' quotation marks. It was given on " <<  get_item(leaf).src.toString();
-			throw std::runtime_error(errmsg.str());
-		}
-		if(!end_quotation_given) {
-			std::stringstream errmsg;
-			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must end with in \"double\" or 'single' quotation marks. It was given on " <<  get_item(leaf).src.toString();
-			throw std::runtime_error(errmsg.str());
-		}
-		if(!rest_of_line.empty()) {
-			std::stringstream errmsg;
-			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must be enclosed with in \"double\" or 'single' quotation marks. Only comments can be given afterwards on the same line. It was given on " <<  get_item(leaf).src.toString();
-			throw std::runtime_error(errmsg.str());
-		}
-		return string_content;
-	}
-	
-	bool mexafile::get_bool(symbol leaf) const {
-		contains(leaf, true);
-		std::string value = get_item(leaf).line;
-		stripComment(value); toLower(value); strip(value);
-		bool isTrue = (value == "yes") || (value == "true") || (value == "on");
-		bool isFalse = (value == "no") || (value == "false") || (value == "off");
-		if( isTrue && !isFalse) return true;
-		if(!isTrue &&  isFalse) return false;
-		else {
-			std::stringstream errmsg;
-			errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as bool, allowed values are only true/yes/on and false/no/off. It was given on " <<  get_item(leaf).src.toString();
-			throw std::runtime_error(errmsg.str());
-		}
-	}
-	
-	int mexafile::get_int(symbol leaf) const { return get<int>(leaf, "int"); }
-	
-	double mexafile::get_double(symbol leaf) const { return get<double>(leaf, "double"); }
-	
-	template<typename T>
-	void assert_vec_size(symbol node, const mexafile& queried_node, std::string type_as_str, size_t require_length, std::vector<T> vec) {
-		if(require_length > 0) { // asked for a require_length
-			if(vec.size() != require_length) {
-				std::stringstream errmsg;
-				errmsg << "Having read in a " << type_as_str << "-vector with size "<<vec.size()<<" from '" << node.toString() << "', but a vector of size "<< require_length<< " is required. The vector values are given by: [";
-				for(auto j : vec) errmsg << j << ",";
-				errmsg << "] and where read by " << queried_node.toString();
-				throw std::runtime_error(errmsg.str());
-			}
-		}
-	}
-	
-	// An abstract getter for a vector type
-	template<typename T>
-	std::vector<T> mexafile::get_vec(symbol node, std::string type_as_str, size_t require_length) const {
-		std::vector<T> ret;
-		int itemcount = 1; // just for error output
-		mexa::mexafile mq = query(node);
-		for(auto it : mq.assignments) {
-			symbol& leaf(it.first);
-			sourced& rhs(it.second);
-			T value;
-			if(!parse(rhs.line, value)) {
-				std::stringstream errmsg;
-				errmsg << "While reading in the " << type_as_str << " vector at '" << node.toString() << "', the " << itemcount << ". symbol " << leaf.toString() << " with value '" << rhs.line << "' cannote be casted as " << type_as_str << ". It was given on " << rhs.src.toString();
-				throw std::runtime_error(errmsg.str());
-			}
-			ret.push_back(value);
-			itemcount++;
-		}
-		assert_vec_size(node, mq, type_as_str, require_length, ret);
-		return ret;
-	}
-	
-	std::vector<double> mexafile::get_double_vec(symbol node, size_t require_length) const { return get_vec<double>(node, "double"); }
-	std::vector<int> mexafile::get_int_vec(symbol node, size_t require_length) const { return get_vec<int>(node, "int");  }
-	
-	// specialization
-	std::vector<bool> mexafile::get_bool_vec(symbol node, size_t require_length) const {
-		std::vector<bool> ret;
-		mexa::mexafile mq = query(node);
-		for(auto it : mq.assignments) {
-			symbol& leaf(it.first);
-			ret.push_back( get_bool(leaf) );
-		}
-		assert_vec_size(node, mq, "bool", require_length, ret);
-		return ret;
-	}
-	
-	// specialization
-	std::vector<std::string> mexafile::get_string_vec(symbol node, size_t require_length) const {
-		std::vector<std::string> ret;
-		mexa::mexafile mq = query(node);
-		for(auto it : mq.assignments) {
-			symbol& leaf(it.first);
-			ret.push_back( get_string(leaf) );
-		}
-		assert_vec_size(node, mq, "string", require_length, ret);
-		return ret;
-	}
-	
-	// specialization
-	std::string mexafile::get_multiline_string(symbol node) const {
-		std::string ret;
-		mexa::mexafile mq = query(node);
-		for(auto it : mq.assignments) {
-			symbol& leaf(it.first);
-			ret += get_string(leaf) + "\n";
-		}
-		return ret;
-	}
-// end of class mexafile
-
-// specialization: 
-std::string mexa::mexafile_with_improper_strings::get_string(symbol leaf) const {
-	contains(leaf, true);
-	// as there are not string enclosement characters or comments to be treated
-	// or anything else, just pass it as it is.
-	return get_item(leaf).line;
+void parser::stripComment(std::string& line) {
+	line.erase( std::find( line.begin(), line.end(), '#' ), line.end() );
 }
+
+template<typename T> bool parser::tryCast(T& output) const {
+	std::istringstream in(input);
+	//in.exceptions(std::fstream::failbit);
+	in >> output;
+	bool successfulCast = !(in.fail() || in.bad());
+	// Make sure nothing follows the casted thing.
+	std::string remnant;
+	in >> remnant;
+	strip(remnant); stripComment(remnant); strip(remnant);
+	return successfulCast && remnant.empty();
+}
+
+template<typename T> T parser::get_as(std::string type_as_str) const {
+	T value;
+	if(!tryCast(value)) {
+		std::stringstream errmsg;
+		errmsg << "Leaf '" << leaf.toString() << "' with value '"<< input << "' cannot be casted as '" << type_as_str << "'. It was given on " <<  src.toString();
+		throw std::runtime_error(errmsg.str());
+	}
+	return value;
+}
+
+bool parser::is_a_bool() const {
+	std::string value = input;
+	stripComment(value); toLower(value); strip(value);
+	bool isTrue = (value == "yes") || (value == "true") || (value == "on");
+	bool isFalse = (value == "no") || (value == "false") || (value == "off");
+	bool meansTrue  = ( isTrue && !isFalse);
+	bool meansFalse = (!isTrue &&  isFalse);
+	return (meansTrue || meansFalse);
+}
+
+bool parser::get_as_bool() const {
+	std::string value = input;
+	stripComment(value); toLower(value); strip(value);
+	bool isTrue = (value == "yes") || (value == "true") || (value == "on");
+	bool isFalse = (value == "no") || (value == "false") || (value == "off");
+	if( isTrue && !isFalse) return true;
+	if(!isTrue &&  isFalse) return false;
+	else {
+		std::stringstream errmsg;
+		errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as bool, allowed values are only true/yes/on and false/no/off. It was given on " <<  src.toString();
+		throw std::runtime_error(errmsg.str());
+	}
+}
+
+int parser::get_as_int() const { return get_as<int>("int"); }
+
+bool parser::is_a_int() const {
+	int val; return tryCast(val);
+}
+
+double parser::get_as_double() const { return get_as<double>("double"); }
+
+bool parser::is_a_double() const {
+	double val; return tryCast(val);
+}
+std::string parser::get_as_quoted_string() const {
+	std::string line = input;
+	// check for string enclosement characters
+	ltrim(line);
+	const int quotation_length = 1; // length of the string enclosing quotation: one character
+	bool start_quotation_given = (line.find_first_of("'\"") == 0);
+	size_t end_quotation_position = line.find_first_of(line[0], quotation_length);
+	bool end_quotation_given = (end_quotation_position != std::string::npos);
+	std::string string_content = line.substr(quotation_length, end_quotation_position-quotation_length);
+	std::string rest_of_line = line.substr(end_quotation_position+quotation_length);
+	stripComment(rest_of_line);
+	
+	if(!start_quotation_given) {
+		std::stringstream errmsg;
+		errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must start with \"double\" or 'single' quotation marks. It was given on " <<  src.toString();
+		throw std::runtime_error(errmsg.str());
+	}
+	if(!end_quotation_given) {
+		std::stringstream errmsg;
+		errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must end with in \"double\" or 'single' quotation marks. It was given on " <<  src.toString();
+		throw std::runtime_error(errmsg.str());
+	}
+	if(!rest_of_line.empty()) {
+		std::stringstream errmsg;
+		errmsg << "Leaf '" << leaf.toString() << "' cannot be casted as string. Strings must be enclosed with in \"double\" or 'single' quotation marks. Only comments can be given afterwards on the same line. It was given on " <<  src.toString();
+		throw std::runtime_error(errmsg.str());
+	}
+	return string_content;
+}
+
+bool parser::is_a_quoted_string() const {
+	std::string line = input;
+	// check for string enclosement characters
+	ltrim(line);
+	const int quotation_length = 1; // length of the string enclosing quotation: one character
+	bool start_quotation_given = (line.find_first_of("'\"") == 0);
+	size_t end_quotation_position = line.find_first_of(line[0], quotation_length);
+	bool end_quotation_given = (end_quotation_position != std::string::npos);
+	std::string string_content = line.substr(quotation_length, end_quotation_position-quotation_length);
+	std::string rest_of_line = line.substr(end_quotation_position+quotation_length);
+	stripComment(rest_of_line);
+	
+	return start_quotation_given && end_quotation_given && rest_of_line.empty();
+}
+
+value parser::getValue() const {
+	if(is_a_int())
+		return value(get_as_int());
+	if(is_a_double())
+		return value(get_as_double());
+	if(is_a_bool())
+		return value(get_as_bool());
+	if(is_a_quoted_string())
+		return value(get_as_quoted_string());
+	else {
+		std::stringstream errmsg;
+		errmsg << "Leaf '" << leaf.toString() << "' with value '" << input << "' cannot be understood neither as int, double, bool nor as a String. Strings must be enclosed with in \"double\" or 'single' quotation marks. Only comments can be given afterwards on the same line. It was given on " <<  src.toString();
+		throw std::runtime_error(errmsg.str());
+	}
+}
+
+value parser::getSloppyValue() const {
+	if(is_a_int())
+		return value(get_as_int());
+	if(is_a_double())
+		return value(get_as_double());
+	if(is_a_bool())
+		return value(get_as_bool());
+	// in any other case, treat this as a string.
+	return value(input);
+}
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -544,7 +662,6 @@ std::string mexa::mexafile_with_improper_strings::get_string(symbol leaf) const 
 ///// Functions
 /////
 ///////////////////////////////////////////////////////////////////////////////
-
 
 mexafile mexa::fromFile(std::istream& fh, const std::string filename_or_desc) {
 	mexafile mf;
@@ -559,19 +676,18 @@ mexafile mexa::fromFile(std::istream& fh, const std::string filename_or_desc) {
 		// We do this crazy joining in case of "=" signs are in the RHS
 		std::string rhs = join(parts,"=",parts.begin()+1,parts.end());
 		strip(rhs);
-		mf.add_item(lhs, sourced(rhs,src));
+		mf.add(lhs, parser(lhs,rhs,src).getValue(), src);
 	}
 	return mf;
 }
 
-bool mexa::hasMagicString(std::istream& fh) {
+bool mexa::hasMagicString(std::istream& fh, const std::string magicString) {
 	std::string firstline;
 	if(!std::getline(fh, firstline) || firstline.empty())
 		return false; // could not even read first line.
 	toLower(firstline);
 	return startswith(firstline, magicString);
 }
-
 
 mexafile mexa::fromEmbedded(const std::string& format, const std::string& content, const std::string filename_or_desc) {
 	if(format == "quotedprintable") {
@@ -585,32 +701,18 @@ mexafile mexa::fromEmbedded(const std::string& format, const std::string& conten
 	}
 }
 
-template<typename OUT, typename IN>
-OUT fromIterable(const IN& pair_iterable, const std::string source_description) {
-	OUT mf;
-	int linecounter = 1; // counting like humans
-	for(auto it : pair_iterable) {
+mexafile mexa::fromSpecfile(const std::vector<std::pair<std::string, std::string>>& list, const std::string source_description) {
+	mexafile mf;
+	int linecounter = 1; // counting like humans 
+	for(auto it : list) {
 		sourcemap src(source_description, linecounter++);
-		mf.add_item(symbol(it.first), sourced(it.second,src));
+		symbol lhs(it.first);
+		std::string rhs(it.second);
+		mf.add(lhs, parser(lhs, rhs, src).getSloppyValue(), src);
 	}
-	return mf;
+	return mf;	
 }
 
-typedef std::map<std::string, std::string> dict;
-typedef std::vector<std::pair<std::string, std::string>> ordered_dict;
-
-mexafile mexa::fromOrderedMap(const ordered_dict& strlist, const std::string source_description) {
-	return fromIterable<mexafile, ordered_dict>(strlist, source_description);
-}
-
-mexafile mexa::fromMap(const dict& strmap, const std::string source_description) {
-	return fromIterable<mexafile, dict>(strmap, source_description);
-}
-
-mexafile_with_improper_strings mexa::fromSpecfile(const ordered_dict& strlist, const std::string source_description) {
-	return fromIterable<mexafile_with_improper_strings, ordered_dict>(strlist, source_description);
-	
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 /////
