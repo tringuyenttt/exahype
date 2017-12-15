@@ -27,7 +27,7 @@ exahype-project Euler
   log-file                = mylogfile.log
 
   computational-domain
-    dimension const          = 3
+    dimension const          = 2
     width                    = 1.0, 1.0, 1.0
     offset                   = 0.0, 0.0, 0.0
     end-time                 = 0.4
@@ -35,7 +35,6 @@ exahype-project Euler
 
   shared-memory
     identifier               = dummy
-    configure                = {}
     configure                = {}
     cores                    = 7
     properties-file          = sharedmemory.properties
@@ -49,8 +48,9 @@ exahype-project Euler
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = on
+    fuse-algorithmic-steps          = off
     fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     timestep-batch-factor           = 0.0
     skip-reduction-in-batched-time-steps = off
@@ -61,7 +61,7 @@ exahype-project Euler
 
   solver ADER-DG EulerSolver_ADERDG
     variables const   = rho:1,j:3,E:1
-    order const       = 5
+    order const       = 3
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size = 0.05
     time-stepping     = global

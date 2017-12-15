@@ -18,7 +18,7 @@ exahype-project Euler
   log-file                         = mylogfile.log
 
   computational-domain
-    dimension const         = 3
+    dimension const         = 2
     width                   = 1.0, 1.0, 1.0
     offset                  = 0.0, 0.0, 0.0
     end-time                = 0.1
@@ -41,6 +41,7 @@ exahype-project Euler
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     timestep-batch-factor           = 0.8
     skip-reduction-in-batched-time-steps = on
@@ -65,6 +66,6 @@ exahype-project Euler
     dmp-relaxation-parameter   = 1e-4
     dmp-difference-scaling     = 1e-3
     // reference either: sod,entropywave,explosion,rarefactionwave
-    constants                = reference:entropywave    
+    constants                  = reference:sod
   end solver
 end exahype-project

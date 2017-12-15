@@ -443,28 +443,6 @@ int exahype::Parser::getMPITimeOut() const {
   return result;
 }
 
-bool exahype::Parser::getMPIMasterWorkerCommunication() const {
-  std::string token =
-      getTokenAfter("distributed-memory", "master-worker-communication");
-  if (token.compare(_noTokenFound) != 0) {
-    logInfo("getMPIMasterWorkerCommunication()",
-             "found master-worker-communication " << token);
-    return token.compare("on") == 0;
-  }
-  return true;
-}
-
-bool exahype::Parser::getMPINeighbourCommunication() const {
-  std::string token =
-      getTokenAfter("distributed-memory", "neighbour-communication");
-  if (token.compare(_noTokenFound) != 0) {
-    logInfo("getMPINeighbourCommunication()",
-             "found neighbour-communication " << token);
-    return token.compare("on") == 0;
-  }
-  return true;
-}
-
 exahype::Parser::MulticoreOracleType exahype::Parser::getMulticoreOracleType()
     const {
   std::string token = getTokenAfter("shared-memory", "identifier");
@@ -525,20 +503,7 @@ bool exahype::Parser::getFuseAlgorithmicSteps() const {
   return result;
 }
 
-bool exahype::Parser::getExchangeBoundaryDataInBatchedTimeSteps() const {
-  std::string token = getTokenAfter(
-      "global-optimisation",
-      "disable-amr-if-grid-has-been-stationary-in-previous-iteration");
-  if (token.compare("on") != 0 && token.compare("off") != 0) {
-    logError("getExchangeBoundaryDataInBatchedTimeSteps()",
-             "disable-amr-if-grid-has-been-stationary-in-previous-iteration is "
-             "required in the "
-             "global-optimisation segment and has to be either on or off: "
-                 << token);
-    _interpretationErrorOccured = true;
-  }
-  return token.compare("off") == 0;
-}
+
 
 double exahype::Parser::getFuseAlgorithmicStepsFactor() const {
   if (hasOptimisationSegment()) {
@@ -562,6 +527,40 @@ double exahype::Parser::getFuseAlgorithmicStepsFactor() const {
       return result;
   }
   else return false;
+}
+
+bool exahype::Parser::getSpawnPredictorAsBackgroundThread() const {
+  std::string token = getTokenAfter("global-optimisation", "spawn-predictor-as-background-thread");
+  logDebug("getSpawnPredictorAsBackgroundTask()", "found spawn-predictor-as-background-thread"
+                                            << token);
+
+  bool result = token.compare("on") == 0;
+
+  if (token.compare(_noTokenFound) == 0) {
+    result = false;  // default value
+  } else if (token.compare("on") != 0 && token.compare("off") != 0) {
+    logError("getSpawnPredictorAsBackgroundTask()",
+             "spawn-predictor-as-background-thread is required in the "
+             "global-optimisation segment and has to be either on or off: "
+                 << token);
+    _interpretationErrorOccured = true;
+  }
+  return result;
+}
+
+bool exahype::Parser::getExchangeBoundaryDataInBatchedTimeSteps() const {
+  std::string token = getTokenAfter(
+      "global-optimisation",
+      "disable-amr-if-grid-has-been-stationary-in-previous-iteration");
+  if (token.compare("on") != 0 && token.compare("off") != 0) {
+    logError("getExchangeBoundaryDataInBatchedTimeSteps()",
+             "disable-amr-if-grid-has-been-stationary-in-previous-iteration is "
+             "required in the "
+             "global-optimisation segment and has to be either on or off: "
+                 << token);
+    _interpretationErrorOccured = true;
+  }
+  return token.compare("off") == 0;
 }
 
 double exahype::Parser::getTimestepBatchFactor() const {

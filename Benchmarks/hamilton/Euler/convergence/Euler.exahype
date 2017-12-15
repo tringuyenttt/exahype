@@ -41,6 +41,7 @@ exahype-project Euler
   global-optimisation
     fuse-algorithmic-steps          = on
     fuse-algorithmic-steps-factor   = 0.99
+    spawn-predictor-as-background-thread = off
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     timestep-batch-factor           = 0.8
     skip-reduction-in-batched-time-steps = on
@@ -52,8 +53,8 @@ exahype-project Euler
   solver Limiting-ADER-DG EulerSolver
     variables const            = rho:1,j:3,E:1
     order const                = 3
-    maximum-mesh-size          = 0.04
-    maximum-mesh-depth         = 0
+    maximum-mesh-size          = 0.12
+    maximum-mesh-depth         = 2
     time-stepping              = global
     type const                 = nonlinear
     terms const                = flux
@@ -66,7 +67,7 @@ exahype-project Euler
     dmp-relaxation-parameter   = 1e-3
     dmp-difference-scaling     = 1e-2
     steps-till-cured           = 5
-    helper-layers              = 2
+    helper-layers              = 1
     // reference either: sod,entropywave,explosion,rarefactionwave
     constants                  = reference:explosion
 
@@ -82,7 +83,7 @@ exahype-project Euler
       // absErrorL1perCell[nvar],Q[nvar],QAnalytical[nvar]
       variables const = 15 
       time            = 0.0
-      repeat          = 1e-2
+      repeat          = 1e-10
       output          = ./errors
     end plot
   

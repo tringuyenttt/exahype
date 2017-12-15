@@ -109,6 +109,15 @@ void exahype::mappings::Prediction::endIteration(
   exahype::solvers::deleteTemporaryVariables(_predictionTemporaryVariables);
 }
 
+bool exahype::mappings::Prediction::vetoPerformPredictionAsBackgroundThread(
+    exahype::Vertex* const fineGridVertices,
+    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
+  return
+      exahype::State::spawnPredictorAsBackgroundThread()==false ||
+      exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+          fineGridVertices,fineGridVerticesEnumerator);
+}
+
 void exahype::mappings::Prediction::performPredictionAndProlongateData(
     const exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
@@ -133,7 +142,7 @@ void exahype::mappings::Prediction::performPredictionAndProlongateData(
     ) {
       exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           solver,fineGridCell.getCellDescriptionsIndex(),element,
-          exahype::Cell::isAdjacentToRemoteRankAtInsideFace(
+          vetoPerformPredictionAsBackgroundThread(
               fineGridVertices,fineGridVerticesEnumerator),
           temporaryVariables);
 
