@@ -5,7 +5,7 @@ spec=$directory/CCZ4-no-output.exahype
 
 cp $spec ${spec}_tmp
 
-for m in TBB OMP None
+for m in TBB None
 do
   make clean
   export SHAREDMEM=$m

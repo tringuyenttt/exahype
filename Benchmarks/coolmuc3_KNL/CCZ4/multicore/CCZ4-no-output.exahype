@@ -22,7 +22,7 @@ exahype-project  CCZ4
 
   shared-memory
     identifier               = dummy
-    configure                = {}
+    configure                = {background-tasks:4}
     cores                    = 4
     properties-file          = sharedmemory.properties
   end shared-memory
