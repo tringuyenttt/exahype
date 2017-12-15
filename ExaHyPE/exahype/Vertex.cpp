@@ -263,6 +263,7 @@ bool exahype::Vertex::hasToMergeNeighbours(
     mergeNeighbours &= // ensure the barycentres match
         tarch::la::equals(baryCentreFromPatch1,baryCentreFromPatch2) &&
         tarch::la::equals(baryCentreFromPatch1,baryCentreFromVertex);
+
     return mergeNeighbours;
   } else  {
     return false;

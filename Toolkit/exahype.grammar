@@ -107,8 +107,6 @@ Tokens
   token_configure                   = 'configure';
   token_buffer_size                 = 'buffer-size';
   token_timeout                     = 'timeout';
-  token_master_worker_communication = 'master-worker-communication';
-  token_neighbour_communication     = 'neighbour-communication';
 
   token_optimisation                = 'global-optimisation';
   token_fuse_algorithm_steps        = 'fuse-algorithmic-steps';
@@ -259,24 +257,14 @@ Productions
     { -> New paths(peano_kernel_path, peano_toolbox_path, exahype_path, output_directory) }
    ;
 
-	master_worker_communication {->token_on_off} = 
-  	   token_master_worker_communication token_equals [state]:token_on_off
-  	{ -> state };
-  	
-  	neighbour_communication {->token_on_off} = 
-  	   token_neighbour_communication token_equals [state]:token_on_off
-  	{ -> state };
-
   distributed_memory {->distributed_memory} =
    [begin_token]:token_distributed_memory
      token_identifier   [identifier_equals]:token_equals [identifier]:identifier
      token_configure    [configure_equals]:token_equals  [configure]:configure_type
      token_buffer_size  [buffersize_equals]:token_equals [buffersize]:int_number
      token_timeout      [timeout_equals]:token_equals    [timeout]:int_number
-     master_worker_communication? 
-     neighbour_communication?    
    token_end [end_token]:token_distributed_memory
-     { -> New distributed_memory( identifier,configure,buffersize,timeout,master_worker_communication.token_on_off,neighbour_communication.token_on_off ) };
+     { -> New distributed_memory( identifier,configure,buffersize,timeout ) };
 
   shared_memory {->shared_memory} =
    [begin_token]:token_shared_memory
@@ -618,9 +606,7 @@ Abstract Syntax Tree
     [identifier]:identifier
     [configure]:configure_type
     [buffersize]:int_number
-    [timeout]:int_number
-    [master_worker_communication]:token_on_off?
-    [neighbour_communication]:token_on_off?;
+    [timeout]:int_number;
 
   computational_domain =
     [dimension]:int_number [width_x]:float_number [width_y]:float_number [width_z]:float_number? [offset_x]:float_number [offset_y]:float_number [offset_z]:float_number? [end_time]:float_number;
