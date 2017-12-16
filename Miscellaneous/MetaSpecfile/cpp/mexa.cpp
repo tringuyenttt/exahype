@@ -309,6 +309,7 @@ T mexa::value::cast_as_numerical(mexa::value::Type type) const {
 		case mexa::value::Type::INT: return get_int();
 		case mexa::value::Type::DOUBLE: return get_double();
 		case mexa::value::Type::BOOL: return get_bool();
+		default: break;
 	}
 	// value cast error:
 	std::stringstream errmsg;
@@ -368,7 +369,7 @@ std::vector<T> vector_value::get( T (value::*getter)() const , value::Type type,
 	for(auto it : mq.assignments) {
 		bool isExact = it.val.isActive(type);
 		bool canCast = it.val.canCastTo(type);
-		if(doCast && canCast || !isExact) {
+		if((doCast && canCast) || !isExact) {
 			std::stringstream errmsg;
 			errmsg << "While reading in the " << value::type2str(type) << "-vector at '" << node.toString() << "', the " << itemcount << ". symbol " << it.key.toString() << " with value '" << it.val.toString() << "' cannote be casted as " << value::type2str(type) << ". It was given on " << it.src.toString();
 			throw std::runtime_error(errmsg.str());
