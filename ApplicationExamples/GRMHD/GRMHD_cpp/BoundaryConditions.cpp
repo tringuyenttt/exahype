@@ -67,7 +67,7 @@ void GRMHD::BoundaryConditions::apply(BOUNDARY_SIGNATURE) {
 	}
 }
 
-#define SET_BC(constants, name) \
+#define SET_BC(name) \
 	if(constants.contains(#name)) { \
 		std::string val = constants.get(#name).get_string();\
 		name = parseFromString(val);\
@@ -80,12 +80,24 @@ void GRMHD::BoundaryConditions::apply(BOUNDARY_SIGNATURE) {
 		logError("setFromSpecFile", "Boundary condition " #name " is not defined.");\
 	}
 
-bool GRMHD::BoundaryConditions::setFromParameters(const mexa::mexafile& constants) {
-	SET_BC(constants, left);
-	SET_BC(constants, front);
-	SET_BC(constants, bottom);
-	SET_BC(constants, right);
-	SET_BC(constants, back);
+bool GRMHD::BoundaryConditions::setFromParameters(const mexa::mexafile& constants, bool raiseOnFailure) {
+	static tarch::logging::Log _log("BoundaryConditions");
+	SET_BC(left);
+	SET_BC(right);
+	SET_BC(front);
+	SET_BC(back);
+	SET_BC(top);
+	SET_BC(bottom);
+	if(!allFacesDefined() && raiseOnFailure) {
+		logError("setFromparameters()", "Not all boundary faces have been defined. Cannot continue. I got the constants definition " << constants.toString());
+		if(left==nullptr) logError("setFromparameters()", "left boundary is not defined");
+		if(right==nullptr) logError("setFromparameters()", "right boundary is not defined");
+		if(front==nullptr) logError("setFromparameters()", "front boundary is not defined");
+		if(back==nullptr) logError("setFromparameters()", "back boundary is not defined");
+		if(top==nullptr) logError("setFromparameters()", "top boundary is not defined");
+		if(bottom==nullptr) logError("setFromparameters()", "bottom boundary is not defined");
+		std::abort();
+	}
 	return allFacesDefined();
 }
 

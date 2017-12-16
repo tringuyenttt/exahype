@@ -34,7 +34,7 @@ public:
 	bool setIdByName(const std::string& name);
 	
 	/// Tries to read ID from parameters. In case of problems, raises exceptions.
-	void setByParameters(const mexa::mexafile& parameters, const std::string idnamekey="name");
+	void setByParameters(const mexa::mexafile& parameters);
 	
 	/// Gives a singleton instance
 	static GlobalInitialData& getInstance();

@@ -70,7 +70,7 @@ public:
 	 * 
 	 ***************************************************************************/
 	
-	bool setFromParameters(const mexa::mexafile& constants);
+	bool setFromParameters(const mexa::mexafile& constants, bool raiseOnFailure=true);
 
 	/**
 	 * assign a boundary method by some string value

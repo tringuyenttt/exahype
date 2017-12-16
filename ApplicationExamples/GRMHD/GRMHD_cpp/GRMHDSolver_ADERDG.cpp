@@ -32,8 +32,13 @@ void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs, exah
 	
 	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), "specfile");
 	
-	GlobalInitialData::getInstance().setByParameters(mf.query("initialdata"));
-	GlobalBoundaryConditions::getInstance().initializeDG(this).readParameters(mf.query("boundaries"));
+	std::cout << "Mexa configuration: \n" << mf.toString();
+	std::cout << "ID configuration: \n" << mf.query_root_require("initialdata").toString();
+	std::cout << "ID NAME: '" << mf.get("initialdata/name").get_string() << "'\n";
+	std::cout << "ID subquery NAME: '" << mf.query_root_require("initialdata").get("name").get_string() << "'\n";
+	
+	GlobalInitialData::getInstance().setByParameters(mf);
+	GlobalBoundaryConditions::getInstance().initializeDG(this).readParameters(mf.query_root_require("boundaries"));
 }
 
 

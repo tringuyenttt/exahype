@@ -46,17 +46,20 @@ bool GlobalInitialData::setIdByName(const std::string& _name) {
 	}
 }
 
-void GlobalInitialData::setByParameters(const mexa::mexafile& parameters, const std::string idnamekey) {
-	if(!parameters.contains(idnamekey)) {
-		logError("setByParameters()", "Need parameter key '" << idnamekey << "' to be set to a valid initial data function.");
+void GlobalInitialData::setByParameters(const mexa::mexafile& parameters) {
+	std::string idseckey = "initialdata";
+	std::string idnamekey = "name";
+	mexa::mexafile idparam = parameters.query_root_require(idseckey);
+	if(!idparam.contains(idnamekey)) {
+		logError("setByParameters()", "For setting up the initila data, I need a section " << idseckey  << " in the parameters, as well as the key " << idseckey << "/" << idnamekey << " to be set to a valid initial data function. Instead, I got these parameters: " << parameters.toString());
 		std::abort();
 	}
-	bool couldSetId = setIdByName(parameters[idnamekey].get_string());
+	bool couldSetId = setIdByName(idparam[idnamekey].get_string());
 	if(!couldSetId) {
 		logError("setByParameters()", "Could not create Initial Data. Cannot solve an initial value problem without initial data.");
 		std::abort();
 	} else {
-		id->readParameters(parameters);
+		id->readParameters(idparam);
 	}
 }
 
