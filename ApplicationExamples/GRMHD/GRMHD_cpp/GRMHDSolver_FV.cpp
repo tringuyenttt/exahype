@@ -20,10 +20,16 @@ using namespace GRMHD;
 tarch::logging::Log GRMHD::GRMHDSolver_FV::_log( "GRMHD::GRMHDSolver_FV" );
 
 void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
-	mexa::mexafile mf = mexa::fromOrderedMap(constants.getAllAsOrderedMap(), "specfile");
+	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), "specfile");
 	
-	GlobalInitialData::getInstance().setByParameters(mf.query("initialdata"));
-	GlobalBoundaryConditions::getInstance().initializeFV(this).readParameters(mf.query("boundaries"));
+	/*
+	std::cout << "Mexa configuration: \n" << mf.toString();
+	std::cout << "ID configuration: \n" << mf.query_root_require("initialdata").toString();
+	std::cout << "ID NAME: '" << mf.get("initialdata/name").get_string() << "'\n";
+	std::cout << "ID subquery NAME: '" << mf.query_root_require("initialdata").get("name").get_string() << "'\n";
+	*/
+	GlobalInitialData::getInstance().setByParameters(mf.query_root_require("initialdata"));
+	GlobalBoundaryConditions::getInstance().initializeFV(this).readParameters(mf.query_root_require("boundaries"));
 }
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {

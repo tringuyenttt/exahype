@@ -69,7 +69,7 @@ void GRMHD::BoundaryConditions::apply(BOUNDARY_SIGNATURE) {
 
 #define SET_BC(constants, name) \
 	if(constants.contains(#name)) { \
-		std::string val = constants.get_string(#name);\
+		std::string val = constants.get(#name).get_string();\
 		name = parseFromString(val);\
 		if(name==nullptr) {\
 			logError("setFromSpecFile", "Boundary condition at " #name ": Invalid method: '" << val << "'");\

@@ -69,18 +69,18 @@ AlfenWave::AlfenWave(const double* const x, const double t, double* Q) : VacuumI
 void GRMHD_Shocktube::stateFromParameters::readParameters(const mexa::mexafile& parameters) {
 	std::vector<double> vec;
 	
-	rho = parameters.get_double("rho");
-	press = parameters.get_double("press");
+	rho = parameters["rho"].as_double();
+	press = parameters["press"].as_double();
 	
-	vec = parameters.get_double_vec("vel", 3);
+	vec = parameters.vec("vel", 3).as_double();
 	DFOR(i) vel.up(i) = vec[i];
 
 	phi = 0;
-	vec = parameters.get_double_vec("Bmag", 3);
+	vec = parameters.vec("Bmag", 3).as_double();
 	DFOR(i) Bmag.up(i) = vec[i];
 
-	alpha = parameters.get_double("alpha");
-	vec = parameters.get_double_vec("beta", 3);
+	alpha = parameters["alpha"].as_double();
+	vec = parameters.vec("beta", 3).as_double();
 	DFOR(i) beta.up(i) = vec[i];
 	
 	// Metric is always unity here.
@@ -109,7 +109,7 @@ GRMHD_Shocktube::GRMHD_Shocktube() :
 void GRMHD_Shocktube::readParameters(const mexa::mexafile& parameters) {
 	prims_right.readParameters(parameters.query("right"));
 	prims_left.readParameters(parameters.query("left"));
-	sep_x = parameters.get_double("sep_x");
+	sep_x = parameters("sep_x").as_double();
 	
 	logInfo("readParameters()", "Read setup for GMRHD Shocktube at sep_x="<< sep_x);
 	logInfo("readParameters()", "State at right: {" << prims_right.toString() << "}");

@@ -51,7 +51,7 @@ void GlobalInitialData::setByParameters(const mexa::mexafile& parameters, const 
 		logError("setByParameters()", "Need parameter key '" << idnamekey << "' to be set to a valid initial data function.");
 		std::abort();
 	}
-	bool couldSetId = setIdByName(parameters.get_string(idnamekey));
+	bool couldSetId = setIdByName(parameters[idnamekey].get_string());
 	if(!couldSetId) {
 		logError("setByParameters()", "Could not create Initial Data. Cannot solve an initial value problem without initial data.");
 		std::abort();

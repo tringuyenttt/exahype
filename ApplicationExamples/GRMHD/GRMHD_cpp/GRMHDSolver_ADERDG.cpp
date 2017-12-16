@@ -30,7 +30,7 @@ tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG"
 void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
 	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
-	mexa::mexafile mf = mexa::fromOrderedMap(constants.getAllAsOrderedMap(), "specfile");
+	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), "specfile");
 	
 	GlobalInitialData::getInstance().setByParameters(mf.query("initialdata"));
 	GlobalBoundaryConditions::getInstance().initializeDG(this).readParameters(mf.query("boundaries"));
