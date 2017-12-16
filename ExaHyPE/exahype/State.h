@@ -144,6 +144,12 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   static double WeightForPredictionRerun;
 
   /**
+   * Flag indicating that the predictor should
+   * be run as background task whenever this is possible.
+   */
+  static bool SpawnPredictorAsBackgroundThread;
+
+  /**
    * A flag indicating that the bounding box
    * has been virtually expanded (or not).
    *
@@ -160,16 +166,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   static bool VirtuallyExpandBoundingBox;
 
   /**
-   * States used to disable or enable master-worker
-   * and neighbour communication.
-   * This makes sense for debugging only.
-   *
-   * TODO(Dominic): Remove this eventually - also from the grammar file!
-   */
-  static bool EnableMasterWorkerCommunication;
-  static bool EnableNeighbourCommunication;
-
-  /**
    * Indicates that the fused time stepping
    * scheme is used in the runner
    * instead of the standard time stepping.
@@ -177,6 +173,12 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   static bool fuseADERDGPhases();
 
   static double getTimeStepSizeWeightForPredictionRerun();
+
+  /**
+   * Indicates that the predictor should be spawned
+   * as background thread whenever this is possible.
+   */
+  static bool spawnPredictorAsBackgroundThread();
 
   /**
    * \return true if the current batch state is

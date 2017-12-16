@@ -1854,7 +1854,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
     const int element,
     const bool isFirstIterationOfBatch,
     const bool isLastIterationOfBatch,
-    const bool isAdjacentToRemoteRank,
+    const bool vetoSpawnPredictorAsBackgroundThread,
     double** tempSpaceTimeUnknowns,
     double** tempSpaceTimeFluxUnknowns,
     double*  tempUnknowns,
@@ -1869,7 +1869,7 @@ exahype::solvers::Solver::UpdateResult exahype::solvers::ADERDGSolver::fusedTime
 
   performPredictionAndVolumeIntegral(
       cellDescription,
-      isAdjacentToRemoteRank,
+      vetoSpawnPredictorAsBackgroundThread,
       tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,
       tempUnknowns,tempFluxUnknowns,
       tempPointForceSources);
@@ -1885,7 +1885,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     exahype::solvers::Solver* solver,
     const int cellDescriptionsIndex,
     const int element,
-    const bool isAdjacentToRemoteRank,
+    const bool vetoSpawnPredictorAsBackgroundThread,
     exahype::solvers::PredictionTemporaryVariables& temporaryVariables) {
   exahype::solvers::ADERDGSolver* aderdgSolver = nullptr;
 
@@ -1905,7 +1905,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     auto& cellDescription =  ADERDGSolver::getCellDescription(cellDescriptionsIndex,element);
     aderdgSolver->performPredictionAndVolumeIntegral(
         cellDescription,
-        isAdjacentToRemoteRank,
+        vetoSpawnPredictorAsBackgroundThread,
         temporaryVariables._tempSpaceTimeUnknowns    [cellDescription.getSolverNumber()],
         temporaryVariables._tempSpaceTimeFluxUnknowns[cellDescription.getSolverNumber()],
         temporaryVariables._tempUnknowns             [cellDescription.getSolverNumber()],
@@ -1940,7 +1940,7 @@ bool exahype::solvers::ADERDGSolver::predictorCanBeProcessedAsBackgroundTask(
 
 void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
     CellDescription& cellDescription,
-    const bool isAdjacentToRemoteRank,
+    const bool vetoSpawnPredictorAsBackgroundThread,
     double** tempSpaceTimeUnknowns,
     double** tempSpaceTimeFluxUnknowns,
     double*  tempUnknowns,
@@ -1972,11 +1972,9 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
         cellDescription.toString(),toString());
 
     if (
-        predictorCanBeProcessedAsBackgroundTask(cellDescription)
-        #ifdef Parallel
+        vetoSpawnPredictorAsBackgroundThread==false
         &&
-        isAdjacentToRemoteRank==false
-        #endif
+        predictorCanBeProcessedAsBackgroundTask(cellDescription)
     ) {
       // TODO(Dominic):
       // Get rid of the temporary variables -> Make stack arrays.

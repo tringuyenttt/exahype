@@ -26,10 +26,9 @@
 bool exahype::State::FuseADERDGPhases           = false;
 double exahype::State::WeightForPredictionRerun = 0.99;
 
-bool exahype::State::VirtuallyExpandBoundingBox = false;
+bool exahype::State::SpawnPredictorAsBackgroundThread = false;
 
-bool exahype::State::EnableMasterWorkerCommunication = true;
-bool exahype::State::EnableNeighbourCommunication    = true;
+bool exahype::State::VirtuallyExpandBoundingBox = false;
 
 bool exahype::State::fuseADERDGPhases() {
   return FuseADERDGPhases;
@@ -37,6 +36,10 @@ bool exahype::State::fuseADERDGPhases() {
 
 double exahype::State::getTimeStepSizeWeightForPredictionRerun() {
   return WeightForPredictionRerun;
+}
+
+bool exahype::State::spawnPredictorAsBackgroundThread() {
+  return SpawnPredictorAsBackgroundThread;
 }
 
 bool exahype::State::isFirstIterationOfBatchOrNoBatch() {

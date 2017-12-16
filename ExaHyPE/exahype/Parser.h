@@ -234,8 +234,6 @@ class exahype::Parser {
   std::string getSharedMemoryConfiguration() const;
   int getMPIBufferSize() const;
   int getMPITimeOut() const;
-  bool getMPIMasterWorkerCommunication() const;
-  bool getMPINeighbourCommunication() const;
 
   double getSimulationEndTime() const;
 
@@ -253,6 +251,12 @@ class exahype::Parser {
    * stepping variant.
    */
   double getFuseAlgorithmicStepsFactor() const;
+
+  /**
+   * \return if the predictor should be spawned as background
+   * thread whenever this is possible.
+   */
+  bool getSpawnPredictorAsBackgroundThread() const;
 
   double getTimestepBatchFactor() const;
   bool getSkipReductionInBatchedTimeSteps() const;

@@ -111,6 +111,13 @@ private:
  public:
 
   /**
+   * \return true if we veto to spawn the prediction as background thread.
+   */
+  static bool vetoPerformPredictionAsBackgroundThread(
+      exahype::Vertex* const fineGridVertices,
+      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);
+
+  /**
    * This method first synchronises the time step sizes and time stamps, and
    * then resets the Riemann solve flags and the face data exchange counter for all
    * solvers for which a valid cell description was registered on this cell.

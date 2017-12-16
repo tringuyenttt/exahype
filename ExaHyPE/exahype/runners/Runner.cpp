@@ -558,11 +558,9 @@ int exahype::runners::Runner::run() {
   if ( _parser.isValid() ) {
     initHeaps();
 
-    exahype::State::FuseADERDGPhases                = _parser.getFuseAlgorithmicSteps();
-    exahype::State::WeightForPredictionRerun        = _parser.getFuseAlgorithmicStepsFactor();
-
-    exahype::State::EnableMasterWorkerCommunication = _parser.getMPIMasterWorkerCommunication();
-    exahype::State::EnableNeighbourCommunication    = _parser.getMPINeighbourCommunication();
+    exahype::State::FuseADERDGPhases                 = _parser.getFuseAlgorithmicSteps();
+    exahype::State::WeightForPredictionRerun         = _parser.getFuseAlgorithmicStepsFactor();
+    exahype::State::SpawnPredictorAsBackgroundThread = _parser.getSpawnPredictorAsBackgroundThread();
     #ifdef Parallel
     exahype::State::VirtuallyExpandBoundingBox =
         _parser.getMPIConfiguration().find( "virtually-expand-domain")!=std::string::npos;
@@ -696,7 +694,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   logInfo("createGrid()", "more status spreading.");
   int extraIterations =
       std::max (
-          5, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
+          10, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
           exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell());
   while (
     (
@@ -704,8 +702,6 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
       || repository.getState().continueToConstructGrid()
       || exahype::solvers::Solver::oneSolverHasNotAttainedStableState() // Further mesh refinement is possible
     )
-    &&
-    ( extraIterations>-6 )
   ) {
     meshUpdate |=
         repository.getState().continueToConstructGrid()
@@ -718,10 +714,6 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     repository.getState().endedGridConstructionIteration( getFinestUniformGridLevelOfAllSolvers(_boundingBoxSize) );
 
     printMeshSetupInfo(repository,meshSetupIterations);
-  }
-
-  if (extraIterations<-1) {
-    logWarning( "createMesh(...)", "it seems that additional grid construction steps run into infinite loop. Stopped it manually" );
   }
 
   logInfo("createGrid(Repository)", "finished grid setup after " << meshSetupIterations << " iterations" );

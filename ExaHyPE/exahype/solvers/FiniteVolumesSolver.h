@@ -628,7 +628,7 @@ public:
       const int element,
       const bool isFirstIterationOfBatch,
       const bool isLastIterationOfBatch,
-      const bool isAdjacentToRemoteRank,
+      const bool vetoSpawnPredictorAsBackgroundThread,
       double** tempSpaceTimeUnknowns,
       double** tempSpaceTimeFluxUnknowns,
       double*  tempUnknowns,
