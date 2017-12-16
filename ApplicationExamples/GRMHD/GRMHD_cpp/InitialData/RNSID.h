@@ -19,7 +19,8 @@ struct rnsid : public InitialDataCode {
 	RNSID::rnsid *id;
 	
 	rnsid();
-	void Interpolate(const double* x, double t, double* Q);
+	void Interpolate(const double* x, double t, double* Q) override;
+	void readParameters(const mexa::mexafile& parameters) override;
 };
 
 #endif /* EXAHYPE_GRMHD_RNSID */

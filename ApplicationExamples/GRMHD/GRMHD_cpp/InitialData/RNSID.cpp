@@ -55,7 +55,30 @@ rnsid::rnsid() {
 	
 	id->Run();
 }
+
+void rnsid::readParameters(const mexa::mexafile& para) {
+	/**
+	 * Attention, here we don't read all parameters but only
+	 * some of them. Currently, we also don't support default
+	 * values but require all of them to be set. Which is not
+	 * too bad if you have proper parameter files.
+	 **/
 	
+	id->rho_center = para["rho_center"].as_double();
+	id->log_enth_center = para["log_enth_center"].as_double();
+	id->rho_cut = para["rho_cut"].as_double();
+	id->rnsid_rho_min = para["rho_min"].as_double();
+	
+	id->axes_ratio = para["axes_ratio"].as_double();
+	id->accuracy = para["accuracy"].as_double();
+	id->perturbation = para["perturbation"].get_bool();
+	
+	id->rotation_type = para["rotation_type"].get_string();
+	id->A_diff = para["A_diff"].get_double();
+	
+	id->zero_shift = para["zero_shift"].get_bool();
+}
+
 void rnsid::Interpolate(const double* x, double t, double* Q) {
 	constexpr int nVar = GRMHD::AbstractGRMHDSolver_ADERDG::NumberOfVariables;
 	double V[nVar] = {0.0};
