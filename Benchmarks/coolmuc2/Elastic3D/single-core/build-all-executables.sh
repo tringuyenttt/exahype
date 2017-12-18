@@ -20,7 +20,7 @@ do
    
     sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' $SPEC
     sed -i -r 's,archictecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
-    ./${FOLDER}/configure-no-output.sh
+    ${FOLDER}/configure-no-output.sh
 
     # O0 no-vec
     make clean
@@ -42,8 +42,8 @@ do
     # O3 
     make clean
     export COMPILER_CFLAGS=" -O3 "
-    mv $APP ExaHyPE-Elastic3d-${arch}_O3-p${order}
     make -j$cores
+    mv $APP ExaHyPE-Elastic3d-${arch}_O3-p${order}
     
   done
 done 
