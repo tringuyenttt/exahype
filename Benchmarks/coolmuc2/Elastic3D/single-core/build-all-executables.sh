@@ -19,8 +19,9 @@ do
   do
    
     sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' $SPEC
-    sed -i -r 's,archictecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
+    sed -i -r 's,architecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
     ${FOLDER}/configure-no-output.sh
+    cat $SPEC
 
     # O2 no-vec no-fma
     make clean
