@@ -22,28 +22,23 @@ do
     sed -i -r 's,archictecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
     ${FOLDER}/configure-no-output.sh
 
-    # O0 no-vec
+    # O2 no-vec no-fma
     make clean
-    export COMPILER_CFLAGS=" -O0 -no-vec "
+    export COMPILER_CFLAGS=" -O2 -no-vec -no-fma -no-ip"
     make -j$cores
-    mv $APP ExaHyPE-Elastic3d-${arch}_O0-novec-p${order}
-    # O2 no-vec
+    mv $APP ExaHyPE-Elastic3d-${arch}-O2-novec--p${order}
+   
+    # O2 
     make clean
-    export COMPILER_CFLAGS=" -O2 -no-vec "
+    export COMPILER_CFLAGS=" -O2 -vec -fma -ip "
     make -j$cores
-    mv $APP ExaHyPE-Elastic3d-${arch}-O2-novec-p${order}
-
-    # O3 no-vec
-    make clean
-    export COMPILER_CFLAGS=" -O3 -no-vec "
-    make -j$cores
-    mv $APP ExaHyPE-Elastic3d-${arch}-O3-novec-p${order}
+    mv $APP ExaHyPE-Elastic3d-${arch}-O2-vec-p${order}
 
     # O3 
     make clean
-    export COMPILER_CFLAGS=" -O3 "
+    export COMPILER_CFLAGS=" -O3 -vec -fma -ip "
     make -j$cores
-    mv $APP ExaHyPE-Elastic3d-${arch}_O3-p${order}
+    mv $APP ExaHyPE-Elastic3d-${arch}-O3-vec-p${order}
     
   done
 done 

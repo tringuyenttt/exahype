@@ -30,16 +30,15 @@ do
   do 
     sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' $SPEC
     sed -i -r 's,archictecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
-    ${FOLDER}/configure-no-output.sh
 
-    # O0 no-vec
-    ./ExaHyPE-Elastic3d-${arch}_O0-novec-p${order} $SPEC
-    # O2 no-vec
-    ./ExaHyPE-Elastic3d-${arch}-O2-novec-p${order} $SPEC
-    # O3 no-vec
-    ./ExaHyPE-Elastic3d-${arch}-O3-novec-p${order} $SPEC
+    # O2 no-vec no-fma
+    ExaHyPE-Elastic3d-${arch}-O2-novec--p${order} $SPEC > $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O2-novec-p${order}.out 
+   
+    # O2 
+    ExaHyPE-Elastic3d-${arch}-O2-vec-p${order} $SPEC >  $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O2-vec-p${orde2}.out
+
     # O3 
-    ./ExaHyPE-Elastic3d-${arch}_O3-p${order} $SPEC
+    ExaHyPE-Elastic3d-${arch}-O3-vec-p${order} $SPEC > $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O3-vec-p${order}.out
     
   done
 done 
