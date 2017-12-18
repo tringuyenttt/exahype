@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name="ExaHyPE-Elastic3D"
-#SBATCH -o ExaHyPE-Elastic3D.%A.out
-#SBATCH -e ExaHyPE-Elastic3D.%A.err
+#SBATCH --job-name="ExaHyPE-ElasticWaveEquation3D"
+#SBATCH -o ExaHyPE-ElasticWaveEquation3D.%A.out
+#SBATCH -e ExaHyPE-ElasticWaveEquation3D.%A.err
 #SBATCH -t 01:00:00
 #SBATCH --exclusive
 #SBATCH --cluster=mpp2
@@ -10,39 +10,52 @@
 #SBATCH --cpus-per-task=28
 #SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
 #SBATCH --mail-type=ALL
+#SBATCH --array=0--89
 
 source /etc/profile.d/modules.sh
 
 module load tbb/2017
-module load likwid/4.0
 
 FOLDER=single-core
 SPEC=${FOLDER}/Elastic3D-no-output.exahype
-APP=ExaHyPE-Elastic3D
+APP=ExaHyPE-ElasticWaveEquation3D
 #ARCH=knl
 ARCH=hsw
 
+declare -a CFLAGS=(" -O2 -no-vec -no-fma -no-ip" " -O2 -vec -fma -ip " " -O3 -vec -fma -ip ")
+declare -a suffixes=("O2-novec" "O2-vec" "O3-vec")
+
 # A1
-# pre: remove -O from the Makefile
 for run in {0..4}
 do 
-
-for order in 3 6 9
-do
-  for arch in noarch $ARCH
+  for a in 0 1
   do 
-    sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' $SPEC
-    sed -i -r 's,architecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
+    arch="noarch"
+    if (( a==0 )); then
+      arch="$ARCH"
+    fi
+    for i in 0 1 2
+    do   
+      for o in 0 1 2
+      do
+        let order=3+o*3
+        let index=o+i*3+a*3*3+run*2*3*3
 
-    # O2 no-vec no-fma
-    ExaHyPE-Elastic3d-${arch}-O2-novec--p${order} $SPEC > $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O2-novec-p${order}-$run.out 
-   
-    # O2 
-    ExaHyPE-Elastic3d-${arch}-O2-vec-p${order} $SPEC >  $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O2-vec-p${orde2}-$run.out
+        # echo $index
 
-    # O3 
-    ExaHyPE-Elastic3d-${arch}-O3-vec-p${order} $SPEC > $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O3-vec-p${order}-$run.out
-    
-  done
-done 
-done 
+        if (( SLURM_ARRAY_TASK_ID==index )); then
+          cp $SPEC ${SPEC}_${index}
+          sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' ${SPEC}_${index}
+          cat ${SPEC}_${index}
+
+          # echo "./$APP-${arch}-${suffixes[i]}-p${order} ${SPEC}_${index} > $FOLDER/results/$APP-no-output-${arch}-${suffixes[i]}-p${order}-r$run.out"
+
+          ./$APP-no-output-${arch}-${suffixes[i]}-p${order} ${SPEC}_${index} > $FOLDER/results/$APP-no-output-${arch}-${suffixes[i]}-p${order}-r$run.out
+
+          rm ${SPEC}_${index}
+        fi
+         
+     done   
+    done
+  done 
+done

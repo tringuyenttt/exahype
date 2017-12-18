@@ -37,7 +37,7 @@ do
 
       # O2 no-vec no-fma
       make -j$cores
-      mv $APP ExaHyPE-Elastic3d-${arch}-${suffixes[i]}-p${order}
+      mv $APP $APP-no-output-${arch}-${suffixes[i]}-p${order}
 
     done   
   done
