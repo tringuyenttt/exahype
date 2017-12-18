@@ -83,7 +83,7 @@ def extract_table(root_dir,prefix):
         print("processed files:")
         for filename in os.listdir(root_dir):
             if filename.endswith(".out") and filename.startswith(prefix):
-                # sample: Euler_ADERDG-no-output-gen-fused-regular-0-p3-TBB-Intel-n1-t1-c24.out
+                # sample: Elastic3D-no-output-gen-fused-regular-0-p3-TBB-Intel-n1-t1-c24.out
                 match = re.search('^'+prefix+'-([a-z]+)-([a-z]+)-(.*)-p([0-9]+)-([A-Za-z]+)-([A-Za-z]+)-n([0-9]+)-t([0-9]+)-c([0-9]+)',filename)
                 print(root_dir+"/"+filename)
                 kernels   = match.group(1) # opt/gen

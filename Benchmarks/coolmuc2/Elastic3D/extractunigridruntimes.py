@@ -188,7 +188,7 @@ there are no whitelines in the table file!
 
 \n\n
 Sample usage:\n
-python extractruntimes.py -table Euler_ADERDG-no-output.csv --legacy
+python extractruntimes.py -table Elastic3D-no-output.csv --legacy
 '''
 
 parser = argparse.ArgumentParser(description=help,formatter_class=RawTextHelpFormatter)

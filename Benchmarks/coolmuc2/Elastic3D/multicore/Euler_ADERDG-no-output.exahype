@@ -22,7 +22,7 @@ exahype-project Euler
 
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./Benchmarks/coolmuc2/Euler_ADERDG
+  output-directory const  = ./Benchmarks/coolmuc2/Elastic3D
   architecture const      = noarch
   log-file                = mylogfile.log
 

@@ -7,7 +7,7 @@
 
 
 # PREAMBLE
-project=Euler_ADERDG
+project=Elastic3D
 order=3
 skipReductionInBatchedTimeSteps=on
 batchFactor=0.8
@@ -75,7 +75,7 @@ do
       sed -i 's,script='$script',script='$newScript',g' $newScript 
 
       # Create spec file
-      spec=plenty-nodes/Euler_ADERDG-$io.exahype
+      spec=plenty-nodes/Elastic3D-$io.exahype
       filename=plenty-nodes/$prefix-p$order-t$tasksPerNode-c$coresPerTask
       newSpec=$filename'.exahype'
       cp $spec $newSpec
