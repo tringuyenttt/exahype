@@ -23,7 +23,7 @@ exahype-project  ElasticWaveEquation3D
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./Benchmarks/coolmuc2/Elastic3D
-  architecture const      = snb
+  architecture const      = hsw
   log-file                = mylogfile.log
 
   computational-domain
