@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="ExaHyPE-Euler_ADERDG"
+#SBATCH --job-name="ExaHyPE-Elastic3D"
 #SBATCH -o ExaHyPE-EulerFlow.%A.out
 #SBATCH -e ExaHyPE-EulerFlow.%A.err
 #SBATCH -t 01:00:00
@@ -25,7 +25,7 @@ let tasks=nodes*tasksPerNode
 compiler=Intel
 sharedMem=None
 
-prefix=Euler_ADERDG-no-output-regular-0-p3
+prefix=Elastic3D-no-output-regular-0-p3
 out=plenty-nodes/results/$prefix-$sharedMem-$compiler-n$nodes-t$tasksPerNode-c$coresPerTask.out
 
 script=plenty-nodes/hamilton.slurm-script

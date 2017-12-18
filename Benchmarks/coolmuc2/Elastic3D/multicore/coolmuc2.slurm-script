@@ -27,7 +27,7 @@ let procsPerNode=tasksPerNode*coresPerTask
 compiler=Intel
 sharedMem=TBB
 
-prefix=Euler_ADERDG-no-output-regular-0-p3
+prefix=Elastic3D-no-output-regular-0-p3
 out=multicore/results/$prefix-$sharedMem-$compiler-n$nodes-t$tasksPerNode-c$coresPerTask.out
 
 script=multicore/hamilton.slurm-script

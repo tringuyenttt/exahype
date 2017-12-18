@@ -5,7 +5,7 @@
 # coolmuc2 uses SLURM. SLURM supports array jobs.
 #
 
-project=Euler_ADERDG
+project=Elastic3D
 
 skipReductionInBatchedTimeSteps=on
 batchFactor=0.8
@@ -61,7 +61,7 @@ do
   #for coresPerTask in 1 12 24
   for coresPerTask in 1 2 4 7 8 14 16 28
   do
-    spec=multicore/Euler_ADERDG-$io.exahype
+    spec=multicore/Elastic3D-$io.exahype
     filename=multicore/$prefix-p$order-t1-c$coresPerTask 
     newSpec=$filename'.exahype'
 

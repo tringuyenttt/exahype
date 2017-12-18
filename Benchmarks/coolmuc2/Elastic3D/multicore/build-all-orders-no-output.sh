@@ -1,7 +1,7 @@
 directory=multicore
 
 exe=ExaHyPE-Euler
-spec=$directory/Euler_ADERDG-no-output.exahype
+spec=$directory/Elastic3D-no-output.exahype
 
 # save original file
 cp $spec ${spec}_tmp
