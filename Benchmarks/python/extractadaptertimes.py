@@ -70,7 +70,7 @@ def extract_singlecore_table(root_dir,prefix):
       prefix (str):
          Prefix of the files - usually the date of the test and an identifier for the test.
     '''
-    header = ["Architecture","Optimisation","Adapter","Iterations","User Time (Total)","CPU Time (Total)"]
+    header = ["Architecture","Optimisation","Order","Run","Adapter","Iterations","User Time (Total)","CPU Time (Total)"]
 
     # collect filenames
     with open(root_dir+"/"+prefix+'.csv', 'w') as csvfile:
