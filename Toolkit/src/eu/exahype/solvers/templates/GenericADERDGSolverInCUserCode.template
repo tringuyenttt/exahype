@@ -5,6 +5,11 @@
 
 tarch::logging::Log {{project}}::{{solver}}::_log( "{{project}}::{{solver}}" );
 
+// We define the constructor of the actual solver here in order to regenerate it easily.
+{{project}}::{{solver}}::{{solver}}(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs{% if enableProfiler %}, std::unique_ptr<exahype::profilers::Profiler> profiler{% endif %}{% if hasConstants %}, exahype::Parser::ParserView constants{% endif %}):
+{{abstractSolver}}(maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping{% if enableProfiler %}, std::move(profiler){% endif %}) {
+  init(cmdlineargs{% if hasConstants %}, constants{% endif %});
+}
 
 void {{project}}::{{solver}}::init(std::vector<std::string>& cmdlineargs{% if hasConstants %} , exahype::Parser::ParserView& constants {% endif %}) {
   // @todo Please implement/augment if required
