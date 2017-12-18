@@ -11,7 +11,10 @@
 
 tarch::logging::Log ElasticWaveEquation3D::ElasticWaveEquation::_log( "ElasticWaveEquation3D::ElasticWaveEquation" );
 
-ElasticWaveEquation3D::ElasticWaveEquation::ElasticWaveEquation(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>cmdlineargs):ElasticWaveEquation3D::AbstractElasticWaveEquation::AbstractElasticWaveEquation(maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping),crt(ElasticWaveEquation::Order+1,1.0/27.0){
+ElasticWaveEquation3D::ElasticWaveEquation::ElasticWaveEquation(double maximumMeshSize,int maximumAdaptiveMeshDepth,int DMPObservables,int limiterHelperLayers,exahype::solvers::Solver::TimeStepping timeStepping,std::vector<std::string>& cmdlineargs):
+ AbstractElasticWaveEquation(maximumMeshSize,maximumAdaptiveMeshDepth,DMPObservables,limiterHelperLayers,timeStepping)
+,crt(ElasticWaveEquation::Order+1,1.0/27.0)
+{
   init(cmdlineargs);
 }
 
