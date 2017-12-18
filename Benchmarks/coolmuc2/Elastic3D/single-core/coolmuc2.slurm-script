@@ -24,6 +24,9 @@ ARCH=hsw
 
 # A1
 # pre: remove -O from the Makefile
+for run in {0..4}
+do 
+
 for order in 3 6 9
 do
   for arch in noarch $ARCH
@@ -32,13 +35,14 @@ do
     sed -i -r 's,archictecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
 
     # O2 no-vec no-fma
-    ExaHyPE-Elastic3d-${arch}-O2-novec--p${order} $SPEC > $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O2-novec-p${order}.out 
+    ExaHyPE-Elastic3d-${arch}-O2-novec--p${order} $SPEC > $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O2-novec-p${order}-$run.out 
    
     # O2 
-    ExaHyPE-Elastic3d-${arch}-O2-vec-p${order} $SPEC >  $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O2-vec-p${orde2}.out
+    ExaHyPE-Elastic3d-${arch}-O2-vec-p${order} $SPEC >  $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O2-vec-p${orde2}-$run.out
 
     # O3 
-    ExaHyPE-Elastic3d-${arch}-O3-vec-p${order} $SPEC > $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O3-vec-p${order}.out
+    ExaHyPE-Elastic3d-${arch}-O3-vec-p${order} $SPEC > $FOLDER/results/ExaHyPE-Elastic3d-${arch}-O3-vec-p${order}-$run.out
     
   done
+done 
 done 
