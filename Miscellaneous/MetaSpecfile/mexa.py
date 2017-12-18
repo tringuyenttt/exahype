@@ -1,39 +1,39 @@
 #!/usr/bin/python
-# Regular python 2
+# Regular Python 2
+# A graph approach to mexa.
 
-"""
-This is Mexa, the ExaHyPE meta specification file format. Actually this is
-mexa.py, the reference implementation for reading and converting this file
-format.
+# This is a clean rewrite/refactor of mexa. 
 
-The Mexa file format is a simple and generic hierarchic parameter file format
-inspired by the Cactus parameter format.
+# dependency
+import networkx as nx
 
-This python implementation allows to read in a Mexa file and dump it's content
-in various other configuration formats.
-
-Written by SvenK in Nov 2017.
-"""
 
 # batteries:
-import os, re, sys, ast, inspect, argparse, base64, pprint, itertools, collections
+import os, re, sys, ast, inspect, argparse, base64, pprint, subprocess, collections, types, operator
+from collections import namedtuple, OrderedDict
 from argparse import Namespace as namespace
-from collections import namedtuple
-from itertools import izip
+from itertools import izip, islice, product
+from functools import wraps
 #from future.utils import raise_from # no batteries
 
-###
-### Helper functions and shorthands
-###
+# helpers and shorthands:
+def warn(msg):
+	# instead, should go to https://stackoverflow.com/a/14981125
+	# from __future__ import print_function
+	print >> sys.stderr, msg
 
 baseflags = re.IGNORECASE
 match = lambda pattern,string,flags=0: re.match(pattern,string,baseflags+flags)
+# unpack a tuple
 unpack = lambda f: lambda p: f(*p)
+# unpack a namespace
+unpack_namespace = lambda f: lambda ns: f(**vars(ns))
 # The identity function. Don't mix up with pythons internal "id"
 idfunc = lambda x: x
 # A nicer functional list access thing
 first = lambda x: x[0]
 last = lambda x: x[-1]
+tuplize = lambda x: (x,)
 # Removes all None from a list
 removeNone = lambda l: [ x for x in l if x is not None ]
 removeFalse = lambda l: [ x for x in l if x ]
@@ -47,6 +47,8 @@ replace_with_list_at = lambda i, a, b: a[:i]+b+a[i+1:]
 remove_comstr_prefix = lambda text, prefix: text[text.startswith(prefix) and len(prefix):]
 # flatten a 2d list
 flatten2d = lambda l: [item for sublist in l for item in sublist]
+# potentially flatten a 2d list, accept heterogeneous input such as [1,[2,3],4]
+potentialFlatten2D = lambda l: flatten2d([ i if isa(i,collections.Iterable) and not isa(i,types.StringTypes) else [i] for i in l ])
 # unique items
 unique = lambda l: list(set(l))
 # unique items while preserve the order
@@ -81,20 +83,65 @@ def raise_exception(e):
 # returns string until first occurance of character, not including the character
 untilCharacter = lambda txt, char: first(txt.partition(char))
 #
-def quoted_printable(s, escape='%'):
-	"""
-	Returns a quoted printable version of the string s with escape character %, no maximum line length
-	(i.e. everything in a single line) and everything non-alphanumeric replaced.
-	"""
-	# sourcecode inspired by quopri, https://github.com/python/cpython/blob/2.7/Lib/quopri.py
-	HEX = '0123456789ABCDEF'
-	quote = lambda c: escape + HEX[ord(c)//16] + HEX[ord(c)%16] # quote a single character
-	needsquote = lambda c: not ('0' <= c <= '9' or 'a' <= c <= 'z' or 'A' <= c <= 'Z') # Whether character needs to be quoted
-	return "".join([ quote(c) if needsquote(c) else c for c in s])
+def window(seq, n=2):
+	"Returns a sliding window (of width n) over data from the iterable"
+	"   s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   "
+	it = iter(seq)
+	result = tuple(islice(it, n))
+	if len(result) == n:
+		yield result
+	for elem in it:
+		result = result[1:] + (elem,)
+		yield result
+#
+class NamedFunction:
+	"Readable names for functions"
+	def __init__(self, name, f):
+		self.f = f
+		self.name = name
+	def __call__(self, *args, **kwargs):
+		return self.f(*args, **kwargs)
+	def __repr__(self):
+		return self.name
 
-###
-### Definition of the symbol classes
-###
+
+### end helpers
+
+class term:
+	# a unique thing (string). For nxNetwork graph
+	# Only one term is equal to all others: The None or "" term
+	@classmethod
+	def _incrCounter(cls):
+		if not hasattr(cls, 'uniq_counter'):
+			cls.uniq_counter = 0
+		cls.uniq_counter += 1
+		return cls.uniq_counter
+	def __init__(self,value=None, addr_instance=None):
+		"""
+		Get a new term. This will be an unique object, i.e. term("foo") != term("foo").
+		In order to address an exixting term (mostly for debugging purposes), you can
+		write term("foo", 7) if your existing term("foo") has a counter==7.
+		"""
+		self.value = value
+		if addr_instance == None:
+			self.counter = self.__class__._incrCounter() if value else 0
+		else:
+			self.counter = addr_instance
+	def isRoot(self):
+		return not bool(self.value)
+	def copy(self):
+		# make a new instance of term which is unrelated to this one.
+		return term(self.value)
+	def __repr__(self):
+		return "term(%s,%d)"%(repr(self.value),self.counter) if self.value else "root"
+	def __eq__(self,other):
+		#return not self.value and not other.value
+		return isa(other,term) and self.counter == other.counter and self.value == other.value
+	def __hash__(self):
+		return hash((self.value,self.counter))
+
+# define the root symbol for convenience
+term.root = term()
 
 class symbol:
 	"""
@@ -103,9 +150,6 @@ class symbol:
 	Symbols are treated as immutable: There is no method to change them after construction.
 	In Mexa, symbols always appear as the LHS of an relation (operation).
 	"""
-	
-	# primitive types which we allow to store on the RHS.
-	primitives = [int,float,str,unicode,bool]
 
 	def __init__(self,name=''):
 		""""
@@ -115,6 +159,7 @@ class symbol:
 		Since a symbol is immutable, we can store a string and list version at the
 		same time for lookup efficiency.
 		"""
+		if name == None: name = '' # whatever
 		if isa(name,(list,tuple)):
 			self._path = map(str.lower, map(str.strip, name))
 		elif isa(name, symbol):
@@ -137,7 +182,11 @@ class symbol:
 	def isRoot(self):
 		return len(self._path) == 0
 	
-	def node(self):
+	def base(self): # first non-root element of path
+		return symbol(self._path[0]) if not self.isRoot() else symbol()
+	def except_base(self): # everything below the root, except the first non-root element
+		return symbol(self._path[1:]) if len(self._path)>1 else symbol()
+	def node(self): # last element of path
 		if self.isRoot():
 			return self
 		return symbol(self._path[-1])
@@ -151,6 +200,21 @@ class symbol:
 		list [/, /a, /a/b].
 		"""
 		return [symbol(self._path[:i]) for i,_ in enumerate(self._path)]
+	def as_str_tuple(self, include_root=False):
+		# Returns the (immutable) tuple of strings holding the elements of the path
+		return ("",)+self._path if include_root else self._path
+	def parts_as_term(self):
+		"""
+		Like ancestors, just weird. For instance /a/b/c it is
+		[root, term('a'), term('b'), term('c')]
+		"""
+		return [term()] + [term(p) for p in self._path]
+	def node_as_term(self):
+		if self.isRoot():
+			return term()
+		return term(self._path[-1])
+	def base_as_term(self):
+		return term(self._path[0])
 	
 	def add_prefix(self, other, inplace=False): # should be named add_prefix
 		"Returns a new symbol wich is prefixed by self."
@@ -174,445 +238,37 @@ class symbol:
 	def __hash__(self):
 		return hash(tuple(self._path))
 	def __eq__(self, other):
-		return self.canonical() == other.canonical()
+		return isa(other,symbol) and self.canonical() == other.canonical()
 	def __lt__(self, other): # sortable
 		return self.canonical() < other.canonical()
 
-# deprecated:
-def hasnosymbol(rhs):
-	# todo: assert that lists are no more supported.
-	if type(rhs) in symbol.primitives:
-		return True
-	if type(rhs) == list:
-		return all(map(iscomplete,rhs))
-	if type(rhs) == dict:
-		raise ValueError("Dictionaries are not supported as right hand sides in Operation %s" % str(self))
 
-class VariableContext:
-	"Context for evaluating variables."
-	def __init__(self, op, operations):
-		self.op = op
-		self.operations = operations
-	
-	def resolve_symbol(self, symbol):
-		return self.operations.resolve_symbol(symbol, relative_to=self.op.lhs, src=self.op.rhs)
-
-def rhs2python(text, context=None):
+class source:
 	"""
-	Parses a right hand side into int, float, boolean, symbol, whatever.
-	This does return functions in some cases. They are supposed to be executed with
-	an operations instance then for variable substitution.
-	If this returns a list or if the returned and subsequently evaluated function
-	returns a list, it is subject to the caller to deal with this list accordingly.
-	
-	context shall be a VariableContext instance or None.
+	A source is a list of where something comes from.
+	Sources just have to yield strings when asked for. That's it.
 	"""
-	text = text.strip()
-	
-	# as a kind of preprocessor, support "@foo"-like variables. In case they
-	# are detected (we uglily try to detect them not in comments), we return
-	# instead a promise function for later evaluation with a correct variable
-	# context.
-	text_decommented = first(text.partition("#"))
-	if re.search(lang.stringvarsimple, text_decommented) or re.search(lang.stringvarcomplex, text_decommented):
-		#import ipdb; ipdb.set_trace()
-		def promise_rhs2python(context, text=text): # text=text is a workaround for py2 missing closures
-			replmatch = lambda matchobj: context.resolve_symbol(matchobj.group(1))
-			text = re.sub(lang.stringvarsimple, replmatch, text, count=0, flags=baseflags)
-			text = re.sub(lang.stringvarcomplex, replmatch, text, count=0, flags=baseflags)
-			return rhs2python(text, context=context)
-		promise_rhs2python.__repr__ = "evalstr(%s)" % text
-		# if we already have an operations context, directly evaluate the variables.
-		# Otherweise, return the closure.
-		return promise_rhs2python(context) if context else promise_rhs2python
-	
-	# We use python's parser for both understanding the data structure
-	# and removing pythonic line comments such as "#".
-	try:
-		typed = ast.literal_eval(text)
-		if isa(typed,symbol.primitives):
-			return typed
-		elif isa(typed,[tuple,list]):
-			# We said we support lists.
-			return list(typed)
+	def __init__(self, src=None):
+		if isa(src, source):
+			self.sources = src.sources
+		elif isa(src, list): # shall not catch sourceline instances
+			self.sources = src
+		elif src==None:
+			self.sources = ["unknown"]
 		else:
-			# we probably have a created a weird type, for instance we
-			# parsed a dictionary, which we do not want to support.
-			# Instead, thus, return a text. This may not correctly strip comments,
-			# thought.
-			return text
-	except (ValueError, SyntaxError):
-		# This is most likely a string or something weird
-		
-		if re.match(r"^(Yes|True|On)"+lang.linecomment, text, re.IGNORECASE):
-			return True
-		if re.match(r"^(No|False|Off)"+lang.linecomment, text, re.IGNORECASE):
-			return False
-		
-		# A symbol or a list of symbols.
-		symbs = re.match(r"^("+lang.symb+")(\s+"+lang.symb+")*"+lang.linecomment, text, re.IGNORECASE)
-		# If only one symbol is detected, return the symbol. Otherwise
-		# return the list of symbols which has to be understood correctly.
-		if symbs:
-		      return unlistOne(map(symbol, removeNone(symbs.groups())))
-		
-		return text
-	return text
-
-class operation:
-	"""
-	An operation is a relationship which relates lhs and rhs together. We make use of
-	Python types here extensively, i.e. operationships are differed by their type.
-	Operations shall always have symbols as their lhs and should have sourced instances
-	as their right hand sides, i.e. an operation is of type tuple<symbol,sourced>.
-	"""
-	
-	def __init__(self, lhs, rhs):
-		self.lhs, self.rhs = lhs, rhs
-	def __repr__(self):
-		return "%s(%s, %s)" % (self.__class__.__name__, self.lhs, self.rhs)
-	def iscomplete(self):
-		return hasnosymbol(self.rhs)
-	
-	def as_tuple(op, symbolmapper): # was op2tuple
-		""""
-		Extract an op to a plain python object, stripping the objects and relation in it
-		@args symbolmapper a Function which maps a symbol to something else
-		"""
-		def rhsValue2py(irhs):
-			if   isa(irhs, sourced): # unwrapping
-				return rhsValue2py(irhs.value)
-			elif isa(irhs, list): # threading
-				raise ValueError("Lists no more supported.") # this is a hint for a bad parser
-				return map(rhsValue2py, irhs)
-			elif isa(irhs, symbol):
-				return symbolmapper(irhs)
-			else:
-				return irhs
-			
-		fst = op.lhs.canonical()
-		if isa(op,assign) and isa(op.rhs,list):
-			raise ValueError("Assignments no more supported in get_tuple") # also a hint for a bad parser
-			snd = map(rhsValue2py, op.rhs)
-		else:
-			snd = rhsValue2py(op.rhs.value)
-		return (fst,snd)
-
-	def as_str(op, symbolmapper=None): # was op2str
-		"""
-		Converts an operation to a string, looking similar to the parsed input of the operator
-		In contrast to op2tuple (which strips the operator), this one does not handle lists on the
-		rhs. It expects them to be removed at some calling step, if neccessary. Otherwise they just
-		get strings.
-		"""
-		if not symbolmapper: symbolmapper = symbol.canonical
-		symbop = invdict(operation.symbols)
-		s_lhs = op.lhs.canonical()
-		s_op = symbop[type(op)]
-		if isinstance(op.rhs.value, symbol):
-			s_rhs = symbolmapper(op.rhs.value)
-		else:
-			delim = '"' if type(op.rhs.value) in [str,unicode] else ''
-			s_rhs = delim+str(op.rhs.value)+delim
-		return "%s %s %s" % (s_lhs, s_op, s_rhs)
-	
-	def add_prefix(self, path):
-		"Return a new operation where lhs is prefixed with path"
-		return self.__class__( self.lhs.add_prefix(path), self.rhs)
-	
-	def remove_prefix(self, path):
-		"Return a new operation list where each lhs has a common prefix with path removed"
-		return self.__class__( self.lhs.remove_prefix(path), self.rhs)
-	
-	def strip_source(self):
-		"Return a new operation where the source is dropped, if present"
-		value = self.rhs.value if isa(self.rhs, sourced) else self.rhs
-		return self.__class__( self.lhs, value)
-	
-	@classmethod
-	def from_textline(cls, srcline): # was line2operation
-		"""
-		Parses a single line. Input is a sourceline object. You can test lines quickly with
-		> line2operation(sourceline.from_unknown("foo=10"))
-		"""
-		if re.match(r"^"+lang.comment+"|^\s*$", srcline.text): # comments
-			return None
-
-		parts = re.match(r"^(?P<lhs>(?:"+lang.symb+"|))\s*(?P<op>(?:"+lang.opor+"))\s*(?P<rhs>.+)\s*$", srcline.text, re.IGNORECASE)
-		if not parts:
-			raise ValueError("Don't understand line %d in %s: '%s'"%(srcline.linenum,srcline.fname,srcline.text))
-
-		# split lhs into name path
-		name = symbol(parts.group('lhs'))
-		# parse rhs as symbol or whatever
-		value = rhs2python(parts.group('rhs'))
-
-		return operation.symbols[parts.group('op')](name, sourced(value, srcline))
-	
-	def evaluate(self, operations):
-		"""
-		This method may take the operations as read only input parameter and otherwise
-		return a list of operations which replace this very command.
-		"""
-		raise ValueError("Evaluate not implemented for %s" % str(self))
-	
-	#@classmethod
-	#def register(cls, operations):
-	#	"""
-	#	Called once in an operations instance: Register this type of relationships
-	#	within the operations.
-	#	"""
-	#	raise ValueError("Registration not implemented for %s" % str(cls))
-	
-	def evaluate_rhs(self, context):
-		# since rhs2python is already called in from_textline
-		if callable(self.rhs.value):
-			self.rhs.value = self.rhs.value(context)
-		return self.rhs.value
-	#	new_value = rhs2python(self.rhs.value, context=context)
-		#self.rhs.value = new_value
-	#	return new_value
-
-	
-class let(operation):
-	"overwritable: can be overwritten. We want to get rid of this type"
-	pass
-
-class equals(operation):
-	"""
-	Equalities. They have interesting properties:
-	* They are immutable: Set only once.
-	* They are real identities which go in both directions,
-	  i.e. a=b will affect not only a but also b if both
-	  are nodes (trees), not leafs.
-	"""
-	def evaluate(op, operations):
-		# init:
-		if not hasattr(operations, "equals_persistent"):
-			# prepare persistent data structures on operations
-			operations.equals_persistent = namespace()
-			operations.equals_persistent.node_classes = equivalence_classes()
-			#unnneeded so far# equals_node_isListed = dict() # maps symbol -> bool
-		node_classes = operations.equals_persistent.node_classes # abbreviation
-		
-		# work:
-		if isa(op.rhs.value, list):
-			# lists get created by rhs2python i.e. with something like a = (1,2,3)
-			def listToAppends(i,vi): #for i,vi in enumerate(op.rhs.value):
-				if isa(vi,symbol.primitives):
-					return equals(
-						symbol("l%d"%i).add_prefix(op.lhs),
-						sourced(vi, "list assignment rule"))
-				else:
-					raise ValueError("Found illegal non-primitive value in RHS of assignment operation "+str(op))
-			return map(listToAppends, enumerate(op.rhs.value))
-		elif isa(op.rhs.value, symbol):
-			# sort equality into operation
-			node_classes.add_operation(op)
-			# flag operation for being analyzed in a later sweep.
-			# The undirected equivalence is encoded in the resolution of it.
-			return [
-				# the ordinary interpretation "a=b means b sets a"
-				#extends(op.lhs, node_classes.get_sourced_resolver(op.rhs)),
-				extends_symmetric(op.lhs, op.rhs)
-				# the reverse and mathematical interpretation, "a=b means also a sets b"
-				###extends(op.rhs.value, op.rhs.derive(value=node_classes.get_resolver(op.lhs), src="LHS")),
-			]
-		elif isa(op.rhs.value,symbol.primitives):
-			# no more replacement.
-			return [define(op.lhs,op.rhs)]
-		else:
-			raise ValueError("Illegal non-primitive assignment at RHS of "+str(op))
-
-class subsets(operation):
-	""""
-	An equality in only one direction:
-	a < b means a gets all properties from b but not the other way around such as a = b.
-	Similarly to equals(), this property is transitive: a < b < c means also a < c. Therefore,
-	we also come up with a directed equivalence class (hierarchy graph).
-	"""
-	
-	def evaluate(op, operations):
-		# init:
-		if not hasattr(operations, "subsets_persistent"):
-			# prepare persistent data structures on operations
-			operations.subsets_persistent = namespace()
-			operations.subsets_persistent.node_graph = hierarchy_graph()
-		node_graph = operations.subsets_persistent.node_graph # abbreviation
-		
-		
-		# ensure that we extend only from symbols
-		if not isa(op.rhs.value, symbol):
-			raise ValueError("We only can extend from other symbols. In %s" % str(op))
-
-		node_graph.add_operation(op)
-		# flag operation for being analyzed in a later sweep
-		return [
-			extends(op.lhs, node_graph.get_sourced_resolver(op.rhs))
-		]
-
-		### DO THIS IN A SECOND STEP: 
-		### include another tree structure
-		##queried_symbol = op.rhs.value
-		##ext_oplist = operations.query(queried_symbol)
-		##return op.lhs.prefix_oplist(queried_symbol.remove_prefix_oplist(ext_oplist))
-
-class extends(operation):
-	"""
-	extends(a,b) means that a is extended by b.
-	This relationship is generated by equals(a,b) => [ extends(a,b), extends(b,a) ]
-	and                              subsets(a,b) => [ extends(a,b) ]
-	
-	When evaluating the extend operation, we make use of the delayed equivalence resolver, i.e.
-	this is a seconds-step operation.
-	"""
-	def evaluate(op, operations):
-		ret = []
-		
-		if not isa(op.rhs.value, equivalence_resolver.delayed_resolver):
-			raise ValueError("extend excepts a delayed equivalence resolver. Got instead: %s" % str(op.rhs))
-		
-		for symb in op.rhs.value.get():
-			# basically inherit from all these symbols
-			#import ipdb; ipdb.set_trace()
-			ret += operations.query(symb, exclude_root=True).remove_prefix(symb).add_prefix(op.lhs).ops
-		return ret
-
-class extends_symmetric(operation):
-	def evaluate(op, operations):
-		ret = []
-		
-		if not isa(op.rhs.value, symbol):
-			raise ValueError("extend_symmetric expects a symbol: %s" % str(op.rhs))
-		
-		# list<sourced<symbol>>
-		equals = operations.equals_persistent.node_classes.get(op.lhs)
-		
-		has_leaf = any([ operations.is_leaf(symb) for symb in equals ])
-		all_empty = all([ operations.is_empty_node(symb) for symb in equals ])
-
-		if has_leaf and all_empty:
-			for symb in equals:
-				if operations.is_leaf(symb):
-					ret += [define(op.lhs, operations.resolve_leaf(symb))]
-		elif (has_leaf and not all_empty):
-			raise ValueError("In the equivalence class of %s, there is a leaf but also nodes: %s" % (op.lhs, str(equals)))
-		elif (has_leaf and all_empty):
-			raise ValueError("There is no symbol for %s. All I have is: %s" % (op.lhs, str(equals)))
-		else:
-			for symb in equals:
-				# inherit like "a=b means b sets a"
-				ret += operations.query(symb, exclude_root=True).remove_prefix(symb).add_prefix(op.lhs).ops
-				# inherit the other way around -- quickly for the time being here.
-				# the reverse and mathematical interpretation, "a=b means also a sets b"
-				##### ret += operations.query(symb, exclude_root=True).remove_prefix(symb).add_prefix(op.rhs.value).ops
-		
-		if not len(ret):
-			raise ValueError("Replacement %s brought no result. Equivalence class contains %s. Maybe you forgot to define %s?" % (op.lhs, equals, op.rhs))
-		
-		return ret
-
-
-class define(operation):
-	"""
-	An actual definition. One-of-a-kind. The end poduct of equality evaluation.
-	"""
-	pass
-
-
-class append(operation):
-	"""
-	Appending is just an abbreviation for assigning.
-	Therefore this operation has a simple 1:1 replacement rule.
-	"""
-	def evaluate(op, operations):
-		# This algorithm reads as rule: "a/b += c/d" => "a/b/d = c/d"
-		
-		if isa(op.rhs.value,list):
-			# we do support multiple RHS values, i.e. a syntax like
-			#  a += b c d  <=> equals(a, sourced([b,c,d], ...))
-			return flatten2d([o.evaluate(operations) for o in op.rhs.value])
-		
-		# name of the node to create below the lhs. This is by
-		# definition the node name.
-		if not isa(op.rhs.value,symbol):
-			raise ValueError("Only support symbol for appending, got %s in %s" % (type(op.rhs.value), op))
-		name = op.rhs.value.node()
-		return [ equals(op.lhs.add_prefix(name), op.rhs) ]
-	
-class include(operation):
-	"Represents an inclusion"
-	
-	def evaluate(op, operations):
-		# include a file
-		fname = op.evaluate_rhs(VariableContext(op,operations))
-
-		if not isa(fname, [str,unicode]):
-			raise ValueError("For file inclusion, only strings are supported. In %s" % str(op))
-		
-		#print "DEBUGGING:"
-		#import ipdb; ipdb.set_trace()
-		# WITH evaluation.
-		# inc_oplist = operations.from_filename(fname).evaluate(reduce_let=False).add_prefix(op.lhs).ops
-		# PROBLEM of evaluation in the other context is that we miss all equivalence classes etc.
-		inc_oplist = operations.from_filename(fname).add_prefix(op.lhs).ops
-		#print "Oplist to include:"
-		#pprint.pprint(inc_oplist)
-		#print "End of included oplist."
-		return inc_oplist
-
-# The registered operation symbols
-operation.symbols = { '=': equals, '<=': subsets, '<<': include, '+=': append, ':=': let }
-
-# Regexps for defining the language
-lang = namespace()
-lang.opor = "|".join(map(re.escape, operation.symbols.keys())) # regex detecting operators
-lang.symb_split = ("::", "/")
-lang.symb_split_or = "|".join(map(re.escape, lang.symb_split))
-lang.symb = r"[a-z_][a-z_0-9:/]*" # regex defining a LHS symbol
-lang.comment = r"#" # comment character
-lang.linecomment = r"(?:" + lang.comment + r".*)?$" # allows a comment until end of line
-lang.stringvarchar = "@" # variable escape character
-lang.stringvarsimple = lang.stringvarchar + "([a-z_0-9]+)" # only alphanumeric
-lang.stringvarcomplex = lang.stringvarchar + "\{("+lang.symb+")\}"
-
-class sourced:
-	"""
-	Represents an object (value) which is attached source information to.
-	The source information shall tell where it comes from.
-	More source information can be appended during the lifetime of this object in
-	order to allow chaining of source information (for instance inclusion of files).
-	"""
-	def __init__(self, value, src):
-		self.value = value
-		self.sources = [src]
-	def __repr__(self):
-		return "%s(%s, %s)" % (self.__class__.__name__, self.value, self.sources_as_str())
+			self.sources = [src]
+	def __repr__(self): # todo: make nicer
+		return "%s(%s)" % (self.__class__.__name__,self.sources_as_str())
 	def add_source(self, src):
-		"Add a source information to this source. src should be a string or sourceline instance."
 		self.sources += [src]
-	def derive(self, value=None, src=None):
-		"Derive a new sourced object which contains a ref to value but a new source list"
-		if not value: value = self.value
-		src = self.sources if not src else flatten2d([self.sources, [src]])
-		return sourced(value, src)
 	def sources_as_str(self):
 		if len(self.sources)==1:
 			return self.sources[0]
 		else:
 			# TODO: Make this nicer
 			return " -> ".join(map(str, self.sources))
-		
-	# unused?:
-	def eval_string_within(self, operations):
-		return operations.evalstring(self.value, src)
-	
-	def __hash__(self): # usable as dict keys
-		return hash(self.value)
-	def __eq__(self, other): # comparable
-		return self.value == other.value
-	def __lt__(self, other): # sortable
-		return self.value < other.value
+
+source.unknown = source()
 
 class sourceline(namedtuple('sourceline', 'fname linenum text')):
 	"""
@@ -632,156 +288,544 @@ class sourceline(namedtuple('sourceline', 'fname linenum text')):
 		(filename, line_number, function_name, lines, index) = inspect.getframeinfo(previous_frame)
 		return cls(filename, line_number, lines[0])
 	
-	@classmethod
-	def from_unknown(cls, text="unknown"):
-		"Quickly create an instance without any known location"
-		return cls('unknown', 0, text)
-
-class sourcemap:
-	"""
-	Allows to map an iterable with a given source name to inject sourceline objects.
-	"""
-	def __init__(self,iterable,source_name=None):
-		self.iterable = iterable
-		# todo: test with StringIO
-		if not source_name:
-			try:
-				self.source_name = iterable.name
-			except AttributeError:
-				self.source_name = str(iterable) # hopefully short description
-		else:
-			self.source_name = source_name
-	def iter(self):
-		"Returns an iterator over the file"
-		offset = 1 # python starts with 0 for line counting but humans start with 1
-		return (sourceline(self.source_name,linenum+offset,text) for linenum, text in enumerate(self.iterable))
-	def map(self,func):
-		return map(func, self.iter())
-
-class equivalence_resolver:
-	"""
-	Base class for the directed and undirected relationship classes
-	"""
-	def __init__(self):
-		self.edges = list()
-	def __repr__(self):
-		return "%s(%s)" % (self.__class__.__name__, pprint.pformat(self.edges,width=1))
-	def add(self, a):
-		raise ValueError("please implement")
-	def get(self, a):
-		raise ValueError("please implement")
-	def add_operation(self, op):
-		#print "%s.add(%s,%s)" % (self.__class__.__name__, str(op.lhs), str(op.rhs.value))
-		assert isa(op.lhs, symbol)
-		assert isa(op.rhs.value, symbol)
-		return self.add(op.lhs, op.rhs.value)
-	def get_resolver(self, a):
+	class sourcemap:
 		"""
-		Get a RHS object for delayed resolving.
+		Allows to map an iterable with a given source name to inject sourceline objects.
 		"""
-		return equivalence_resolver.delayed_resolver(a, self)
-	def get_sourced_resolver(self, sourced_obj):
-		if isa(sourced_obj,sourced):
-			return sourced(self.get_resolver(sourced_obj.value), sourced_obj.sources)
-		else:
-			raise ValueError("Got %s, expected sourced() instance. Please use get_resolver instead." % str(sourced_obj))
-	class delayed_resolver:
-		"This is a functor or future or whatever with a readable repr."
-		def __init__(self, a, resolver):
-			self.a = a
-			self.resolver = resolver
+		def __init__(self,iterable,source_name=None):
+			self.iterable = iterable
+			# todo: test with StringIO
+			if not source_name:
+				try:
+					self.source_name = iterable.name
+				except AttributeError:
+					self.source_name = str(iterable) # hopefully short description
+			else:
+				self.source_name = source_name
+		def iter(self):
+			"Returns an iterator over the file"
+			offset = 1 # python starts with 0 for line counting but humans start with 1
+			return (sourceline(self.source_name,linenum+offset,text) for linenum, text in enumerate(self.iterable))
+		def map(self,func):
+			return map(func, self.iter())
+
+
+# Regexps for defining the language
+class lang:
+	symbols = { '=': 'equals', '<=': "subsets", '<<': "include", '+=': "append" }
+	symbol_alternatives = { '=': 'equals', '<': 'subsets', '<=': 'subsets', '<<': 'include', '+=': 'append' }
+	primitives = [int,float,str,unicode,bool]
+	opor = "|".join(map(re.escape, symbol_alternatives.keys())) # regex detecting operators
+	symb_split = ("::", "/")
+	symb_split_or = "|".join(map(re.escape, symb_split))
+	symb = r"[a-z_][a-z_0-9:/]*" # regex defining a LHS symbol
+	comment = r"#" # comment character
+	linecomment = r"\s*(?:" + comment + r".*)?$" # allows a comment until end of line
+	stringvarchar = "@" # variable escape character
+	stringvarsimple = stringvarchar + "([a-z_0-9]+)" # only alphanumeric
+	stringvarcomplex = stringvarchar + "\{("+symb+")\}"
+
+	# rhs parsing:
+	astring = r"(?:" + r'"([^"]+)"'+'|'+r"'([^']+)'" + ')'
+	anum = r"([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)" # floats/ints; cf https://docs.python.org/3/library/re.html#simulating-scanf
+	yes = r"^(Yes|True|On)"
+	no = r"^(No|False|Off)"
+	
+	class evalstr:
+		def __init__(self, text):
+			self.text = text
+		def __call__(self, variable_resolver):
+			replmatch = lambda matchobj: variable_resolver(matchobj.group(1))
+			text = re.sub(lang.stringvarsimple, replmatch, self.text, count=0, flags=baseflags)
+			text = re.sub(lang.stringvarcomplex, replmatch, text, count=0, flags=baseflags)
+			return lang.rhs2python(text, context=variable_resolver)
 		def __repr__(self):
-			return "delayed:%s:resolver(%s)" % (self.resolver.__class__.__name__, pprint.pformat(self.a,width=1))
-		def get(self):
-			return self.resolver.get(self.a)
+			return "%s(%s)" % (self.__class__.__name__, self.text)
 
-class equivalence_classes(equivalence_resolver):
-	"""
-	Represents equivalence classes between elements. Equal elements are identified by their
-	equivalence class. This concrete algorithm here is not in particular fast.
-	Naming: We call "classes" = "edges".
-	"""
-	def add(self, a, b):
-		# first, add a new equivalence class:
-		self.edges.append({a,b})
-		# then cleanup over all cells and merge
-		for cx, cy in itertools.combinations(self.edges, 2):
-			if cx & cy: # nonempty intersection: merge two equivalence classes
-				# print "equal: %s, %s, %s" % (cx,cy,cx&cy)
-				self.edges.remove(cx)
-				cy.update(cx)
-				#print "Updating cy="+str(cy)
-		return self # chainable
-	def equivalent_nodes(self, a):
-		for cls in self.edges:
-			if a in cls:
-				return cls
-		return {a} # equivalence class with its own
-	def get(self, a):
-		"Return all equivalent nodes except the node itself"
-		assert isa(self.equivalent_nodes(a),set), "Broken equivalence_classes: "+str(self)
-		return self.equivalent_nodes(a) - {a}
+	@classmethod
+	def num2py(cls, text):
+		try:
+			return int(text)
+		except ValueError:
+			try:
+				return float(text)
+			except ValueError:
+				return text # string fallback
+	
+	@classmethod
+	def rhs2python(cls, text, context=None):
+		"""
+		Parses a right hand side into int, float, boolean, symbol, whatever.
+		This does return functions in some cases. They are supposed to be executed with
+		an operations instance then for variable substitution.
+		If this returns a list or if the returned and subsequently evaluated function
+		returns a list, it is subject to the caller to deal with this list accordingly.
+		
+		Note that this parser covers the requirements by the language but does not fit them
+		1:1. Especially, it may allow certain syntax which is not part of the language.
+		Feel free to improve the parser; the focus of this implementation lies in resolving
+		variables, thought, while staying simple and without external dependencies.
+		"""
+		text = text.strip()
+		
+		# as a kind of preprocessor, support "@foo"-like variables. In case they
+		# are detected (we uglily try to detect them not in comments), we return
+		# instead a promise function for later evaluation with a correct variable
+		# context.
+		text_decommented = first(text.partition(lang.comment))
+		if re.search(lang.stringvarsimple, text_decommented) or re.search(lang.stringvarcomplex, text_decommented):
+			#import ipdb; ipdb.set_trace()
+			# if we already have an operations context, directly evaluate the variables.
+			# Otherweise, return the closure.
+			promise = lang.evalstr(text)
+			return promise(context) if context else promise
 
+		# throw a number of regexps on the values to determine what they are.
+		
+		# "strings" or 'strings'. Caveat: Treat comments correctly in strings like "foo#bar".
+		mstr = re.match(lang.astring + lang.linecomment, text, re.IGNORECASE)
+		if mstr:
+			return first(removeNone(mstr.groups())) # for whatever reason, mstr.group() treats "' wrong.
+		# numbers. cf. 
+		mnum = re.match(lang.anum + lang.linecomment, text, re.IGNORECASE)
+		if mnum:
+			num = mnum.groups()[0]
+			return lang.num2py(num)
+	
+		# since our boolean types also cast as lang.symb, we disallow nodes with these names.
+		# Yes/No/True/False/On/Off are thus the only reserved keywords in the language.
+		if re.match(lang.yes+lang.linecomment, text, re.IGNORECASE):
+			return True
+		if re.match(lang.no+lang.linecomment, text, re.IGNORECASE):
+			return False
+		
+		# A symbol or a list of symbols.
+		symbs = re.match(r"^("+lang.symb+")(\s+"+lang.symb+")*"+lang.linecomment, text, re.IGNORECASE)
+		# If only one symbol is detected, return the symbol. Otherwise
+		# return the list of symbols which has to be understood correctly.
+		if symbs:
+			return unlistOne(map(symbol, removeNone(symbs.groups())))
+		
+		# A list of numbers. The list follows python syntax: (1,2,3) or [1,2,3]
+		list_open_bracket = r"[(\[]"
+		list_close_bracket = r"[)\]]"
+		list_sep = "," # comma seperates values
+		nums = re.match(list_open_bracket +"("+ "(?:" + lang.anum + "\s*"+list_sep+"\s*)+" + lang.anum +")"+ list_close_bracket + lang.linecomment, text, re.IGNORECASE)
+		if nums:
+			bracket_content = first(nums.groups())
+			all_numbers = re.findall(lang.anum, bracket_content)
+			return map(lang.num2py, all_numbers)
+		
+		
+		# this does not work because of
+		
+		"""
+		"""
+		
+		return text
+		"""
+		
+		# We use python's parser for both understanding the data structure
+		# and removing pythonic line comments such as "#".
+		try:
+			typed = ast.literal_eval(text)
+			if isa(typed, lang.primitives):
+				return typed
+			elif isa(typed,[tuple,list]):
+				# We said we support lists.
+				return list(typed)
+			else:
+				# we probably have a created a weird type, for instance we
+				# parsed a dictionary, which we do not want to support.
+				# Instead, thus, return a text. This may not correctly strip comments,
+				# thought.
+				return text
+		except (ValueError, SyntaxError):
+			# This is most likely a string or something weird
+			
 
-class hierarchy_graph(equivalence_resolver):
-	"""
-	The directed version of the equivalence_classes.
-	Again, this tries to preserve the order of data how they were inserted.
-	"""
-	def add(self, a, b):
-		"insert an edge (a -> b) which we denote as (a <= b)"
-		edge = (a,b)
-		if not edge in self.edges:
-			self.edges.append(edge)
-		return self
-	def parent(self, a):
-		"Returns the list of vertices which point to a"
-		return [ b for ai,b in self.edges if ai == a ]
-	def ancestors(self, a):
+			
+			return text
+		return text
 		"""
-		Returns the list of all vertices which have a way to a.
-		The list includes him own (cf. symbol.ancestors) and doublers in case of a diamant graph form.
+	
+	@classmethod
+	def rhs2string(cls, rhs):
+		if isa(rhs,symbol):
+			return rhs.canonical()
+		if isa(rhs,lang.evalstr):
+			return '"%s"' % rhs.text
+		elif isa(rhs, [str,unicode]):
+			return '"%s"' % rhs
+		if isa(rhs,lang.primitives):
+			return str(rhs)
+		else:
+			raise ValueError("Bad RHS, cannot transform safely to text: %s" % str(rhs))
+	
+	@classmethod
+	def Rel_from_textline(cls, srcline): # was textline2edge
 		"""
-		if not self.parent(a):
-			return [a]
-		else :
-			return [a] + flatten2d([ self.ancestors(ap) for ap in self.parent(a) ])
-	def get(self, a):
+		Parses a single line. Input is a sourceline object. You can test lines quickly with
+		> line2operation(sourceline.from_unknown("foo=10"))
 		"""
-		Resolve the graph: Get all ancestors of a, i.e. the list of v where a < v.
-		"""
-		vertlist = self.ancestors(a)
-		vertlist.remove(a) # don't include a itself
-		return unique_preserve(vertlist) # remove doublers
+		if re.match(r"^"+lang.comment+"|^\s*$", srcline.text): # comments
+			return None
 
-class operations:
+		parts = re.match(r"^(?P<lhs>(?:"+lang.symb+"|))\s*(?P<op>(?:"+lang.opor+"))\s*(?P<rhs>.+)\s*$", srcline.text, re.IGNORECASE)
+		if not parts:
+			raise ValueError("Don't understand line %d in %s: '%s'"%(srcline.linenum,srcline.fname,srcline.text))
+
+		# split lhs into name path
+		name = symbol(parts.group('lhs'))
+		# parse rhs as symbol or whatever
+		value = lang.rhs2python(parts.group('rhs'))
+		op = lang.symbol_alternatives[parts.group('op')]
+
+		return Rel(name, value, op, srcline)
+	
+	@classmethod
+	def Rel_to_textline(cls, rel):
+		return "%s %s %s" % (rel.l.canonical(), invdict(lang.symbols)[rel.op], cls.rhs2string(rel.r))
+
+class Rel:
+	def __init__(self, l, r, op, src=None):
+		self.l = l # typically a symbol. May also be a term in some contexts.
+		self.r = r # typically something or also a symbol
+		self.op = op
+		self.src = source(src)
+	def __repr__(self):
+		return "%s(%s, %s)" % (self.op, self.l, self.r) # omit src for the time being
+
+	def evaluate_rhs(self, *arg):
+		if callable(self.r):
+			self.r = self.r(*arg) # was self.r.value for some reason
+		return self.r
+	
+	def add_prefix(self, path): # to be updated or removed
+		"Return a new operation where lhs is prefixed with path"
+		return self.__class__( self.l.add_prefix(path), self.r, self.op, self.src)
+	
+	def remove_prefix(self, path): # to be updated or removed
+		"Return a new operation list where each lhs has a common prefix with path removed"
+		return self.__class__( self.l.remove_prefix(path), self.r, self.op, self.src)
+	
+	# list or tuple idiom
+	def __len__(self):
+		return 4
+	def __iter__(self):
+		yield self.l
+		yield self.r
+		yield self.op
+		yield self.src
+
+class mexagraph:
+	# the graph has two types of edges
+	P = 'path'
+	E = 'extends' # or inherits
+	
+	def __init__(self, edges):
+		self.G = nx.DiGraph()
+		# add a root
+		self.G.add_node(term.root)
+		self.from_mexafile(edges)
+	def __repr__(self):
+		return '%s(%s)' % (self.__class__.__name__, pprint.pformat(self.G.edges(data=True),width=1))
+	
+	def insert_path(self, path, starting_from=term.root, src=None):
+		"""
+		Insert edges for a  symbol path, i.e. /a/b/c gets a-[path]->b-[path]->c
+		Returns the last edge target which was inserted.
+		"""
+		if not isa(path,symbol): path = symbol(path)
+		if path.isRoot():
+			return starting_from
+		head, tail = path.base().canonical(), path.except_base()
+		child = None
+		for existing_child, attr in self.G[starting_from].iteritems():
+			if attr['op'] == self.P:
+				if existing_child.value == head:
+					child = existing_child
+					break
+		# if did not found the segment, create it:
+		if not child:
+			child = term(head)
+			self.G.add_edge(starting_from, child, op=self.P, src=src)
+		return self.insert_path(tail, child, src=src)
+
+	def get_path_down(self, left, starting_from=term(), silent_failure=False): # the original get_path
+		"""
+		Resolve symbol -> term.
+		starting from some term (default: root).
+		Resolves down the graph.
+		Neccessary because term() instances are unfindable by definition.
+		Returns None if nothing found, raises exception if asked for.
+		Symbol is always supposed to be rootet at starting_from.
+		-> works!
+		"""
+		if not isa(left,symbol): left = symbol(left)
+		if left.isRoot(): # we found our element
+			return starting_from
+		first = left.base().canonical()
+		for right, attr in self.G[starting_from].iteritems():
+			if attr['op'] == self.P:
+				if right.value == first:
+					#print "Looking for %s, Found %s" % (left,first)
+					return self.get_path_down(left.except_base(), right, silent_failure=silent_failure)
+				else:
+					#print "No success: %s != %s" % (right,first)
+					pass
+		#print "Looked for %s (%s), found nothing" % (left,first)
+		if not silent_failure:
+			raise ValueError("Symbol %s not found in graph, searching from %s." % (left,starting_from))
+		
+	def get_path_up(self, symb, right, include_start=True, stack=tuple(), disallow_first_parent=True):
+		"""
+		Resolves symbol -> [term], starting from some term.
+		# Resolve from a term to a symbol by going back the path
+		# symb: Symbol to look for, e.g.  foo/bar
+		# right: Term where to start looking at, i.e. biz in bla/boo/biz
+		# stack: Internal stack to avoid loops
+		# In this example, foo/bar could be found at bla/foo/bar or bla/boo/foo/bar
+		# or even bla/boo/biz/foo/bar.
+		
+		It always returns a list. Elements of this list are tuples.
+		First value is target symbol, second value is the stack i.e. path from
+		starting symbol to final value (neccessary for understanding double resolutions).
+		Ideally, only one list element is returned and the resolution is trivial.
+		"""
+		
+		if not isa(symb,symbol): symb = symbol(symb)
+		ret = []
+		# test from right itself
+		if include_start:
+			resolving_term = self.get_path_down(symb, starting_from=right, silent_failure=True)
+			if resolving_term:
+				ret.append( resolving_term )
+		# check in parents of right
+		for left, attr in self.G.pred[right].iteritems():
+			resolving_term = self.get_path_down(symb, starting_from=left, silent_failure=True)
+			if resolving_term:
+				if disallow_first_parent:
+					# we are in a situation where a/b = b and we are on a. Do not allow
+					# a self-reference from b<->b.
+					continue
+				else:
+					ret.append(resolving_term)
+			else:
+				if left in [rel.l for rel in stack]:
+					# run into an equality a-[equals]->b, b-[equals]->a. Do not follow.
+					# Equality loops are there by design.
+					continue
+				else:
+					# traverse over the edge
+					newstack = stack + tuplize(Rel(left, right, attr['op'], attr['src']))
+					ret += self.get_path_up(symb, right=left, stack=newstack, disallow_first_parent=False)
+		return unique_preserve(removeFalse(ret))
+	
+	# currently UNUSED.
+	def resolve_symbol(self, symb, start, silent_failure=False):
+		"""
+		Returns a symbol to a term.
+		"""
+		res = self.get_path_up(symb, right=start, include_start=True)
+		if len(res) == 1:
+			return first(res)
+		elif len(res) == 0:
+			if silent_failure:
+				return None
+			else:
+				raise ValueError("Symbol %s not found around term %s" % (symb,start))
+		else: # len(res)>1
+			raise ValueError("Found multiple candidates for %s around term %s: %s" % (symb,start,res))
+
+	def from_mexafile(self, edges):
+		"""
+		Adds edges to the graph. The rules are:
+		  * paths are resolved into the graph and get path edges
+		  * equalities and subsets are represented as extends edges
+		  * all other operations are not touched and go throught the processing.
+		That is, you should make sure if you have operations such as "include" and "append",
+		parse them before.
+		"""
+		
+		for l,r,op,src in edges:
+			assert isa(l,symbol)
+			l = self.insert_path(l, src=src)
+			
+			needspatch = False
+			if isa(r,symbol):
+				oldr = r # for debugging
+				target = self.get_path_up(r, l, include_start=False) # check if variable exists
+				if len(target) == 1:
+					r = first(target) # link to existing
+				elif len(target) == 0:
+					r = self.insert_path(r, src=src) # insert new node
+				else: # len(target) > 1:
+					# multiple targets exist. This is bad.
+					raise ValueError("Found multiple candidates for %s around term %s: %s" % (r,l,target))
+			# => allows full relative variable addressation.
+			# => problem: Resolving variables may not yet take future relations into account.
+			#    to encounter the problem, the graph would have needed to be setup in a
+			#    iterative process with correction steps.
+
+				assert l != r, "Produced weird graph because l=%s, oldr=%s, new r=%s for op=%s\n" % (l, oldr, r, op)
+				needspatch = True
+			
+			# map equals and subsets together
+			if op == 'equals':
+				self.G.add_edge(l, r, op=self.E, src=src, patched=not needspatch)
+				self.G.add_edge(r, l, op=self.E, src=src, patched=not needspatch) # TODO: Should comment the source.
+			elif op == 'subsets':
+				self.G.add_edge(l, r, op=self.E, src=src, patched=not needspatch)
+			else:
+				self.G.add_edge(l, r, op=op, src=src)
+				
+		def equivalent_adjacency_iter(l, stack=tuple()):
+			# A version of self.G[l].iteritems() which also returns all edges
+			# from the equivalent nodes
+			for r, attr in self.G[l].iteritems():
+				if attr['op'] == self.E and not r in stack:
+					newstack = stack + (r,) # avoid loops
+					for r, attr in equivalent_adjacency_iter(r, stack=newstack):
+						yield (r, attr)
+				yield (r, attr)
+		
+		# correction step: inherit equivalence.
+		while not all([attr['patched'] for l,r,attr in self.G.edges(data=True) if attr['op']==self.E]):
+			for l, r, attr in self.G.edges(data=True):
+				if attr['op'] == self.E and not attr['patched']:
+					#for (ln, lattr), (rn, rattr) in product(self.G[l].iteritems(), self.G[r].iteritems()):
+					for (ln, lattr), (rn, rattr) in product(equivalent_adjacency_iter(l), equivalent_adjacency_iter(r)):
+						if lattr['op'] == self.P and rattr['op'] == self.P \
+						   and isa(ln, term) and isa(rn,term) \
+						   and ln != rn and ln.value == rn.value \
+						   and not self.G.has_edge(ln, rn):
+							self.G.add_edge(ln, rn, op=self.E, src=attr['src'], patched=False) # TODO: Comment source
+					# the l-[eq]->r edge is now patched.
+					attr['patched'] = True
+	
+	# graph to mexa: Without evaluation of any edges
+	def to_mexafile(self, left=term.root, left_path=symbol()):
+		#assert isa(root, term)
+		ret = []
+		for right, attr in self.G[left].iteritems():
+			#print "%s,%s" % (right,attr)
+			if attr['op'] == self.P:
+				right_path = symbol(right.value).add_prefix(left_path)# if isa(right,term) else str(right))
+				#print "At %s, %s: Visiting %s, %s" % (left, left_path, right, right_path)
+				ret += self.to_mexafile(right, right_path)
+			else:
+				#print "%s: Attr is %s" % (right, attr)
+				if isa(right, term):
+					right = self.get_path_down(right) # TODO: Resolve the term -> symbol here.
+				ret += [ Rel(left_path, right, attr['op'], attr['src']) ]
+		return mexafile(ret)
+		#return map(unpack(node_to_mexafile), )
+		
+	# check for undefined symbols
+	def check_undef(self, symb=term.root):
+		# undefined symbols are defined simply as: A path leaf which has no outoing equalities.
+		#[x for x in self.G.nodes_iter() if self.G.out_degree(x)==0 ]
+		pass
+		# TOD BE DONE.
+		
+	def evaluate_to_mexafile(self, left=term.root, stack=tuple(), max_rec=20, sort_by='input'):
+		"""
+		Correctly resolves all equalities and directed equalities to an oplist aka a mexafile.
+		Current Limitations:
+		  * Code ignores loops in the equality graph, thus it cannot detect
+		    missing definitions. This should be done independently by check_undef.
+		"""
+		if max_rec == 0:
+			raise ValueError("self.Path is too deep. at %s, stack=%s" % (left,stack))
+		ret = []
+		# this is an absurd hack which uses the unique item numbering for restoring the
+		# order of the edges in the mexafile (ie. give them out in the order they were read in).
+		if sort_by == 'input':
+			### Sort by order of input:
+			sort_edges = unpack(lambda itm,attr: itm.counter if isa(itm,term) else itm)
+		elif sort_by == 'name':
+			### Sort by symbol name:
+			sort_edges = unpack(lambda itm,attr: itm.value if isa(itm,term) else itm)
+		else:
+			raise ValueError("sort_by=%s not understood, only input/name allowed."%sort_by)
+		
+		for right, attr in sorted(self.G[left].iteritems(), key=sort_edges):
+			if attr['op'] == self.P:
+				# put onto the stack:
+				newstack = stack + tuplize(Rel(left, right, self.P, attr['src']))
+				#right_path = symbol(right.value).add_prefix(left_path)
+				#print "At %s, %s: Visiting %s, %s" % (left, left_path, right, right_path)
+				ret += self.evaluate_to_mexafile(right, newstack, max_rec=max_rec-1, sort_by=sort_by)
+			elif attr['op'] == self.E:
+				if isa(right, term):
+					if right in [rel.r for rel in stack]: # WAS rel.l
+						# run into an equality a-[equals]->b, b-[equals]->a. Do not follow.
+						# Equality loops are there by design.
+						continue
+					else:
+						# follow the equals with same path
+						newstack = stack + tuplize(Rel(left, right, self.E, attr['src']))
+						ret += self.evaluate_to_mexafile(right, newstack, max_rec=max_rec-1, sort_by=sort_by)
+				else:
+					# make an attribute node.
+					newstack = stack + tuplize(Rel(left, right, self.E, attr['src']))
+					pathlst = [ rel.r.value for rel in newstack if rel.op == self.P ]
+					srclst  = [ rel.src     for rel in newstack if rel.op == self.E and not rel.l.isRoot() ]
+					#print "At left=%s, newstack=%s I composed path=%s, srclist=%s" % (left,newstack,pathlst,srclst)
+					ret += [ Rel(symbol(pathlst), right, "equals", source(srclst)) ] # could also use "define"
+			else:
+				# TODO: Should instead let all other operations pass.
+				raise ValueError("At l=%s,stack=%s, Operation not known: rattr=%s" % (left,stack,attr))
+		#if len(ret) == 0:
+			# no childs given at this node = undefined!
+		#	raise ValueError("Term l=%s,stack=%s lacks a definition\n"%(left,stack))
+		return mexafile(ret)
+		#return map(unpack(node_to_mexafile), )
+		
+	def toFile(self, base_filename):
+		dotfilename = base_filename+".dot"
+		imgfilename = base_filename+".png"
+		nx.nx_agraph.write_dot(self.G, dotfilename)
+		retcode = subprocess.call(["dot", "-Grankdir=LR", "-Tpng", dotfilename, "-o", imgfilename])
+		print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
+
+class mexafile:
 	"""
-	Wraps a list of operations. Basically represents a mexafile.
-	This is of type list<operation>.
+	Current mexafile
 	"""
 	
-	def __init__(self, ops=[]):
-		self.ops = ops # this is by intention not a copy, but just a reference
+	def __init__(self, ops=None):
+		if not ops:
+			self.ops = list()
+		elif isa(ops,mexafile):
+			self.ops = ops.ops # reference
+		else:
+			self.ops = ops # reference
+		# we do not call evaluate() here, do this manually.
 		
 	def __repr__(self):
 		return '%s(%s)' % (self.__class__.__name__, pprint.pformat(self.ops,width=1))
-	
 	def __iter__(self):
 		return iter(self.ops)
 	def __len__(self):
 		return len(self.ops)
+
+	def add_source(self, something): # chainable
+		for op in self.ops:
+			op.src.add_source(something)
+		return self
 	
-	def get_symbols(self):
-		"Returns the list of symbols which this operation list holds"
-		return [op.lhs for op in self.ops]
+	def graph(self):
+		# There is no mechanism to keep ops and graph in sync.
+		if not hasattr(self, '_graph'):
+			self._graph = mexagraph(self)
+		return self._graph
 	
-	def is_empty(self):
-		return len(self.ops) == 0
-		
 	@classmethod
 	def from_filehandle(cls, fh):
 		# The ordered list of operations as they appear in the file
-		return cls(removeNone(sourcemap(fh).map(operation.from_textline)))
+		return cls(removeNone(sourceline.sourcemap(fh).map(lang.Rel_from_textline)))
 		# Prepend the list with the rootbase
 		# self.ops = self.rootbase + self.ops # no more.
 
@@ -799,683 +843,630 @@ class operations:
 		"""
 		if not isa(oplines, list):
 			oplines = [oplines]
-		oplist = removeNone(sourcemap(oplines, source_name).map(operation.from_textline))
+		oplist = removeNone(sourceline.sourcemap(oplines, source_name).map(lang.Rel_from_textline))
 		return cls(oplist)
 	
-	def count_optypes(self):
-		"""
-		Returns a Counter for the kind of optypes which are available in this operations list.
-		Useful for debugging and statistics/short output.
-		Class names are strings for readability.
-		"""
-		return collections.Counter([ op.__class__.__name__ for op in self.ops ])
-		
-	def query(self, root='', exclude_root=False):
+	def query(self, root='', inplace=False, exclude_root=False):
 		"""
 		Get the assignment tree based on some root (which may be string, list, symbol).
 		Returns a new operations instance.
 		Maintains the order of operations as they appear.
 		"""
-		root = symbol(root)
+		if not isa(root,symbol): root = symbol(root)
 		# Search for all symbols which are *below* the root
 		# on symbols:
 		# tree = { lhs : rhs for lhs,rhs in self.symbols.iteritems() if root in lhs.ancestors() }
 		# on the oplist:
-		return operations([ op for op in self.ops 
-			if root in op.lhs.ancestors() # root="foo", include "foo/bar" and "foo/bar/baz"
-			or (root == op.lhs and not exclude_root)  # root="foo", include "foo" itself.
-		])
-	
-	def is_node(self, path, typefilter=[equals,define]):
-		"""
-		Can decide on a path or operation whether it is a node in the tree.
-		Each path is either node, leaf or ill.
-		"""
-		path_symbs = self.query(path).where_symbol(typefilter).get_symbols()
-		return len(path_symbs) > 1 and not symbol(path) in path_symbs
+		ret = [ op for op in self.ops 
+			if root in op.l.ancestors() # root="foo", include "foo/bar" and "foo/bar/baz"
+			or (root == op.l and not exclude_root)  # root="foo", include "foo" itself.
+		]
+		if inplace:
+			self.ops = ret
+		else:
+			return mexafile(ret)
 		
-	def is_leaf(self, path, typefilter=[equals,define]): # was isLeaf
-		"Can decide on a path or operation whether it is a leaf in the tree, i.e. has no more children"
-		path_symbs = self.query(path).where_symbol(typefilter).get_symbols()
-		return len(path_symbs) == 1 # and symbol(path) in path_symbs
-	
-	def is_ill(self, path, typefilter=[equals,define]):
-		"Something which is neither leaf nor node: c in c=2,c/a=2"
-		path_symbs = self.query(path).where_symbol(typefilter).get_symbols()
-		return len(path_symbs) > 1 and symbol(path) in path_symbs
-
-	def get_leafs(self):
-		"Returns the list of symbols which are leafs"	
-		return filter(self.is_leaf, self.get_symbols())
-	
-	def get_nodes(self):
+	def tree(self, root='', symbol_resolver=None, backref=False):
 		"""
-		Returns the list of symbols which are nodes.
-		The list is ordered in the order the associated operations appear.
-		This list also includes the root symbol, symbol().
+		Like query, but will result in a nested dictionary structure instead of an oplist.
+		
+		\option root: A symbol instance.
+		\option symbol_resolver: Not needed any more!
+		\option backref: Insert the full path into every dictionary.
 		"""
-		return unique_preserve(flatten2d([ op.lhs.ancestors() for op in self.ops ]))
-
-	def set_symbols(self):
-		"""
-		Get a dictionary with all assignments. Ensures no assignment appears two times.
-		You can choose with values what you want to get as values:
-		  * rhs: Just the rhs objects from the operations
-		  * index: The index position where the operation (lhs) was (first) defined
-		"""
-		self.symbols = self.get_dict()
-
-	def get_dict(self, values='rhs', typefilter=[let,equals,define]):
-		"""
-		was assigndict: Gave only the dictionary of assignments (as a filter).
-		"""
-		symbols = {} # could use an OrderedDict here if needed.
-		for i,op in enumerate(self.ops):
-			if isa(op,typefilter):
-				if values == 'rhs': val = op.rhs
-				elif values == 'index': val = i
-				else:
-					raise ValueError("Allowed values for 'values' are 'rhs' and 'index', given: '%s'"%values)
+		oplist_absolute = self.query(root) # with absolute paths
+		oplist_relative = oplist_absolute.remove_prefix(root) # relative paths to root
+		# a list with the general structure of the tree, especially parents come before childs
+		# so we can make a dict tree out of it
+		outline = sorted(unique(flatten2d([op.l.ancestors() for op in oplist_relative])))
+		
+		# setup the tree outline (nodes)
+		tree = {}
+		for sym in outline:
+			subtree = tree
+			for symp in sym.as_str_tuple():
+				if not symp in subtree:
+					subtree[symp] = {}
+				subtree = subtree[symp]
+		
+		# as a placeholder, should be related to a context
+		if not symbol_resolver:
+			symbol_resolver = lambda sym: "REF="+sym.canonical()
+			
+		# backref: Include the full path for each node (not leaf)
+		backref_key = "$path"
+			
+		# fill the tree with leafs
+		for abs_op,op in izip(oplist_absolute,oplist_relative):
+			if op.l.isRoot():
+				tree = op.r
+			else:
+				parent = reduce(dict.get, op.l.parent().as_str_tuple(), tree) 
+				leaf_name = op.l.node().canonical()
+				parent[leaf_name] = op.r
 				
-				# only assign may be used once, let can be overwritten
-				if isa(op,equals) and op.lhs in symbols:
-					from pprint import pprint #debugging
-					pprint(self.ops)
-					raise ValueError(
-						"Double definition of %s. Was first defined as %s and secondly as %s. List is printed above" % (
-							op.lhs,
-							symbols[op.lhs],
-							op.rhs)
-						)
-				else:
-					symbols[op.lhs] = val
-		return symbols
+				if backref and not backref_key in parent:
+					# we do *not* put the parent in a symbol_resolver but instead
+					# use the canonical description.
+					# Note that the absolute path is the original one in the defining file,
+					# not taking into account the actual mapping (inclusion) of the path.
+					parent[backref_key] = abs_op.l.parent().canonical()
+
+		return tree
 	
-	def check_tree_structure(self):
-		"""
-		Ensure nodes and leafs are distinct groups.
-		"""
-		for symb in filter(self.is_ill, self.get_symbols()):
-			raise ValueError(
-				"Symbol %s appears as node but also has children. This is not allowed:\n %s"
-				% (symb, self.query(symb))
-			)
-		
-	def check_doublings(self):
-		"""
-		Check whether some symbols are given multiple times.
-		"""
-		get_dict()
-		
-	def add_source(self, fname, line):
-		"""
-		In-place add a source line to each entry in this operations list.
-		The variable names are historic in their meaning.
-		"""
-		for i,op in enumerate(self.ops):
-			op.rhs.add_source(sourceline(fname, i, line))
-	
-	def evaluate_symbol(self, symbol, inplace=False, eliminate=True, inplace_max_iters=10):
+
+	def evaluate_symbol(self, symb, evaluator, inplace=True, eliminate=True, max_rec=10):
 		"""
 		Evaluate a questioned symbol, where symbol is a class, for instance `append`.
 		Returns new operations object or does the evaluation inplace.
 		"""
 		ret_oplist = []
-		for op in self.ops:
-			if isa(op,symbol):
-				new_oplist = op.evaluate(self)
-				# add/chain backtrace information where the oplist entries comes from
-				for i,op in enumerate(new_oplist):
-					op.rhs.add_source("evaluation:%s" % symbol.__name__)
+		for rel in self.ops:
+			if rel.op == symb:
+				new_oplist = evaluator(rel, self)
 				ret_oplist += new_oplist
 			else:
-				ret_oplist.append(op) # pass throught
+				ret_oplist.append(rel) # pass throught
 		
-		if eliminate and any([isa(op,symbol) for op in ret_oplist]):
+		if eliminate:
+			remaining = mexafile([ rel for rel in ret_oplist if rel.op == symb ])
+			if any(remaining):
 			# There are still instances of symbol in the oplist and we were
 			# asked to eliminate all of them. Recursively call ourselves,
-			# expecting that they vanish.
-			if inplace_max_iters == 0:
-				remaining = operations([op for op in ret_oplist if isa(op,symbol)])
-				raise ValueError("While trying to evaluate %s, reached maximum number of iterations. The user probably included cyclic links. These symbols remain: %s" % (str(symbol),str(remaining)))
-			return self.evaluate_symbol(symbol, inplace=inplace, eliminate=eliminate, inplace_max_iters=inplace_max_iters-1)
+				# expecting that they vanish.
+				if max_rec == 0:
+					raise ValueError("While trying to evaluate %s, reached maximum number of iterations. The user probably included cyclic links. These symbols remain: %s" % (str(symb),str(remaining)))
+				return self.evaluate_symbol(symb, evaluator, inplace=inplace, eliminate=eliminate, max_rec=max_rec-1)
 		
 		if inplace:
 			self.ops = ret_oplist
 		else:
-			return operations(ret_oplist)
-
-	def evaluate_all_rhs(self):
-		"""
-		Evaluates all RHS, this works inplace.
-		Lists might survive as RHS values. In this case, it is up to the symbol
-		evaluation to determine what happens with this list.
-		"""
-		for op in self.ops:
-			op.evaluate_rhs(VariableContext(op,self))
-
-	def evaluate(self, reduce_let=True):
-		"Evaluate is chainable and shall always be called after the constructor"
+			return mexafile(ret_oplist)
 		
-		#self.check_tree_structure()
-
-		# eliminate the main symbols
-		for symbol in [include, append, equals, subsets]:#, equivalent_node]:
-			self.evaluate_symbol(symbol, inplace=True, eliminate=True)
-			# this is no more possible after elimination:
-			assert not any([isa(op,symbol) for op in self.ops]), "An %s has survived" % symbol.__class__.__name__
-			# For early failure:
-			# self.check_tree_structure() # checks for tree consistency
-			#  -> produces problems in case  a = b
-			#                                a/c = 2
-			self.set_symbols() # checks for doublings and enables search
-		
-		# the operations list consists now only of
-		#  defines = final primitives and
-		#  extends = variables to be resolved.
-		
-		# next and remaining steps is to replace all the extends.
-		### self.evaluate_symbol(extends, inplace=True)
-
-		self.check_tree_structure() # check now instead
-		self.symbols = self.set_symbols() # needed for variable access
-		self.evaluate_all_rhs()
+	def evaluate_all_symbols(self, evaluator, inplace=True):
+		ret = evaluator(self)
+		if inplace:
+			self.ops = ret
+		else:
+			return mexafile(ret)
 	
-		# evaluate() is chainable:
-		return self
+	def evaluate(self, inplace=True):
+		"""
+		The evaluation is two-place: First, there is a element-local replacement step.
+		Second, there is a global variable resolving step, using the graph.
+		"""
+		
+		def include(op, operations):
+			# include a file
+			fname = op.evaluate_rhs(self.resolver_for(op))
+			if not isa(fname, [str,unicode]):
+				raise ValueError("For file inclusion, only strings are supported. In %s" % str(op))
+			return mexafile.from_filename(fname).add_prefix(op.l).add_source(op.src)
+
+		def append(op, operations):
+			# This algorithm reads as rule: "a/b += c/d" => "a/b/d = c/d"
+
+			if isa(op.r,list):
+				# we do support multiple RHS values, i.e. a syntax like
+				#  a += b c d  <=> equals(a, sourced([b,c,d], ...))
+				return flatten2d([append(Rel(op.l, op_ri,'append',op.src), operations) for op_ri in op.r])
+			
+			# name of the node to create below the lhs.
+			if isa(op.r, symbol):
+				name = op.r.node()
+			else:
+				# a dumb way to come up with a number:
+				op_nodes = operations.query(op.l)
+				op_nodes = potentialFlatten2D([opi.r for opi in op_nodes.ops])
+				try:
+					i_op_node = op_nodes.index(op.r)
+					#name = "n%iof%i" % (i_op_node, num_op_nodes)
+					name = "n%i" % i_op_node
+				except:
+					# something weird happened and we can only come up with a element-local name
+					name = "l" + hex(abs(hash( op.r )%2**30))
+				
+			return mexafile([ Rel(symbol(name).add_prefix(op.l), op.r, 'equals', op.src) ])
+		
+		def prepare_equal(op, operations):
+			if isa(op.r, list):
+				# lists get created by rhs2python i.e. with something like a = (1,2,3)
+				def listToAppends(i,vi): #for i,vi in enumerate(op.r.value):
+					if isa(vi,lang.primitives):
+						#return Rel(symbol("l%d"%i).add_prefix(op.l), vi, 'equals', op.src.add_source("list expansion"))
+						return Rel(op.l, vi, 'append', op.src.add_source("list expansion"))
+					else:
+						raise ValueError("Found illegal non-primitive value in RHS of assignment operation: %s. You probably wanted to use the append += operation."%str(op))
+				return map(unpack(listToAppends), enumerate(op.r))
+			else:
+				return [op]
+		
+		def equalities(operations): # caveat, this is global
+			# resolves = and <=
+			return operations.graph().evaluate_to_mexafile().ops
+		
+		self.evaluate_symbol('include', include, inplace=inplace)
+		self.evaluate_symbol('equals', prepare_equal, eliminate=False, inplace=inplace)
+		self.evaluate_symbol('append', append, inplace=inplace)
+		self.evaluate_all_symbols(equalities, inplace=inplace)
+		
+		# + evaluate strings?
+		
+		# as a last step, should look for inconsistencies or check whether all data
+		# have correctly been evaluated.
+
+	def resolve_symbol(self, varname, src=source.unknown):
+		"""
+		Looks up the value of a variable such as "foo" or "foo/bar" or "foo::bar::baz"
+		in the symbols dictionary. In case of errors, src is spilled out.
+		"""
+		sv = symbol(varname)
+		for rel in self.ops:
+			if rel.l == sv:
+				return rel.r
+		raise ValueError("Variable '%s' not defined but used in %s" % (varname,src))
 	
+	def resolver_for(self, rel):
+		"Returns a function for resolving a variable. Used for the evalstr() instances."
+		return lambda varname: self.resolve_symbol(varname, src=rel.src) # what about passing "rel.r" for local variables?
+
 	def add_prefix(self, path):
 		"Return a new operations list where each lhs is prefixed with path"
 		if not isa(path,symbol): path = symbol(path)
-		return operations([ op.add_prefix(path) for op in self.ops ])
+		return mexafile([ op.add_prefix(path) for op in self.ops ])
 	
 	def remove_prefix(self, path):
 		"Return a new operation list where each lhs has a common prefix with path removed"
 		if not isa(path,symbol): path = symbol(path)
-		return operations([ op.remove_prefix(path) for op in self.ops ])
-	
-	def strip_source(self):
-		"""
-		Returns a copy where all sourced instances from the RHS are stripped. Useful
-		for quickly looking into the data
-		"""
-		return operations([ op.strip_source() for op in self.ops ])
-	
-	def where_symbol(self, symbol): # replaces filtertype
-		"""
-		Returns a new instance where only operations with type symbol are given.
-		symbol may be a list of symbols.
-		"""
-		return operations([op for op in self.ops if isa(op,symbol)])
-	
-	def is_empty_node(self, varname):
-		"""
-		Returns whether this is a node without subnodes. May be a leaf, may also be an operation
-		which resolves to something once resolved.
-		"""
-		return self.query(varname, exclude_root=True).is_empty()
-	
-	def resolve_leaf(self, varname):
-		"""
-		Resolves a symbol to a leaf. It if is not defined or not a leaf, raises exception.
-		Use is_leaf() to check whether it is a leaf before. Returns the RHS.
-		"""
-		sv = symbol(varname)
-		value = [ op for op in self.ops if op.lhs == sv ]
-		if len(value) == 1:
-			return value[0].rhs
-		raise ValueError("Symbol %s is not a leaf but there match these objects: %s" % (str(sv), str(value)))
-	
-	def resolve_symbol(self, varname, relative_to=symbol(), src=sourceline.from_unknown()):
-		"""
-		Looks up the value of a variable such as "foo" or "foo/bar" or "foo::bar::baz"
-		in the symbols dictionary 'replacements'. In case of errors, src is spilled out.
-		
-		Note that the return value will *always* be a string. We cast all primitives to
-		strings. If the result is *not* a primitive, we print errors.
-		Use rhs2python() to convert the string then to a native datatype.
-		"""
-		sv = symbol(varname)
-		if not hasattr(self,'symbols'):
-			self.set_symbols()
-		if not sv in self.symbols:
-			raise ValueError("Variable '%s' not defined but used in %s" % (varname,src.verbose()))
-		value = self.symbols[sv].value
-		if not isa(value,symbol.primitives):
-			raise ValueError("Variable %s value is '%s' and type %s which cannot be inserted at this place. We can only insert a primitive value like %s at this place (source: %s)" % (sv, value, type(value), symbol.primitives),src.verbose())
-		return str(value)
+		return mexafile([ op.remove_prefix(path) for op in self.ops ])
 
-	# todo: Move this function where it belongs to
-	def get_value_by_key(self, key_name):
-		"Returns a RHS value by the symbol key name, stripping source information"
-		return self.resolve(self.symbols[symbol(key_name)])
-	
-	# todo: Move this function where it belongs to
-	def resolve(self, irhs):
-		""""
-		Resolve a RHS object to some plain python object (also lists). For instance 
-		   rhs(value=8, src=test.par:86) => 8
-		   rhs(value='foobar', src=test.par:84) => 'foobar'
-		   [rhs(a),rhs(b),rhs(c)] => [a,b,c]
-		"""
-		if type(irhs) == list:
-			return map(self.resolve, irhs)
-		elif isinstance(irhs, sourced):
-			return self.resolve(irhs.value)
-		else:
-			if type(irhs) in symbol.primitives:
-				return irhs
-			elif isinstance(irhs, symbol):
-				# here is the work: Resolve a symbol.
-				tree = self.query(irhs)
-				if irhs in self.symbols:
-					return self.resolve(self.symbols[irhs])
-				elif tree:
-					# we actually asked for inheritance
-					pass
-				else:
-					raise ValueError("Symbol '%s' not defined" % str(irhs.canonical()))
-			else:
-				raise ValueError("Don't understand rhs type of %s" % str(irhs))
-	
-	def outgoing_edges(self, node): # or: neighbours
-		# gives all edges starting from node, i.e. if there is find all rel(lhs,rhs) with lhs=node.
-		if not isa(node,symbol): node = symbol(node)
-		if isa(node,operation): node = node.lhs # as a service
-		return operations([ op for op in self if op.lhs == node ])
-	
-	def paths_from(self, op):
-		edges = self.outgoing_edges(op.rhs.value)
-		if edges:
-			return { op: [ opi for opi in self.paths_from(edges) ] }
-		else:
-			return [ op ]
-	
-	
-	def paths_from(self, node):
-		"""
-		Returns all paths starting from a node, i.e. a lhs in real(lhs,rhs).
-		Each path is a tuple of operations. A list of paths is returned
-		"""
-		edges = self.outgoing_edges(node)
-		prepend_each = lambda fst, lst: [fst] + lst
-		if len(edges):
-			return [ tuple(prepend_each(op, self.outgoing_edges(op.rhs.value).ops)) for op in edges ]
-		else:
-			return []
-
-
+	def toPlain(self):
+		return "\n".join([ lang.Rel_to_textline(rel) for rel in self ])
 
 ###
-### Output
+### CLI and application interface.
 ###
 
-#
-# Todo: Clean all the output and representation stuff.
-#       We will no more have symbols in the oplist, so complexity reduces massively.
-#
+class mexa_cli(object):
+	command_registration = {} # maps string -> class
+	
+	def __init__(self):
+		self.parser = argparse.ArgumentParser(description=__doc__)
+		subparsers_dest = 'command'
+		subparsers = self.parser.add_subparsers(
+			dest=subparsers_dest,
+			title="commands",
+			description="valid subcommands",
+			help="choose one")
+		
+		for cmd, cls in self.command_registration.iteritems():
+			subargs = subparsers.add_parser(cmd)
+			cls.arguments(subargs) # ask class for setting arguments
+		
+		args = vars(self.parser.parse_args())
+		
+		target_cls = self.command_registration[ args[subparsers_dest] ]
+		self.job = target_cls(**args)
 
-class mexafile(operations):
-	# TODO: Collect interesting output plotters here, too.
-	pass
-	
-# implemented styles for structured data output (xml, json, yaml)
-native_styles = ["tree","tree-backref","linear"]
-def native(self, style='linear', root='', symbol_resolver=None):
-	"Returns python native data (nested dicts, lists, ...)"
-	if   style=='tree':   return self.tree_native  (root,symbol_resolver)
-	elif style=='tree-backref': return self.tree_backref_native(root,symbol_resolver)
-	elif style=='linear': return self.linear_native(root,symbol_resolver)
-	else: raise ValueError("Style: Only linear and tree supported, %s given" % style)
+	@classmethod
+	def register_subcommand(cls, subcommand_name):
+		def register(the_cls): # @wraps breaks this.
+			cls.command_registration[subcommand_name] = the_cls
+			return the_cls
+		return register
 
-def tree_native(self, root='', symbol_resolver=None, backref=False):
-	"""
-	Like query, but will result in a nested dictionary structure
-	"""
-	oplist_absolute = self.query(root) # with absolute paths
-	oplist_relative = symbol(root).remove_prefix_oplist(oplist_absolute) # relative paths to root
-	# a list with the general structure of the tree, especially parents come before childs
-	# so we can make a dict tree out of it
-	outline = sorted(unique(flatten2d([op.lhs.ancestors() for op in oplist_relative])))
+class io_mexafile(object):
+	def __init__(self, infile, outfile, root="", evaluate=True, **ignored_kwargs):
+		self.outfile = outfile
+		self.mf = mexafile.from_filehandle(infile)
+		self.root = root
+		if root:
+			self.mf.query(root, inplace=True)
+		
+		# appending stuff to any file, as a root
+		global_mexa_information = [
+			# mexa = path to the current script directory
+			Rel(symbol("mexa"), os.path.dirname(os.path.realpath(__file__)), "equals", sourceline.from_python()),
+		]
+		# -> should move to include file lookup paths instead.
+		
+		self.mf.ops = global_mexa_information + self.mf.ops
+		
+		self.evaluate = evaluate
+		if evaluate:
+			self.mf.evaluate()
+		
+		#print mf.toPlain()
+		#mf.toGraph("graph")
 	
-	# setup the tree outline (nodes)
-	tree = {}
-	for sym in outline:
-		subtree = tree
-		for symp in sym.path:
-			if not symp in subtree:
-				subtree[symp] = {}
-			subtree = subtree[symp]
+	@classmethod
+	def arguments(cls, parser, add_root=True):
+		group = parser.add_argument_group('input/output')
+		group.add_argument('--infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
+			metavar='FILENAME', help="Input file to read. If no file is given, read from stdin.")
+		group.add_argument('--outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout,
+			metavar='FILENAME', help="Output file to write to. If no file is given, write to stdout.")
+		
+		if add_root:
+			group.add_argument('--root', default='', help='Queried root container')
+		
+		# also probably allow injection, i.e.
+		# --env  => the environment variables, etc.
+		# --var FOO=BAR => another variable definition, etc.
+		
+	def write(self, data):
+		self.outfile.write(data)
+
+
+@mexa_cli.register_subcommand('plain')
+class plain_mexafile(io_mexafile):
+	def __init__(self, no_evaluation, graph, *args, **kwargs):
+		#import ipdb; ipdb.set_trace()
+		super(plain_mexafile,self).__init__(evaluate=not no_evaluation, *args, **kwargs)
+		self.write("# evaluated = %s\n" % (str(self.evaluate)))
+		self.write(self.mf.toPlain())
+		self.write("\n")
+		
+		# quick and dirty (this is the wrong place, in principle):
+		if graph:
+			self.mf.graph().toFile("graph")
+		
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser)
+		parser.add_argument('--no-evaluation', default=False, action='store_false', help='Do not evaluate the file at all')
+		parser.add_argument('--graph', default=False, action='store_true', help='Plot a graph')
+
+
+@mexa_cli.register_subcommand('encode')
+class encoded_mexafile(io_mexafile):
+	def __init__(self, encoding, header, *args, **kwargs):
+		#import ipdb; ipdb.set_trace()
+		super(encoded_mexafile,self).__init__(*args, **kwargs)
+		self.write(self.dump(self.mf, encoding, header))
 	
-	# as a placeholder, should be related to a context
-	if not symbol_resolver:
-		symbol_resolver = lambda sym: "REF="+sym.canonical()
+	@staticmethod
+	def quoted_printable(s, escape='%'): # helper
+		"""
+		Returns a quoted printable version of the string s with escape character %, no maximum line length
+		(i.e. everything in a single line) and everything non-alphanumeric replaced.
+		"""
+		# sourcecode inspired by quopri, https://github.com/python/cpython/blob/2.7/Lib/quopri.py
+		HEX = '0123456789ABCDEF'
+		quote = lambda c: escape + HEX[ord(c)//16] + HEX[ord(c)%16] # quote a single character
+		needsquote = lambda c: not ('0' <= c <= '9' or 'a' <= c <= 'z' or 'A' <= c <= 'Z') # Whether character needs to be quoted
+		return "".join([ quote(c) if needsquote(c) else c for c in s])
+	
+	encodings = {
+		# base64 is the well known base64
+		'base64': lambda f: base64.b64encode(f),
+		# base16 is only the hex
+		'base16': lambda f: base64.b16encode(f),
+		# urlencode/quoted printable:
+		'quotedprintable': lambda f: encoded_mexafile.quoted_printable(f)
+	}
+
+	default_encoding = 'quotedprintable'
+	default_prepend_header = "##MEXA-simple configuration file"
+	
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser)
+		parser.add_argument('--encoding', choices=cls.encodings.keys(), default=cls.default_encoding, help='Output encoding')
+		parser.add_argument('--header', default=cls.default_prepend_header, help='First line to add to output')
+	
+	@classmethod
+	def dump(cls, mf, encoding=None, header=None):
+		"""
+		Return an encoded mexa file. Several encodements are available, see the
+		encodings table.
+		@arg mf: Mexafile instance
+		@arg encoding: A value in encodings
+		@arg header: A single header line (incl. comment sign) to be prepended before the file
+		@arg simple_mexa: Whether to create simple mexa output
+		"""
+		if not encoding: encoding = cls.default_encoding
+		if not header: header = cls.default_prepend_header
+		fcontent = header + "\n" + mf.toPlain()
+		return cls.encodings[encoding](fcontent)
+
+@mexa_cli.register_subcommand('structured')
+class structured_mexafile(io_mexafile):
+	native_styles = {
+		'tree': lambda mexa: mexa.tree(), # graph as nested dictionary
+		'tree-backref': lambda mexa: mexa.tree(backref=True), # including full paths (backreferences)
+		'linear': lambda mexa: collections.OrderedDict([ (op.l.canonical(), op.r) for op in mexa ]), # all ops in a linear list
+	}
+	
+	formats = [ 'json', 'yaml', 'xml' ]
+	
+	default_style = 'tree'
+	default_format = 'json'
+	
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser)
+		parser.add_argument('--style', choices=cls.native_styles.keys(), default=cls.default_style, help='Data layout requested (semantics)')
+		parser.add_argument('--format', choices=cls.formats, default=cls.default_format, help='Data format to use (structure)')
+
+
+	def __init__(self, style, format, *args, **kwargs):
+		super(structured_mexafile,self).__init__(*args, **kwargs)
+		self.style = style
+		self.native = self.native_styles[style](self.mf)
+		outstr = getattr(self, format)()
+		self.write(outstr)
 		
-	# backref: Include the full path for each node (not leaf)
-	backref_key = "$path"
+	def json(self):
+		"""
+		Translate the oplist to a more human readable one, omitting all the classy
+		meta data. In Json without hierarchy.
+		"""
 		
-	# fill the tree with leafs
-	for abs_op,op in izip(oplist_absolute,oplist_relative):
-		leaf, rhs = op2tuple(op, symbol_resolver)
+		# JSON pointer reference. Currently unused.
+		json_pointer = lambda irhs: { '$ref': '#/'+irhs.canonical() }
 		
-		if op.lhs.isRoot():
-			tree = rhs
-		else:
-			parent = reduce(dict.get, op.lhs.parent().path, tree) 
-			leaf_name = op.lhs.node().canonical()
-			parent[leaf_name] = rhs
+		import json # batteries included 
+		return json.dumps(self.native)
+
+	def yaml(self):
+		# placeholder
+		yaml_pointer = lambda irhs: { 'YAML-REF': 'towards->'+irhs.canonical() }
+		
+		# this has to be installed
+		import yaml
+		return yaml.dump(self.native, default_flow_style=False)
+
+	def xml(self):
+		# xml dumps straight the classy structure
+		# This is extremely verbose and more suitable as a tech-demo
+		# Could also implement a hierarchy writer here
+		
+		# -> xml currently supports only the linear style!!
+		
+		# lxml and xml.sax are included in python (batteries)
+		from lxml import etree
+		from xml.sax.saxutils import escape as xml_escape
+		
+		root = etree.Element(self.__class__.__name__)
+		root.set('style', self.style) # actually, the style is ignored here.
+		root.set('query_root', self.root)
+		
+		def visit(obj, parent, tagname=None):
+			if not tagname: tagname = obj.__class__.__name__
+			me = etree.SubElement(parent, tagname)
 			
-			if backref and not backref_key in parent:
-				# we do *not* put the parent in a symbol_resolver but instead
-				# use the canonical description.
-				# Note that the absolute path is the original one in the defining file,
-				# not taking into account the actual mapping (inclusion) of the path.
-				parent[backref_key] = abs_op.lhs.parent().canonical()
-
-	return tree
-
-def tree_backref_native(self, root='', symbol_resolver=None):
-	"A variant of tree_native with full path references on each node"
-	return self.tree_native(root, symbol_resolver, backref=True)
-
-def linear_native(self, root='', symbol_resolver=None):
-	if not symbol_resolver:
-		symbol_resolver = lambda sym: "REF="+sym.canonical()
-	return dict(map(lambda op: op2tuple(op, symbol_resolver), self.query(root)))
-
-def dump_mexa(self, root='', simple_mexa=False, return_list=False, opfilter=idfunc):
-	"""
-	Print the oplist in a form which is again in the mexa format, is the most compact
-	form (no redundancies, no copies, instead still references). In contrast to the input document,
-	1) all overwritable definitions have been resolved
-	2) all strings have been evaluated
-	3) the file is checked for consistency
-	4) order is unchanged
-	5) data are normalized (boolean, also numbers)
-	6) no more comments or newlines
-	"""
-	ret = []
-	
-	#rec_simplemexa = lambda root: self.dump_mexa(root=root, simple_mexa=True, return_list=True)#, opfilter=symbol(root).prefix_oplist)
-	# kind of functools.partial
-	#op2strMaker = lambda symbolmapper: lambda op: op2str(op, symbolmapper)
-
-	for op in opfilter(self.query(root)):
-	#	symbolmapper = rec_simplemexa if simple_mexa else symbol.canonical
-	#	myop2str = lambda op: op2str(op, symbolmapper) 
-		
-		# assert isa(op,assign), "There is a "+str(op)
-		if isa(op.rhs, list):
-			# reconstruct the append operation from the list assignment
-			if simple_mexa:
-				# resolve the list to it's meaning.
-				for irhs in op.rhs:
-					assert isa(irhs.value, symbol), "We only support the += operator on symbols: "+str(irhs)
-					ret += self.dump_mexa(root=irhs.value, simple_mexa=True, return_list=True, opfilter=op.lhs.prefix_oplist)
+			if type(obj) == list:
+				for oi in obj:
+					visit(oi, me)
+			elif hasattr(obj, '_asdict'): # namedtuples instable API gives OrderedDict
+				for namedtuple_fieldname, value in obj._asdict().iteritems():
+					visit(value, etree.SubElement(me, namedtuple_fieldname))
+			elif isinstance(obj, symbol):
+				for p in obj.path:
+					etree.SubElement(me, 'pathseg').text = p
 			else:
-				local_oplist = [ append(op.lhs,irhs) for irhs in op.rhs ]
-				ret += map(op2str, local_oplist)
-		elif isa(op.rhs.value,symbol) and simple_mexa:
-			opfilter = lambda oplist: op.lhs.prefix_oplist(op.rhs.value.remove_prefix_oplist(oplist))
-			ret += self.dump_mexa(root=op.rhs.value, simple_mexa=True, return_list=True, opfilter=opfilter)
+				me.text = xml_escape(str(obj)).strip()
+
+		#if self.style == 'linear':
+		#	for k in self.native:
+		
+		# todo: repair the output layout.
+		visit(self.native, root)
+		return etree.tostring(root, pretty_print=True)
+	
+@mexa_cli.register_subcommand('specfile')
+class mexafile_to_exahype_specfile(io_mexafile):
+	default_root = 'exahype' # the root container in a mexa file where the hierarchy begins
+	
+	# Inclusion of solver constants (aka simulation parameters) and plotter select statements
+	# (aka plotter configuration) into ExaHyPE specfiles:
+	#  - embedded: Failsafe, encodes a whole mexafile in a discrete and easily embeddable string
+	#  - referenced: Reference to an external mexa file (something we don't want to do in practise)
+	#  - adapted: Try to generate redable specfile constants. Reparsing can be inaccurate, i.e.
+	#    strings are not correctly escaped.
+	parameter_styles = ['embedded', 'adapted', 'referenced']
+	default_parameter_style = 'embedded'
+	
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser, add_root=False)
+		parser.add_argument('--root', default=cls.default_root, help='Root container in the mexa file where the hierarchy begins')
+		parser.add_argument('--debug', action='store_true', default=False, help='Print debug output')
+		parser.add_argument('--parameter-style', choices=cls.parameter_styles, default=cls.default_parameter_style, help='Method to note constants/simulation parameters in specfile')
+
+	def __init__(self, root, debug, parameter_style, *args, **kwargs):
+		super(mexafile_to_exahype_specfile,self).__init__(*args, **kwargs)
+		self.root = root
+		self.debug = debug
+		self.parameter_style = parameter_style
+		self.tplfile = './exa-specfile-tpl.exahype'
+		#self.tplfile = './debug-project.jinja'
+		self.exahype_base = self.mf.query(root)
+		self.native = self.exahype_base.tree(backref=True)
+		self.write(self.exaspecfile(mf_tree=self.native))
+	
+	def encode_parameters(self, path):
+		ret = OrderedDict() # is a k:v list in any case
+		
+		join_multiline = False # allow the parameter string to cover multiple lines
+		join_kv_tpl = "%s:%s"  # how to merge key and value
+		
+		
+		ret['mexa/ref'] = path
+		ret['mexa/style'] = self.parameter_style
+		if self.parameter_style == 'referenced':
+			ret['mexa/filename'] = 'PUT-MEXA-FILENAME-HERE' # todo
+		elif self.parameter_style == 'embedded':
+			# embed the configuration as a string, suitable for the specfile constants
+			# parameters
+			mf = self.mf.query(path).remove_prefix(path)
+			encoding = 'quotedprintable'
+			ret['mexa/encoding'] = encoding
+			ret['mexa/content'] = encoded_mexafile.dump(mf, encoding=encoding)
+		elif self.parameter_style == 'adapted':
+			# adapt the simple mexa file content to the specfile config tokens.
+			mf = self.mf.query(path).remove_prefix(path)
+			
+			# Strings must be treated with special care. They must not whitespace other "weird"
+			# characters. Therefore, they are encoded.
+			encoding = 'quotedprintable'
+			encode_str = encoded_mexafile.quoted_printable
+			ret['mexa/encoding'] = encoding
+			join_multiline = True
+			join_kv_tpl = "%s: %s" # Allow some whitespace
+			
+			# in the ExaHyPE toolkit grammar, certain identifiers and RHS values generate problems
+			# if they are in the token list, i.e. they are reserved expressions in the language.
+			# We can extract these reserved tokens from the SableCC grammar for the specfile:
+			#   cat exahype.grammar  | grep -E "^\s*token_" | grep "=" | cut -d'=' -f2 | tr -d "'; " | paste -d" " -s
+			reserved_tokens = "end exahype-project const peano-kernel-path peano-toolbox-path exahype-path output-directory architecture log-file computational-domain dimension width offset maximum-mesh-size maximum-mesh-depth time-stepping end-time solver ADER-DG Finite-Volumes Limiting-ADER-DG variables parameters naming-scheme constants order patch-size kernel type terms optimisation kernel limiter-type limiter-optimisation language limiter-language dmp-observables dmp-relaxation-parameter dmp-difference-scaling steps-till-cured helper-layers plot variable time repeat output select shared-memory cores properties-file identifier distributed-memory configure buffer-size timeout master-worker-communication neighbour-communication global-optimisation fuse-algorithmic-steps fuse-algorithmic-steps-factor timestep-batch-factor skip-reduction-in-batched-time-steps disable-amr-if-grid-has-been-stationary-in-previous-iteration double-compression spawn-double-compression-as-background-thread profiling profiler metrics deep-profiling profiling-output likwid_inc likwid_lib ipcm_inc ipcm_lib"
+			reserved_token_list = reserved_tokens.split()
+
+				
+			for l,r,op,src in mf:
+				assert op=='equals'
+				assert not isa(r,symbol), "Expect symbols to be removed"
+				assert not isa(r,lang.evalstr), "Expect RHS strings to be evaluated."
+				
+				if isa(r, [str,unicode]):
+					re = encode_str(r)  # in the specfile language, strings are not enclosed in " or '
+				elif isa(r, bool):
+					re = 'on' if r else 'off'
+				else:
+					re = str(r) # hope that this are only numbers.
+				
+				identifier = l.canonical()
+				
+				# at the moment, warn only. Proper escaping is subject to future extension of this code.
+				if identifier in reserved_tokens:
+					warn("Warning: Key '%s' is a reserved token in the ExaHyPE toolkit. Will probably generate problems. You should probably switch to parameter_style=embedded" % identifier)
+				if re in reserved_tokens:
+					warn("Warning: Value '%s' (at key %s) is a reserved token in the ExaHyPE toolkit. Will probably generate problems. You should probably switch to parameter_style=embedded" % (re,identifier))
+				
+				ret[identifier] = re
 		else:
-			ret.append(op2str(op))
+			raise ValueError("Parameter style not understood: %s" % self.parameter_style)
 		
+		# join ret to a specfile config string
+		joinstr = ",\n" if join_multiline else ","
+		return joinstr.join([ "%s:%s" % (k,v) for k,v in ret.iteritems() ])
+	
+	def exaspecfile(self, mf_tree):
+		"Return an ExaHyPE specfile which corresponds to these data"
+	
+		# assuming we only have one exahype project in ctx
+		ctx = {'exahype_projects': mf_tree }
 		
-
-	trailing_newline = [""] # to get \n the last character in the output
-	return ret if return_list else "\n".join(ret+trailing_newline)
-
-def simple_mexa(self, root=''):
-	"""
-	Simple mexa: Only assignments, nothing else. Redundancy will happen, thought.
-	"""
-	return self.dump_mexa(root,simple_mexa=True)
-
-encodings = {
-	# base64 is the well known base64
-	'base64': lambda f: base64.b64encode(f),
-	# base16 is only the hex
-	'base16': lambda f: base64.b16encode(f),
-	# urlencode/quoted printable:
-	'quotedprintable': lambda f: quoted_printable(f)
-}
-encoding_header = "##MEXA-simple configuration file"
-def dump_encoded_mexa(self, encoding, prepend_header=encoding_header, root='', opfilter=idfunc):
-	"""
-	Return an encoded mexa file. Several encodements are available, see the
-	encodings table.
-	@arg encoding: A value in encodings
-	@arg prepend_header: A single header line (incl. comment sign) to be prepended before the file
-	@arg simple_mexa: Whether to create simple mexa output
-	"""
-	fcontent = self.dump_mexa(root=root, simple_mexa=True, opfilter=opfilter, return_list=False)
-	fcontent = prepend_header + "\n" + fcontent
-	return self.encodings[encoding](fcontent)
-
-def json(self, style='linear', root=''):
-	"""
-	Translate the oplist to a more human readable one, omitting all the classy
-	meta data. In Json without hierarchy
-	"""
-	
-	# JSON pointer reference
-	json_pointer = lambda irhs: { '$ref': '#/'+irhs.canonical() }
-	data = self.native(style, root, json_pointer)
-	
-	import json
-	return json.dumps(data)
-
-def yaml(self, style='linear', root=''):
-	# placeholder
-	yaml_pointer = lambda irhs: { 'YAML-REF': 'towards->'+irhs.canonical() }
-	data = self.native(style, root, yaml_pointer)
-	
-	# this has to be installed
-	import yaml
-	return yaml.dump(data,default_flow_style=False)
-
-def xml(self, style='linear', query_root=''):
-	# xml dumps straight the classy structure
-	# This is extremely verbose and more suitable as a tech-demo
-	# Could also implement a hierarchy writer here
-	
-	# lxml and xml.sax are included in python (batteries)
-	from lxml import etree
-	from xml.sax.saxutils import escape as xml_escape
-	
-	root = etree.Element(self.__class__.__name__)
-	root.set('style', style) # actually, the style is ignored here.
-	root.set('query_root', query_root)
-	
-	def visit(obj, parent, tagname=None):
-		if not tagname: tagname = obj.__class__.__name__
-		me = etree.SubElement(parent, tagname)
+		# replace True and False by "on" and "off"
+		exaBool = { True: "on", False: "off" }
+		replBool = lambda item: exaBool[item] if isa(item,bool) else item
+		ctx = mapComplex(replBool, ctx)
 		
-		if type(obj) == list:
-			for oi in obj:
-				visit(oi, me)
-		elif hasattr(obj, '_asdict'): # namedtuples instable API gives OrderedDict
-			for namedtuple_fieldname, value in obj._asdict().iteritems():
-				visit(value, etree.SubElement(me, namedtuple_fieldname))
-		elif isinstance(obj, symbol):
-			for p in obj.path:
-				etree.SubElement(me, 'pathseg').text = p
-		else:
-			me.text = xml_escape(str(obj)).strip()
-
-	visit(self.query(query_root), root)
-	return etree.tostring(root, pretty_print=True)
-
-#def exaspecfile(self, root="exahype", tplfile='./jinja-test.txt'):#'./exa-specfile-tpl.exahype'):
-def exaspecfile(self, root="exahype", embed_config=True, tplfile='./exa-specfile-tpl.exahype'):
-	"Return an ExaHyPE specfile which corresponds to these data"
-	
-	copy_resolver = lambda symb: self.tree_backref_native(root=symb,symbol_resolver=copy_resolver)
-	ctx = self.tree_backref_native(root,copy_resolver)
-	
-	# assuming we only have one exahype project in ctx
-	ctx = {'exahype_projects': [ctx] }
-	
-	# replace True and False by "on" and "off"
-	exaBool = { True: "on", False: "off" }
-	replBool = lambda item: exaBool[item] if isa(item,bool) else item
-	ctx = mapComplex(replBool, ctx)
-
-	# for debugging:
-	if False:
-		pprint.pprint(ctx)
-	
-	mexa_path = mf.get_value_by_key("mexa")
-	
-	# this has to be installed:
-	import jinja2
-	
-	jinja_env = jinja2.Environment(
-		loader=jinja2.FileSystemLoader(mexa_path),
-		undefined=jinja2.StrictUndefined
-	)
-	
-	# provide further jinja functions:
-	# w decorators: https://stackoverflow.com/a/47291097
-	
-	def jinja_filter(func):
-		jinja_env.filters[func.__name__] = func
-		return func
-	
-	@jinja_filter
-	def dimlist(comp_domain, field):
-		"Compute the ExaHypE computational domain string (width_x, width_y, width_z?) "
-		fieldnames = [field+"_"+i for i in "xyz"]
-		fieldnames = fieldnames[:comp_domain['dimension']]
-		fields = [str(comp_domain[fn]) for fn in fieldnames]
-		return ", ".join(fields)
-	
-	@jinja_filter
-	def count_variables(variable_list):
-		"""Count the variables in a list 'x,y,z' or 'x:1,y:5,z:17' to 3 or 23, respectively"""
-		matches = re.findall(r"([a-zA-Z-_]+)(?:[:](\d+))?", variable_list)
-		return sum([1 if count == "" else int(count) for label,count in matches ])
-	
-	@jinja_filter
-	def resolve_path(node, prepend='/'):
-		"""
-		Lookup the tree_backref_native inserted backreference and embed it.
-		In order to have this be understood as a file path by the ExaHyPE specfile parser,
-		prepend a slash.
-		"""
-		# print out the query xpath (backref)
-		backref_key = "$path"
-		if backref_key in node:
-			return prepend + node[backref_key]
-		else:
-			raise ValueError("Missing backref key '%s' in node '%s'" % (backref_key, str(node)))
+		# for debugging:
+		if self.debug:
+			pprint.pprint(ctx)
 		
-	@jinja_filter
-	def embed(node, encoding):
-		# embed the configuration as a string, suitable for the specfile constants
-		# parameters
-		root = resolve_path(node)
-		# embedded: Remove the prefix since we do not need the fully featured address list
-		opfilter=symbol(root).remove_prefix_oplist # => does not work, opfilter is broken
-		#opfilter = idfunc
-		return self.dump_encoded_mexa(encoding=encoding, root=root, opfilter=opfilter)
-	
-	@jinja_filter
-	def link_in_list(node):
-		# This can be either resolve_path or embed. Here we do both for simplicity
-		encoding = 'quotedprintable'
-		return 'mexa:embedded,mexaref:%s,mexaformat:%s,mexacontent:%s' % (resolve_path(node), encoding, embed(node,encoding) )
-	
-	@jinja_filter
-	def as_float(txt):
-		"""
-		Ensure a number does look like a float (2.) instead of an int (2).
-		This is what the ExaHyPE parser is sensitive on...
-		"""
-		return str(float(txt))
-	
-	# function (not a filter):
-	jinja_env.globals['error'] = lambda msg: raise_exception(ValueError("Template stopped: "+msg))
-	
-	#try:
-	return jinja_env.get_template(tplfile).render(ctx)
-	# without exception chaining, we loose the stack trace:
-	#except Exception as e:
-	#	print "Debuggin context:"
-	#	pprint.pprint(ctx)
-	#	print "Exception:"
-	#	print str(e)
-	#	raise e	
+		mexa_path = self.mf.resolve_symbol("mexa")
+		
+		# this has to be installed:
+		import jinja2
+		
+		jinja_env = jinja2.Environment(
+			loader=jinja2.FileSystemLoader(mexa_path),
+			#undefined=jinja2.StrictUndefined
+			undefined=jinja2.DebugUndefined
+		)
+		
+		# provide further jinja functions:
+		# w decorators: https://stackoverflow.com/a/47291097
+		
+		def jinja_filter(func):
+			jinja_env.filters[func.__name__] = func
+			return func
+		
+		@jinja_filter
+		def tolist(adict):
+			# Mexa always stores dict. To treat a dictionary as a list, use this.
+			# Could also loop like for k,v in ... in jinja.
+			return adict.values()
+		
+		@jinja_filter
+		def dimlist(comp_domain, field):
+			"Compute the ExaHypE computational domain string (width_x, width_y, width_z?) "
+			fieldnames = [field+"_"+i for i in "xyz"]
+			fieldnames = fieldnames[:comp_domain['dimension']]
+			fields = [str(comp_domain[fn]) for fn in fieldnames]
+			return ", ".join(fields)
+		
+		@jinja_filter
+		def count_variables(variable_list):
+			"""Count the variables in a list 'x,y,z' or 'x:1,y:5,z:17' to 3 or 23, respectively"""
+			if not isa(variable_list, [str,unicode]):
+				return str(variable_list) ## whatever!
+			matches = re.findall(r"([a-zA-Z-_]+)(?:[:](\d+))?", variable_list)
+			return sum([1 if count == "" else int(count) for label,count in matches ])
+		
+		@jinja_filter
+		def resolve_path(node, prepend='/'):
+			"""
+			Lookup the tree_backref_native inserted backreference and embed it.
+			In order to have this be understood as a file path by the ExaHyPE specfile parser,
+			prepend a slash.
+			"""
+			# print out the query xpath (backref)
+			backref_key = "$path"
+			if backref_key in node:
+				return prepend + node[backref_key]
+			else:
+				raise ValueError("Missing backref key '%s' in node '%s'" % (backref_key, str(node)))
+			
+		
+		@jinja_filter
+		def link_in_list(node):
+			symb = resolve_path(node)
+			return self.encode_parameters(symb)
+		
+		@jinja_filter
+		def as_float(txt):
+			"""
+			Ensure a number does look like a float (2.) instead of an int (2).
+			This is what the ExaHyPE parser is sensitive on...
+			"""
+			return str(float(txt))
+		
+		# function (not a filter):
+		jinja_env.globals['error'] = lambda msg: raise_exception(ValueError("Template stopped: "+msg))
+		
+		#try:
+		return jinja_env.get_template(self.tplfile).render(ctx)
+		# without exception chaining, we loose the stack trace:
+		#except Exception as e:
+		#	print "Debuggin context:"
+		#	pprint.pprint(ctx)
+		#	print "Exception:"
+		#	print str(e)
+		#	raise e	
 
-encode_languages=["json", "yaml", "xml"]
-def encode(self, lang='json', style='linear', root=''):
-	"Encode in some language"
-	if   lang=="json": return self.json(style,root)
-	elif lang=="yaml": return self.yaml(style,root)
-	elif lang=="xml":  return self.xml (style,root)
-	else: raise ValueError("Language %s not supported" % lang)
-	
-
-# TODO: Add a graphviz output option.
-
-# a basic frontend:
-
-parser = argparse.ArgumentParser(description=__doc__)
-
-parser.add_argument('expressions', type=str, nargs='*',# action='append',
-	metavar='foo=bar', help="Mexa expressions to validate. Each argument represents one line. Arguments are appended to files read in.")
-parser.add_argument('--infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
-	metavar='FILENAME', help="Input file to read. If no file is given, read from stdin.")
-parser.add_argument('--outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout,
-	metavar='FILENAME', help="Output file to write to. If no file is given, write to stdout.")
-parser.add_argument('--outformat', choices=['mexa','simple-mexa','encode-mexa','yaml','json','xml','exahype'], 
-	help="Language format for output", default='mexa')
-parser.add_argument('--style', choices=native_styles, default='linear', help="Style applied if outformat in "+str(encode_languages))
-parser.add_argument('--root', default='', help='Queried root container')
-args = parser.parse_args()
-
-mf = mexafile.from_filehandle(args.infile)
-
-append_oplist = removeNone(args.expressions)
-if len(append_oplist):
-	#print "Parsing: " + str(append_oplist)
-	mf.append(append_oplist, "Command line argument expression")
-
-# could do here also --env which then adds all or requested environment variables below env/
-
-# appending stuff to any file, as a root
-mf.ops += [
-	# mexa = path to the current script directory
-	let(symbol("mexa"), sourced(os.path.dirname(os.path.realpath(__file__)), sourceline.from_python())),
-]
-
-sys.exit() # stop here for the time being
-
-# todo: Could offer here also an option to inject various or all environment
-# variables, just by passing "--env". Could setup manual assign() operations
-# similar to mexafile.rootbase.
-# Could also get rid of "let" statements by moving the rootbase outside the class.
-
-mf.evaluate()
-
-write = lambda t: args.outfile.write(t)
-
-# 1. Create list of operations
-# mf = mexafile(open("test.par","r"))
-#for o in mf.oplist: print o
-
-if args.outformat in mexafile.encode_languages:
-	write(mf.encode(lang=args.outformat, style=args.style, root=args.root))
-elif args.outformat == 'mexa':
-	write(mf.dump_mexa(root=args.root))
-elif args.outformat == 'simple-mexa':
-	write(mf.simple_mexa(root=args.root))
-elif args.outformat == 'encode-mexa':
-	write(mf.dump_encoded_mexa('quoted_printable',root=args.root))
-elif args.outformat == 'exahype':
-	# could pass root, but then must ensure that exahype information exist, i.e.
-	# at least one exahype project or so.
-	write(mf.exaspecfile())
-else:
-	write("Argformat %s not yet implemented" % args.outformat)
+if __name__ == "__main__":
+	cli = mexa_cli()
