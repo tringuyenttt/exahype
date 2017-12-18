@@ -162,7 +162,9 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		COMPILER_LFLAGS += -p -pg
 	else
 		#COMPILER_CFLAGS   += -fast -ip
-		COMPILER_CFLAGS   += -O3 -ip
+		#COMPILER_CFLAGS   += -O3 -ip
+                # Bench_CCZ4_1217
+                COMPILER_CFLAGS   += -ip
 	endif
 
 	ifeq ($(call tolower,$(SHAREDMEM)),tbb)
