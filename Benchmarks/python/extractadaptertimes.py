@@ -70,7 +70,7 @@ def extract_singlecore_table(root_dir,prefix):
       prefix (str):
          Prefix of the files - usually the date of the test and an identifier for the test.
     '''
-    header = ["Architecture","Optimisation","Order","Run","Adapter","Iterations","User Time (Total)","CPU Time (Total)"]
+    header = ["Order","Adapter","Architecture","Optimisation","Run","Iterations","User Time (Total)","CPU Time (Total)"]
 
     # collect filenames
     with open(root_dir+"/"+prefix+'.csv', 'w') as csvfile:
@@ -99,7 +99,7 @@ def extract_singlecore_table(root_dir,prefix):
                     usertime   = times[adapter]['usertime']
                     cputime    = times[adapter]['cputime']
  
-                    csvwriter.writerow([arch,optimisation,order,run,adapter,iterations,usertime,cputime])
+                    csvwriter.writerow([order,adapter,arch,optimisation,run,iterations,usertime,cputime]) 
 
 def extract_table(root_dir,prefix):
     '''
@@ -196,8 +196,8 @@ if singlecore is False:
   sort_table(root_dir+"/"+prefix+".csv",key)
 else:
   extract_singlecore_table(root_dir,prefix)
-  #key = lambda x: (x[0],int(x[1]),x[2],x[3])
-  #sort_table(root_dir+"/"+prefix+".csv",key)
+  key = lambda x: ( int(x[0]), x[1], x[2], x[3], int(x[4]) ) 
+  sort_table(root_dir+"/"+prefix+".csv",key)
 
 print("created table:")
 print(root_dir+"/"+prefix+".csv")
