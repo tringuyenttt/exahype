@@ -11,7 +11,7 @@
 #SBATCH --cpus-per-task=54
 #SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
 #SBATCH --mail-type=ALL
-#SBATCH --array=0-89
+#SBATCH --array=0-1
 
 
 pwd
@@ -58,12 +58,15 @@ do
     
           sed -i -r 's,end-time(\s*)=(\s*).+,end-time\1=\2'$T',' ${SPEC}_${index}
           sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' ${SPEC}_${index}
+	  OUT_FILE="$FOLDER/results/$APP-no-output-${arch}-${suffixes[i]}-p${order}-r$run.out"
+
+	  touch $OUT_FILE
    
-          cat ${SPEC}_${index} > $FOLDER/results/$APP-no-output-${arch}-${suffixes[i]}-p${order}-r$run.out
+          cat ${SPEC}_${index} &>> $OUT_FILE
 
-          # echo "./$APP-${arch}-${suffixes[i]}-p${order} ${SPEC}_${index} > $FOLDER/results/$APP-no-output-${arch}-${suffixes[i]}-p${order}-r$run.out"
+          echo "./$APP-${arch}-${suffixes[i]}-p${order} ${SPEC}_${index} &> $FOLDER/results/$APP-no-output-${arch}-${suffixes[i]}-p${order}-r$run.out"
 
-          ./$APP-no-output-${arch}-${suffixes[i]}-p${order} ${SPEC}_${index} > $FOLDER/results/$APP-no-output-${arch}-${suffixes[i]}-p${order}-r$run.out
+          ./$APP-no-output-${arch}-${suffixes[i]}-p${order} ${SPEC}_${index} >> $OUT_FILE
 
           rm ${SPEC}_${index}
         fi
