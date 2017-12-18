@@ -278,7 +278,7 @@ namespace mexa {
 	 * mf::vec() method.
 	 **/	
 	class vector_value {
-		mexafile mf;
+		mexafile mf, mq;
 		symbol node;
 		size_t required_length;
 		
@@ -290,7 +290,7 @@ namespace mexa {
 		template<typename T>
 		std::vector<T> get( T (value::*getter)() const, value::Type type, bool doCast) const;
 	public:
-		vector_value(mexafile mf, symbol node, size_t required_length) : mf(mf), node(node), required_length(required_length) {}
+		vector_value(mexafile mf, symbol node, size_t required_length);
 		
 		// if you want to be a harsh vector and have all entries to be the same type
 		std::vector<int> get_int() const;

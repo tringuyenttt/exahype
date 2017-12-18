@@ -41,10 +41,22 @@ int main(int argc, char** argv) {
 	// std::cout << "mf=" << mf.query_root("boundaries").toString();
 	
 	// testing vector
-	std::vector<double> pos = mf.vec("shocktube/right/bmag", 3).get_double();
-	//std::vector<int> pos = mf.vec("shocktube/right/bmag", 3).as_int();
+	std::vector<double> pos;
+	mexa::mexafile mq = mf.query_root_require("initialdata/right");
+	std::cout << "Reading vector:\n";
+	pos = mq.vec("vel", 3).as_double();
+	//std::vector<int> pos = mf.vec("initialdata/right/vel", 3).as_int();
 	for(auto j : pos)
 		std::cout << "vector value: " << j << "\n";
+	std::cout << "End of vector\n";
+	
+	std::cout << "Reading 2nd vector:\n";
+	pos = mq.vec("Bmag", 3).as_double();
+	//std::vector<int> pos = mf.vec("initialdata/right/vel", 3).as_int();
+	for(auto j : pos)
+		std::cout << "vector value: " << j << "\n";
+	std::cout << "End of 2nd vector\n";
+
 	
 	// Testing strings
 	/*
