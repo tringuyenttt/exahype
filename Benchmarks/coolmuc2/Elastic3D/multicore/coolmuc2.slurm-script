@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name="ExaHyPE"
-#SBATCH -o ExaHyPE-EulerFlow.%A.out
-#SBATCH -e ExaHyPE-EulerFlow.%A.err
+#SBATCH -o ExaHyPE-Elastic3D.%A.out
+#SBATCH -e ExaHyPE-Elastic3D.%A.err
 #SBATCH -t 01:00:00
 #SBATCH --exclusive
 #SBATCH --cluster=mpp2
@@ -43,24 +43,24 @@ cat $spec >> $out
 cat $out > ${out}.likwid
 
 # execute the job
-./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> $out
+./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> $out
 
 #if (( coresPerTask==1 )); then
-#  likwid-perfctr -f -C 0 -g MEM      ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-#  likwid-perfctr -f -C 0 -g FLOPS_DP ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-#  likwid-perfctr -f -C 0 -g L2CACHE  ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-#  likwid-perfctr -f -C 0 -g L3CACHE  ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-#  likwid-perfctr -f -C 0 -g L3       ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-#  likwid-perfctr -f -C 0 -g BRANCH   ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-  # not available on ham7: likwid-perfctr -C 0 -g L1CACHE  ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> $out
+#  likwid-perfctr -f -C 0 -g MEM      ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+#  likwid-perfctr -f -C 0 -g FLOPS_DP ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+#  likwid-perfctr -f -C 0 -g L2CACHE  ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+#  likwid-perfctr -f -C 0 -g L3CACHE  ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+#  likwid-perfctr -f -C 0 -g L3       ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+#  likwid-perfctr -f -C 0 -g BRANCH   ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+  # not available on ham7: likwid-perfctr -C 0 -g L1CACHE  ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> $out
 #else
 #  let maxCore=coresPerTask-1
 
-#  likwid-perfctr -f -C 0-$maxCore -g MEM      ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-#  likwid-perfctr -f -C 0-$maxCore -g FLOPS_DP ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-#  likwid-perfctr -f -C 0-$maxCore -g L2CACHE  ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-#  likwid-perfctr -f -C 0-$maxCore -g L3CACHE  ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-#  likwid-perfctr -f -C 0-$maxCore -g L3       ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-#  likwid-perfctr -f -C 0-$maxCore -g BRANCH   ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
-  # not available on ham7: likwid-perfctr -C 0-$maxCore -g L1CACHE  ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> $out
+#  likwid-perfctr -f -C 0-$maxCore -g MEM      ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+#  likwid-perfctr -f -C 0-$maxCore -g FLOPS_DP ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+#  likwid-perfctr -f -C 0-$maxCore -g L2CACHE  ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+#  likwid-perfctr -f -C 0-$maxCore -g L3CACHE  ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+#  likwid-perfctr -f -C 0-$maxCore -g L3       ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+#  likwid-perfctr -f -C 0-$maxCore -g BRANCH   ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> ${out}.likwid
+  # not available on ham7: likwid-perfctr -C 0-$maxCore -g L1CACHE  ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> $out
 #fi

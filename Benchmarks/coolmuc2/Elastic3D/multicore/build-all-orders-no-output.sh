@@ -1,6 +1,6 @@
 directory=multicore
 
-exe=ExaHyPE-Euler
+exe=ExaHyPE-Elastic3D
 spec=$directory/Elastic3D-no-output.exahype
 
 # save original file

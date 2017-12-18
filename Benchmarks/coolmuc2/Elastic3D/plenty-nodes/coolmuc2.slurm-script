@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name="ExaHyPE-Elastic3D"
-#SBATCH -o ExaHyPE-EulerFlow.%A.out
-#SBATCH -e ExaHyPE-EulerFlow.%A.err
+#SBATCH -o ExaHyPE-Elastic3D.%A.out
+#SBATCH -e ExaHyPE-Elastic3D.%A.err
 #SBATCH -t 01:00:00
 #SBATCH --exclusive
 #SBATCH --cluster=mpp2
@@ -40,4 +40,4 @@ echo "" >> $out
 cat $spec >> $out
 
 # execute the job
-mpiexec -np $tasks ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> $out
+mpiexec -np $tasks ./ExaHyPE-Elastic3D-p3-$sharedMem-$compiler $spec >> $out
