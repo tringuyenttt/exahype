@@ -43,9 +43,21 @@ do
 
         # echo $index
 
-        if (( SLURM_ARRAY_TASK_ID==index )); then
+        if (( SLURM_ARRAY_TASK_ID==index )); then         
           cp $SPEC ${SPEC}_${index}
+ 
+          # SIMULATION END TIME
+          T=0.0031428571428571426
+          if (( order==6 )); then
+            T=0.0016923076923076922
+          fi 
+          if (( order==9 )); then
+            T=0.0011578947368421052
+          fi 
+    
+          sed -i -r 's,end-time(\s*)=(\s*).+,end-time\1=\2'$T',' ${SPEC}_${index}
           sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' ${SPEC}_${index}
+   
           cat ${SPEC}_${index}
 
           # echo "./$APP-${arch}-${suffixes[i]}-p${order} ${SPEC}_${index} > $FOLDER/results/$APP-no-output-${arch}-${suffixes[i]}-p${order}-r$run.out"
