@@ -11,8 +11,8 @@
 #SBATCH --cpus-per-task=28
 #SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
 #SBATCH --mail-type=ALL
-#SBATCH --array=0-89
-#0-89
+#SBATCH --array=0-53
+#0-53
 
 pwd
 source /etc/profile.d/modules.sh
@@ -23,11 +23,11 @@ APP=ExaHyPE-ElasticWaveEquation3D
 ARCH=hsw
 #ARCH=knl
 
-declare -a CFLAGS=(" -O2 -no-vec -no-fma -no-ip" " -O2 -vec -fma -ip " " -O3 -vec -fma -ip ")
+declare -a CFLAGS=(" -O2 -no-vec -no-fma -no-ip" " -O2 -fma -ip " " -O3 -fma -ip ")
 declare -a suffixes=("O2-novec" "O2-vec" "O3-vec")
 
 # A1
-for run in {0..4}
+for run in {0..2}
 do 
   for a in 0 1
   do 
