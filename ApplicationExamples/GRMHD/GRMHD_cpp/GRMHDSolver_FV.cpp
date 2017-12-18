@@ -20,7 +20,7 @@ using namespace GRMHD;
 tarch::logging::Log GRMHD::GRMHDSolver_FV::_log( "GRMHD::GRMHDSolver_FV" );
 
 void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
-	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), "specfile");
+	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), constants.toString());
 	
 	/*
 	std::cout << "Mexa configuration: \n" << mf.toString();
