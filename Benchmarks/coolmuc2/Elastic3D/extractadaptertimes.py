@@ -19,7 +19,7 @@ import operator
 :synopsis: Extracts performance metrics from Peano output files with specific file naming pattern.
 '''
 def parse_adapter_times(file_path,per_iteration=False):
-    """
+    '''
     Reads a single Peano output file and parses the user time spent within each adapter.
     
     Args:
@@ -33,7 +33,7 @@ def parse_adapter_times(file_path,per_iteration=False):
           * 'n'       : (int)    Number of times this adapter was used.
           * 'cputime' : (float) CPU time spent within the adapter.
           * 'usertime': (float) User time spent within the adapter.
-    """
+    '''
     result = { }
     try:
         file_handle=open(file_path)
@@ -59,6 +59,47 @@ def parse_adapter_times(file_path,per_iteration=False):
         print ("Error: Could not process file '%s'!\n" % (file_path))
         raise
     return result
+
+def extract_singlecore_table(root_dir,prefix):
+    '''
+    Extracts performance metrics from Peano output files with specific file naming pattern.
+   
+    Args:
+      root_dir (str):
+         Directory containing the Peano output files.
+      prefix (str):
+         Prefix of the files - usually the date of the test and an identifier for the test.
+    '''
+    header = ["Architecture","Optimisation","Adapter","Iterations","User Time (Total)","CPU Time (Total)"]
+
+    # collect filenames
+    with open(root_dir+"/"+prefix+'.csv', 'w') as csvfile:
+        csvwriter = csv.writer(csvfile, delimiter='&',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        
+        # write header
+        csvwriter.writerow(header)
+        
+        # write content
+        print("processed files:")
+        for filename in os.listdir(root_dir):
+            if filename.endswith(".out") and filename.startswith(prefix):
+                # file structure: (prefix)-(arch)-(optimisation)-p(order)-r(run).out
+                match = re.search('^'+prefix+'-(\w+)-(.+)-p([0-9]+)-r([0-9]+)\.out',filename)
+                print(root_dir+"/"+filename)
+                
+                arch         = match.group(1) # opt/gen
+                optimisation = match.group(2) # fused/nonfused
+                order        = match.group(3) # fused/nonfused
+                run          = match.group(4) # fused/nonfused
+                    
+                times = parse_adapter_times(root_dir+"/"+filename) 
+                
+                for adapter in times:
+                    iterations = times[adapter]['n']
+                    usertime   = times[adapter]['usertime']
+                    cputime    = times[adapter]['cputime']
+ 
+                    csvwriter.writerow([arch,optimisation,order,run,adapter,iterations,usertime,cputime])
 
 def extract_table(root_dir,prefix):
     '''
@@ -105,7 +146,7 @@ def extract_table(root_dir,prefix):
  
                     csvwriter.writerow([mesh,order,cc,kernels,algorithm,adapter,nodes,tasks,cores,mode,iterations,usertime,cputime])
 
-def sort_table(filename):
+def sort_table(filename,myKey):
     '''
     Sorts the rows of the file according to nodes,tasks,cores,adapter name.
     See: https://stackoverflow.com/a/17109098
@@ -114,7 +155,7 @@ def sort_table(filename):
     header      = next(datafile).strip()
     reader      = csv.reader(datafile,delimiter='&')
     # [order,cc,kernels,algorithm,adapter,nodes,tasks,cores,mode,iterations,usertime,cputime]
-    sorted_data = sorted(reader, key=lambda x: (x[0],int(x[1]),x[2],x[3],x[4],x[5],int(x[6]),int(x[7]),int(x[8])))
+    sorted_data = sorted(reader, key=myKey)
     datafile.close() 
  
     with open(filename, 'w') as datafile:
@@ -140,14 +181,23 @@ python3 extractadaptertimes.py -path \'results/' -prefix \'Euler-ADERDG-regular-
 parser = argparse.ArgumentParser(description=help,formatter_class=RawTextHelpFormatter)
 parser.add_argument('-path',required=True,help="Directory containing the Peano output files.")
 parser.add_argument('-prefix',required=True,help="Prefix of the Peano output files.")
+parser.add_argument('--single-core',dest='singlecore',required=False,action='store_true',help="")
+parser.set_defaults(singlecore=False)
 
 args     = parser.parse_args();
 
-root_dir = args.path
-prefix   = args.prefix
+root_dir   = args.path
+prefix     = args.prefix
+singlecore = args.singlecore 
 
-extract_table(root_dir,prefix)
-sort_table(root_dir+"/"+prefix+".csv")
+if singlecore is False:
+  extract_table(root_dir,prefix)
+  key = lambda x: (x[0],int(x[1]),x[2],x[3],x[4],x[5],int(x[6]),int(x[7]),int(x[8]))
+  sort_table(root_dir+"/"+prefix+".csv",key)
+else:
+  extract_singlecore_table(root_dir,prefix)
+  #key = lambda x: (x[0],int(x[1]),x[2],x[3])
+  #sort_table(root_dir+"/"+prefix+".csv",key)
+
 print("created table:")
 print(root_dir+"/"+prefix+".csv")
-
