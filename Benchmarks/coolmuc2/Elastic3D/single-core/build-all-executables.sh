@@ -18,7 +18,7 @@ do
    
     sed -i -r 's,archictecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
     sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' $SPEC
-    ./configure.sh
+    ./configure-no-output.sh
 
     # O0 no-vec
     make clean
