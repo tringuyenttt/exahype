@@ -4,43 +4,41 @@ export SHAREDMEM="None"
 export DISTRIBUTEDMEM="None"
 export USE_IPO="off"
 
-CORES=4
+CORES=28
 
 FOLDER=single-core
 SPEC=${FOLDER}/Elastic3D-no-output.exahype
-APP=ExaHyPE-Elastic3D
+APP=ExaHyPE-ElasticWaveEquation3D
 #ARCH=knl
 ARCH=hsw
 
 # A1
 # pre: remove -O from the Makefile
-for order in 3 6 9
-do
-  for arch in noarch $ARCH
-  do
-   
-    sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' $SPEC
-    sed -i -r 's,architecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
-    ${FOLDER}/configure-no-output.sh
-    cat $SPEC
 
-    # O2 no-vec no-fma
-    make clean
-    export COMPILER_CFLAGS=" -O2 -no-vec -no-fma -no-ip"
-    make -j$cores
-    mv $APP ExaHyPE-Elastic3d-${arch}-O2-novec--p${order}
-   
-    # O2 
-    make clean
-    export COMPILER_CFLAGS=" -O2 -vec -fma -ip "
-    make -j$cores
-    mv $APP ExaHyPE-Elastic3d-${arch}-O2-vec-p${order}
+declare -a CFLAGS=(" -O2 -no-vec -no-fma -no-ip" " -O2 -vec -fma -ip " " -O3 -vec -fma -ip ")
+declare -a suffixes=("O2-novec" "O2-vec" "O3-vec")
 
-    # O3 
+for arch in noarch $ARCH
+do 
+  sed -i -r 's,architecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
+  
+  for i in 0 1 2
+  do  
+    export COMPILER_CFLAGS="${CFLAGS[i]}"
     make clean
-    export COMPILER_CFLAGS=" -O3 -vec -fma -ip "
-    make -j$cores
-    mv $APP ExaHyPE-Elastic3d-${arch}-O3-vec-p${order}
-    
+ 
+    for order in 3 6 9
+    do
+      rm *.o cipofiles.mk ffiles.mk cfiles.mk
+      sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' $SPEC
+      
+      ${FOLDER}/configure-no-output.sh
+      cat $SPEC
+
+      # O2 no-vec no-fma
+      make -j$cores
+      mv $APP ExaHyPE-Elastic3d-${arch}-${suffixes[i]}-p${order}
+
+    done   
   done
 done 
