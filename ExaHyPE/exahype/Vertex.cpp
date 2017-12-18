@@ -167,9 +167,9 @@ void exahype::Vertex::validateThatNeighbourhoodIsValid(
           // Cell 1
           const int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
           if (element1!=exahype::solvers::Solver::NotFound) {
-            auto& p1 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex1,element1);
+            auto& p1 = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex1,element1);
             if (
-                p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell
+                p1.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
                 &&
                 p1.getIsInside(faceIndex1)
                 &&
@@ -182,9 +182,9 @@ void exahype::Vertex::validateThatNeighbourhoodIsValid(
           // Cell 2
           const int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
           if (element2!=exahype::solvers::Solver::NotFound) {
-            auto& p2 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex2,element2);
+            auto& p2 = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex2,element2);
             if (
-                p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell
+                p2.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
                 &&
                 p2.getIsInside(faceIndex2)
                 &&

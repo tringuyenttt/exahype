@@ -23,6 +23,8 @@ class Parser;
 #include <map>
 #include <vector>
 #include <utility> // pair
+#include <istream>
+#include <ostream>
 
 #include "peano/utils/Globals.h"
 #include "tarch/la/Vector.h"
@@ -39,8 +41,15 @@ class Parser;
  * The parser can deal with C and doxygen style comments as
  * long as not two multi-line comment blocks are opened/closed
  * in the same line.
+ * 
+ * <h2>Parser Limitations</h2>
+ * Requires a proper implementation of the
+ * C++11 regex routines (GCC>=4.9.0).
  *
- * @author Tobias Weinzierl, Dominic Etienne Charrier
+ * Cannot deal with multiple openings/closings of comments
+ * in the same line.
+ *
+ * @author Tobias Weinzierl, Dominic Etienne Charrier, Sven Koeppel
  */
 class exahype::Parser {
  public:
@@ -128,6 +137,23 @@ class exahype::Parser {
     bool isValueValidInt(const std::string& key) const;
     bool isValueValidDouble(const std::string& key) const;
     bool isValueValidString(const std::string& key) const;
+
+    /**
+     * Access the Parser. Can be helpful for obtaining information beyond the
+     * solver constants which are represented by this object.
+     **/
+    const Parser& getParser() const;
+
+    /**
+     * Returns a short string representation of this ParserView. It mentions the
+     * Parser Filename as well as the ParserView's solver name.
+     **/
+    std::string toString() const;
+
+    /**
+     * \see toString()
+     **/
+    void toString(std::ostream& out) const;
   };
 
  private:
@@ -175,6 +201,11 @@ class exahype::Parser {
                             std::string token1, int occurance1,
                             int additionalTokensToSkip = 0) const;
 
+  /**
+   * Holds the filename of the specification file parsed by this parser
+   **/
+  std::string _filename;
+
  public:
   /**
    * Property strings in ExaHyPE are string alike "{all,left=0.5,Q4}". This
@@ -203,15 +234,14 @@ class exahype::Parser {
 
   enum class MPILoadBalancingType { Static };
 
-  /**
-   * <h2>Limitations</h2>
-   * Requires a proper implementation of the
-   * C++11 regex routines (GCC>=4.9.0).
-   *
-   * Cannot deal with multiple openings/closings of comments
-   * in the same line.
-   */
+
   void readFile(const std::string& filename);
+
+  /**
+   *
+   *
+   **/
+  void readFile(std::istream& inputFile, std::string filename="");
 
   bool isValid() const;
   void invalidate();
@@ -429,6 +459,18 @@ class exahype::Parser {
 
   int getRanksPerNode();
   int getNumberOfBackgroundTasks();
+
+  /**
+   * Returns the filename of the specfile represented by this Parser. Can
+   * be empty if the user specified no filename.
+   **/
+  std::string getSpecfileName() const;
+
+  /**
+   * Returns the token stream as string. This is helpful for debugging.
+   **/
+  std::string getTokenStreamAsString() const;
+
 };
 
 #endif

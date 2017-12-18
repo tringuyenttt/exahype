@@ -178,12 +178,58 @@ int exahype::pingPongTest() {
 
 
 int exahype::main(int argc, char** argv) {
-  peano::fillLookupTables();
+  //
+  //   Parse config file
+  // =====================
+  //
+  std::string progname = argv[0];
+
+  if (argc < 2) {
+    logError("main()", "Usage: " << progname << " --help");
+    return -1;
+  }
+
+  // cmdlineargs contains all argv expect the progname.
+  std::vector<std::string> cmdlineargs(argv + 1, argv + argc);
+  std::string firstarg = cmdlineargs[0];
+
+  bool showHelp    = firstarg == "-h" || firstarg == "--help";
+  bool showVersion = firstarg == "-v" || firstarg == "--version";
+  bool runTests    = firstarg == "-t" || firstarg == "--tests";
+  bool runPingPong = firstarg == "-p" || firstarg == "--pingpong";
+  bool showCompiledSpecfile = firstarg == "--show-specfile";
+  bool runCompiledSpecfile  = firstarg == "--built-in-specfile";
+
+  //
+  //   Early standalone options
+  //   ========================
+  //
+
+  if(showHelp) {
+    help(progname);
+    return EXIT_SUCCESS;
+  }
+
+  if(showVersion) {
+    std::cout << version(progname);
+    return EXIT_SUCCESS;
+  }
+  
+  if(showCompiledSpecfile) {
+    // Unfortunately, we cannot avoid here to get the output dirtied by the
+    // tarch::parallel::Node<static>::reserveFreeTag() log outputs.
+    // The only alternative to get the clean specfile would be to dump it to
+    // a file.
+    std::cout << std::string(kernels::compiledSpecfile());
+    return EXIT_SUCCESS;
+  }
 
   //
   //   Setup environment
-  // =====================
+  //   =================
   //
+  peano::fillLookupTables();
+  
   int parallelSetup = peano::initParallelEnvironment(&argc, &argv);
   if (parallelSetup != 0) {
 #ifdef Parallel
@@ -205,38 +251,8 @@ int exahype::main(int argc, char** argv) {
     return sharedMemorySetup;
   }
 
-  //
-  //   Parse config file
-  // =====================
-  //
-  std::string progname = argv[0];
-
-  if (argc < 2) {
-    logError("main()", "Usage: " << progname << " --help");
-    return -1;
-  }
-
-  // cmdlineargs contains all argv expect the progname.
-  std::vector<std::string> cmdlineargs(argv + 1, argv + argc);
-  std::string firstarg = cmdlineargs[0];
-
-  bool showHelp    = firstarg == "-h" || firstarg == "--help";
-  bool showVersion = firstarg == "-v" || firstarg == "--version";
-  bool runTests    = firstarg == "-t" || firstarg == "--tests";
-  bool runPingPong = firstarg == "-p" || firstarg == "--pingpong";
-
   if (runPingPong) {
     return pingPongTest();
-  }
-
-  if(showHelp) {
-    help(progname);
-    return EXIT_SUCCESS;
-  }
-
-  if(showVersion) {
-    std::cout << version(progname);
-    return EXIT_SUCCESS;
   }
 
   if (runTests) {
@@ -265,8 +281,20 @@ int exahype::main(int argc, char** argv) {
     }
   }
 
+  //
+  //   Parse specification file
+  // =====================================
+  //
+
   exahype::Parser parser;
-  parser.readFile(firstarg);
+
+  if(runCompiledSpecfile) {
+    std::stringstream specfile;
+    specfile.str(std::string(kernels::compiledSpecfile()));
+    parser.readFile(specfile, "builtin");
+  } else {
+    parser.readFile(firstarg);
+  }
 
   if (!parser.isValid()) {
     logError("main()", "invalid config file. Quit");
@@ -357,7 +385,7 @@ int exahype::main(int argc, char** argv) {
 
 
 void exahype::help(const std::string& programname) {
-  std::cout << "Usage: " << programname << " <YourApplication.exahype>\n";
+  std::cout << "Usage: " << programname << " [-hvt] <YourApplication.exahype>\n";
   std::cout << "\n";
   std::cout << "   where YourApplication.exahype is an ExaHyPE specification file.\n";
   std::cout << "   Note that you should have compiled ExaHyPE with this file as there\n";
@@ -365,9 +393,11 @@ void exahype::help(const std::string& programname) {
   std::cout << "\n";
   std::cout << "   Other possible parameters:\n";
   std::cout << "\n";
-  std::cout << "    --help | -h    Show this help message\n";
-  std::cout << "    --version | -v Show version and other hard coded information\n";
-  std::cout << "    --tests | -t   Run the unit tests\n";
+  std::cout << "    --help    | -h       Show this help message\n";
+  std::cout << "    --version | -v       Show version and other hard coded information\n";
+  std::cout << "    --tests   | -t       Run the unit tests\n";
+  std::cout << "    --show-specfile      Show the specification file the binary was built with\n";
+  std::cout << "    --built-in-specfile  Run with the spec. file the binary was built with\n";
   std::cout << "\n";
 }
 

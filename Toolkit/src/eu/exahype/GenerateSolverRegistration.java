@@ -1,6 +1,9 @@
 package eu.exahype;
 
 import java.util.LinkedList;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileInputStream;
 
 import eu.exahype.analysis.DepthFirstAdapter;
 import eu.exahype.kernel.ADERDGKernel;
@@ -61,6 +64,50 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       _versionBodyWriter.write("\n  ostream << \""+key+": \";");
       _versionBodyWriter.write("\n  "+code);
       _versionBodyWriter.write("\n  ostream << \"\\n\";");
+  }
+  
+  /// Encode the specification file itself into C++. This makes debugging
+  /// easy and also can be useful in practise.
+  public String writeSpecfileAsCode() {
+    // Line by line:
+    /*
+    java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(_inputFileName));
+    for (String line = br.readLine(); line != null; line = br.readLine()) {
+        // This can be faulty: Escape single quotation marks "
+        String escapedline = line.replaceAll("\"","\\\"");
+    }
+    */
+    // Byte by byte is failproof:
+    String ret="";
+    int counter=0;
+    int maxlinelength=20;
+    int indent=4;
+
+    for(int j=0; j<indent; j++) ret += " ";
+    FileInputStream in = null;
+    try {
+      in = new java.io.FileInputStream(_inputFileName);
+      int c;
+
+      while ((c = in.read()) != -1) {
+          //ret += " 0x" + Integer.toHexString(c) + ",";
+          ret += String.format(" 0x%02X,", c);
+          if(++counter % maxlinelength == 0) {
+              ret += "\n";
+              for(int j=0; j<indent; j++) ret += " ";
+          }
+      }
+
+      // Add a zero at the end. Result is a zero-terminated string.
+      ret += "\n";
+      for(int j=0; j<indent; j++) ret += " ";
+      ret += " 0x00 /* Zero-terminated string */";
+
+      //return ret.substring(0, ret.length() - 1); // remove last ","
+      return ret;
+    } catch(Exception e) {
+      return "/* " + e.getMessage() + " */";
+    }
   }
   
   @Override
@@ -429,6 +476,18 @@ public class GenerateSolverRegistration extends DepthFirstAdapter {
       _writer.write("/* Generated SolverRegistration code by the toolkit */\n");
       _writer.write(_versionBodyWriter.toString());
       _writer.write("\n}");
+      _writer.write("\n\n");
+
+      _writer.write("const char* kernels::compiledSpecfile() {\n");
+      _writer.write("  /* This is a hexdump of the specfile which was used to create this registration file.     */\n");
+      _writer.write("  /* Run ExaHyPE with --help to learn how to view it's contents and/or run ExaHyPE with it. */\n");
+      _writer.write("  static const char ret[] = \n");
+      _writer.write("  {\n");
+      // In case you have trouble compiling the generated code, comment the following line:
+      _writer.write(      writeSpecfileAsCode() + "\n");
+      _writer.write("  };\n");
+      _writer.write("  return ret;\n");
+      _writer.write("}\n");
       _writer.write("\n");
 
       System.out.println("configured all solver solvers ... ok");
