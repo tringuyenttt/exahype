@@ -3,11 +3,12 @@ export COMPILER="Intel"
 export SHAREDMEM="None"
 export DISTRIBUTEDMEM="None"
 
-SPEC=Elastic3D.exahype
+SPEC=${FOLDER}/Elastic3D.exahype
 APP=ExaHyPE-Elastic3D
 CORES=4
 #ARCH=knl
 ARCH=hsw
+FOLDER=single-core
 
 # A1
 # pre: remove -O from the Makefile
@@ -18,7 +19,7 @@ do
    
     sed -i -r 's,archictecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
     sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' $SPEC
-    ./configure-no-output.sh
+    ./${FOLDER}/configure-no-output.sh
 
     # O0 no-vec
     make clean
