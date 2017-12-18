@@ -1,0 +1,45 @@
+#!/bin/bash
+#SBATCH --job-name="ExaHyPE-Elastic3D"
+#SBATCH -o ExaHyPE-Elastic3D.%A.out
+#SBATCH -e ExaHyPE-Elastic3D.%A.err
+#SBATCH -t 01:00:00
+#SBATCH --exclusive
+#SBATCH --cluster=mpp2
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=28
+#SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
+#SBATCH --mail-type=ALL
+
+source /etc/profile.d/modules.sh
+
+module load tbb/2017
+module load likwid/4.0
+
+FOLDER=single-core
+SPEC=${FOLDER}/Elastic3D-no-output.exahype
+APP=ExaHyPE-Elastic3D
+#ARCH=knl
+ARCH=hsw
+
+# A1
+# pre: remove -O from the Makefile
+for order in 3 6 9
+do
+  for arch in noarch $ARCH
+  do 
+    sed -i -r 's,order(\s*)const(\s*)=(\s*).+,order\1const\2=\3'$order',' $SPEC
+    sed -i -r 's,archictecture(\s*)const(\s*)=(\s*).+,architecture\1const\2=\3'$arch',' $SPEC
+    ${FOLDER}/configure-no-output.sh
+
+    # O0 no-vec
+    ./ExaHyPE-Elastic3d-${arch}_O0-novec-p${order} $SPEC
+    # O2 no-vec
+    ./ExaHyPE-Elastic3d-${arch}-O2-novec-p${order} $SPEC
+    # O3 no-vec
+    ./ExaHyPE-Elastic3d-${arch}-O3-novec-p${order} $SPEC
+    # O3 
+    ./ExaHyPE-Elastic3d-${arch}_O3-p${order} $SPEC
+    
+  done
+done 
