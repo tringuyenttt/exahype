@@ -2,6 +2,7 @@ export MODE="Release"
 export COMPILER="Intel"
 export SHAREDMEM="None"
 export DISTRIBUTEDMEM="None"
+export USE_IPO="off"
 
 CORES=4
 
