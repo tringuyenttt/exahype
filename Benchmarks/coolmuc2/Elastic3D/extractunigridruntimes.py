@@ -3,14 +3,32 @@
 import argparse
 from argparse import RawTextHelpFormatter
 
+import sys
 import re
 import os
 import csv
 
 import operator
 
+def column(matrix, i):
+    return [row[i] for row in matrix]
+    
+
+def writeTable(data,header,filename):
+    with open(filename, 'w') as datafile:
+        writer = csv.writer(datafile, delimiter='&',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(header)
+        
+        for row in data:
+            writer.writerow(row)
+    
 def extractSingleCoreRuntimes(table):
     '''
+    assume: inputRow = [order,adapter,arch,optimisation,run,iteratins,user time, runtime]
+    example:
+       0           1             2        3      4     5         6        7
+    ['6', 'MeshRefinement', 'noarch', 'O3-vec', '1', '12', '15.2857', '15.25'] 
+    
     Args:
       table (str):
          path of a CSV table created with extractadaptertimes.py
@@ -18,82 +36,48 @@ def extractSingleCoreRuntimes(table):
     nonfusedAdapters = [ 
                          "BroadcastGlobalDataAndMergeNeighbourMessages",
                          "SolutionUpdate",
-                         "Prediction" # substract one; exclude initialisation
+                         "Prediction" 
                        ]
     
     datafile = open(table, 'r')
     next(datafile) # skip header
-    reader   = csv.reader(datafile,delimiter='&')
     
-    # assume: row = [order,adapter,arch,optimisation,run,...]
-    # example:
-    #   0           1             2        3      4     5         6        7
-    #['6', 'MeshRefinement', 'noarch', 'O3-vec', '1', '12', '15.2857', '15.25'] 
-
-    sorted_data = sorted( reader, key=lambda x: (x[0],x[2],x[3],x[1],int(x[4])) )
-               
-    def onlyRunChanged(row,last_row):
-        return (row[0] == last_row[0] and 
-                row[1] == last_row[1] and 
-                row[2] == last_row[2] and 
-                row[3] == last_row[3] and 
-                row[4] != last_row[4])
+    data = list(csv.reader(datafile,delimiter='&'))
+    datafile.close()
     
-    def onlyAdapterAndRunChanged(row,last_row):
-        return (row[0] == last_row[0] and 
-                row[1] != last_row[1] and # adapter
-                row[2] == last_row[2] and 
-                row[3] == last_row[3] and 
-                row[4] != last_row[4])    # run
- 
-    # init ( we do the first row twice; a little inconsistent )
-    total     = 0.0
-    runs      = 0
-    last_row  = sorted_data[0][:4] + [ 'NaN', '0', '0.0', '0.0' ]
-    result    = last_row[:1] + last_row[2:4] + [ '0', '0.0' ] 
-        
-    # print(last_row)
-    print(result)
-    print(last_row)
-
-    # loop
+    orders        = set(column(data,0))
+    architectures = set(column(data,2))
+    optimisations = set(column(data,3))
+    
+    # processing data
+    result = []
+    for order in orders:
+        for architecture in architectures:
+            for optimisation in optimisations:
+                averageRuntimePerIteration = 0.0
+                minIterations              = sys.maxsize
+                for adapter in nonfusedAdapters:
+                    filtered = list(filter(lambda x: x[0]==order and x[1]==adapter and x[2]==architecture and x[3]==optimisation, data))
+                    runs     = len(filtered)
+                    
+                    iterations = 0
+                    if runs > 0:
+                        iterations = int ( filtered[0][5] )
+                        
+                        averageAdapterTime = 0.0
+                        for r in range(0,runs):
+                            averageAdapterTime += float ( filtered[r][6] )
+                        averageAdapterTime /= runs
+                        
+                        averageRuntimePerIteration += averageAdapterTime / iterations
+                    minIterations = min(minIterations,iterations)
+                    
+                row = [order,architecture,optimisation,minIterations,averageRuntimePerIteration]
+                result.append(row)
+    
     header = ["Order","Architecture","Optimisation","Iterations","Total Runtime (Per Iteration)"]
     filename = table.replace('.csv','.runtimes.csv')
-    with open(filename, 'w') as datafile:
-        writer = csv.writer(datafile, delimiter='&',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(header)
-        
-        for row in sorted_data:
-            print(row)
-            if onlyRunChanged(row,last_row):
-                total  = total + float(row[6])
-                runs  += 1
-            elif onlyAdapterAndRunChanged(row,last_row):
-                if row[1]=='BroadcastGlobalDataAndMergeNeighbourMessages': # comes before Prediction,SolutionUpdate 
-                    result[3] = row[5] # iterations
-                
-                if row[1] in nonfusedAdapters:
-                    iterations = row[5]
-                    result[4]  = str( float(result[4]) + total / float(iterations) ) # normalised run time
-                
-                runs  = 0
-                total = 0.0
-            else:
-                result[4] = str( float(result[4]) / runs )
-                writer.writerow(result)
-                
-                runs  = 0
-                total = 0
-                
-                result = row[:1] + row[2:4] + [ '0', '0.0' ] 
-            
-            last_row = row
-        
-        # finalise (have to write a last time)
-        result[4] = str( float(result[4]) / runs )
-        writer.writerow(result)
-    
-    datafile.close()
+    writeTable(result,header,filename)
 '''
 .. module:: extractunigridruntimes
   :platform: Unix, Windows, Mac

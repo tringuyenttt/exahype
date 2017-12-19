@@ -62,7 +62,7 @@ def parse_adapter_times(file_path,per_iteration=False):
 
 def extract_singlecore_table(root_dir,prefix):
     '''
-    Extracts performance metrics from Peano output files with specific file naming pattern.
+    Extracts adapter times from Peano output files with specific file naming pattern.
    
     Args:
       root_dir (str):
@@ -70,7 +70,7 @@ def extract_singlecore_table(root_dir,prefix):
       prefix (str):
          Prefix of the files - usually the date of the test and an identifier for the test.
     '''
-    header = ["Order","Adapter","Architecture","Optimisation","Run","Iterations","User Time (Total)","CPU Time (Total)"]
+    header = ["Order","Adapter","Optimisation","Run","Iterations","User Time (Total)","CPU Time (Total)"]
 
     # collect filenames
     with open(root_dir+"/"+prefix+'.csv', 'w') as csvfile:
@@ -84,13 +84,12 @@ def extract_singlecore_table(root_dir,prefix):
         for filename in os.listdir(root_dir):
             if filename.endswith(".out") and filename.startswith(prefix):
                 # file structure: (prefix)-(arch)-(optimisation)-p(order)-r(run).out
-                match = re.search('^'+prefix+'-(\w+)-(.+)-p([0-9]+)-r([0-9]+)\.out',filename)
+                match = re.search('^'+prefix+'-(.+)-p([0-9]+)-r([0-9]+)\.out',filename)
                 print(root_dir+"/"+filename)
                 
-                arch         = match.group(1) # opt/gen
-                optimisation = match.group(2) # fused/nonfused
-                order        = match.group(3) # fused/nonfused
-                run          = match.group(4) # fused/nonfused
+                optimisation = match.group(1) # opt/gen
+                order        = match.group(2) 
+                run          = match.group(3) 
                     
                 times = parse_adapter_times(root_dir+"/"+filename) 
                 
@@ -99,7 +98,7 @@ def extract_singlecore_table(root_dir,prefix):
                     usertime   = times[adapter]['usertime']
                     cputime    = times[adapter]['cputime']
  
-                    csvwriter.writerow([order,adapter,arch,optimisation,run,iterations,usertime,cputime]) 
+                    csvwriter.writerow([order,adapter,optimisation,run,iterations,usertime,cputime]) 
 
 def extract_table(root_dir,prefix):
     '''
