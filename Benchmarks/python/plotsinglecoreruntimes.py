@@ -33,7 +33,7 @@ import csv
 def column(matrix, i):
     return [row[i] for row in matrix]
 
-def plotTimePerTimeStep(table):
+def plotTimePerTimeStep(table,dimension,cells):
     '''
     '''
     # Plot
@@ -56,11 +56,14 @@ def plotTimePerTimeStep(table):
     N    = len(optimisations)
     yMin = 10.0**20
     yMax = 0.0
+    
     for i,order in enumerate(orders):
+        DOFS = ( cells*(int(order)+1)**dimension ) # TIME PER Q
+        
         for j,optimisation in enumerate(optimisations):
             row = list(filter(lambda x: x [0]==order and x[1]==optimisation, data))
             
-            runtime = float(row[0][3]) / (int(order)+1)**3
+            runtime = float(row[0][3]) / DOFS
             yMin    = min(yMin,runtime)
             yMax    = max(yMax,runtime)
             
@@ -68,7 +71,7 @@ def plotTimePerTimeStep(table):
             ax.bar(centers[i]-width*N/2+j*width, runtime,width=width,color=str(colour),align='center',log=False)
         
     plt.ylabel(r'normalised time [t]=s', fontsize=8)
-    plt.xlabel(r'orders', fontsize=8)
+    plt.xlabel(r'order', fontsize=8)
     plt.grid(True, which='both')
     
     plt.tick_params(axis='both', which='major', labelsize=7)
@@ -105,9 +108,13 @@ python plotmulticorespeedup.py -table
 
 parser = argparse.ArgumentParser(description=help,formatter_class=RawTextHelpFormatter)
 parser.add_argument('-table',required=True,help='A .runtimes.csv file created with the extractruntimes.py script.')
+parser.add_argument('-dimension',required=True,help='Space dimensions')
+parser.add_argument('-cells',required=True,help='Cells per coordinate axis')
 
 args           = parser.parse_args();
 
 table          = args.table
+dimension      = float(args.dimension)
+cells          = float(args.cells)
 
-plotTimePerTimeStep(table)
+plotTimePerTimeStep(table,dimension,cells)
