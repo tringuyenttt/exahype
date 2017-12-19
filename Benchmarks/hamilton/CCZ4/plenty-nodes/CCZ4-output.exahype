@@ -51,9 +51,9 @@ exahype-project  CCZ4
     order const              = 3
     maximum-mesh-size        = 0.3
     time-stepping            = global
-    type const = nonlinear
-    terms const = ncp,source
-    optimisation const = generic
+    type const               = nonlinear
+    terms const              = ncp,source
+    optimisation const       = generic
     language const           = C
     
     limiter-type const             = godunov

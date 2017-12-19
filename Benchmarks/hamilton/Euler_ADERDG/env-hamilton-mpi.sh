@@ -12,9 +12,9 @@ export TBB_SHLIB="-L/ddn/apps/Cluster-Apps/intel/xe_2017.2/tbb/lib/intel64/gcc4.
 
 export I_MPI_FABRICS="shm:dapl"
 
-export EXAHYPE_CC="mpicc -DnoParallelExchangePackedRecordsAtBoundary -DnoParallelExchangePackedRecordsBetweenMasterAndWorker -DnoParallelExchangePackedRecordsInHeaps -DnoParallelExchangePackedRecordsThroughoutJoinsAndForks"
+export EXAHYPE_CC="mpicc -g -DnoParallelExchangePackedRecordsAtBoundary -DnoParallelExchangePackedRecordsBetweenMasterAndWorker -DnoParallelExchangePackedRecordsInHeaps -DnoParallelExchangePackedRecordsThroughoutJoinsAndForks"
 
-export MODE=Release
+export MODE=PeanoProfile
 export COMPILER=Intel
 export DISTRIBUTEDMEM=MPI
 export ARCHITECTURE=hsw
