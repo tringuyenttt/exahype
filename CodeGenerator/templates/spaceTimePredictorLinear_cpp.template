@@ -277,7 +277,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 {% endif %}
   
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      std::memset(ncpResult, 0, {{nDim*nVarPad}}*sizeof(double)); // zero out ncpResult
+      std::memset(ncpResult, 0, {{nDim*nVar}}*sizeof(double)); // zero out ncpResult
       std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}, {{nVar}}, gradQNoPad); //x
       std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, gradQNoPad+{{1*nVar}}); //y
 {% if nDim==3 %}
