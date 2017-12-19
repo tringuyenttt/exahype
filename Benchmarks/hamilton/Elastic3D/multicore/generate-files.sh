@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Perform multicore speedup tests on coolmuc2.
+# Perform multicore speedup tests on hamilton.
 #
-# coolmuc2 uses SLURM. SLURM supports array jobs.
+# hamilton uses SLURM. SLURM supports array jobs.
 #
 
 project=Elastic3D
@@ -47,15 +47,15 @@ do
   t=${T[i]}
   
   # Create script
-  script=multicore/coolmuc2.slurm-script
-  newScript=multicore/coolmuc2-$prefix-p$order-n1-t1.slurm-script
+  script=multicore/hamilton.slurm-script
+  newScript=multicore/hamilton-$prefix-p$order-n1-t1.slurm-script
   cp $script $newScript
  
   sed -i 's,'$project'-no-output-regular-0,'$prefix',g' $newScript
 
   sed -i 's,p3,p'$order',g' $newScript
 
-  sed -i 's,script=multicore/coolmuc2.slurm-script,script='$newScript',g' $newScript 
+  sed -i 's,script=multicore/hamilton.slurm-script,script='$newScript',g' $newScript 
   
   # Create spec files
   #for coresPerTask in 1 12 24
