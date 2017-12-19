@@ -1,1 +1,0 @@
-../../python/extractadaptertimes.py
