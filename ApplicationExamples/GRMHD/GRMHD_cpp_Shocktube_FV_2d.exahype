@@ -25,9 +25,9 @@ exahype-project GRMHD
   log-file                         = whatever.log
 
   computational-domain
-    dimension const                = 3
-    width                          = 1.0, 1.0, 1.0
-    offset                         = 0.0, 0.0, 0.0
+    dimension const                = 2
+    width                          = 1.0, 1.0
+    offset                         = 0.0, 0.0
     end-time                       = 10.0
   end computational-domain
   
@@ -64,63 +64,81 @@ exahype-project GRMHD
     variables const                = rho:1,vel:3,E:1,B:3,psi:1,lapse:1,shift:3,gij:6,coordinates:3,check:1
     //parameters const               = pos:3,check:1
     patch-size const               = 8
-    maximum-mesh-size              = 0.3333333339
+    maximum-mesh-size              = 0.11111133333339
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const         = godunov
     terms const        = flux,ncp,source
     optimisation const = generic
     language const                 = C
-    constants  = mexa:stuff,
-       initialdata/name:alfenwave,
+    constants  = okay:erste-zeile-darf-nicht-leer-sein,
+       initialdata/name:shocktube,
        boundaries/left:exact,
        boundaries/right:exact,
        boundaries/top:exact,
        boundaries/bottom:exact,
        boundaries/front:exact,
-       boundaries/back:exact
+       boundaries/back:exact,
+       initialdata/sep_x:0.5,
+       initialdata/right/alpha:1.0,
+       initialdata/right/beta/x:0,
+       initialdata/right/beta/y:0,
+       initialdata/right/beta/z:0,
+       initialdata/right/rho:0.125, 
+       initialdata/right/vel/x:0,   
+       initialdata/right/vel/y:0,   
+       initialdata/right/vel/z:0,   
+       initialdata/right/press:0.1, 
+       initialdata/right/Bmag/x:0.5,
+       initialdata/right/Bmag/y:-1.0,
+       initialdata/right/Bmag/z:0.0, 
+       initialdata/left/alpha:1.0,
+       initialdata/left/beta/x:0, 
+       initialdata/left/beta/y:0, 
+       initialdata/left/beta/z:0, 
+       initialdata/left/rho:1.0,      
+       initialdata/left/vel/x:0,      
+       initialdata/left/vel/y:0,                    
+       initialdata/left/vel/z:0,                      
+       initialdata/left/press:1.0,                    
+       initialdata/left/Bmag/x:0.5,                  
+       initialdata/left/Bmag/y:+1.0,                 
+       initialdata/left/Bmag/z:0.0                   
 
-    plot vtk::Cartesian::vertices::binary ConservedWriter
+    plot vtk::Cartesian::vertices::ascii ConservedWriter
       variables const = 23
       time      = 0.0
-      repeat    = 0.00001
+      repeat    = 0.00590278
       output    = ./vtk-output/conserved
     end plot
 
-    /* Carpet for FV does not yet support slicing */
-    /*
-    plot Carpet::Cartesian::Vertices::HDF5 ConservedWriter
-      variables const = 23
-      time = 0.0
-      repeat = 1000.000001
-      output = ./hdf5/conserved
-      select = x:0,y:0
+    plot vtk::Cartesian::cells::ascii IntegralsWriter
+      variables const = 0
+      time = 1000.0
+      repeat = 0.000001
+      output = ./output/global-integrals
     end plot
-    */
-
-   plot vtk::Cartesian::vertices::binary PrimitiveWriter
+    
+    plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 23
       time      = 0.0
       repeat    = 0.000666667
       output    = ./vtk-output/primitive
     end plot
 
-    /* Carpet for FV does not yet support slicing */
-    /*
     plot Carpet::Cartesian::Vertices::HDF5 PrimitiveWriter
-      variables const = 23
-      time = 0.0
-      repeat = 10000.000001
-      output = ./hdf5/primitive
-      select = x:0,y:0
-    end plot
-    */
-
-    plot vtk::Cartesian::cells::ascii IntegralsWriter
       variables const = 0
-      time = 0.0
+      time = 1000.0
       repeat = 0.000001
-      output = ./output/global-integrals
+      output = ./hdf5-output/primitive
+    end plot
+    
+    plot Carpet::Cartesian::Vertices::HDF5 PrimitiveWriter
+      variables const = 0
+      time = 1000.0
+      repeat = 0.000001
+      output = ./hdf5-output/slice
+      select = y:0.5
     end plot
 
   end solver

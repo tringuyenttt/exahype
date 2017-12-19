@@ -361,24 +361,43 @@ std::string mexa::value::toString() const {
 
 // VECTOR VALUES
 
+vector_value::vector_value(mexafile mf, symbol node, size_t required_length) : mf(mf), node(node), required_length(required_length) {
+	mq = mf.query(node);
+	if(mq.isEmpty() && required_length > 0) {
+		std::stringstream errmsg;
+		errmsg << "There is no symbol " << node.toString() << " in the list " << mf.toString();
+		throw std::runtime_error(errmsg.str());
+	}
+}
+
 template<typename T>
 std::vector<T> vector_value::get( T (value::*getter)() const , value::Type type, bool doCast) const {
 	std::vector<T> ret;
 	int itemcount = 1; // just for error output
-	mexa::mexafile mq = mf.query(node);
 	for(auto it : mq.assignments) {
 		bool isExact = it.val.isActive(type);
 		bool canCast = it.val.canCastTo(type);
-		if((doCast && canCast) || !isExact) {
+		if((doCast && !canCast) || (!doCast && !isExact)) {
 			std::stringstream errmsg;
-			errmsg << "While reading in the " << value::type2str(type) << "-vector at '" << node.toString() << "', the " << itemcount << ". symbol " << it.key.toString() << " with value '" << it.val.toString() << "' cannote be casted as " << value::type2str(type) << ". It was given on " << it.src.toString();
+			errmsg << "While reading in the " << value::type2str(type) << "-vector at '" << node.toString() << "', the " << itemcount << ". symbol " << it.key.toString() << " with value '" << it.val.toString() << "' cannot be casted as " << value::type2str(type) << ". It was given on " << it.src.toString();
 			throw std::runtime_error(errmsg.str());
 		}
 		T unpacked_value = (it.val.*getter)(); // should call e.g. value::get_int for T=int.
 		ret.push_back(unpacked_value);
 		itemcount++;
 	}
-	//assert_vec_size(node, mq, type_as_str, require_length, ret);
+	// assert_vec_size(node, mq, type_as_str, require_length, ret);
+	if(required_length > 0) { // asked for a require_length
+                if(ret.size() != required_length) {
+			std::stringstream errmsg;
+			errmsg << "Having read in a " << value::type2str(type) << "-vector with size "<<ret.size()<<" from '" << node.toString() << "', but a vector of size "<< required_length
+			<< " is required. The vector values are given by: [";
+			for(auto j : ret) errmsg << j << ",";
+			errmsg << "] and where read by " << mq.toString();
+			throw std::runtime_error(errmsg.str());
+	        }
+        }
+
 	return ret;
 }
 

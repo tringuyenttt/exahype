@@ -90,14 +90,14 @@ void GRMHD_Shocktube::stateFromParameters::readParameters(const mexa::mexafile& 
 std::string GRMHD_Shocktube::stateFromParameters::toString() const {
 	// something like this should instead be part of SVEC.
 	std::stringstream s2s; // state2string
-	s2s << "rho = " << rho << ",";
-	DFOR(i) s2s << "vel.up[" << i << "] = " << vel.up(i) << ",";
-	s2s << "press = " << press << ",";
-	DFOR(i) s2s << "Bmag.up[" << i << "] = " << Bmag.up(i) << ",";
-	s2s << "phi = " << phi << ",";
+	s2s << "rho = " << rho << ", ";
+	DFOR(i) s2s << "vel.up[" << i << "] = " << vel.up(i) << ", ";
+	s2s << "press = " << press << ", ";
+	DFOR(i) s2s << "Bmag.up[" << i << "] = " << Bmag.up(i) << ", ";
+	s2s << "phi = " << phi << ", ";
 	s2s << "alpha = " << alpha << ",";
-	DFOR(i) s2s << "beta.up[" << i << "] = " << beta.up(i) << ",";
-	SYMFOR(i,j) s2s << "gam.lo[" << i << "," << j << "] = " << gam.lo(i,j);
+	DFOR(i) s2s << "beta.up[" << i << "] = " << beta.up(i) << ", ";
+	SYMFOR(i,j) s2s << "gam.lo[" << i << "," << j << "] = " << gam.lo(i,j) << ", ";
 	return s2s.str();
 }
 
@@ -107,8 +107,8 @@ GRMHD_Shocktube::GRMHD_Shocktube() :
 }
 
 void GRMHD_Shocktube::readParameters(const mexa::mexafile& parameters) {
-	prims_right.readParameters(parameters.query("right"));
-	prims_left.readParameters(parameters.query("left"));
+	prims_right.readParameters(parameters.query_root_require("right"));
+	prims_left.readParameters(parameters.query_root_require("left"));
 	sep_x = parameters("sep_x").as_double();
 	
 	logInfo("readParameters()", "Read setup for GMRHD Shocktube at sep_x="<< sep_x);
@@ -121,7 +121,9 @@ void GRMHD_Shocktube::Interpolate(const double* x, double t, double* Q) {
 	bool is_right = x[0] > sep_x;
 	GRMHD_Shocktube::state prims_local(is_right ? prims_right : prims_left);
 	
-	SVEC::GRMHD::Prim2Cons(Q, prims_local.V);
+	SVEC::GRMHD::Prim2Cons(Q, prims_local.V).copyFullStateVector();
+	
+	//NVARS(i) printf("Setting ID Q[%d]=%e\n", i, Q[i]);
 	
 	// if you would only copy prims -> prims.
 	// local_state.copy_hydro(Q); // Undefined today, but easy to implement
