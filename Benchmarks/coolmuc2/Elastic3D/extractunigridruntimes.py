@@ -24,10 +24,10 @@ def writeTable(data,header,filename):
     
 def extractSingleCoreRuntimes(table):
     '''
-    assume: inputRow = [order,adapter,arch,optimisation,run,iteratins,user time, runtime]
+    assume: inputRow = [order,adapter,optimisation,run,iteratins,user time, runtime]
     example:
-       0           1             2        3      4     5         6        7
-    ['6', 'MeshRefinement', 'noarch', 'O3-vec', '1', '12', '15.2857', '15.25'] 
+       0           1             2            3     4        5         6
+    ['6', 'MeshRefinement', 'noarch-O3-vec', '1', '12', '15.2857', '15.25'] 
     
     Args:
       table (str):
@@ -46,37 +46,36 @@ def extractSingleCoreRuntimes(table):
     datafile.close()
     
     orders        = set(column(data,0))
-    architectures = set(column(data,2))
-    optimisations = set(column(data,3))
+    optimisations = set(column(data,2))
     
     # processing data
     result = []
     for order in orders:
-        for architecture in architectures:
-            for optimisation in optimisations:
-                averageRuntimePerIteration = 0.0
-                minIterations              = sys.maxsize
-                for adapter in nonfusedAdapters:
-                    filtered = list(filter(lambda x: x[0]==order and x[1]==adapter and x[2]==architecture and x[3]==optimisation, data))
-                    runs     = len(filtered)
+        for optimisation in optimisations:
+            averageRuntimePerIteration = 0.0
+            minIterations              = sys.maxsize
+            for adapter in nonfusedAdapters:
+                filtered = list(filter(lambda x: x[0]==order and x[1]==adapter and x[2]==optimisation, data))
+                runs     = len(filtered)
+                
+                iterations = 0
+                if runs > 0:
+                    iterations = int ( filtered[0][4] )
                     
-                    iterations = 0
-                    if runs > 0:
-                        iterations = int ( filtered[0][5] )
-                        
-                        averageAdapterTime = 0.0
-                        for r in range(0,runs):
-                            averageAdapterTime += float ( filtered[r][6] )
-                        averageAdapterTime /= runs
-                        
-                        averageRuntimePerIteration += averageAdapterTime / iterations
-                    minIterations = min(minIterations,iterations)
+                    averageAdapterTime = 0.0
+                    for r in range(0,runs):
+                        averageAdapterTime += float ( filtered[r][5] )
+                    averageAdapterTime /= runs
                     
-                row = [order,architecture,optimisation,minIterations,averageRuntimePerIteration]
-                result.append(row)
+                    averageRuntimePerIteration += averageAdapterTime / iterations
+                minIterations = min(minIterations,iterations)
+                
+            row = [order,optimisation,minIterations,averageRuntimePerIteration]
+            result.append(row)
     
-    header = ["Order","Architecture","Optimisation","Iterations","Total Runtime (Per Iteration)"]
+    header = ["Order","Optimisation","Iterations","Total Runtime (Per Iteration)"]
     filename = table.replace('.csv','.runtimes.csv')
+    result = sorted(result, key=lambda x: (int(x[0]),x[1]))
     writeTable(result,header,filename)
 '''
 .. module:: extractunigridruntimes
