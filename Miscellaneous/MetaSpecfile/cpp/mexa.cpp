@@ -363,7 +363,7 @@ std::string mexa::value::toString() const {
 // VECTOR VALUES
 
 vector_value::vector_value(mexafile mq, size_t required_length) : mq(mq), required_length(required_length) {
-	if(mq.isEmpty() && required_length != -1) {
+	if(mq.isEmpty() && required_length != no_required_length) {
 		std::stringstream errmsg;
 		errmsg << "The given assignment list is empty:" << mq.toString();
 		throw std::runtime_error(errmsg.str());
@@ -387,7 +387,7 @@ std::vector<T> vector_value::get( T (value::*getter)() const , value::Type type,
 		itemcount++;
 	}
 	// assert_vec_size(node, mq, type_as_str, require_length, ret);
-	if(required_length != -1) { // asked for a require_length
+	if(required_length != no_required_length) { // asked for a require_length
                 if(ret.size() != required_length) {
 			std::stringstream errmsg;
 			errmsg << "Having read in a " << value::type2str(type) << "-vector with size "<<ret.size()<<", but a vector of size "<< required_length

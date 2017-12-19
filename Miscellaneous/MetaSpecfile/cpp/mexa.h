@@ -408,6 +408,7 @@ namespace mexa {
 	class vector_value {
 		mexafile mq;
 		size_t required_length;
+		static constexpr size_t no_required_length = -1;
 		
 		/**
 		 * Calls the get_*() method from the value class on every value
@@ -417,7 +418,7 @@ namespace mexa {
 		template<typename T>
 		std::vector<T> get( T (value::*getter)() const, value::Type type, bool doCast) const;
 	public:
-		vector_value(mexafile mq, size_t required_length);
+		vector_value(mexafile mq, size_t required_length=no_required_length);
 		
 		/**
 		 * @name Get a vector of a given type
