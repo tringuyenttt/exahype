@@ -12,7 +12,13 @@ import operator
 
 def column(matrix, i):
     return [row[i] for row in matrix]
-    
+
+def readTable(filename):
+    datafile = open(filename, 'r')
+    next(datafile) # skip header
+    data = list(csv.reader(datafile,delimiter='&'))
+    datafile.close()
+    return data
 
 def writeTable(data,header,filename):
     with open(filename, 'w') as datafile:
@@ -38,12 +44,7 @@ def extractSingleCoreRuntimes(table):
                          "SolutionUpdate",
                          "Prediction" 
                        ]
-    
-    datafile = open(table, 'r')
-    next(datafile) # skip header
-    
-    data = list(csv.reader(datafile,delimiter='&'))
-    datafile.close()
+    data = readTable(table)
     
     orders        = set(column(data,0))
     optimisations = set(column(data,2))
