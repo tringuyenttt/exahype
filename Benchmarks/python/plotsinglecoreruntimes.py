@@ -48,8 +48,10 @@ def plotTimePerTimeStep(table):
     data = list(csv.reader(datafile,delimiter='&'))
     datafile.close()
     
-    orders        = set(column(data,0))
-    optimisations = set(column(data,1))
+    orders        = sorted(list(set(column(data,0))),key=str)
+    optimisations = sorted(list(set(column(data,1))),key=str)
+    
+    print(optimisations)
     
     centers = range(0,len(orders))
     width   = 0.9 / len(optimisations)
@@ -58,7 +60,9 @@ def plotTimePerTimeStep(table):
     for i,order in enumerate(orders):
         for j,optimisation in enumerate(optimisations):
             row = list(filter(lambda x: x [0]==order and x[1]==optimisation, data))
-            ax.bar(centers[i]-width*N/2+j*width, float(row[0][3]),width=width,color=str(width*j),align='center')
+            
+            colour = ( len(optimisations)-1 -float(j) ) / (len(optimisations)-1)
+            ax.bar(centers[i]-width*N/2+j*width, float(row[0][3]),width=width,color=str(colour),align='center')
         
     plt.ylabel(r'time per per real. timestep [s]', fontsize=8)
     plt.xlabel(r'orders', fontsize=8)
