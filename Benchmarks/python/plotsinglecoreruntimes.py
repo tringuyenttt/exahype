@@ -3,12 +3,9 @@
 import argparse
 from argparse import RawTextHelpFormatter
 
-
-
 import matplotlib.pylab
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator
-
 
 # FROM: https://stackoverflow.com/questions/17687213/how-to-obtain-the-same-font-style-size-etc-in-matplotlib-output-as-in-latex
 #Direct input 
@@ -56,15 +53,21 @@ def plotTimePerTimeStep(table):
     centers = range(0,len(orders))
     width   = 0.9 / len(optimisations)
     
-    N = len(optimisations)
+    N    = len(optimisations)
+    yMin = 10.0**20
+    yMax = 0.0
     for i,order in enumerate(orders):
         for j,optimisation in enumerate(optimisations):
             row = list(filter(lambda x: x [0]==order and x[1]==optimisation, data))
             
+            runtime = float(row[0][3]) / (int(order)+1)**3
+            yMin    = min(yMin,runtime)
+            yMax    = max(yMax,runtime)
+            
             colour = ( len(optimisations)-1 -float(j) ) / (len(optimisations)-1)
-            ax.bar(centers[i]-width*N/2+j*width, float(row[0][3]),width=width,color=str(colour),align='center')
+            ax.bar(centers[i]-width*N/2+j*width, runtime,width=width,color=str(colour),align='center',log=False)
         
-    plt.ylabel(r'time per per real. timestep [s]', fontsize=8)
+    plt.ylabel(r'normalised time [t]=s', fontsize=8)
     plt.xlabel(r'orders', fontsize=8)
     plt.grid(True, which='both')
     
@@ -76,6 +79,7 @@ def plotTimePerTimeStep(table):
     ax.yaxis.grid(False, which='minor')
     ax.xaxis.grid(False)
     ax.set_xlim(-(N+1)/2*width,len(orders)-1+(N+1)/2*width)
+    ax.set_ylim([yMin*0.9,yMax*1.1])
     
     # Write files
     fig = plt.gcf()
