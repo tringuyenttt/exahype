@@ -9,6 +9,91 @@ import csv
 
 import operator
 
+def extractSingleCoreRuntimes(table):
+    '''
+    Args:
+      table (str):
+         path of a CSV table created with extractadaptertimes.py
+    '''
+    nonfusedAdapters = [ 
+                         "BroadcastGlobalDataAndMergeNeighbourMessages",
+                         "SolutionUpdate",
+                         "Prediction" # substract one; exclude initialisation
+                       ]
+    
+    datafile = open(table, 'r')
+    next(datafile) # skip header
+    reader   = csv.reader(datafile,delimiter='&')
+    
+    # assume: row = [order,adapter,arch,optimisation,run,...]
+    # example:
+    #   0           1             2        3      4     5         6        7
+    #['6', 'MeshRefinement', 'noarch', 'O3-vec', '1', '12', '15.2857', '15.25'] 
+
+    sorted_data = sorted( reader, key=lambda x: (x[0],x[2],x[3],x[1],int(x[4])) )
+               
+    def onlyRunChanged(row,last_row):
+        return (row[0] == last_row[0] and 
+                row[1] == last_row[1] and 
+                row[2] == last_row[2] and 
+                row[3] == last_row[3] and 
+                row[4] != last_row[4])
+    
+    def onlyAdapterAndRunChanged(row,last_row):
+        return (row[0] == last_row[0] and 
+                row[1] != last_row[1] and # adapter
+                row[2] == last_row[2] and 
+                row[3] == last_row[3] and 
+                row[4] != last_row[4])    # run
+ 
+    # init ( we do the first row twice; a little inconsistent )
+    total     = 0.0
+    runs      = 0
+    last_row  = sorted_data[0][:4] + [ 'NaN', '0', '0.0', '0.0' ]
+    result    = last_row[:1] + last_row[2:4] + [ '0', '0.0' ] 
+        
+    # print(last_row)
+    print(result)
+    print(last_row)
+
+    # loop
+    header = ["Order","Architecture","Optimisation","Iterations","Total Runtime (Per Iteration)"]
+    filename = table.replace('.csv','.runtimes.csv')
+    with open(filename, 'w') as datafile:
+        writer = csv.writer(datafile, delimiter='&',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(header)
+        
+        for row in sorted_data:
+            print(row)
+            if onlyRunChanged(row,last_row):
+                total  = total + float(row[6])
+                runs  += 1
+            elif onlyAdapterAndRunChanged(row,last_row):
+                if row[1]=='BroadcastGlobalDataAndMergeNeighbourMessages': # comes before Prediction,SolutionUpdate 
+                    result[3] = row[5] # iterations
+                
+                if row[1] in nonfusedAdapters:
+                    iterations = row[5]
+                    result[4]  = str( float(result[4]) + total / float(iterations) ) # normalised run time
+                
+                runs  = 0
+                total = 0.0
+            else:
+                result[4] = str( float(result[4]) / runs )
+                writer.writerow(result)
+                
+                runs  = 0
+                total = 0
+                
+                result = row[:1] + row[2:4] + [ '0', '0.0' ] 
+            
+            last_row = row
+        
+        # finalise (have to write a last time)
+        result[4] = str( float(result[4]) / runs )
+        writer.writerow(result)
+    
+    datafile.close()
 '''
 .. module:: extractunigridruntimes
   :platform: Unix, Windows, Mac
@@ -21,34 +106,23 @@ import operator
            by the extractadaptertimes.py script.
 '''
 
-def extract_runtimes(table,legacy):
+def extractRuntimes(table):
     '''
     Args:
       table (str):
          path of a CSV table created with extractadaptertimes.py
-      legacy (bool)
+      single-core (bool)
          If true, use old adapter names: ADERDGTimeStep,... Not the new ones: FusedTimeStep,...
     '''
     nonfusedAdapters = [ 
-                          "NeighbourDataMerging",
+                          "BroadcastGlobalDataAndMergeNeighbourMessages",
                           "SolutionUpdate",
                           "Prediction" # substract one; exclude initialisation
                        ]
     fusedAdapters    = [ 
                         "FusedTimeStep",
-                        "Prediction"
+                        "PredictionRerun"
                        ]
-    if legacy:
-        nonfusedAdapters = [ 
-                             "NeighbourDataMerging",
-                             "SolutionUpdateAndTimeStepSizeComputation",
-                             "Prediction"  # substract one; exclude initialisation
-                           ]
-        fusedAdapters    = [ 
-                            "ADERDGTimeStep",
-                            # "PredictionAndFusedTimeSteppingInitialisation", # exclude initialisation
-                            "Prediction"
-                           ]
     
     datafile    = open(table, 'r')
     header      = next(datafile).strip()
@@ -56,10 +130,6 @@ def extract_runtimes(table,legacy):
     
     # assume: row = [identifier,order,cc,kernels,algorithm,adapter,nodes,tasks,cores,mode,iterations,total user time, total cpu time]
     sorted_data = sorted(reader, key=lambda x: (x[0],x[1],x[2],x[3],x[4],int(x[6]),int(x[7]),int(x[8]),x[5]))
-    
-    def consider_adapter(row):
-        return (row[5].strip() in nonfusedAdapters or 
-                row[5].strip() in fusedAdapters)
                
     def only_adapter_changed(row,last_row):
         return (row[0] == last_row[0] and 
@@ -97,7 +167,7 @@ def extract_runtimes(table,legacy):
                         result[11] = str( float(row[11]) / float(timesteps) ) # normalised user time
                     else:
                         if row[5]=='Prediction':
-                            if legacy is False:
+                            if single-core is False:
                                 iterations = float(row[10]) # one more iteration than reruns
                                 result[12] = iterations-1
                                 result[13] = str ( float(row[11]) / float(iterations) )
@@ -126,39 +196,7 @@ def extract_runtimes(table,legacy):
         # finalise (have to write a last time)
         writer.writerow(result)
     
-    # assumes sorted table
-#    for algorithm in [ 'fused', 'nonfused' ]:
-#        for adapter in adapters[algorithm]:
-#            print(algorithm)
-#            print(adapter)
-#            
-#            try:
-#                
-#                  print(row)
-#            except IndexError:
-#                print("Line could not be parsed. Skip.")
-#            except:
-#                print("Something else")
-    
-    datafile.close() 
-
-
-#def sort_table(filename):
-#    '''
-#    Sorts the rows of the file according to nodes,tasks,cores,
-#    See: https://stackoverflow.com/a/17109098
-#    '''
-#    datafile    = open(filename, 'r')
-#    header      = next(datafile).strip()
-#    reader      = csv.reader(datafile,delimiter='&')
-#    # row = [order,cc,kernels,algorithm,nodes,tasks,cores,mode]
-#    sorted_data = sorted(reader, key=lambda x: (x[0],int(x[1]),x[2],x[3],x[4],int(x[5]),int(x[6]),int(x[7])))
-#    datafile.close() 
-# 
-#    with open(filename, 'w') as datafile:
-#        writer = csv.writer(datafile, delimiter='&',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-#        writer.writerow(header.split('&'))
-#        writer.writerows(sorted_data)
+    datafile.close()
 
 ########################################################################
 # START OF THE PROGRAM
@@ -188,19 +226,23 @@ there are no whitelines in the table file!
 
 \n\n
 Sample usage:\n
-python extractruntimes.py -table Elastic3D-no-output.csv --legacy
+python extractruntimes.py -table Elastic3D-no-output.csv --single-core
 '''
 
 parser = argparse.ArgumentParser(description=help,formatter_class=RawTextHelpFormatter)
 parser.add_argument('-table',required=True,help="Directory containing the Peano output files.")
-parser.add_argument('--legacy',dest='legacy',required=False,action='store_true',help="Use old adapter names: ADERDGTimeStep,... Not the new ones: FusedTimeStep,...")
-parser.set_defaults(legacy=False)
+parser.add_argument('--single-core',dest='singlecore',required=False,action='store_true',help="Read a single-core table which is structured differently than the other tables.")
+parser.set_defaults(singlecore=False)
 
-args     = parser.parse_args();
+args = parser.parse_args();
 
-table    = args.table
-legacy   = args.legacy
+table      = args.table
+singlecore = args.singlecore
 
-extract_runtimes(table,legacy)
+if singlecore is False:
+  extractRuntimes(table)
+else:
+  extractSingleCoreRuntimes(table)  
+
 print("created table:")
 print(table.replace('.csv','.runtimes.csv'))
