@@ -121,6 +121,7 @@ void remove_empty(stringvec& vec) {
 
 /// Implode a list of strings with delimiter, with an offset (begin).
 std::string join(const stringvec& vec, const char* delim, const stringvec::const_iterator begin, const stringvec::const_iterator end) {
+	if(vec.empty()) return "";
 	std::stringstream res;
 	std::copy(begin, end, std::ostream_iterator<std::string>(res, delim));
 	std::string ret = res.str();
@@ -253,45 +254,45 @@ using namespace tools; // mexa::tools
 
 // represents lhs
 // class  SYMBOL
-	symbol::path_t symbol::parseSymbol(std::string name) {
-		toLower(name);
-		symbol::path_t path = split(name, '/');
-		for(std::string &str : path) strip(str);
-		remove_empty(path);
-		return path;
-	}
-	
-	/// Canonical representation of symbol
-	std::string symbol::toString() const {
-		return join(path, "/");
-	}
-	
-	/// Lists all parenting symbols, for instance for /a/b/c it is the list [/, /a, /a/b].
-	std::vector<symbol> symbol::ancestors() const {
-		std::vector<symbol> ancestors(path.size());
-		for(size_t i=0; i<path.size(); i++)
-			ancestors[i] = symbol(slice(path,0,i));
-		return ancestors;
-	}
-	
-	/// Returns a new symbol which is prefixed by this
-	symbol symbol::prefix_add(const symbol& other) const {
-		return symbol(concat(path, other.path));
-	}
-	
-	/// Remove common prefix
-	symbol symbol::prefix_remove(const symbol& other) const {
-		return symbol(remove_common_prefix(toString(), other.toString()));
-	}
-	
-	/// For the usage as key in std::map
-	bool symbol::operator <(const symbol& rhs) const {
-		return toString() < rhs.toString();
-	}
-	/// For comparison of equality (contains, ==)
-	bool symbol::operator==(const symbol& rhs) const {
-		return toString() == rhs.toString();
-	}
+symbol::path_t symbol::parseSymbol(std::string name) {
+	toLower(name);
+	symbol::path_t path = split(name, '/');
+	for(std::string &str : path) strip(str);
+	remove_empty(path);
+	return path;
+}
+
+/// Canonical representation of symbol
+std::string symbol::toString() const {
+	return join(path, "/");
+}
+
+/// Lists all parenting symbols, for instance for /a/b/c it is the list [/, /a, /a/b].
+std::vector<symbol> symbol::ancestors() const {
+	std::vector<symbol> ancestors(path.size());
+	for(size_t i=0; i<path.size(); i++)
+		ancestors[i] = symbol(slice(path,0,i));
+	return ancestors;
+}
+
+/// Returns a new symbol which is prefixed by this
+symbol symbol::prefix_add(const symbol& other) const {
+	return symbol(concat(path, other.path));
+}
+
+/// Remove common prefix
+symbol symbol::prefix_remove(const symbol& other) const {
+	return symbol(remove_common_prefix(toString(), other.toString()));
+}
+
+/// For the usage as key in std::map
+bool symbol::operator <(const symbol& rhs) const {
+	return toString() < rhs.toString();
+}
+/// For comparison of equality (contains, ==)
+bool symbol::operator==(const symbol& rhs) const {
+	return toString() == rhs.toString();
+}
 // end of class symbol
 
 std::string sourcemap::toString() const { return filename + ":" + ::toString(linenumber); }
@@ -361,11 +362,10 @@ std::string mexa::value::toString() const {
 
 // VECTOR VALUES
 
-vector_value::vector_value(mexafile mf, symbol node, size_t required_length) : mf(mf), node(node), required_length(required_length) {
-	mq = mf.query(node);
-	if(mq.isEmpty() && required_length > 0) {
+vector_value::vector_value(mexafile mq, size_t required_length) : mq(mq), required_length(required_length) {
+	if(mq.isEmpty() && required_length != -1) {
 		std::stringstream errmsg;
-		errmsg << "There is no symbol " << node.toString() << " in the list " << mf.toString();
+		errmsg << "The given assignment list is empty:" << mq.toString();
 		throw std::runtime_error(errmsg.str());
 	}
 }
@@ -374,12 +374,12 @@ template<typename T>
 std::vector<T> vector_value::get( T (value::*getter)() const , value::Type type, bool doCast) const {
 	std::vector<T> ret;
 	int itemcount = 1; // just for error output
-	for(auto it : mq.assignments) {
+	for(auto it : mq.assignments()) {
 		bool isExact = it.val.isActive(type);
 		bool canCast = it.val.canCastTo(type);
 		if((doCast && !canCast) || (!doCast && !isExact)) {
 			std::stringstream errmsg;
-			errmsg << "While reading in the " << value::type2str(type) << "-vector at '" << node.toString() << "', the " << itemcount << ". symbol " << it.key.toString() << " with value '" << it.val.toString() << "' cannot be casted as " << value::type2str(type) << ". It was given on " << it.src.toString();
+			errmsg << "While reading in the " << value::type2str(type) << "-vector, the " << itemcount << ". symbol " << it.key.toString() << " with value '" << it.val.toString() << "' cannot be casted as " << value::type2str(type) << ". It was given on " << it.src.toString();
 			throw std::runtime_error(errmsg.str());
 		}
 		T unpacked_value = (it.val.*getter)(); // should call e.g. value::get_int for T=int.
@@ -387,10 +387,10 @@ std::vector<T> vector_value::get( T (value::*getter)() const , value::Type type,
 		itemcount++;
 	}
 	// assert_vec_size(node, mq, type_as_str, require_length, ret);
-	if(required_length > 0) { // asked for a require_length
+	if(required_length != -1) { // asked for a require_length
                 if(ret.size() != required_length) {
 			std::stringstream errmsg;
-			errmsg << "Having read in a " << value::type2str(type) << "-vector with size "<<ret.size()<<" from '" << node.toString() << "', but a vector of size "<< required_length
+			errmsg << "Having read in a " << value::type2str(type) << "-vector with size "<<ret.size()<<", but a vector of size "<< required_length
 			<< " is required. The vector values are given by: [";
 			for(auto j : ret) errmsg << j << ",";
 			errmsg << "] and where read by " << mq.toString();
@@ -417,7 +417,7 @@ std::vector<std::string> vector_value::as_string() const { return get(&value::as
 	std::string mexafile::get_multiline_string(symbol node) const {
 		std::string ret;
 		mexa::mexafile mq = query(node);
-		for(auto it : mq.assignments) {
+		for(auto it : mq.assignments()) {
 			symbol& leaf(it.first);
 			ret += get_string(leaf) + "\n";
 		}
@@ -446,99 +446,113 @@ std::string assignment::toString() const {
 }
 
 // CLASS mexafile
-	void mexafile::add(const symbol key, const value val, const sourcemap src) {
-		assignments.push_back(assignment::make(key,val,src));
-	}
-	
-	value mexafile::get(const symbol leaf) const {
-		for(auto it: assignments)
-			if(leaf == it.key)
-				return it.val;
-			
-		// element not found
+void mexafile::add(const symbol key, const value val, const sourcemap src) {
+	assignments().push_back(assignment::make(key,val,src));
+}
+
+value mexafile::get() const {
+	if(assignments().empty()) {
 		std::stringstream errmsg;
-		errmsg << "Leaf '" << leaf.toString() << "' not in assignment list. ";
-		if(assignments.empty()) errmsg << "The assignment list is empty";
-		else errmsg << "The assignment list is given by: " << toString();
+		errmsg << "Assignment list is empty, cannot get an element: " << toString();
+		throw std::runtime_error((errmsg).str());
+	} else if(assignments().size() >1) {
+		std::stringstream errmsg;
+		errmsg << "Assignment list contains more then one element, cannot get a single element: " << toString();
+		throw std::runtime_error((errmsg).str());
+	} else if(!(assignments()[0].key == symbol())) {
+		std::stringstream errmsg;
+		errmsg << "Assignment list does not contain a root. You probably request a leaf where there is only a node. The assignment list is given by: " << toString();
 		throw std::runtime_error((errmsg).str());
 	}
 	
-	vector_value mexafile::vec(const symbol node, size_t required_length) const {
-		return vector_value(*this, node, required_length);
-	}
-	vector_value mexafile::vec(size_t required_length) const {
-		return vec(/*root*/symbol(), required_length); }
+	return assignments()[0].val;
+}
 
+vector_value mexafile::vec(size_t required_length) const {
+	return vector_value(*this, required_length);
+}
 
-	mexafile mexafile::query(const symbol root) const {
-		// todo
-		// Search for all symbols which are *below* the root
-		mexafile res;
-		for(auto it : assignments) {
-			// check case root="foo", include "foo/bar" and "foo/bar/baz"
-			// check case root="foo", include "foo" itself.
-			if(::contains(it.key.ancestors(), root) || root == it.key) {
-				res.assignments.push_back(it);
-			}
+value mexafile::get(const symbol key) const { return query(key).get(); }
+vector_value mexafile::vec(const symbol node, size_t required_length) const { return query(node).vec(); }
+
+mexafile mexafile::filter(const symbol root) const {
+	// todo
+	// Search for all symbols which are *below* the root
+	mexafile res;
+	res.source = source + ".filter(\"" + root.toString() + "\")";
+	for(auto it : assignments()) {
+		// check case root="foo", include "foo/bar" and "foo/bar/baz"
+		// check case root="foo", include "foo" itself.
+		if(::contains(it.key.ancestors(), root) || root == it.key) {
+			res.assignments().push_back(it);
 		}
-		return res;
 	}
-	
-	/**
-	 * Query and give relative paths to root. Ie. if assignments="a/x=1,a/y=2,b/z=3",
-	 * then query(a) = "a/x=1,a/y=2" while query_root(a)="x=1,y=2".
-	 **/
-	mexafile mexafile::query_root(const symbol root) const {
-		return query(root).prefix_remove(root);
-	}
-	
-	mexafile mexafile::query_root_require(const symbol root) const {
-		mexafile rt = query_root(root);
-		if(rt.isEmpty()) {
-			std::stringstream errmsg;
-			errmsg << "Querying the node '" << root.toString() << "' yielded no result.";
-			errmsg << "The unqueried input assignment list is given by: " << toString();
-			throw std::runtime_error((errmsg).str());
-		}
-		return rt;
-	}
-	
-	mexafile mexafile::prefix_add(const symbol root) const {
-		mexafile res;
-		for(auto it : assignments)
-			res.add(root.prefix_add(it.key), it.val, it.src);
-		return res;
-	}
-	
-	mexafile mexafile::prefix_remove(const symbol root) const {
-		mexafile res;
-		for(auto it: assignments)
-			res.add(root.prefix_remove(it.key), it.val, it.src);
-		return res;
-	}
+	return res;
+}
 
-	std::string mexafile::toString() const {
-		std::string ret;
-		for(auto it : assignments)
-			ret += it.toString() + "\n";
-		return ret;
+const mexafile& mexafile::requireNonEmpty() const {
+	if(isEmpty()) {
+		std::stringstream errmsg;
+		errmsg << "The mexafile is empty: "<< toString();
+		throw std::runtime_error((errmsg).str());
 	}
+	return *this;
+}
 
-	// contains helper
-	bool mexafile::contains(symbol leaf, bool doRaise) const {
-		bool res = false;
-		for(auto it : assignments)
-			if(leaf == it.key)
-				res = true;
-		if(!res && doRaise) {
-			std::stringstream errmsg;
-			errmsg << "Leaf '" << leaf.toString() << "' not in assignment list. ";
-			if(assignments.empty()) errmsg << "The assignment list is empty";
-			else errmsg << "The assignment list is given by: " << toString();
-			throw std::runtime_error((errmsg).str());
-		}
-		return res;
+/**
+ * Query and give relative paths to root. Ie. if assignments="a/x=1,a/y=2,b/z=3",
+ * then query(a) = "a/x=1,a/y=2" while query_root(a)="x=1,y=2".
+ **/
+mexafile mexafile::query(const symbol root) const {
+	mexafile res = filter(root).prefix_remove(root);
+	res.source = source + ".query(\"" + root.toString() + "\")";
+	return res;
+}
+
+mexafile mexafile::prefix_add(const symbol root) const {
+	mexafile res;
+	res.source = source + ".prefix_add(\"" + root.toString() + "\")";
+	for(auto it : assignments())
+		res.add(root.prefix_add(it.key), it.val, it.src);
+	return res;
+}
+
+mexafile mexafile::prefix_remove(const symbol root) const {
+	mexafile res;
+	res.source = source + ".prefix_remove(\"" + root.toString() + "\")";
+	for(auto it: assignments())
+		res.add(root.prefix_remove(it.key), it.val, it.src);
+	return res;
+}
+
+std::string mexafile::toString() const {
+	std::string ret = source;
+	if(!isEmpty()) {
+		ret += " = (\n";
+		for(auto it : assignments())
+			ret += "\t" + it.toString() + ",\n";
+		ret +=")\n";
+	} else {
+		ret += " = (empty)";
 	}
+	return ret;
+}
+
+// contains helper
+bool mexafile::contains(symbol leaf, bool doRaise) const {
+	bool res = false;
+	for(auto it : assignments())
+		if(leaf == it.key)
+			res = true;
+	if(!res && doRaise) {
+		std::stringstream errmsg;
+		errmsg << "Leaf '" << leaf.toString() << "' not in assignment list. ";
+		if(assignments().empty()) errmsg << "The assignment list is empty";
+		else errmsg << "The assignment list is given by: " << toString();
+		throw std::runtime_error((errmsg).str());
+	}
+	return res;
+}
 	
 //// PARSERS
 
@@ -698,6 +712,7 @@ mexafile mexa::fromFile(std::istream& fh, const std::string filename_or_desc) {
 		strip(rhs);
 		mf.add(lhs, parser(lhs,rhs,src).getValue(), src);
 	}
+	mf.source = "mexa::fromFile(" + filename_or_desc + ")";
 	return mf;
 }
 
@@ -730,7 +745,8 @@ mexafile mexa::fromSpecfile(const std::vector<std::pair<std::string, std::string
 		std::string rhs(it.second);
 		mf.add(lhs, parser(lhs, rhs, src).getSloppyValue(), src);
 	}
-	return mf;	
+	mf.source = "mexa::fromSpecfile(" + source_description + ")";
+	return mf;
 }
 
 
