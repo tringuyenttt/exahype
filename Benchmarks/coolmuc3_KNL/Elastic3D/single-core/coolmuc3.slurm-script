@@ -2,7 +2,7 @@
 #SBATCH --job-name="ExaHyPE-ElasticWaveEquation3D"
 #SBATCH -o ExaHyPE-ElasticWaveEquation3D.%A.out
 #SBATCH -e ExaHyPE-ElasticWaveEquation3D.%A.err
-#SBATCH -t 01:00:00
+#SBATCH -t 02:00:00
 #SBATCH --exclusive
 #SBATCH --cluster=mpp3
 #SBATCH --partition=mpp3_batch
@@ -11,8 +11,8 @@
 #SBATCH --cpus-per-task=54
 #SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
 #SBATCH --mail-type=ALL
-#SBATCH --array=0-1
-
+#SBATCH --array=0-98
+#SBATCH --reservation=exahype21
 
 pwd
 source /etc/profile.d/modules.sh
