@@ -189,7 +189,11 @@ void exahype::Parser::checkValidity() {
   // functions have side-effects: might set _interpretationErrorOccured
   getDomainSize();
   getOffset();
-  getSimulationEndTime();
+  if (foundSimulationEndTime()) {
+    getSimulationEndTime();
+  } else {
+    getSimulationTimeSteps();
+  }
 }
 
 bool exahype::Parser::isValid() const {
@@ -483,6 +487,34 @@ double exahype::Parser::getSimulationEndTime() const {
     logError("getSimulationEndTime()",
              "Invalid simulation end-time: " << token);
     result = 1.0;
+    _interpretationErrorOccured = true;
+  }
+  return result;
+}
+
+bool exahype::Parser::foundSimulationEndTime() const {
+  bool found = false;
+  for (auto& token : _tokenStream ) {
+    if ( token.compare("end-time")==0 ) {
+      found = true;
+      break;
+    }
+  }
+  return found;
+}
+
+int exahype::Parser::getSimulationTimeSteps() const {
+  std::string token = getTokenAfter("computational-domain", "time-steps");
+  logDebug("getSimulationEndTime()", "found token " << token);
+
+  int result = -1;
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
+
+  if (result < 0) {
+    logError("getSimulationEndTime()",
+             "Invalid simulation timestep: " << token);
     _interpretationErrorOccured = true;
   }
   return result;
