@@ -9,6 +9,7 @@ CORES=28
 FOLDER=single-core
 SPEC=${FOLDER}/Elastic3D-no-output.exahype
 APP=ExaHyPE-ElasticWaveEquation3D
+NEW_APP=ExaHyPE-Elastic3D
 #ARCH=knl
 ARCH=hsw
 
@@ -37,7 +38,7 @@ do
 
       # O2 no-vec no-fma
       make -j$cores
-      mv $APP $APP-no-output-${arch}-${suffixes[i]}-p${order}
+      mv $APP ${NEW_APP}-no-output-${arch}-${suffixes[i]}-p${order}
 
     done   
   done
