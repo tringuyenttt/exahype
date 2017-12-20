@@ -1,0 +1,275 @@
+ 0.00242496   12:34:54     [cn7096.hpc.dur.ac.uk]rank:0 info         tarch::parallel::Node<static>::reserveFreeTag()         assigned message JoinDataBufferPool[vertex] the free tag 0
+ 0.00298786   12:34:54     [cn7096.hpc.dur.ac.uk]rank:0 info         tarch::parallel::Node<static>::reserveFreeTag()         assigned message JoinDataBufferPool[cell] the free tag 1
+ 0.00305796   12:34:54     [cn7096.hpc.dur.ac.uk]rank:0 info         tarch::parallel::Node<static>::reserveFreeTag()         assigned message JoinDataBufferPool[cell-marker] the free tag 2
+ 0.0183549    12:34:54     [cn7096.hpc.dur.ac.uk]rank:0 info         exahype::Parser::getDMPObservables()                    found dmp-observables 0
+ 0.018748     12:34:54     [cn7096.hpc.dur.ac.uk]rank:0 info         CCZ4::CCZ4Solver_FV::init()                             CCZ4Solver Finite Volume Godunov starting up
+ 0.018851     12:34:54     [cn7096.hpc.dur.ac.uk]rank:0 info         exahype::Parser::getParameters()                        found dmp-relaxation-parameter 0.01
+ 0.0188968    12:34:54     [cn7096.hpc.dur.ac.uk]rank:0 info         exahype::Parser::getDMPDifferenceScaling()              found dmp-difference-scaling 0.001
+ 0.0189309    12:34:54     [cn7096.hpc.dur.ac.uk]rank:0 info         exahype::Parser::getStepsTillCured()                    found steps-till-cured 0
+ 0.0244689    error        was not able to open input file exahype.log-filter (file:/ddn/data/llgb73/exahype/ExaHyPE-Engine/Peano/tarch/logging/LogFilterFileReader.cpp,line:88)
+ 0.0245838    warning      filter file exahype.log-filter was invalid. Switch on all log statements (file:/ddn/data/llgb73/exahype/ExaHyPE-Engine/Peano/tarch/logging/LogFilterFileReader.cpp,line:105)
+ 0.0247829    info         initialised DataHeap=(name=DataHeap,heap-map-size=0,no-of-delted-heap-indices=0,no-of-recycled-heap-indices=0,next-index=0,maximum-number-of-heap-entries=0,number-of-heap-allocations=0,number-of-heap-frees=0)
+ 0.0248649    info         initialised ADERDGSolver::Heap=(name=ADERDGCellDescriptionHeap,heap-map-size=0,no-of-delted-heap-indices=0,no-of-recycled-heap-indices=0,next-index=0,maximum-number-of-heap-entries=0,number-of-heap-allocations=0,number-of-heap-frees=0)
+ 0.0249119    info         initialised FiniteVolumesSolver::Heap=(name=FiniteVolumesCellDescriptionHeap,heap-map-size=0,no-of-delted-heap-indices=0,no-of-recycled-heap-indices=0,next-index=0,maximum-number-of-heap-entries=0,number-of-heap-allocations=0,number-of-heap-frees=0)
+ 0.0251429    info         coarsest mesh size was chosen as 0.111111 based on user's maximum mesh size 0.12 and domain size [1,1,1]
+ 0.025203     info         summary: create computational domain at [0,0,0] of width/size [1,1,1]. bounding box has offset [0,0,0] and size [1,1,1]. grid regular up to level 3 (1 means a single cell)
+ 0.026068     info         number of physical cores=24
+ 0.0261669    info         cpuset=xxxxxxxxxxxxxxxxxxxxxxxx (24 cores available to application/rank)
+ 0.0299129    info         thread 0 is running on cpu 23 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.029974     info         thread 1 is running on cpu 4 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.0300078    info         thread 2 is running on cpu 13 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.030051     info         thread 3 is running on cpu 2 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.0300798    info         thread 4 is running on cpu 1 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.0301049    info         thread 5 is running on cpu 15 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.0301318    info         thread 6 is running on cpu 6 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.030159     info         thread 7 is running on cpu 5 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.0301859    info         thread 8 is running on cpu 12 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.0302119    info         thread 9 is running on cpu 7 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.0314078    info         thread 10 is running on cpu 14 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.0314479    info         thread 11 is running on cpu 3 with core affinity xxxxxxxxxxxxxxxxxxxxxxxx
+ 0.031625     info         use dummy shared memory oracle
+ 0.0317109    info         switched off any data compression
+ 0.0317888    info        
+ 0.031847     info         Application based upon the PDE framework Peano - 3rd Generation
+ 0.031894     info         revision: 2626
+ 0.0319469    info         build: multicore=openMP dim=3
+ 0.0319829    info         optimisations: d-loop persistent-attributes packed opt-static-subtrees recursion-unrolling persistent-regular-subtrees
+ 0.0320098    info         (C) 2005 - 2017   www.peano-framework.org
+ 0.0320499    info         processes: 1, threads: 12
+ 0.0320849    info         create initial grid
+ 0.548724     info         grid setup iteration #1, idle-nodes=1
+ 0.54894      info         memoryUsage    =1365 MB
+ 13.8858      info         grid setup iteration #2, idle-nodes=1
+ 13.8859      info         memoryUsage    =1748 MB
+ 13.8859      info         more status spreading.
+ 15.5556      info         grid setup iteration #3, idle-nodes=1
+ 15.5557      info         memoryUsage    =1954 MB
+ 15.5906      info         grid setup iteration #4, idle-nodes=1
+ 15.5908      info         memoryUsage    =1954 MB
+ 15.6253      info         grid setup iteration #5, idle-nodes=1
+ 15.6254      info         memoryUsage    =1954 MB
+ 15.6598      info         grid setup iteration #6, idle-nodes=1
+ 15.6599      info         memoryUsage    =1954 MB
+ 15.6943      info         grid setup iteration #7, idle-nodes=1
+ 15.6944      info         memoryUsage    =1954 MB
+ 15.7288      info         grid setup iteration #8, idle-nodes=1
+ 15.729       info         memoryUsage    =1954 MB
+ 15.7633      info         grid setup iteration #9, idle-nodes=1
+ 15.7634      info         memoryUsage    =1954 MB
+ 15.7978      info         grid setup iteration #10, idle-nodes=1
+ 15.7979      info         memoryUsage    =1954 MB
+ 15.8323      info         grid setup iteration #11, idle-nodes=1
+ 15.8324      info         memoryUsage    =1954 MB
+ 15.8663      info         grid setup iteration #12, idle-nodes=1
+ 15.8664      info         memoryUsage    =1954 MB
+ 15.8665      info         finished grid setup after 12 iterations
+ 15.8665      info         finalise mesh refinement and compute first time step size
+ 15.8959      info         initialised all data and computed first time step size
+ 20.7525      info         plotted initial solution (if specified) and computed first predictor
+ 20.7526      info         step 0	t_min          =0
+ 20.7527      info         	dt_min         =0.000633333
+ 20.7527      info         	memoryUsage    =2066 MB
+ 27.8773      info         step 1	t_min          =0.000633333
+ 27.8774      info         	dt_min         =0.000633333
+ 27.8775      info         	memoryUsage    =2101 MB
+ 34.9871      info         step 2	t_min          =0.00126667
+ 34.9872      info         	dt_min         =0.000630167
+ 34.9873      info         	memoryUsage    =2101 MB
+ 42.1356      info         step 3	t_min          =0.00189683
+ 42.1357      info         	dt_min         =0.000628583
+ 42.1358      info         	memoryUsage    =2101 MB
+ 49.4287      info         step 4	t_min          =0.00252542
+ 49.4287      info         	dt_min         =0.000627792
+ 49.4288      info         	memoryUsage    =2101 MB
+ 56.7778      info         step 5	t_min          =0.00315321
+ 56.7779      info         	dt_min         =0.000627396
+ 56.778       info         	memoryUsage    =2101 MB
+ 64.0814      info         step 6	t_min          =0.0037806
+ 64.0815      info         	dt_min         =0.000627198
+ 64.0816      info         	memoryUsage    =2101 MB
+ 71.4649      info         step 7	t_min          =0.0044078
+ 71.465       info         	dt_min         =0.000627099
+ 71.4651      info         	memoryUsage    =2101 MB
+ 78.6991      info         step 8	t_min          =0.0050349
+ 78.6992      info         	dt_min         =0.000627049
+ 78.6993      info         	memoryUsage    =2101 MB
+ 85.8392      info         step 9	t_min          =0.00566195
+ 85.8392      info         	dt_min         =0.000627025
+ 85.8393      info         	memoryUsage    =2101 MB
+ 92.948       info         step 10	t_min          =0.00628898
+ 92.9481      info         	dt_min         =0.000627012
+ 92.9482      info         	memoryUsage    =2101 MB
+ 100.214      info         step 11	t_min          =0.00691599
+ 100.214      info         	dt_min         =0.000627006
+ 100.215      info         	memoryUsage    =2101 MB
+ 107.432      info         step 12	t_min          =0.00754299
+ 107.433      info         	dt_min         =0.000627003
+ 107.433      info         	memoryUsage    =2101 MB
+ 114.668      info         step 13	t_min          =0.00817
+ 114.668      info         	dt_min         =0.000627002
+ 114.668      info         	memoryUsage    =2101 MB
+ 121.855      info         step 14	t_min          =0.008797
+ 121.855      info         	dt_min         =0.000627001
+ 121.855      info         	memoryUsage    =2101 MB
+ 128.958      info         step 15	t_min          =0.009424
+ 128.958      info         	dt_min         =0.000627
+ 128.958      info         	memoryUsage    =2101 MB
+ 136.023      info         step 16	t_min          =0.010051
+ 136.023      info         	dt_min         =0.000627
+ 136.024      info         	memoryUsage    =2101 MB
+ 143.172      info         step 17	t_min          =0.010678
+ 143.173      info         	dt_min         =0.000627
+ 143.173      info         	memoryUsage    =2101 MB
+ 150.293      info         step 18	t_min          =0.011305
+ 150.293      info         	dt_min         =0.000627
+ 150.293      info         	memoryUsage    =2101 MB
+ 157.353      info         step 19	t_min          =0.011932
+ 157.353      info         	dt_min         =0.000627
+ 157.358      info         	memoryUsage    =2101 MB
+ 164.627      info         step 20	t_min          =0.012559
+ 164.627      info         	dt_min         =0.000627
+ 164.627      info         	memoryUsage    =2101 MB
+ 171.699      info         step 21	t_min          =0.013186
+ 171.699      info         	dt_min         =0.000627
+ 171.7        info         	memoryUsage    =2101 MB
+ 178.794      info         step 22	t_min          =0.013813
+ 178.794      info         	dt_min         =0.000627
+ 178.794      info         	memoryUsage    =2101 MB
+ 185.91       info         step 23	t_min          =0.01444
+ 185.91       info         	dt_min         =0.000627
+ 185.91       info         	memoryUsage    =2101 MB
+ 192.928      info         step 24	t_min          =0.015067
+ 192.928      info         	dt_min         =0.000627
+ 192.928      info         	memoryUsage    =2101 MB
+ 200.011      info         step 25	t_min          =0.015694
+ 200.011      info         	dt_min         =0.000627
+ 200.011      info         	memoryUsage    =2101 MB
+ 207.074      info         step 26	t_min          =0.016321
+ 207.074      info         	dt_min         =0.000627
+ 207.074      info         	memoryUsage    =2101 MB
+ 214.179      info         step 27	t_min          =0.016948
+ 214.18       info         	dt_min         =0.000627
+ 214.18       info         	memoryUsage    =2101 MB
+ 221.279      info         step 28	t_min          =0.017575
+ 221.279      info         	dt_min         =0.000627
+ 221.279      info         	memoryUsage    =2101 MB
+ 228.383      info         step 29	t_min          =0.018202
+ 228.383      info         	dt_min         =0.000627
+ 228.383      info         	memoryUsage    =2101 MB
+ 235.44       info         step 30	t_min          =0.018829
+ 235.44       info         	dt_min         =0.000627
+ 235.44       info         	memoryUsage    =2101 MB
+ 242.657      info         step 31	t_min          =0.019456
+ 242.659      info         	dt_min         =0.000627
+ 242.66       info         	memoryUsage    =2101 MB
+ 249.759      info         step 32	t_min          =0.020083
+ 249.759      info         	dt_min         =0.000627
+ 249.759      info         	memoryUsage    =2101 MB
+ 256.801      info         step 33	t_min          =0.02071
+ 256.801      info         	dt_min         =0.000627
+ 256.801      info         	memoryUsage    =2101 MB
+ 263.833      info         step 34	t_min          =0.021337
+ 263.833      info         	dt_min         =0.000627
+ 263.833      info         	memoryUsage    =2101 MB
+ 270.867      info         step 35	t_min          =0.021964
+ 270.868      info         	dt_min         =0.000627
+ 270.868      info         	memoryUsage    =2101 MB
+ 277.945      info         step 36	t_min          =0.022591
+ 277.945      info         	dt_min         =0.000627
+ 277.946      info         	memoryUsage    =2101 MB
+ 284.994      info         step 37	t_min          =0.023218
+ 284.994      info         	dt_min         =0.000627
+ 284.994      info         	memoryUsage    =2101 MB
+ 292.069      info         step 38	t_min          =0.023845
+ 292.069      info         	dt_min         =0.000627
+ 292.069      info         	memoryUsage    =2101 MB
+ 299.127      info         step 39	t_min          =0.024472
+ 299.127      info         	dt_min         =0.000627
+ 299.127      info         	memoryUsage    =2101 MB
+ 306.198      info         step 40	t_min          =0.025099
+ 306.198      info         	dt_min         =0.000627
+ 306.198      info         	memoryUsage    =2101 MB
+ 313.267      info         step 41	t_min          =0.025726
+ 313.267      info         	dt_min         =0.000627
+ 313.267      info         	memoryUsage    =2101 MB
+ 320.362      info         step 42	t_min          =0.026353
+ 320.362      info         	dt_min         =0.000627
+ 320.362      info         	memoryUsage    =2101 MB
+ 327.381      info         step 43	t_min          =0.02698
+ 327.381      info         	dt_min         =0.000627
+ 327.381      info         	memoryUsage    =2101 MB
+ 334.468      info         step 44	t_min          =0.027607
+ 334.468      info         	dt_min         =0.000627
+ 334.469      info         	memoryUsage    =2101 MB
+ 341.53       info         step 45	t_min          =0.028234
+ 341.53       info         	dt_min         =0.000627
+ 341.531      info         	memoryUsage    =2101 MB
+ 348.574      info         step 46	t_min          =0.028861
+ 348.574      info         	dt_min         =0.000627
+ 348.574      info         	memoryUsage    =2101 MB
+ 355.669      info         step 47	t_min          =0.029488
+ 355.669      info         	dt_min         =0.000627
+ 355.669      info         	memoryUsage    =2101 MB
+ 362.741      info         step 48	t_min          =0.030115
+ 362.741      info         	dt_min         =0.000627
+ 362.741      info         	memoryUsage    =2101 MB
+ 369.797      info         step 49	t_min          =0.030742
+ 369.797      info         	dt_min         =0.000627
+ 369.797      info         	memoryUsage    =2101 MB
+ 376.856      info         step 50	t_min          =0.031369
+ 376.856      info         	dt_min         =0.000627
+ 376.856      info         	memoryUsage    =2101 MB
+ 383.903      info         step 51	t_min          =0.031996
+ 383.903      info         	dt_min         =0.000627
+ 383.903      info         	memoryUsage    =2101 MB
+ 390.965      info         step 52	t_min          =0.032623
+ 390.965      info         	dt_min         =0.000627
+ 390.966      info         	memoryUsage    =2101 MB
+ 398.035      info         step 53	t_min          =0.03325
+ 398.035      info         	dt_min         =0.000627
+ 398.035      info         	memoryUsage    =2101 MB
+ 405.101      info         step 54	t_min          =0.033877
+ 405.101      info         	dt_min         =0.000627
+ 405.101      info         	memoryUsage    =2101 MB
+ 412.212      info         step 55	t_min          =0.034504
+ 412.212      info         	dt_min         =0.000627
+ 412.212      info         	memoryUsage    =2101 MB
+ 419.285      info         step 56	t_min          =0.035131
+ 419.285      info         	dt_min         =0.000627
+ 419.285      info         	memoryUsage    =2101 MB
+ 426.377      info         step 57	t_min          =0.035758
+ 426.377      info         	dt_min         =0.000627
+ 426.377      info         	memoryUsage    =2101 MB
+ 433.516      info         step 58	t_min          =0.036385
+ 433.516      info         	dt_min         =0.000627
+ 433.516      info         	memoryUsage    =2101 MB
+ 440.709      info         step 59	t_min          =0.037012
+ 440.709      info         	dt_min         =0.000627
+ 440.709      info         	memoryUsage    =2101 MB
+ 447.884      info         step 60	t_min          =0.037639
+ 447.884      info         	dt_min         =0.000627
+ 447.884      info         	memoryUsage    =2101 MB
+ 454.986      info         step 61	t_min          =0.038266
+ 454.986      info         	dt_min         =0.000627
+ 454.986      info         	memoryUsage    =2101 MB
+ 462.057      info         step 62	t_min          =0.038893
+ 462.057      info         	dt_min         =0.000627
+ 462.057      info         	memoryUsage    =2101 MB
+ 469.176      info         step 63	t_min          =0.03952
+ 469.176      info         	dt_min         =0.000627
+ 469.176      info         	memoryUsage    =2101 MB
+ 476.303      info         step 64	t_min          =0.040147
+ 476.303      info         	dt_min         =0.000627
+ 476.304      info         	memoryUsage    =2101 MB
+ 476.317      info         number of mesh refinements      = 0
+ 476.317      info         number of local recomputations  = 0
+ 476.317      info         number of global recomputations = 0
+ 476.318      info         number of predictor reruns      = 0
+ 476.318      info         || adapter name 	 || iterations 	 || total CPU time [t]=s 	 || average CPU time [t]=s 	 || total user time [t]=s 	 || average user time [t]=s  || CPU time properties  || user time properties 
+ 476.318      info         | MeshRefinement 	 |  12 	 |  37.73 	 |  3.14417 	 |  15.8319 	 |  1.31932 	 |  (3.14417,#12,eps=0,max=18.59(value #2),min=0.41(value #4),+491.254%,-86.96%,std-deviation=5.84757) [not a valid averaged value yet] 	 |  (1.31932,#12,eps=0,max=13.3368(value #1),min=0.0337924(value #11),+910.882%,-97.4387%,std-deviation=3.65203) [not a valid averaged value yet]
+ 476.324      info         | FinaliseMeshRefinement 	 |  1 	 |  0.35 	 |  0.35 	 |  0.0293975 	 |  0.0293975 	 |  (0.35,#1,eps=0,max=0.35(value #0),min=0.35(value #0),+0%,-0%,std-deviation=-nan) [not a valid averaged value yet] 	 |  (0.0293975,#1,eps=0,max=0.0293975(value #0),min=0.0293975(value #0),+0%,-0%,std-deviation=1.34597e-10) [not a valid averaged value yet]
+ 476.324      info         | FusedTimeStep 	 |  64 	 |  5460.47 	 |  85.3198 	 |  455.528 	 |  7.11763 	 |  (85.3198,#64,eps=0,max=88.47(value #6),min=84.12(value #23),+3.69217%,-1.40629%,std-deviation=0.953432) [not a valid averaged value yet] 	 |  (7.11763,#64,eps=0,max=7.38326(value #6),min=7.01767(value #23),+3.73203%,-1.40434%,std-deviation=0.0801026) [not a valid averaged value yet]
+ 476.324      info         | BroadcastGlobalDataAndDropNeighbourMessages 	 |  1 	 |  0.16 	 |  0.16 	 |  0.0137737 	 |  0.0137737 	 |  (0.16,#1,eps=0,max=0.16(value #0),min=0.16(value #0),+0%,-0%,std-deviation=4.01226e-10) [not a valid averaged value yet] 	 |  (0.0137737,#1,eps=0,max=0.0137737(value #0),min=0.0137737(value #0),+0%,-0%,std-deviation=9.13297e-11) [not a valid averaged value yet]
+ 476.324      info         | Prediction 	 |  1 	 |  58.21 	 |  58.21 	 |  4.85652 	 |  4.85652 	 |  (58.21,#1,eps=0,max=58.21(value #0),min=58.21(value #0),+0%,-0%,std-deviation=3.15227e-07) [not a valid averaged value yet] 	 |  (4.85652,#1,eps=0,max=4.85652(value #0),min=4.85652(value #0),+0%,-0%,std-deviation=-nan) [not a valid averaged value yet]
+ 476.325      info         wrote statistics into file sharedmemory.properties
+ 476.349      info         Peano terminates successfully

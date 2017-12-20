@@ -1,0 +1,94 @@
+ 0.000588417  12:22:24     [cn7016.hpc.dur.ac.uk]rank:0 info         tarch::parallel::Node<static>::reserveFreeTag()         assigned message JoinDataBufferPool[vertex] the free tag 0
+ 0.00117874   12:22:24     [cn7016.hpc.dur.ac.uk]rank:0 info         tarch::parallel::Node<static>::reserveFreeTag()         assigned message JoinDataBufferPool[cell] the free tag 1
+ 0.00123858   12:22:24     [cn7016.hpc.dur.ac.uk]rank:0 info         tarch::parallel::Node<static>::reserveFreeTag()         assigned message JoinDataBufferPool[cell-marker] the free tag 2
+ 0.0152192    12:22:24     [cn7016.hpc.dur.ac.uk]rank:0 info         exahype::Parser::getDMPObservables()                    found dmp-observables 0
+ 0.0155058    12:22:24     [cn7016.hpc.dur.ac.uk]rank:0 info         CCZ4::CCZ4Solver_FV::init()                             CCZ4Solver Finite Volume Godunov starting up
+ 0.0156064    12:22:24     [cn7016.hpc.dur.ac.uk]rank:0 info         exahype::Parser::getParameters()                        found dmp-relaxation-parameter 0.01
+ 0.0156741    12:22:24     [cn7016.hpc.dur.ac.uk]rank:0 info         exahype::Parser::getDMPDifferenceScaling()              found dmp-difference-scaling 0.001
+ 0.0157356    12:22:24     [cn7016.hpc.dur.ac.uk]rank:0 info         exahype::Parser::getStepsTillCured()                    found steps-till-cured 0
+ 0.0222044    error        was not able to open input file exahype.log-filter (file:/ddn/data/llgb73/exahype/ExaHyPE-Engine/Peano/tarch/logging/LogFilterFileReader.cpp,line:88)
+ 0.0223389    warning      filter file exahype.log-filter was invalid. Switch on all log statements (file:/ddn/data/llgb73/exahype/ExaHyPE-Engine/Peano/tarch/logging/LogFilterFileReader.cpp,line:105)
+ 0.0225031    info         initialised DataHeap=(name=DataHeap,heap-map-size=0,no-of-delted-heap-indices=0,no-of-recycled-heap-indices=0,next-index=0,maximum-number-of-heap-entries=0,number-of-heap-allocations=0,number-of-heap-frees=0)
+ 0.0225594    info         initialised ADERDGSolver::Heap=(name=ADERDGCellDescriptionHeap,heap-map-size=0,no-of-delted-heap-indices=0,no-of-recycled-heap-indices=0,next-index=0,maximum-number-of-heap-entries=0,number-of-heap-allocations=0,number-of-heap-frees=0)
+ 0.0226049    info         initialised FiniteVolumesSolver::Heap=(name=FiniteVolumesCellDescriptionHeap,heap-map-size=0,no-of-delted-heap-indices=0,no-of-recycled-heap-indices=0,next-index=0,maximum-number-of-heap-entries=0,number-of-heap-allocations=0,number-of-heap-frees=0)
+ 0.0228217    info         coarsest mesh size was chosen as 0.111111 based on user's maximum mesh size 0.12 and domain size [1,1,1]
+ 0.0228779    info         summary: create computational domain at [0,0,0] of width/size [1,1,1]. bounding box has offset [0,0,0] and size [1,1,1]. grid regular up to level 3 (1 means a single cell)
+ 0.0236528    info         switched off any data compression
+ 0.0237188    info        
+ 0.0237679    info         Application based upon the PDE framework Peano - 3rd Generation
+ 0.0238099    info         revision: 2626
+ 0.0238595    info         build: dim=3
+ 0.0238876    info         optimisations: d-loop persistent-attributes packed opt-static-subtrees recursion-unrolling persistent-regular-subtrees
+ 0.0239103    info         (C) 2005 - 2017   www.peano-framework.org
+ 0.0239339    info         processes: 1, threads: 1
+ 0.0240035    info         create initial grid
+ 1.26743      info         grid setup iteration #1, idle-nodes=1
+ 1.26759      info         memoryUsage    =1465 MB
+ 138.744      info         grid setup iteration #2, idle-nodes=1
+ 138.744      info         memoryUsage    =2481 MB
+ 138.745      info         more status spreading.
+ 214.038      info         grid setup iteration #3, idle-nodes=1
+ 214.038      info         memoryUsage    =3031 MB
+ 214.52       info         grid setup iteration #4, idle-nodes=1
+ 214.52       info         memoryUsage    =3031 MB
+ 214.974      info         grid setup iteration #5, idle-nodes=1
+ 214.977      info         memoryUsage    =3031 MB
+ 215.434      info         grid setup iteration #6, idle-nodes=1
+ 215.434      info         memoryUsage    =3031 MB
+ 215.909      info         grid setup iteration #7, idle-nodes=1
+ 215.909      info         memoryUsage    =3031 MB
+ 216.367      info         grid setup iteration #8, idle-nodes=1
+ 216.367      info         memoryUsage    =3031 MB
+ 216.832      info         grid setup iteration #9, idle-nodes=1
+ 216.832      info         memoryUsage    =3031 MB
+ 217.29       info         grid setup iteration #10, idle-nodes=1
+ 217.29       info         memoryUsage    =3031 MB
+ 217.762      info         grid setup iteration #11, idle-nodes=1
+ 217.763      info         memoryUsage    =3031 MB
+ 218.212      info         grid setup iteration #12, idle-nodes=1
+ 218.213      info         memoryUsage    =3031 MB
+ 218.213      info         finished grid setup after 12 iterations
+ 218.213      info         finalise mesh refinement and compute first time step size
+ 218.429      info         initialised all data and computed first time step size
+ 356.78       info         plotted initial solution (if specified) and computed first predictor
+ 356.78       info         step 0	t_min          =0
+ 356.78       info         	dt_min         =0.00025
+ 356.78       info         	memoryUsage    =3064 MB
+ 709.692      info         step 1	t_min          =0.00025
+ 709.692      info         	dt_min         =0.00025
+ 709.692      info         	memoryUsage    =3065 MB
+ 1063.71      info         step 2	t_min          =0.0005
+ 1063.72      info         	dt_min         =0.00024875
+ 1063.72      info         	memoryUsage    =3065 MB
+ 1417.91      info         step 3	t_min          =0.00074875
+ 1417.91      info         	dt_min         =0.000248125
+ 1417.91      info         	memoryUsage    =3065 MB
+ 1771.74      info         step 4	t_min          =0.000996875
+ 1771.74      info         	dt_min         =0.000247813
+ 1771.74      info         	memoryUsage    =3065 MB
+ 2125.74      info         step 5	t_min          =0.00124469
+ 2125.74      info         	dt_min         =0.000247656
+ 2125.74      info         	memoryUsage    =3065 MB
+ 2479.93      info         step 6	t_min          =0.00149234
+ 2479.94      info         	dt_min         =0.000247578
+ 2479.94      info         	memoryUsage    =3065 MB
+ 2835.37      info         step 7	t_min          =0.00173992
+ 2835.37      info         	dt_min         =0.000247539
+ 2835.37      info         	memoryUsage    =3065 MB
+ 3190.61      info         step 8	t_min          =0.00198746
+ 3190.61      info         	dt_min         =0.00024752
+ 3190.61      info         	memoryUsage    =3065 MB
+ 3545.98      info         step 9	t_min          =0.00223498
+ 3545.98      info         	dt_min         =0.00024751
+ 3545.98      info         	memoryUsage    =3065 MB
+ 3545.99      info         number of mesh refinements      = 0
+ 3545.99      info         number of local recomputations  = 0
+ 3545.99      info         number of global recomputations = 0
+ 3545.99      info         number of predictor reruns      = 0
+ 3545.99      info         || adapter name 	 || iterations 	 || total CPU time [t]=s 	 || average CPU time [t]=s 	 || total user time [t]=s 	 || average user time [t]=s  || CPU time properties  || user time properties 
+ 3545.99      info         | MeshRefinement 	 |  12 	 |  217.97 	 |  18.1642 	 |  218.184 	 |  18.182 	 |  (18.1642,#12,eps=0,max=137.35(value #1),min=0.45(value #4),+656.159%,-97.5226%,std-deviation=41.3998) [not a valid averaged value yet] 	 |  (18.182,#12,eps=0,max=137.477(value #1),min=0.449753(value #11),+656.115%,-97.5264%,std-deviation=41.4381) [not a valid averaged value yet]
+ 3545.99      info         | FinaliseMeshRefinement 	 |  1 	 |  0.22 	 |  0.22 	 |  0.216227 	 |  0.216227 	 |  (0.22,#1,eps=0,max=0.22(value #0),min=0.22(value #0),+0%,-0%,std-deviation=-nan) [not a valid averaged value yet] 	 |  (0.216227,#1,eps=0,max=0.216227(value #0),min=0.216227(value #0),+0%,-0%,std-deviation=1.2672e-09) [not a valid averaged value yet]
+ 3545.99      info         | FusedTimeStep 	 |  9 	 |  3186.09 	 |  354.01 	 |  3189.19 	 |  354.355 	 |  (354.01,#9,eps=0,max=355.1(value #6),min=352.57(value #0),+0.307901%,-0.406768%,std-deviation=0.792086) [not a valid averaged value yet] 	 |  (354.355,#9,eps=0,max=355.436(value #6),min=352.912(value #0),+0.305038%,-0.407005%,std-deviation=0.790575) [not a valid averaged value yet]
+ 3545.99      info         | BroadcastGlobalDataAndDropNeighbourMessages 	 |  1 	 |  0.01 	 |  0.01 	 |  0.0110806 	 |  0.0110806 	 |  (0.01,#1,eps=0,max=0.01(value #0),min=0.01(value #0),+0%,-0%,std-deviation=2.50766e-11) [not a valid averaged value yet] 	 |  (0.0110806,#1,eps=0,max=0.0110806(value #0),min=0.0110806(value #0),+0%,-0%,std-deviation=-nan) [not a valid averaged value yet]
+ 3545.99      info         | Prediction 	 |  1 	 |  138.21 	 |  138.21 	 |  138.351 	 |  138.351 	 |  (138.21,#1,eps=0,max=138.21(value #0),min=138.21(value #0),+0%,-0%,std-deviation=-nan) [not a valid averaged value yet] 	 |  (138.351,#1,eps=0,max=138.351(value #0),min=138.351(value #0),+0%,-0%,std-deviation=-nan) [not a valid averaged value yet]
+ 3545.99      info         Peano terminates successfully
