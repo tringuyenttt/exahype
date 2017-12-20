@@ -205,7 +205,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
     //dflux3 dz
     for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
 {% if useLibxsmm %}      
-      {{gemm_flux_z}}(lFi+((i*{{nDof**3}}+xy)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
+      {{gemm_flux_z}}(lFi+(i*{{nDof**3}}+xy)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
 {% else %}
       std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
       for (int l = 0; l < {{nDof}}; l++) {
