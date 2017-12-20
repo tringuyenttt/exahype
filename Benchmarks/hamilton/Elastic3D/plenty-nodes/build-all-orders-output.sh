@@ -1,6 +1,6 @@
 directory=plenty-nodes
 
-exe=ExaHyPE-Elastic3D
+exe=ExaHyPE-ElasticWaveEquation3D
 spec=$directory/Elastic3D-output.exahype
 
 # save originial file

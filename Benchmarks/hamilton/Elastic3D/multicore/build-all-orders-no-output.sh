@@ -1,6 +1,6 @@
 directory=multicore
 
-exe=ExaHyPE-Elastic3D
+exe=ExaHyPE-ElasticWaveEquation3D
 spec=$directory/Elastic3D-no-output.exahype
 
 # save original file
