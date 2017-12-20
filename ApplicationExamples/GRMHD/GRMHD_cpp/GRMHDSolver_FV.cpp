@@ -23,11 +23,11 @@ void GRMHD::GRMHDSolver_FV::init(std::vector<std::string>& cmdlineargs, exahype:
 	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), constants.toString());
 	
 	std::cout << "Mexa configuration: \n" << mf.toString();
-	std::cout << "ID configuration: \n" << mf.query_root_require("initialdata").toString();
+	std::cout << "ID configuration: \n" << mf("initialdata").toString();
 	std::cout << "ID NAME: '" << mf.get("initialdata/name").get_string() << "'\n";
-	std::cout << "ID subquery NAME: '" << mf.query_root_require("initialdata").get("name").get_string() << "'\n";
+	std::cout << "ID subquery NAME: '" << mf("initialdata").get("name").get_string() << "'\n";
 	GlobalInitialData::getInstance().setByParameters(mf);
-	GlobalBoundaryConditions::getInstance().initializeFV(this).readParameters(mf.query_root_require("boundaries"));
+	GlobalBoundaryConditions::getInstance().initializeFV(this).readParameters(mf("boundaries"));
 }
 
 void GRMHD::GRMHDSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {

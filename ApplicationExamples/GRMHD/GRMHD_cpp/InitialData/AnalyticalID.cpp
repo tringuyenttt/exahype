@@ -72,15 +72,15 @@ void GRMHD_Shocktube::stateFromParameters::readParameters(const mexa::mexafile& 
 	rho = parameters["rho"].as_double();
 	press = parameters["press"].as_double();
 	
-	vec = parameters.vec("vel", 3).as_double();
+	vec = parameters["vel"].vec(3).as_double();
 	DFOR(i) vel.up(i) = vec[i];
 
 	phi = 0;
-	vec = parameters.vec("Bmag", 3).as_double();
+	vec = parameters["Bmag"].vec(3).as_double();
 	DFOR(i) Bmag.up(i) = vec[i];
 
 	alpha = parameters["alpha"].as_double();
-	vec = parameters.vec("beta", 3).as_double();
+	vec = parameters["beta"].vec(3).as_double();
 	DFOR(i) beta.up(i) = vec[i];
 	
 	// Metric is always unity here.
@@ -107,8 +107,8 @@ GRMHD_Shocktube::GRMHD_Shocktube() :
 }
 
 void GRMHD_Shocktube::readParameters(const mexa::mexafile& parameters) {
-	prims_right.readParameters(parameters.query_root_require("right"));
-	prims_left.readParameters(parameters.query_root_require("left"));
+	prims_right.readParameters(parameters("right"));
+	prims_left.readParameters(parameters("left"));
 	sep_x = parameters("sep_x").as_double();
 	
 	logInfo("readParameters()", "Read setup for GMRHD Shocktube at sep_x="<< sep_x);
