@@ -694,7 +694,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   logInfo("createGrid()", "more status spreading.");
   int extraIterations =
       std::max (
-          10, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
+          4, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
           exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell());
   while (
     (
@@ -750,11 +750,23 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     printTimeStepInfo(-1,repository);
     validateInitialSolverTimeStepData(exahype::State::fuseADERDGPhases());
 
-    const double simulationEndTime = _parser.getSimulationEndTime();
+    double simulationEndTime   = std::numeric_limits<double>::max();
+    int simulationTimeSteps = std::numeric_limits<int>::max();
+    if (_parser.foundSimulationEndTime()) {
+      simulationEndTime = _parser.getSimulationEndTime();
+    } else {
+      simulationTimeSteps = _parser.getSimulationTimeSteps();
+    }
+
     logDebug("runAsMaster(...)","min solver time stamp: "     << solvers::Solver::getMinSolverTimeStampOfAllSolvers());
     logDebug("runAsMaster(...)","min solver time step size: " << solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers());
-    while ((solvers::Solver::getMinSolverTimeStampOfAllSolvers() < simulationEndTime) &&
-        tarch::la::greater(solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers(), 0.0)) {
+
+    int timeStep = 0;
+    while (
+        tarch::la::greater(solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers(), 0.0) &&
+        solvers::Solver::getMinSolverTimeStampOfAllSolvers() < simulationEndTime &&
+        timeStep < simulationTimeSteps
+    ) {
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(
           solvers::Solver::getMinSolverTimeStampOfAllSolvers()); // has no side effects
 
@@ -791,7 +803,10 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
       postProcessTimeStepInSharedMemoryEnvironment();
 
       logDebug("runAsMaster(...)", "state=" << repository.getState().toString());
+
+      timeStep++;
     }
+
     if ( tarch::la::equals(solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers(), 0.0)) {
       logWarning("runAsMaster(...)","Minimum solver time step size is zero (up to machine precision).");
     }
