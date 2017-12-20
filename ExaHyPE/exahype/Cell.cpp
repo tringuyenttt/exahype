@@ -243,14 +243,14 @@ bool exahype::Cell::isEmpty() const {
 }
 
 bool exahype::Cell::isInitialised() const {
-  if (_cellData.getCellDescriptionsIndex()!=multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
+  if ( _cellData.getCellDescriptionsIndex() >= 0 ) {
     assertion1( exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
                 _cellData.getCellDescriptionsIndex());
     assertion1( exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
                 _cellData.getCellDescriptionsIndex());
   }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
 
-  return _cellData.getCellDescriptionsIndex()!=multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex;
+  return _cellData.getCellDescriptionsIndex() >= 0;
 }
 
 int exahype::Cell::getCellDescriptionsIndex() const {
