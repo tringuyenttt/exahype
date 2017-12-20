@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Perform multicore speedup tests on coolmuc2.
+# Perform multicore speedup tests on coolmuc3_KNL.
 #
-# coolmuc2 uses SLURM. SLURM supports array jobs.
+# coolmuc3_KNL uses SLURM. SLURM supports array jobs.
 #
 
 project=Euler_ADERDG
@@ -47,15 +47,15 @@ do
   t=${T[i]}
   
   # Create script
-  script=multicore/coolmuc2.slurm-script
-  newScript=multicore/coolmuc2-$prefix-p$order-n1-t1.slurm-script
+  script=multicore/coolmuc3_KNL.slurm-script
+  newScript=multicore/coolmuc3_KNL-$prefix-p$order-n1-t1.slurm-script
   cp $script $newScript
  
   sed -i 's,'$project'-no-output-regular-0,'$prefix',g' $newScript
 
   sed -i 's,p3,p'$order',g' $newScript
 
-  sed -i 's,script=multicore/coolmuc2.slurm-script,script='$newScript',g' $newScript 
+  sed -i 's,script=multicore/coolmuc3_KNL.slurm-script,script='$newScript',g' $newScript 
   
   # Create spec files
   #for coresPerTask in 1 12 24

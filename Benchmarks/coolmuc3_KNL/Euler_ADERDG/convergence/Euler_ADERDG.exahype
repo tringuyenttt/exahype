@@ -21,7 +21,7 @@
 exahype-project Euler
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
-  output-directory const  = ./Benchmarks/coolmuc2/Euler_ADERDG
+  output-directory const  = ./Benchmarks/coolmuc3_KNL/Euler_ADERDG
   architecture const      = cpu
   log-file                = mylogfile.log
 

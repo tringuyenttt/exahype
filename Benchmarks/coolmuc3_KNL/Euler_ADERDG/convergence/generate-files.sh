@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Perform convergence tests on coolmuc2.
+# Perform convergence tests on coolmuc3_KNL.
 #
-# coolmuc2 uses SLURM. SLURM supports array jobs.
+# coolmuc3_KNL uses SLURM. SLURM supports array jobs.
 #
 
 project=Euler_ADERDG
@@ -29,15 +29,15 @@ do
     else
       prefix+="-nonfused"
     fi
-    script=convergence/coolmuc2.slurm-script
-    newScript=convergence/coolmuc2-$prefix-p${order}.slurm-script
+    script=convergence/coolmuc3_KNL.slurm-script
+    newScript=convergence/coolmuc3_KNL-$prefix-p${order}.slurm-script
     cp $script $newScript
    
     sed -i 's,prefix='$project',prefix='$prefix',g' $newScript
     sed -i 's,kernels=gen,kernels='$kernels',g' $newScript
     sed -i 's,p3,p'$order',g' $newScript
     sed -i 's,regular-0,'$mesh',g' $newScript
-    sed -i 's,script=convergence/coolmuc2.slurm-script,script='$newScript',g' $newScript
+    sed -i 's,script=convergence/coolmuc3_KNL.slurm-script,script='$newScript',g' $newScript
   
     for i in 0 1 2
     do

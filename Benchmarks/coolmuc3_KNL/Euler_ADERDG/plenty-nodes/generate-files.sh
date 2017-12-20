@@ -1,8 +1,8 @@
 #!/bin/bash
 #
-# Perform with speedup tests on coolmuc2 using several nodes.
+# Perform with speedup tests on coolmuc3_KNL using several nodes.
 #
-# coolmuc2 uses SLURM. SLURM supports array jobs.
+# coolmuc3_KNL uses SLURM. SLURM supports array jobs.
 #
 
 
@@ -56,8 +56,8 @@ do
       #let coresPerTask=16/$tasksPerNode # ham6
 
       # Create script
-      script=plenty-nodes/coolmuc2.slurm-script
-      newScript=plenty-nodes/coolmuc2-$prefix-p$order-n$nodes-t$tasksPerNode-c$coresPerTask-$sharedMem.slurm-script
+      script=plenty-nodes/coolmuc3_KNL.slurm-script
+      newScript=plenty-nodes/coolmuc3_KNL-$prefix-p$order-n$nodes-t$tasksPerNode-c$coresPerTask-$sharedMem.slurm-script
       cp $script $newScript
      
       sed -i -r 's,--nodes(\s*)=(\s*)([0-9]*),--nodes\1=\2'$nodes',' $newScript
