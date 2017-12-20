@@ -4,7 +4,8 @@
 #SBATCH -e ExaHyPE-EulerFlow.%A.err
 #SBATCH -t 01:00:00
 #SBATCH --exclusive
-#SBATCH --cluster=mpp2
+#SBATCH --cluster=mpp3
+#SBATCH --partition=mpp3_batch
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=28
