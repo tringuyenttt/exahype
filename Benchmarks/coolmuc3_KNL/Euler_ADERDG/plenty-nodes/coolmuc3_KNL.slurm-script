@@ -1,21 +1,27 @@
 #!/bin/bash
 #SBATCH --job-name="ExaHyPE-Euler_ADERDG"
-#SBATCH -o ExaHyPE-EulerFlow.%A.out
-#SBATCH -e ExaHyPE-EulerFlow.%A.err
+#SBATCH -o ExaHyPE-Euler.%A.out
+#SBATCH -e ExaHyPE-Euler.%A.err
 #SBATCH -t 01:00:00
 #SBATCH --exclusive
 #SBATCH --cluster=mpp3
 #SBATCH --partition=mpp3_batch
+#SBATCH --reservation=exahype21
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=28
+#SBATCH --cpus-per-task=64
 #SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
 #SBATCH --mail-type=ALL
 
 source /etc/profile.d/modules.sh
 
-module load tbb/2017
-module load likwid/4.0
+module unload gcc
+module load gcc/4.9
+module switch intel/17.0 
+module switch tbb/2017
+module switch mpi.intel/2017
+
+#export I_MPI_FABRICS="tmi"
 
 nodes=1
 tasksPerNode=1
@@ -29,7 +35,7 @@ sharedMem=None
 prefix=Euler_ADERDG-no-output-regular-0-p3
 out=plenty-nodes/results/$prefix-$sharedMem-$compiler-n$nodes-t$tasksPerNode-c$coresPerTask.out
 
-script=plenty-nodes/hamilton.slurm-script
+script=plenty-nodes/coolmuc3_KNL.slurm-script
 spec=plenty-nodes/$prefix-t$tasksPerNode-c$coresPerTask.exahype
 
 # pipe some information into output file
@@ -41,4 +47,4 @@ echo "" >> $out
 cat $spec >> $out
 
 # execute the job
-mpiexec -np $tasks ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> $out
+mpiexec ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> $out

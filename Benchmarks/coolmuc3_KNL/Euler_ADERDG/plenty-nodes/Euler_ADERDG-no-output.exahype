@@ -23,14 +23,13 @@ exahype-project Euler
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./Benchmarks/coolmuc3_KNL/Euler_ADERDG
-  architecture const      = hsw
-  log-file                = mylogfile.log
+  architecture const      = knl
 
   computational-domain
     dimension const          = 3
     width                    = 1.0, 1.0, 1.0
     offset                   = 0.0, 0.0, 0.0
-    end-time                 = 0.4
+    time-steps               = 4
   end computational-domain
 
   shared-memory
@@ -60,15 +59,15 @@ exahype-project Euler
   end global-optimisation
 
   solver ADER-DG EulerSolver_ADERDG
-    variables const   = rho:1,j:3,E:1
-    order const       = 5
+    variables const    = rho:1,j:3,E:1
+    order const        = 3
     /* 27 points: 0.05, 9 points: 0.15 */
-    maximum-mesh-size = 0.05
-    time-stepping     = global
-    type const = nonlinear
-    terms const = flux
+    maximum-mesh-size  = 0.05
+    time-stepping      = global
+    type const         = nonlinear
+    terms const        = flux
     optimisation const = generic
-    language const    = C
-    constants         = reference:entropywave
+    language const     = C
+    constants          = reference:entropywave
   end solver
 end exahype-project
