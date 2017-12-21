@@ -300,7 +300,7 @@ Productions
       token_dimension [dimension_const]:token_const          [dimension_equals]:token_equals          [dimension]:int_number
       token_width                   [width_equals]:token_equals              [width_x]:float_number [width_comma_xy]:token_comma [width_y]:float_number
       token_offset                  [offset_equals]:token_equals             [offset_x]:float_number [offset_comma_xy]:token_comma [offset_y]:float_number
-      token_time_steps              [end_time_equals]:token_equals           [end_time]:float_number
+      token_time_steps              [end_time_equals]:token_equals           [end_time]:int_number
      token_end [end_token]:token_computational_domain
       { -> New computational_domain( dimension, width_x, width_y, Null, offset_x, offset_y, Null, end_time ) }
       |
@@ -309,7 +309,7 @@ Productions
       token_dimension [dimension_const]:token_const          [dimension_equals]:token_equals          [dimension]:int_number
       token_width              [width_equals]:token_equals              [width_x]:float_number [width_comma_xy]:token_comma [width_y]:float_number [width_comma_yz]:token_comma [width_z]:float_number
       token_offset             [offset_equals]:token_equals             [offset_x]:float_number  [offset_comma_xy]:token_comma [offset_y]:float_number [offset_comma_yz]:token_comma [offset_z]:float_number
-      token_time_steps         [end_time_equals]:token_equals           [end_time]:float_number
+      token_time_steps         [end_time_equals]:token_equals           [end_time]:int_number
      token_end [end_token]:token_computational_domain
       { -> New computational_domain( dimension, width_x, width_y, width_z, offset_x, offset_y, offset_z, end_time ) }
       ;
