@@ -123,6 +123,8 @@ def extractRuntimes(table):
     nodes       = sorted(list(set(column(data,6))),key=int)
     tasks       = sorted(list(set(column(data,7))),key=int)
     cores       = sorted(list(set(column(data,8))),key=int)
+    modes       = sorted(list(set(column(data,9))),key=str)
+
     
     # processing data
     result = []
@@ -133,49 +135,56 @@ def extractRuntimes(table):
                     for node in nodes:
                         for task in tasks:
                             for core in cores:
-                                for algorithm in algorithms:
-                                    averageRuntimePerIteration       = 0.0
-                                    averageRuntimePerFusedTimeStep   = 0.0
-                                    averageRuntimePerPredictionRerun = 0.0
-                                    
-                                    timesteps        = sys.maxsize
-                                    predictionReruns = 0
-                                    if algorithm=='fused':
-                                        for adapter in fusedAdapters:
-                                            filtered = list(filter(lambda x: \
-                                                x[0]==identifier and x[1]==order and x[2]==compiler and x[3]==kernel and \
-                                                x[4]==node and x[5]==adapter and x[6]==nodes and x[7]==tasks and \
-                                                x[8]==tasks, data))
-                                            
-                                            iterations                  = int ( filtered[0][10] )
-                                            averageRuntimePerIteration += float ( filtered[0][11] ) / iterations
-                                            
-                                            if adapter=='FusedTimeStep':  
-                                                timesteps                        = iterations
-                                                averageRuntimePerFusedTimeStep   = float ( filtered[0][11] ) / iterations
-                                            elif adapter=='PredictionRerun':
-                                                predictionRerurns                = iterations
-                                                averageRuntimePerPredictionRerun = float ( filtered[0][11] ) / iterations
-                                    
-                                    elif algorithm=='nonfused':
-                                        averageRuntimePerIteration = 0.0
-                                        timesteps = sys.maxsize
-                                        for adapter in nonfusedAdapters:
-                                            filtered = list(filter(lambda x: \
-                                                x[0]==identifier and x[1]==order and x[2]==compiler and x[3]==kernel and \
-                                                x[4]==node and x[5]==adapter and x[6]==nodes and x[7]==tasks and \
-                                                x[8]==tasks, data))
-                                            
-                                            timesteps                   = int    ( filtered[0][10] )
-                                            averageRuntimePerIteration += float ( filtered[0][11] ) / iterations
-                                            timesteps                   = min(minIterations,iterations)
-                                            
-                                    row = [identifier,order,cc,kernels,algorithm,nodes,tasks,cores,mode,timesteps,averageRuntimePerIteration,averageRuntimePerFusedTimeStep,predictionReruns,averageRuntimePerPredictionRerun]
-                                    result.append(row)
+                                for mode in modes:
+                                    for algorithm in algorithms:
+                                        averageRuntimePerIteration       = 0.0
+                                        averageRuntimePerFusedTimeStep   = 0.0
+                                        averageRuntimePerPredictionRerun = 0.0
+                                        
+                                        timesteps        = sys.maxsize
+                                        predictionReruns = 0
+                                        found = False
+                                        if algorithm=='fused':
+                                            for adapter in fusedAdapters:
+                                                filtered = list(filter(lambda x: \
+                                                    x[0]==identifier and x[1]==order and x[2]==compiler and x[3]==kernel and \
+                                                    x[4]==algorithm and x[5]==adapter and x[6]==node and x[7]==task and \
+                                                    x[8]==core and x[9] == mode, data))
+                                                
+                                                if len(filtered):
+                                                    found = True
+                                                    iterations                  = int ( filtered[0][10] )
+                                                    averageRuntimePerIteration += float ( filtered[0][11] ) / iterations
+                                                    if adapter=='FusedTimeStep':
+                                                        timesteps                        = iterations
+                                                        averageRuntimePerFusedTimeStep   = float ( filtered[0][11] ) / iterations
+                                                    elif adapter=='PredictionRerun':
+                                                        predictionRerurns                = iterations
+                                                        averageRuntimePerPredictionRerun = float ( filtered[0][11] ) / iterations
+                                        
+                                        elif algorithm=='nonfused':
+                                            averageRuntimePerIteration = 0.0
+                                            timesteps = sys.maxsize
+                                            for adapter in nonfusedAdapters:
+                                                filtered = list(filter(lambda x: \
+                                                    x[0]==identifier and x[1]==order and x[2]==compiler and x[3]==kernel and \
+                                                    x[4]==algorithm and x[5]==adapter and x[6]==node and x[7]==task and \
+                                                    x[8]==core and x[9] == mode, data))
+
+                                                if len(filtered):
+                                                    found = True
+                                                    iterations                   = int    ( filtered[0][10] )
+                                                    averageRuntimePerIteration += float ( filtered[0][11] ) / iterations
+                                                    timesteps                   = min(timesteps,iterations)
+                                         
+                                        if found:        
+                                            row = [identifier,order,compiler,kernel,algorithm,node,task,core,mode,timesteps,averageRuntimePerIteration,averageRuntimePerFusedTimeStep,predictionReruns,averageRuntimePerPredictionRerun]
+                                            result.append(row)
     
     # loop
     header = ["Mesh","Order","CC","Kernels","Algorithm","Nodes","Tasks (per Node)","Cores (per Task)","Mode","Iterations","Total Runtime (Per Iteration)","FusedTimeStep (Per Iteration)","Reruns", "Predictor Rerun (Per Iteration)"]
     filename = table.replace('.csv','.runtimes.csv')
+    # print(result[0])
     result = sorted(result, key=lambda x: (x[0],int(x[1]),x[2],x[3],x[4],int(x[5]),int(x[6]),int(x[7])))
     writeTable(result,header,filename)
 ########################################################################

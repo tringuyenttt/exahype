@@ -116,6 +116,15 @@ int                                exahype::solvers::Solver::_NumberOfTriggeredT
 void exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated() {
   bool finishedWait = false;
 
+  tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
+  finishedWait = _NumberOfTriggeredTasks == 0;
+  if (!finishedWait) {
+    logInfo("waitUntilAllBackgroundTasksHaveTerminated", "Waiting for background tasks to complete");
+  }
+  lock.free();
+  tarch::multicore::BooleanSemaphore::sendTaskToBack();
+
+
   while (!finishedWait) {
     tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
     finishedWait = _NumberOfTriggeredTasks == 0;
