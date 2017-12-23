@@ -6,18 +6,14 @@ spec=$directory/Euler_ADERDG-no-output.exahype
 # save original file
 cp $spec ${spec}_tmp
 
-for m in 1 2
+#for mode in 'None' 'TBB' 'OMP'
+for mode in 'OMP' 'TBB' 
 do
-  if (( m == 1 )); then
-    make clean
-    export SHAREDMEM=TBB
-  else
-    make clean
-    export SHAREDMEM=None
-  fi
+  make clean
+  export SHAREDMEM=$mode
 
-  echo "SHAREDMEM=$SHAREDMEM"
-  #read -p "press any key..."
+  echo 'SHAREDMEM='$SHAREDMEM
+  #read -p 'press any key...'
 
   for p in 9 7 5 3
   do 

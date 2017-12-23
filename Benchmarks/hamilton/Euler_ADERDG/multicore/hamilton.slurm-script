@@ -2,7 +2,7 @@
 #SBATCH --job-name="ExaHyPE-Euler_ADERDG"
 #SBATCH -o ExaHyPE-Euler_ADERDG.%A.out
 #SBATCH -e ExaHyPE-Euler_ADERDG.%A.err
-#SBATCH -t 01:00:00
+#SBATCH -t 04:00:00
 #SBATCH --exclusive
 #SBATCH -p par7.q
 #SBATCH --nodes=1
@@ -10,8 +10,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mail-user=dominic.e.charrier@durham.ac.uk
 #SBATCH --mail-type=ALL
-#SBATCH --array=24
-##SBATCH --array=1,12,24
+#SBATCH --array=1,12,24
 ##SBATCH --array=1-24,48 # ham7: 1..24 cores + 48 threads (HT)
 ##SBATCH --array=1-16,32 # ham6: 1..16 cores + 32 threads (HT) 
 
@@ -25,8 +24,6 @@ module load likwid
 
 export TBB_SHLIB="-L/ddn/apps/Cluster-Apps/intel/xe_2017.2/tbb/lib/intel64/gcc4.7 -ltbb"
 
-export I_MPI_FABRICS="shm:dapl"
-
 nodes=1
 tasks=1
 tasksPerNode=1
@@ -35,9 +32,6 @@ let procsPerNode=tasksPerNode*coresPerTask
 
 compiler=Intel
 sharedMem=TBB
-#if (( coresPerTask==1 )); then
-#  sharedMem=None
-#fi
 
 prefix=Euler_ADERDG-no-output-regular-0-p3
 out=multicore/results/$prefix-$sharedMem-$compiler-n$nodes-t$tasksPerNode-c$coresPerTask.out
@@ -76,4 +70,3 @@ else
   likwid-perfctr -f -C 0-$maxCore -g BRANCH   ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> ${out}.likwid
   # not available on ham7: likwid-perfctr -C 0-$maxCore -g L1CACHE  ./ExaHyPE-Euler-p3-$sharedMem-$compiler $spec >> $out
 fi
-

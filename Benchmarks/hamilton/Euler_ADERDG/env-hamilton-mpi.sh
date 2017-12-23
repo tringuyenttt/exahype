@@ -17,7 +17,6 @@ export EXAHYPE_CC="mpicc -g -DnoParallelExchangePackedRecordsAtBoundary -DnoPara
 export MODE=PeanoProfile
 export COMPILER=Intel
 export DISTRIBUTEDMEM=MPI
-export ARCHITECTURE=hsw
 export GPROF=off
 
 # optimised kernels
