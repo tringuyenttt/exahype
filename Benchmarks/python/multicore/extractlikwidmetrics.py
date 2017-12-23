@@ -128,16 +128,16 @@ def extract_likwid_metrics(root_dir,prefix):
             if filename.endswith(".out.likwid") and filename.startswith(prefix):
                 print(root_dir+"/"+filename)
                 # sample: Euler_ADERDG-no-output-gen-fused-regular-0-p3-TBB-Intel-n1-t1-c24.out
-                match = re.search('^'+prefix+'-([a-z]+)-([a-z]+)-(.*)-p([0-9]+)-([A-Za-z]+)-([A-Za-z]+)-n([0-9]+)-t([0-9]+)-c([0-9]+)',filename)
+                match = re.search('^'+prefix+'-([a-z]+)-(([A-Za-z]|\+)+)-(.+)-p([0-9]+)-(.+)-([A-Za-z]+)-n([0-9]+)-t([0-9]+)-c([0-9]+).out.likwid$',filename)
                 kernels   = match.group(1) # opt/gen
                 algorithm = match.group(2) # fused/nonfused
-                mesh      = match.group(3)
-                order     = match.group(4)
-                mode      = match.group(5)
-                cc        = match.group(6)
-                nodes     = match.group(7)
-                tasks     = match.group(8)
-                cores     = match.group(9)
+                mesh      = match.group(4)
+                order     = match.group(5)
+                mode      = match.group(6)
+                cc        = match.group(7)
+                nodes     = match.group(8)
+                tasks     = match.group(9)
+                cores     = match.group(10)
                     
                 measurements = parse_likwid_metrics(root_dir+'/'+filename,metrics,counters,int(cores)==1) 
                 

@@ -141,10 +141,10 @@ def extractRuntimes(table):
                                         averageRuntimePerFusedTimeStep   = 0.0
                                         averageRuntimePerPredictionRerun = 0.0
                                         
-                                        timesteps        = sys.maxsize
+                                        timesteps        = 0
                                         predictionReruns = 0
                                         found = False
-                                        if algorithm=='fused':
+                                        if algorithm.startswith('fused'):
                                             for adapter in fusedAdapters:
                                                 filtered = list(filter(lambda x: \
                                                     x[0]==identifier and x[1]==order and x[2]==compiler and x[3]==kernel and \
@@ -153,16 +153,21 @@ def extractRuntimes(table):
                                                 
                                                 if len(filtered):
                                                     found = True
-                                                    iterations                  = int ( filtered[0][10] )
-                                                    averageRuntimePerIteration += float ( filtered[0][11] ) / iterations
+                                                    iterations = int ( filtered[0][10] )
                                                     if adapter=='FusedTimeStep':
                                                         timesteps                        = iterations
-                                                        averageRuntimePerFusedTimeStep   = float ( filtered[0][11] ) / iterations
+                                                        averageRuntimePerFusedTimeStep   = float ( filtered[0][11] )
                                                     elif adapter=='PredictionRerun':
-                                                        predictionRerurns                = iterations
-                                                        averageRuntimePerPredictionRerun = float ( filtered[0][11] ) / iterations
+                                                        predictionReruns                = iterations
+                                                        averageRuntimePerPredictionRerun = float ( filtered[0][11] )
+
+                                            if timesteps > 0:
+                                                averageRuntimePerIteration        = (averageRuntimePerFusedTimeStep+averageRuntimePerPredictionRerun) / timesteps
+                                                averageRuntimePerFusedTimeStep   /= timesteps
+                                                averageRuntimePerPredictionRerun /= predictionReruns                    
+                             
                                         
-                                        elif algorithm=='nonfused':
+                                        elif algorithm.startswith('nonfused'):
                                             averageRuntimePerIteration = 0.0
                                             timesteps = sys.maxsize
                                             for adapter in nonfusedAdapters:
@@ -173,7 +178,7 @@ def extractRuntimes(table):
 
                                                 if len(filtered):
                                                     found = True
-                                                    iterations                   = int    ( filtered[0][10] )
+                                                    iterations                  = int    ( filtered[0][10] )
                                                     averageRuntimePerIteration += float ( filtered[0][11] ) / iterations
                                                     timesteps                   = min(timesteps,iterations)
                                          

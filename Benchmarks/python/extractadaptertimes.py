@@ -97,7 +97,7 @@ def extract_singlecore_table(root_dir,prefix):
                     iterations = times[adapter]['n']
                     usertime   = times[adapter]['usertime']
                     cputime    = times[adapter]['cputime']
- 
+
                     csvwriter.writerow([order,adapter,optimisation,run,iterations,usertime,cputime]) 
 
 def extract_table(root_dir,prefix):
@@ -124,17 +124,17 @@ def extract_table(root_dir,prefix):
         for filename in os.listdir(root_dir):
             if filename.endswith(".out") and filename.startswith(prefix):
                 # sample: Elastic3D-no-output-gen-fused-regular-0-p3-TBB-Intel-n1-t1-c24.out
-                match = re.search('^'+prefix+'-([a-z]+)-([a-z]+)-(.*)-p([0-9]+)-(.+)-([A-Za-z]+)-n([0-9]+)-t([0-9]+)-c([0-9]+)',filename)
+                match = re.search('^'+prefix+'-([a-z]+)-(([A-Za-z]|\+)+)-(.+)-p([0-9]+)-(.+)-([A-Za-z]+)-n([0-9]+)-t([0-9]+)-c([0-9]+).out$',filename)
                 print(root_dir+"/"+filename)
                 kernels   = match.group(1) # opt/gen
                 algorithm = match.group(2) # fused/nonfused
-                mesh      = match.group(3)
-                order     = match.group(4)
-                mode      = match.group(5)
-                cc        = match.group(6)
-                nodes     = match.group(7)
-                tasks     = match.group(8)
-                cores     = match.group(9)
+                mesh      = match.group(4)
+                order     = match.group(5)
+                mode      = match.group(6)
+                cc        = match.group(7)
+                nodes     = match.group(8)
+                tasks     = match.group(9)
+                cores     = match.group(10)
                     
                 times = parse_adapter_times(root_dir+"/"+filename) 
                 
@@ -142,8 +142,9 @@ def extract_table(root_dir,prefix):
                     iterations = times[adapter]['n']
                     usertime   = times[adapter]['usertime']
                     cputime    = times[adapter]['cputime']
- 
-                    csvwriter.writerow([mesh,order,cc,kernels,algorithm,adapter,nodes,tasks,cores,mode,iterations,usertime,cputime])
+
+                    row=[mesh,order,cc,kernels,algorithm,adapter,nodes,tasks,cores,mode,iterations,usertime,cputime]
+                    csvwriter.writerow(row)
 
 def sort_table(filename,myKey):
     '''
@@ -191,7 +192,7 @@ singlecore = args.singlecore
 
 if singlecore is False:
   extract_table(root_dir,prefix)
-  key = lambda x: (x[0],int(x[1]),x[2],x[3],x[4],x[5],int(x[6]),int(x[7]),int(x[8]))
+  key = lambda x: (x[0],int(x[1]),x[2],x[3],x[4],x[5],int(x[6]),int(x[7]),int(x[8])) 
   sort_table(root_dir+"/"+prefix+".csv",key)
 else:
   extract_singlecore_table(root_dir,prefix)
