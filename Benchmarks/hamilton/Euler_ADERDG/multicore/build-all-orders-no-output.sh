@@ -6,8 +6,7 @@ spec=$directory/Euler_ADERDG-no-output.exahype
 # save original file
 cp $spec ${spec}_tmp
 
-#for mode in 'None' 'TBB' 'OMP'
-for mode in 'OMP' 'TBB' 
+for mode in None TBB OMP
 do
   make clean
   export SHAREDMEM=$mode
@@ -15,7 +14,7 @@ do
   echo 'SHAREDMEM='$SHAREDMEM
   #read -p 'press any key...'
 
-  for p in 9 7 5 3
+  for p in 3 5 7 9
   do 
     rm *.o
     sed -i -r 's,order(\s+)const(\s+)=(\s+)([0-9]+),order\1const\2=\3'$p',' $spec

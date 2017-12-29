@@ -23,7 +23,7 @@ exahype-project Euler
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./Benchmarks/hamilton/Euler_ADERDG
-  architecture const      = noarch
+  architecture const      = hsw
 
   computational-domain
     dimension const          = 3
@@ -53,10 +53,10 @@ exahype-project Euler
 
   solver ADER-DG EulerSolver_ADERDG
     variables const    = rho:1,j:3,E:1
-    order const        = 9
+    order const        = 3
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size  = 0.04
-    time-stepping      = global
+    time-stepping      = globalfixed
     type const         = nonlinear
     terms const        = flux
     optimisation const = generic

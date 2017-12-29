@@ -164,6 +164,7 @@ def extractRuntimes(table):
                                             if timesteps > 0:
                                                 averageRuntimePerIteration        = (averageRuntimePerFusedTimeStep+averageRuntimePerPredictionRerun) / timesteps
                                                 averageRuntimePerFusedTimeStep   /= timesteps
+                                            if predictionReruns > 0:
                                                 averageRuntimePerPredictionRerun /= predictionReruns                    
                              
                                         

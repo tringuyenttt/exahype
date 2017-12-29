@@ -23,7 +23,7 @@ exahype-project  ElasticWaveEquation3D
   peano-kernel-path const = ./Peano
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./Benchmarks/hamilton/Elastic3D
-  architecture const      = snb
+  architecture const      = hsw
   log-file                = mylogfile.log
 
   computational-domain
@@ -62,7 +62,7 @@ exahype-project  ElasticWaveEquation3D
   solver ADER-DG ElasticWaveEquation
     variables const   = v:3,sigma:6
     parameters const  = rho:1,c:2,jacobian:1,metric_derivative:9,curve_grid:3
-    order const       = 5
+    order const       = 3
     /* 27 points: 0.05, 9 points: 0.15 */
     maximum-mesh-size = 0.05
     time-stepping     = globalfixed

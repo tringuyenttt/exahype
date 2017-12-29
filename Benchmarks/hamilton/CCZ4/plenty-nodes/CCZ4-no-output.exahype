@@ -9,7 +9,7 @@ exahype-project  CCZ4
   peano-kernel-path const          = ./Peano
   exahype-path const               = ./ExaHyPE
   output-directory const           = ./Benchmarks/hamilton/CCZ4/
-  architecture const               = snb
+  architecture const               = hsw
   log-file                         = whatever.log
 
 
@@ -17,7 +17,7 @@ exahype-project  CCZ4
     dimension const                = 3
     width                          = 1.0, 1.0, 1.0
     offset                         = 0.0, 0.0, 0.0
-    end-time                       = 2.1
+    time-steps                     = 4.0
   end computational-domain
 
   shared-memory
@@ -50,11 +50,11 @@ exahype-project  CCZ4
     variables const          = G:6,K:6,theta:1,Z:3,lapse:1,shift:3,b:3,dLapse:3,dxShift:3,dyShift:3,dzShift:3,dxG:6,dyG:6,dzG:6,traceK:1,phi:1,P:3,K0:1
     order const              = 3
     maximum-mesh-size        = 0.12
-    maximum-mesh-depth       = 2
+    maximum-mesh-depth       = 0
     time-stepping            = global
     type const               = nonlinear
     terms const              = ncp,source
-    optimisation const       = optimised
+    optimisation const       = generic
     language const           = C
     
     limiter-type const             = godunov

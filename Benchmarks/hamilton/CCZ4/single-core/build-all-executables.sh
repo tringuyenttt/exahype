@@ -9,9 +9,9 @@ CORES=28
 DRIVER='../../../CodeGenerator/Driver.py'
 
 FOLDER=single-core
-SPEC=${FOLDER}/Elastic3D-no-output.exahype
-APP=ExaHyPE-ElasticWaveEquation3D
-NEW_APP=ExaHyPE-Elastic3D
+SPEC=${FOLDER}/CCZ4-no-output.exahype
+APP=ExaHyPE-CCZ4
+NEW_APP=ExaHyPE-CCZ4
 #ARCH=knl
 ARCH=hsw
 
