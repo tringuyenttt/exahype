@@ -6,6 +6,7 @@ ln -s ../../../ApplicationExamples/Elastic/Elastic3D/setUp.sh
 ln -s ../../../ApplicationExamples/Elastic/Elastic3D/ElasticWaveEquation.h
 ln -s ../../../ApplicationExamples/Elastic/Elastic3D/topography.yaml
 
-ln -s ../../python/extractadaptertimes.py
-ln -s ../../python/extractunigridruntimes.py
-ln -s ../../python/plotsinglecoreruntimes.py
+ln -s ../../python/*.py .
+ln -s ../../python/single-core/*.py .
+ln -s ../../python/multicore/*.py .
+ln -s ../../python/plenty-nodes/*.py .
