@@ -7,3 +7,6 @@ ln -s ../../../AstroApplications/CCZ4/Writers
 ln -s ../../../AstroApplications/CCZ4/typesDef.f90
 
 source projectpaths.cfg
+
+ln -s ../../python/*.py .
+ln -s ../../python/multicore/*.py .
