@@ -162,9 +162,7 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		COMPILER_LFLAGS += -p -pg
 	else
 		#COMPILER_CFLAGS   += -fast -ip
-		#COMPILER_CFLAGS   += -O3 -ip
-                # Bench_CCZ4_1217:
-                # COMPILER_CFLAGS   += 
+		COMPILER_CFLAGS   += -O3 -ip
 	endif
 
 	ifeq ($(call tolower,$(SHAREDMEM)),tbb)
@@ -177,20 +175,20 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		COMPILER_CFLAGS += -mmic
 		COMPILER_LFLAGS += -mmic
 	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
-		COMPILER_CFLAGS += -xMIC-AVX512
+		COMPILER_CFLAGS += -xMIC-AVX512 -fma
 		#FCOMPILER_CFLAGS += -xMIC-AVX512 -fma
 		#TODO SVENK: make fortran code compatible with these flags
-		COMPILER_LFLAGS += -xMIC-AVX512
+		COMPILER_LFLAGS += -xMIC-AVX512 -fma
 	else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
 		COMPILER_CFLAGS += -xAVX
 		#FCOMPILER_CFLAGS += -xAVX
 		#TODO SVENK: make fortran code compatible with these flags
 		COMPILER_LFLAGS += -xAVX
 	else ifeq ($(call tolower,$(ARCHITECTURE)),hsw)
-		COMPILER_CFLAGS += -xCORE-AVX2
+		COMPILER_CFLAGS += -xCORE-AVX2 -fma
 		#FCOMPILER_CFLAGS += -xCORE-AVX2 -fma
 		#TODO SVENK: make fortran code compatible with these flags
-		COMPILER_LFLAGS += -xCORE-AVX2
+		COMPILER_LFLAGS += -xCORE-AVX2 -fma
 	else ifneq ($(call tolower,$(ARCHITECTURE)),cpu)
         $(error Unknown option for variable [ARCHITECTURE])
 	endif
