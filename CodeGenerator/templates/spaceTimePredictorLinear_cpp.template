@@ -70,7 +70,9 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 {% endif %}
 {% if useNCP %}
   double ncpResult[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); 
-  double gradQNoPad[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); 
+{% endif %}
+{% if useNCP or useMaterialParam %}
+  double nVarXnDimNoPad[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); 
 {% endif %}
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing temp array away
@@ -278,12 +280,12 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
   
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
       std::memset(ncpResult, 0, {{nDim*nVar}}*sizeof(double)); // zero out ncpResult
-      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}, {{nVar}}, gradQNoPad); //x
-      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, gradQNoPad+{{1*nVar}}); //y
+      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}, {{nVar}}, nVarXnDimNoPad); //x
+      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, nVarXnDimNoPad+{{1*nVar}}); //y
 {% if nDim==3 %}
-      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, gradQNoPad+{{2*nVar}}); //z
+      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, nVarXnDimNoPad+{{2*nVar}}); //z
 {% endif %}
-      solver.{{solverName}}::nonConservativeProduct(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, gradQNoPad, ncpResult);
+      solver.{{solverName}}::nonConservativeProduct(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, nVarXnDimNoPad, ncpResult);
       for(int d = 0; d < {{nDim}}; d++) {
         #pragma simd
         for (int n = 0; n < {{nVar}}; n++) {
@@ -293,17 +295,21 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
     }
 {% endif %} {# useNCP #}
 
-  doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
+    doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
   
 {% if useMaterialParam %}
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      double* F[{{nDim}}];    
-      F[0] = &lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}];
-      F[1] = &lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}];
+    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {  //TODO JMG need to copy back and forth, change to same paradigm as flux
+      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}, {{nVar}}, nVarXnDimNoPad); //x
+      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, nVarXnDimNoPad+{{1*nVar}}); //y
 {% if nDim == 3 %}
-      F[2] = &lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}];
+      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, nVarXnDimNoPad+{{2*nVar}}); //z
 {% endif %}
-      solver.{{solverName}}::multiplyMaterialParameterMatrix(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, F);
+      solver.{{solverName}}::multiplyMaterialParameterMatrix(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, nVarXnDimNoPad);
+      std::copy_n(nVarXnDimNoPad, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}); //x
+      std::copy_n(nVarXnDimNoPad+{{1*nVar}}, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}); //y
+{% if nDim == 3 %}
+      std::copy_n(nVarXnDimNoPad+{{2*nVar}}, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}); //z
+{% endif %}
     }
 {% endif %} {# useMaterialParam #}
 
@@ -462,6 +468,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
   // z-direction: face 5 (left) and face 6 (right)
   for (int xy = 0; xy < {{nDof*nDof3D}}; xy++) {
     for (int z = 0; z < {{nDof}}; z++) {
+      #pragma simd
       for (int n = 0; n <{{nDataPad}}; n++) {
         // left
         lQhbnd[xy*{{nDataPad}}+n+{{4*nDof*nDof3D*nDataPad}}] += lQhi[(z*{{nDof*nDof}}+xy)*{{nDataPad}}+n] * FLCoeff[z];
@@ -470,6 +477,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       }
     }
     for (int z = 0; z < {{nDof}}; z++) {
+      #pragma simd
       for (int n = 0; n < {{nVarPad}}; n++) {
         // left
         lFhbnd[xy*{{nVarPad}}+n+{{4*nDof*nDof3D*nVarPad}}] += lFhi[(z*{{nDof*nDof}}+xy)*{{nVarPad}}+n+{{2*(nDof**nDim)*nVarPad}}] * FLCoeff[z];
