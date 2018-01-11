@@ -52,28 +52,19 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 ) {
  
   const double invDt = 1. / dt;
-  
-  double* tmp_PSderivatives = lFi; // it's actually lFi used here as a temp array //TODO do something cleaner?
-  
+ 
   std::memset(lQi, 0, {{(nDof+1)*(nDof**nDim)*nDataPad}}*sizeof(double));
   std::memset(lFi, 0, {{nDim*nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
-  
- 
 {% if useNCP %}
   std::memset(gradQ, 0, {{nDim*nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
   std::memset(lSi  , 0, {{nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
 {% endif %}
 
   // local tmp array
-{% if useFlux %}
-  double fluxDerivative[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT)));
+{% if usePointSources %}
+  double* tmp_PSderivatives = lFi; // it's actually lFi used here as a temp array //TODO do something cleaner?
 {% endif %}
-{% if useNCP %}
-  double ncpResult[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); 
-{% endif %}
-{% if useNCP or useMaterialParam %}
-  double nVarXnDimNoPad[{{nVar*nDim}}] __attribute__((aligned(ALIGNMENT))); 
-{% endif %}
+  double tmpArray[{{tmpArraySize}}] __attribute__((aligned(ALIGNMENT))); //used by flux (nDof*nVarPad), materialParam (nVar*nDim) and ncp (2x nVar*nDim)
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   static volatile double doNotOptimizeAway = 0.; // used to prevent the compiler from optimizing temp array away
   
@@ -151,6 +142,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
   for (int i = 0; i < {{nDof}}; i++) {  // time DOFs
 
 {% if useFlux %}
+    // Flux, tmpArray is used to store the flux derivative (require size = nDof*nVarPad = {{nDof*nVarPad}})
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
       double* F[{{nDim}}];    
       F[0] = &lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}];
@@ -164,31 +156,31 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
     //dflux1 dx
     for (int yz = 0; yz < {{nDof3D*nDof}}; yz++) {    
 {% if useLibxsmm %}
-      {{gemm_flux_x}}(lFi+(i*{{nDof3D*nDof}}+yz)*{{nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
+      {{gemm_flux_x}}(lFi+(i*{{nDof3D*nDof}}+yz)*{{nDof*nVarPad}}, dudxT_by_dx, tmpArray); //overwrite tmpArray, no need to reset it
 {% else %}
-      std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
+      std::memset(tmpArray, 0, {{nDof*nVarPad}}*sizeof(double));
       for (int l = 0; l < {{nDof}}; l++) {
         for (int n = 0; n < {{nVar}}; n++) {
           for (int x = 0; x < {{nDof}}; x++) {
-            fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D*nDof}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] * dudxT_by_dx[l*{{nDofPad}}+x];
+            tmpArray[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D*nDof}}+yz)*{{nDof}}+x)*{{nVarPad}}+n] * dudxT_by_dx[l*{{nDofPad}}+x];
           }
         }
       }
 {% endif %}
-      std::copy_n(fluxDerivative, {{nDof*nVarPad}}, lFi+(i*{{nDof3D*nDof}}+yz)*{{nDof*nVarPad}}); 
+      std::copy_n(tmpArray, {{nDof*nVarPad}}, lFi+(i*{{nDof3D*nDof}}+yz)*{{nDof*nVarPad}}); 
     }
 
     //dflux2 dy
     for (int z = 0; z < {{nDof3D}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
 {% if useLibxsmm %}
-        {{gemm_flux_y}}(lFi+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
+        {{gemm_flux_y}}(lFi+((i*{{nDof3D}}+z)*{{nDof*nDof}}+x)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, tmpArray); //overwrite tmpArray, no need to reset it
 {% else %}
-        std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
+        std::memset(tmpArray, 0, {{nDof*nVarPad}}*sizeof(double));
         for (int l = 0; l < {{nDof}}; l++) {
           for (int n = 0; n < {{nVar}}; n++) {
             for (int y = 0; y < {{nDof}}; y++) {
-              fluxDerivative[l*{{nVarPad}}+n] += lFi[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+y];
+              tmpArray[l*{{nVarPad}}+n] += lFi[(((i*{{nDof3D}}+z)*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+y];
               
             }
           }
@@ -197,7 +189,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
         for (int l = 0; l < {{nDof}}; l++) {
           #pragma simd
           for (int n = 0; n < {{nVarPad}}; n++) {
-            lFi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] = fluxDerivative[l*{{nVarPad}}+n];
+            lFi[(((i*{{nDof3D}}+z)*{{nDof}}+l)*{{nDof}}+x)*{{nVarPad}}+n +{{1*(nDof**nDim)*nDof*nVarPad}}] = tmpArray[l*{{nVarPad}}+n];
           }
         }
       }
@@ -207,13 +199,13 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
     //dflux3 dz
     for (int xy = 0; xy < {{nDof*nDof}}; xy++) {
 {% if useLibxsmm %}      
-      {{gemm_flux_z}}(lFi+(i*{{nDof**3}}+xy)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, fluxDerivative);
+      {{gemm_flux_z}}(lFi+(i*{{nDof**3}}+xy)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, dudxT_by_dx, tmpArray); //overwrite tmpArray, no need to reset it
 {% else %}
-      std::memset(fluxDerivative, 0, {{nDof*nVarPad}}*sizeof(double));
+      std::memset(tmpArray, 0, {{nDof*nVarPad}}*sizeof(double));
       for (int l = 0; l < {{nDof}}; l++) {
         for (int n = 0; n < {{nVar}}; n++) {
           for (int z = 0; z < {{nDof}}; z++) {
-            fluxDerivative[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+z]; 
+            tmpArray[l*{{nVarPad}}+n] += lFi[((i*{{nDof3D}}+z)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] * dudxT_by_dx[l*{{nDofPad}}+z]; 
           }
         }
       }
@@ -221,7 +213,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
       for (int l = 0; l < {{nDof}}; l++) {
         #pragma simd
         for (int n = 0; n < {{nVarPad}}; n++) {
-          lFi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] =  fluxDerivative[l*{{nVarPad}}+n];
+          lFi[((i*{{nDof3D}}+l)*{{nDof*nDof}}+xy)*{{nVarPad}}+n +{{2*(nDof**nDim)*nDof*nVarPad}}] =  tmpArray[l*{{nVarPad}}+n];
         }
       }
     }
@@ -229,6 +221,7 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 {% endif %} {# useFlux #}
 
 {% if useNCP %}
+    //NCP
     // Compute the derivatives in x direction (independent from the y and z derivatives)
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
 {% if useLibxsmm %}
@@ -279,17 +272,18 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
 {% endif %}
   
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      std::memset(ncpResult, 0, {{nDim*nVar}}*sizeof(double)); // zero out ncpResult
-      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}, {{nVar}}, nVarXnDimNoPad); //x
-      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, nVarXnDimNoPad+{{1*nVar}}); //y
+      // use tmpArray for input output since the PDE requires a 1D format with all dimensions after each other without padding
+      std::memset(tmpArray+{{ncpOutputShift}}, 0, {{nDim*nVar}}*sizeof(double)); // zero out ncpResult
+      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}, {{nVar}}, tmpArray); //x
+      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, tmpArray+{{1*nVar}}); //y
 {% if nDim==3 %}
-      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, nVarXnDimNoPad+{{2*nVar}}); //z
+      std::copy_n(gradQ+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, tmpArray+{{2*nVar}}); //z
 {% endif %}
-      solver.{{solverName}}::nonConservativeProduct(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, nVarXnDimNoPad, ncpResult);
+      solver.{{solverName}}::nonConservativeProduct(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, tmpArray, tmpArray+{{ncpOutputShift}});
       for(int d = 0; d < {{nDim}}; d++) {
         #pragma simd
         for (int n = 0; n < {{nVar}}; n++) {
-          lFi[((d*{{nDof}}+i)*{{nDof**nDim}}+xyz)*{{nVarPad}}+n] += ncpResult[d*{{nVar}}+n];
+          lFi[((d*{{nDof}}+i)*{{nDof**nDim}}+xyz)*{{nVarPad}}+n] += tmpArray[d*{{nVar}}+n+{{ncpOutputShift}}];
         }
       }
     }
@@ -298,17 +292,18 @@ void {{codeNamespace}}::spaceTimePredictorLinear(
     doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
   
 {% if useMaterialParam %}
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {  //TODO JMG need to copy back and forth, change to same paradigm as flux
-      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}, {{nVar}}, nVarXnDimNoPad); //x
-      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, nVarXnDimNoPad+{{1*nVar}}); //y
+    //materialParam
+    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {  //TODO JMG need to copy back and forth using tmpArray, change to same paradigm as flux
+      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}, {{nVar}}, tmpArray); //x
+      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, tmpArray+{{1*nVar}}); //y
 {% if nDim == 3 %}
-      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, nVarXnDimNoPad+{{2*nVar}}); //z
+      std::copy_n(lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}, {{nVar}}, tmpArray+{{2*nVar}}); //z
 {% endif %}
-      solver.{{solverName}}::multiplyMaterialParameterMatrix(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, nVarXnDimNoPad);
-      std::copy_n(nVarXnDimNoPad, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}); //x
-      std::copy_n(nVarXnDimNoPad+{{1*nVar}}, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}); //y
+      solver.{{solverName}}::multiplyMaterialParameterMatrix(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}, tmpArray);
+      std::copy_n(tmpArray, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}); //x
+      std::copy_n(tmpArray+{{1*nVar}}, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{1*(nDof**nDim)*nDof*nVarPad}}); //y
 {% if nDim == 3 %}
-      std::copy_n(nVarXnDimNoPad+{{2*nVar}}, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}); //z
+      std::copy_n(tmpArray+{{2*nVar}}, {{nVar}}, lFi+(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+{{2*(nDof**nDim)*nDof*nVarPad}}); //z
 {% endif %}
     }
 {% endif %} {# useMaterialParam #}

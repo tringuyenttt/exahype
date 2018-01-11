@@ -44,12 +44,17 @@ class SpaceTimePredictorGenerator:
         self.m_context = i_config
 
 
-    def generateCode(self):
+    def generateCode(self):         
         gemmName = "gemm_"+str(self.m_context["nVar"])+"_"+str(self.m_context["nDof"])+"_"+str(self.m_context["nDof"])
         self.m_context["gemm_gradQ_x"] = gemmName+"_gradQ_x"
         self.m_context["gemm_gradQ_y"] = gemmName+"_gradQ_y"
         self.m_context["gemm_gradQ_z"] = gemmName+"_gradQ_z"
         if(self.m_context["isLinear"]):
+            self.m_context["ncpOutputShift"] = Backend.getSizeWithPadding(self.m_context["nVar"]*self.m_context["nDim"]) #shift used to split the tmpArray into input and output for NCP
+            # size of the tmpArray
+            self.m_context["tmpArraySize"] = max((self.m_context["nDof"]*self.m_context["nVarPad"] if self.m_context["useFlux"]          else 0), \
+                                                 (self.m_context["nVar"]*self.m_context["nDim"]    if self.m_context["useMaterialParam"] else 0), \
+                                                 (2*self.m_context["ncpOutputShift"]               if self.m_context["useNCP"]           else 0))
             self.m_context["gemm_flux_x"] = gemmName+"_flux_x"
             self.m_context["gemm_flux_y"] = gemmName+"_flux_y"
             self.m_context["gemm_flux_z"] = gemmName+"_flux_z"
