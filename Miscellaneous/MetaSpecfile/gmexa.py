@@ -1,8 +1,17 @@
 #!/usr/bin/python
 # Regular Python 2
-# A graph approach to mexa.
 
-# This is a clean rewrite/refactor of mexa. 
+"""
+This is gmexa, a clean rewrite of mexa using a graph-based approach. It is a regular
+Python 2 program with no (currently only minimal: networkx) dependencies in a single
+file. It can be used as a library from other python scripts but is also shipped with
+a rich command line interface (CLI) to do all kind of parameter file mangling.
+
+For more details about the Mexa language see the README file or the repository
+http://bitbucket.org/svek/mexa
+
+Written in 2017 by SvenK for ExaHyPE.
+"""
 
 # dependency
 import networkx as nx
@@ -216,8 +225,13 @@ class symbol:
 	def base_as_term(self):
 		return term(self._path[0])
 	
-	def add_prefix(self, other, inplace=False): # should be named add_prefix
-		"Returns a new symbol wich is prefixed by self."
+	def add_prefix(self, other, inplace=False):
+		"""
+		Returns a new symbol wich is prefixed by other, i.e.
+		>>> a, b = symbol("a"), symbol("b")
+		>>> print a.add_prefix(b)
+		"b/a"
+		"""
 		if not isa(other,symbol): other = symbol(other)
 		newpath = other._path + self._path;
 		if inplace:
@@ -225,8 +239,23 @@ class symbol:
 			return self
 		else:	return symbol(newpath)
 	
+	def sub(self, other):
+		"""
+		A more readable version:
+		>>> a, b = symbol("a"), symbol("b")
+		>>> print a.sub("b")
+		"a/b"
+		"""
+		if not isa(other,symbol): other = symbol(other)
+		return symbol(self._path + other._path)
+	
 	def remove_prefix(self, other, inplace=False):
-		"Returns a new symbol which has removed the common prefix"
+		"""
+		Returns a new symbol which has removed the common prefix. I.e.
+		>>> ab, a = symbol("a/b"), symbol("a")
+		>>> print ab.remove_prefix(a)
+		"b"
+		"""
 		if not isa(other,symbol): other = symbol(other)
 		newpath = remove_comstr_prefix(self.canonical(), other.canonical())
 		if inplace:
@@ -1048,19 +1077,27 @@ class mexafile:
 ###
 
 class mexa_cli(object):
+	"""
+	This is the command line interface to the gmexa code. The interface is structured
+	into sub commands (similar to git). Call the individual sub commands in order to
+	learn how they are used.
+	The CLI is backed up by a class structure which shares code, such as a common
+	input/output engine for all sub commands.
+	"""
+	
 	command_registration = {} # maps string -> class
 	
 	def __init__(self):
-		self.parser = argparse.ArgumentParser(description=__doc__)
+		self.parser = argparse.ArgumentParser(description=self.__doc__, epilog=__doc__)
 		subparsers_dest = 'command'
 		subparsers = self.parser.add_subparsers(
 			dest=subparsers_dest,
-			title="commands",
-			description="valid subcommands",
-			help="choose one")
+			title="subcommands",
+			#description="valid subcommands",
+			help="Individual meaning:")
 		
 		for cmd, cls in self.command_registration.iteritems():
-			subargs = subparsers.add_parser(cmd)
+			subargs = subparsers.add_parser(cmd, help=cls.__doc__, description=cls.__doc__)
 			cls.arguments(subargs) # ask class for setting arguments
 		
 		args = vars(self.parser.parse_args())
@@ -1076,9 +1113,28 @@ class mexa_cli(object):
 		return register
 
 class io_mexafile(object):
-	def __init__(self, infile, outfile, root="", evaluate=True, **ignored_kwargs):
+	env_default_key = "env"
+	
+	def __init__(self, infile, outfile, root="", evaluate=True, env=False, env_root=None, add=None, **ignored_kwargs):
 		self.outfile = outfile
 		self.mf = mexafile.from_filehandle(infile)
+		
+		# environment injection
+		if env:
+			env_root = symbol(self.env_default_key if not env_root else env_root)
+			env_source = "Environment injection"
+			env2rel = lambda k,v: Rel(env_root.sub(k), v, "equals", env_source)
+			env_ops = map(unpack(env2rel), os.environ.iteritems())
+		else:
+			env_ops = []
+		
+		# Arbitrary command injection
+		if add:
+			mf_cmd = mexafile.from_textlines(add, source_name="Command line input")
+			mf_cmd_ops = mf_cmd.ops
+		else:
+			mf_cmd_ops = []
+		
 		self.root = root
 		if root:
 			self.mf.query(root, inplace=True)
@@ -1090,7 +1146,7 @@ class io_mexafile(object):
 		]
 		# -> should move to include file lookup paths instead.
 		
-		self.mf.ops = global_mexa_information + self.mf.ops
+		self.mf.ops = global_mexa_information + mf_cmd_ops + self.mf.ops + env_ops
 		
 		self.evaluate = evaluate
 		if evaluate:
@@ -1100,19 +1156,24 @@ class io_mexafile(object):
 		#mf.toGraph("graph")
 	
 	@classmethod
-	def arguments(cls, parser, add_root=True):
-		group = parser.add_argument_group('input/output')
+	def arguments(cls, parser, add_root=True, allow_generation=True):
+		group = parser.add_argument_group('input/output arguments')
 		group.add_argument('--infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
 			metavar='FILENAME', help="Input file to read. If no file is given, read from stdin.")
 		group.add_argument('--outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout,
 			metavar='FILENAME', help="Output file to write to. If no file is given, write to stdout.")
-		
 		if add_root:
-			group.add_argument('--root', default='', help='Queried root container')
-		
-		# also probably allow injection, i.e.
-		# --env  => the environment variables, etc.
-		# --var FOO=BAR => another variable definition, etc.
+			group.add_argument('--root', default='', metavar="/some/root", help='Queried root container')
+
+		if allow_generation:
+			gengroup = parser.add_argument_group('on-the-fly input arguments')
+			gengroup.add_argument('--env', action='store_true',
+				help="Add environment variables. They are inserted as strings below a root key (see --env-root).")
+			gengroup.add_argument('--env-root', metavar="/some/env/root",
+				help="Environment variables injection point. Defaults to " +cls.env_default_key)
+			gengroup.add_argument('--add', action='append', metavar='"foo=\'bar\'"',
+				help="Add any kind of mexa expression to the input. Mind the special treatment of your shell when it comes to whitespace and especially quotes. Add one expression with one --add argument each.")
+		     
 		
 	def write(self, data):
 		self.outfile.write(data)
@@ -1120,6 +1181,11 @@ class io_mexafile(object):
 
 @mexa_cli.register_subcommand('plain')
 class plain_mexafile(io_mexafile):
+	"""
+	Prints the interpreted mexa file (pass-throught). This can either serve as syntax
+	check or also invoke the evaluation which yields a simple mexa file with only
+	assignments left.
+	"""	
 	def __init__(self, no_evaluation, graph, *args, **kwargs):
 		#import ipdb; ipdb.set_trace()
 		super(plain_mexafile,self).__init__(evaluate=not no_evaluation, *args, **kwargs)
@@ -1134,12 +1200,17 @@ class plain_mexafile(io_mexafile):
 	@classmethod
 	def arguments(cls, parser):
 		io_mexafile.arguments(parser)
-		parser.add_argument('--no-evaluation', default=False, action='store_false', help='Do not evaluate the file at all')
-		parser.add_argument('--graph', default=False, action='store_true', help='Plot a graph')
+		group = parser.add_argument_group('plain output arguments')
+		group.add_argument('--no-evaluation', default=False, action='store_false', help='Do not evaluate the file at all')
+		group.add_argument('--graph', default=False, action='store_true', help='Plot a graph')
 
 
 @mexa_cli.register_subcommand('encode')
 class encoded_mexafile(io_mexafile):
+	"""
+	Gives the string of an encoded mexafile. Several encodings are possible. An encoded
+	string can be embedded into other files or file formats more easily.
+	"""
 	def __init__(self, encoding, header, *args, **kwargs):
 		#import ipdb; ipdb.set_trace()
 		super(encoded_mexafile,self).__init__(*args, **kwargs)
@@ -1172,8 +1243,9 @@ class encoded_mexafile(io_mexafile):
 	@classmethod
 	def arguments(cls, parser):
 		io_mexafile.arguments(parser)
-		parser.add_argument('--encoding', choices=cls.encodings.keys(), default=cls.default_encoding, help='Output encoding')
-		parser.add_argument('--header', default=cls.default_prepend_header, help='First line to add to output')
+		group = parser.add_argument_group('encoding output arguments')
+		group.add_argument('--encoding', choices=cls.encodings.keys(), default=cls.default_encoding, help='Output encoding')
+		group.add_argument('--header', default=cls.default_prepend_header, help='First line to add to output')
 	
 	@classmethod
 	def dump(cls, mf, encoding=None, header=None):
@@ -1192,6 +1264,13 @@ class encoded_mexafile(io_mexafile):
 
 @mexa_cli.register_subcommand('structured')
 class structured_mexafile(io_mexafile):
+	"""
+	Exports the hierarchical key-value parameter structure into various standard
+	file formats. As they are typically more expressive than the mexa format,
+	different style decisions are possible such as the representation as nested
+	dictionaries or tags versus a linearization with fully qualified path names.
+	"""
+	
 	native_styles = {
 		'tree': lambda mexa: mexa.tree(), # graph as nested dictionary
 		'tree-backref': lambda mexa: mexa.tree(backref=True), # including full paths (backreferences)
@@ -1277,6 +1356,11 @@ class structured_mexafile(io_mexafile):
 	
 @mexa_cli.register_subcommand('specfile')
 class mexafile_to_exahype_specfile(io_mexafile):
+	"""
+	Generates an ExaHyPE specification file. Based on the queried root, the input
+	has to follow a shape defined by the used jinja template file.
+	"""
+	
 	default_root = 'exahype' # the root container in a mexa file where the hierarchy begins
 	
 	# Inclusion of solver constants (aka simulation parameters) and plotter select statements
@@ -1395,7 +1479,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		jinja_env = jinja2.Environment(
 			loader=jinja2.FileSystemLoader(mexa_path),
 			#undefined=jinja2.StrictUndefined
-			undefined=jinja2.DebugUndefined
+			undefined=(jinja2.DebugUndefined if self.debug  else jinja2.StrictUndefined)
 		)
 		
 		# provide further jinja functions:
