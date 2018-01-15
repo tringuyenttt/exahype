@@ -1459,6 +1459,13 @@ int exahype::Parser::getNumberOfBackgroundTasks() {
 }
 
 
+bool exahype::Parser::useManualPinning() {
+  const std::string Search = "manual-pinning";
+
+  return getSharedMemoryConfiguration().find(Search) != std::string::npos;
+}
+
+
 bool exahype::Parser::ParserView::isValueValidString(
     const std::string& key) const {
   const std::string inputString = _parser.getTokenAfter(

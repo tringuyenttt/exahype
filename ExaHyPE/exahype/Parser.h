@@ -472,6 +472,8 @@ class exahype::Parser {
   int getRanksPerNode();
   int getNumberOfBackgroundTasks();
 
+  bool useManualPinning();
+
   /**
    * Returns the filename of the specfile represented by this Parser. Can
    * be empty if the user specified no filename.

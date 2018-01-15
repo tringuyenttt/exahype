@@ -243,6 +243,16 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
   const int numberOfThreads = _parser.getNumberOfThreads();
   tarch::multicore::Core::getInstance().configure(numberOfThreads);
+
+  if ( _parser.useManualPinning() ) {
+    #ifdef SharedTBB
+    logInfo("initSharedMemoryConfiguration()", "manual pinning switched on" );
+    tarch::multicore::Core::getInstance().pinThreads( true );
+    #else
+    logWarning("initSharedMemoryConfiguration()", "manual pinning only supported for TBB" );
+    #endif
+  }
+
   tarch::multicore::logThreadAffinities();
 
   tarch::multicore::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
