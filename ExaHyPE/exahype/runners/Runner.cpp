@@ -253,8 +253,6 @@ void exahype::runners::Runner::initSharedMemoryConfiguration() {
     #endif
   }
 
-  tarch::multicore::logThreadAffinities();
-
   tarch::multicore::setMaxNumberOfRunningBackgroundThreads(_parser.getNumberOfBackgroundTasks());
 
   switch (_parser.getMulticoreOracleType()) {
