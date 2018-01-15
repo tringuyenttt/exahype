@@ -25,6 +25,16 @@ void {{codeNamespace}}::volumeIntegral(double* restrict lduh,
   const double* restrict const lShi, //nullptr if not used
   const tarch::la::Vector<DIMENSIONS,double> &inverseDx
 ){
+#ifdef __INTEL_COMPILER
+{% if useFlux %}
+  __assume_aligned(lFhi,     ALIGNMENT);
+{% endif %}{# useFlux #}
+  __assume_aligned(lduh,     ALIGNMENT); //lduh should be aligned, see Solver.h
+{% if useSourceOrNCP %}
+  __assume_aligned(weights3, ALIGNMENT);
+  __assume_aligned(lShi,     ALIGNMENT);
+{% endif %}
+#endif
   // for linear non-conservative PDE, the volume integral is trivial, since it
   // only involves the element mass matrix, which later will cancel
   memset(lduh, 0, {{nVar*(nDof**nDim)}}*sizeof(double));
@@ -36,13 +46,15 @@ void {{codeNamespace}}::volumeIntegral(double* restrict lduh,
         for (int n = 0; n < {{nVar}}; n++) {
             lduh[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVar}}+n] -= weights3[(z*{{nDof3D}}+y)*{{nDof}}+x] * 
                 (
+{% if useFlux %}
                     lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{0*nVarPad*nDof**nDim}}] //x
                   + lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{1*nVarPad*nDof**nDim}}] //y
 {% if nDim==3 %}
                   + lFhi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n+{{2*nVarPad*nDof**nDim}}] //z
 {% endif %}
+{% endif %}
 {% if useSource %}
-                  + lShi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] // source
+                  {{'+' if useFlux}} lShi[((z*{{nDof3D}}+y)*{{nDof}}+x)*{{nVarPad}}+n] // source
 {% endif %}
                 );
         }
