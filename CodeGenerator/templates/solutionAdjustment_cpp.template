@@ -16,7 +16,7 @@
 
 #include "{{solverHeader}}"
 
-void {{codeNamespace}}::adjustPointSolution(
+void {{codeNamespace}}::solutionAdjustment(
   {{solverName}}& solver,
   double* luh,
   const tarch::la::Vector<DIMENSIONS,double>& center,
