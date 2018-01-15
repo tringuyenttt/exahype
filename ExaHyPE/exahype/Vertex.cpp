@@ -46,13 +46,13 @@ exahype::Vertex::Vertex(const Base::PersistentVertex& argument)
 }
 
 bool exahype::Vertex::equalUpToRelativeTolerance(
-    const tarch::la::Vector<DIMENSIONS,double>& first,
-    const tarch::la::Vector<DIMENSIONS,double>& second) {
-  constexpr double tolerance   = tarch::la::NUMERICAL_ZERO_DIFFERENCE;
-  double scaledTolerance =
-      tolerance * std::max( tarch::la::maxAbs(first), tarch::la::maxAbs(second) );
-  scaledTolerance = std::max( scaledTolerance, tolerance );
-  return tarch::la::equals( first, second, scaledTolerance );
+    const tarch::la::Vector<DIMENSIONS,double>& lhs,
+    const tarch::la::Vector<DIMENSIONS,double>& rhs) {
+  double scaling =
+      std::max(
+          1.0, std::max( tarch::la::maxAbs(lhs), tarch::la::maxAbs(rhs) )
+  );
+  return tarch::la::equals( lhs, rhs, scaling*tarch::la::NUMERICAL_ZERO_DIFFERENCE );
 }
 
 tarch::la::Vector<TWO_POWER_D, int>

@@ -630,7 +630,10 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   logTraceInWith5Arguments( "prepareCopyToRemoteNode(...)", localCell, toRank, cellCentre, cellSize, level );
 
-  if ( localCell.hasToCommunicate(cellSize) ) {
+  if (
+      localCell.isInside() &&
+      localCell.hasToCommunicate(cellSize)
+  ) {
     if ( localCell.isInitialised() ) {
       const int cellDescriptionsIndex = localCell.getCellDescriptionsIndex();
 
@@ -695,8 +698,10 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
         const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   logTraceInWith3Arguments( "mergeWithRemoteDataDueToForkOrJoin(...)", localCell, masterOrWorkerCell, fromRank );
 
-  if ( localCell.hasToCommunicate(cellSize) ) {
-
+  if (
+      localCell.isInside() &&
+      localCell.hasToCommunicate(cellSize)
+  ) {
     if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
       localCell.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
     }
@@ -726,7 +731,6 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
         solver->dropWorkerOrMasterDataDueToForkOrJoin(fromRank,cellCentre,level);
       }
     }
-
   }
 
   logTraceOut( "mergeWithRemoteDataDueToForkOrJoin(...)" );
