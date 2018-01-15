@@ -777,7 +777,10 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
         if (plot) {
           numberOfStepsToRun = 0;
         }
-        else if (solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping::GlobalFixed)) {
+        else if (
+            _parser.getSkipReductionInBatchedTimeSteps() &&
+            solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping::GlobalFixed)
+        ) {
           /**
            * This computation is optimistic. If we were pessimistic, we had to
            * use the max solver time step size. However, this is not necessary
@@ -790,11 +793,7 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
           numberOfStepsToRun = numberOfStepsToRun<1 ? 1 : numberOfStepsToRun;
         }
 
-        runOneTimeStepWithFusedAlgorithmicSteps(
-          repository,
-          numberOfStepsToRun,
-          _parser.getExchangeBoundaryDataInBatchedTimeSteps() && repository.getState().isGridStationary()
-        );
+        runOneTimeStepWithFusedAlgorithmicSteps(repository,numberOfStepsToRun);
         printTimeStepInfo(numberOfStepsToRun,repository);
       } else {
         runOneTimeStepWithThreeSeparateAlgorithmicSteps(repository, plot);
@@ -1174,7 +1173,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
 }
 
 void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
-    exahype::repositories::Repository& repository, int numberOfStepsToRun, bool exchangeBoundaryData) {
+    exahype::repositories::Repository& repository, int numberOfStepsToRun) {
 
   if (numberOfStepsToRun==0) {
     logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)","plot");
@@ -1197,11 +1196,13 @@ void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
    *predictor time step size.
    * 4. Compute the cell-local time step sizes
    */
+  bool communicatePeanoVertices = !repository.getState().isGridStationary();
+
   repository.switchToFusedTimeStep();
   if (numberOfStepsToRun==0) {
-    repository.iterate(1,false);
+    repository.iterate(1,communicatePeanoVertices);
   } else {
-    repository.iterate(numberOfStepsToRun,false);
+    repository.iterate(numberOfStepsToRun,communicatePeanoVertices);
   }
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
@@ -1223,7 +1224,7 @@ void exahype::runners::Runner::runOneTimeStepWithFusedAlgorithmicSteps(
   if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
     logInfo("runOneTimeStepWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
     repository.switchToPredictionRerun();
-    repository.iterate(1,false);
+    repository.iterate(1,communicatePeanoVertices);
   }
 
   updateStatistics();
