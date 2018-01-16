@@ -571,7 +571,9 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
     const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
     const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
     if ( element!=exahype::solvers::Solver::NotFound ) {
+      // TODO(Dominic): Give return value
       solver->prepareMasterCellDescriptionAtMasterWorkerBoundary(cellDescriptionsIndex,element);
+      // TODO(Dominic): impose initial values if necessary
     }
   }
 
@@ -580,6 +582,8 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
       fineGridVerticesEnumerator.getCellCenter(),
       fineGridVerticesEnumerator.getCellSize(),
       fineGridVerticesEnumerator.getLevel());
+
+  // TODO(Dominic): Send down the new solution to the worker
 
   logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
   return true;
