@@ -46,6 +46,19 @@ class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
 public:
   /**
+   * Flag indicating that the predictor background threads spawned in
+   * the previous iteration have all finished.
+   * Must be reset in beginIteration() or endIteration() after a new batch
+   * of predictor background threads has been spawned.
+   */
+  static bool PredictorBackgroundThreadsFinished;
+
+  /**
+   * A semaphore for evaluating if the predictor background tasks have finished.
+   */
+  static tarch::multicore::BooleanSemaphore PredictorBackgroundThreadsFinishedSemaphore;
+
+  /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
    * of type Cell.
@@ -190,8 +203,6 @@ private:
   void uncompress(exahype::records::ADERDGCellDescription& cellDescription) const;
 
   /**
-   * TODO(Dominic): Add more docu.
-   *
    * Mark a cell description of Cell for refinement or erasing based
    * on a user supplied physics based refinement criterion.
    *
@@ -204,31 +215,39 @@ private:
    * solution or refine even further.
    *
    * No erasing children request can be set on cell descriptions
-   * of type NewAncestor and NewEmptyAncestor.
+   * of type Ancestor which have been introduced to the grid during
+   * the current mesh update iterations.
    * This prevents races where a refinement criterion has triggered a
    * refinement event on the parent cell but does trigger an erasing
    * event on the children cells.
    *
    * We further veto erasing events if
    * a child of the parent itself is a parent
-   * of cell descriptions of type Descendant/EmptyDescendant.
+   * of cell descriptions of type Descendant.
    *
    * <h2>Augmentation</h2>
-   * Note that a cell description of type Cell is allowed to overwrite an augmentation request
+   * Note that cell descriptions of type Cell are allowed to overwrite an augmentation request
    * by a refinement request if applicable.
    * The refinement event of a cell description of type Cell might be set to
    * an augmentation request in the methods mergeWithNeighbourData(...)
    * as well as in markForAugmentation(...) which is called from within
    * enterCell(...)
+   *
+   * \note Thread-safe.
    */
-  bool markForRefinement(CellDescription& pFine);
+  bool markForRefinement(CellDescription& fineGridCellDescription);
 
   /**
-   * TODO(Dominic): Add docu.
+   * Performs three operations:
+   * 1. Checks if a DeaugmentingChildrenRequestedTriggered event on the coarse
+   * grid parent can be changed to a DeaugmentingChildrenRequested event.
+   * In this case, the triggered request becomes an actual request.
+   * The fine grid children can however still veto this request.
+   * 2.
    *
-   * \note Not thread-safe!
+   * \note Thread-safe.
    */
-  bool markForAugmentation(CellDescription& pFine);
+  bool markForAugmentation(CellDescription& fineGridCellDescription);
 
   /*
    * Change the erasing children request to a change children to descendants
