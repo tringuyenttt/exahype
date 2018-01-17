@@ -171,11 +171,7 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		COMPILER_LFLAGS   += -lrt
 	endif
 	
-
-	ifeq ($(call tolower,$(ARCHITECTURE)),cpu)
-		COMPILER_CFLAGS += -xHost
-		COMPILER_LFLAGS += -xHost
-	else ifeq ($(call tolower,$(ARCHITECTURE)),phi)
+	ifeq ($(call tolower,$(ARCHITECTURE)),phi)
 		COMPILER_CFLAGS += -mmic
 		COMPILER_LFLAGS += -mmic
 	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
@@ -193,7 +189,7 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		#FCOMPILER_CFLAGS += -xCORE-AVX2 -fma
 		#TODO SVENK: make fortran code compatible with these flags
 		COMPILER_LFLAGS += -xCORE-AVX2 -fma
-	else
+	else ifneq ($(call tolower,$(ARCHITECTURE)),cpu)
         $(error Unknown option for variable [ARCHITECTURE])
 	endif
 
@@ -249,10 +245,7 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 		COMPILER_LFLAGS  += -lrt
 	endif
 
-	ifeq ($(call tolower,$(ARCHITECTURE)),cpu)
-		COMPILER_CFLAGS  += -march=native
-		COMPILER_LFLAGS  += -march=native
-	else ifeq ($(call tolower,$(ARCHITECTURE)),knl)
+	ifeq ($(call tolower,$(ARCHITECTURE)),knl)
 		COMPILER_CFLAGS  += -march=knl
 		COMPILER_LFLAGS  += -march=knl
     else ifeq ($(call tolower,$(ARCHITECTURE)),snb)
@@ -261,7 +254,7 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 	else ifeq ($(call tolower,$(ARCHITECTURE)),hsw)
 		COMPILER_CFLAGS  += -march=haswell
 		COMPILER_LFLAGS  += -march=haswell
-	else
+	else ifneq ($(call tolower,$(ARCHITECTURE)),cpu)
 		$(error Unknown option for variable [ARCHITECTURE])
 	endif
 

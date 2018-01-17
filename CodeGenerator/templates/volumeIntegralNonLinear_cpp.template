@@ -37,7 +37,7 @@ void {{codeNamespace}}::volumeIntegral(
   __assume_aligned(lFhi,     ALIGNMENT);
   __assume_aligned(Kxi_T,    ALIGNMENT);
   __assume_aligned(weights2, ALIGNMENT);
-{% endif %} {# useFlux #}
+{% endif %}{# useFlux #}
   __assume_aligned(lduh,     ALIGNMENT); //lduh should be aligned, see Solver.h
 {% if useSourceOrNCP %}
   __assume_aligned(weights3, ALIGNMENT);
@@ -48,7 +48,7 @@ void {{codeNamespace}}::volumeIntegral(
   double s_m[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   
   // Assume equispaced mesh, dx[0] == dx[1] == dx[2]
-{% for j in j_seq %} {# if nDim == 2 then j_seq == [0] #}
+{% for j in j_seq %}{# if nDim == 2 then j_seq == [0] #}
 {% for i in i_seq %}
   #pragma vector aligned
   for(int it=0; it<{{nDof*nDofPad}}; it++) 
@@ -101,11 +101,11 @@ void {{codeNamespace}}::volumeIntegral(
     }
   }
   
-{% endif %} {# dim3 #}
-{% endif %} {# useLibxsmm #}
+{% endif %}{# dim3 #}
+{% endif %}{# useLibxsmm #}
 {% endfor %}
 {% endfor %}
-{% endif %} {# useFlux #}
+{% endif %}{# useFlux #}
 {% if useSourceOrNCP %}
   // source
   for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {

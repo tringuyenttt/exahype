@@ -30,15 +30,15 @@ tarch::logging::Log GRMHD::GRMHDSolver_ADERDG::_log( "GRMHD::GRMHDSolver_ADERDG"
 void GRMHD::GRMHDSolver_ADERDG::init(std::vector<std::string>& cmdlineargs, exahype::Parser::ParserView& constants) {
 	// feenableexcept(FE_INVALID | FE_OVERFLOW);  // Enable all floating point exceptions but FE_INEXACT
 	
-	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), "specfile");
+	mexa::mexafile mf = mexa::fromSpecfile(constants.getAllAsOrderedMap(), constants.toString());
 	
 	std::cout << "Mexa configuration: \n" << mf.toString();
-	std::cout << "ID configuration: \n" << mf.query_root_require("initialdata").toString();
+	std::cout << "ID configuration: \n" << mf("initialdata").toString();
 	std::cout << "ID NAME: '" << mf.get("initialdata/name").get_string() << "'\n";
-	std::cout << "ID subquery NAME: '" << mf.query_root_require("initialdata").get("name").get_string() << "'\n";
+	std::cout << "ID subquery NAME: '" << mf("initialdata").get("name").get_string() << "'\n";
 	
 	GlobalInitialData::getInstance().setByParameters(mf);
-	GlobalBoundaryConditions::getInstance().initializeDG(this).readParameters(mf.query_root_require("boundaries"));
+	GlobalBoundaryConditions::getInstance().initializeDG(this).readParameters(mf("boundaries"));
 }
 
 

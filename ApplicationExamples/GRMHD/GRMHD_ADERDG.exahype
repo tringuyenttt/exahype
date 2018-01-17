@@ -65,11 +65,17 @@ exahype-project GRMHD
     maximum-mesh-depth             = 0
     time-stepping                  = global
     type const = nonlinear
-	terms const = flux,ncp
-	optimisation const = generic
+    terms const = flux,ncp
+    optimisation const = generic
     language const                 = C
-    constants                      = dummy:dummy
-    /* not yet working: constants aka left:exact,right:exact,top:exact,bottom:exact,front:exact,back:exact */
+    constants  = mexa:stuff,
+       initialdata/name:alfenwave,
+       boundaries/left:exact,
+       boundaries/right:exact,
+       boundaries/top:exact,
+       boundaries/bottom:exact,
+       boundaries/front:exact,
+       boundaries/back:exact
 
     plot vtu::Legendre::vertices::ascii ConservedWriter
       variables const = 19

@@ -106,7 +106,7 @@ GRMHD::BoundaryConditions::boundarymethod
 	GRMHD::BoundaryConditions::boundarymethod target=nullptr;
 	if(value == "zero")
 		target = &me::vacuum;
-	if(value == "reflective" || value == "refl")
+	if(value == "reflective" || value == "refl" || value=="wall")
 		target = &me::reflective;
 	if(value == "copy" || value == "outflow")
 		target = &me::outflow;

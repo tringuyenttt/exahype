@@ -46,6 +46,19 @@ class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
 public:
   /**
+   * Flag indicating that the predictor background threads spawned in
+   * the previous iteration have all finished.
+   * Must be reset in beginIteration() or endIteration() after a new batch
+   * of predictor background threads has been spawned.
+   */
+  static bool PredictorBackgroundThreadsFinished;
+
+  /**
+   * A semaphore for evaluating if the predictor background tasks have finished.
+   */
+  static tarch::multicore::BooleanSemaphore PredictorBackgroundThreadsFinishedSemaphore;
+
+  /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
    * of type Cell.
@@ -190,8 +203,6 @@ private:
   void uncompress(exahype::records::ADERDGCellDescription& cellDescription) const;
 
   /**
-   * TODO(Dominic): Add more docu.
-   *
    * Mark a cell description of Cell for refinement or erasing based
    * on a user supplied physics based refinement criterion.
    *
@@ -204,31 +215,39 @@ private:
    * solution or refine even further.
    *
    * No erasing children request can be set on cell descriptions
-   * of type NewAncestor and NewEmptyAncestor.
+   * of type Ancestor which have been introduced to the grid during
+   * the current mesh update iterations.
    * This prevents races where a refinement criterion has triggered a
    * refinement event on the parent cell but does trigger an erasing
    * event on the children cells.
    *
    * We further veto erasing events if
    * a child of the parent itself is a parent
-   * of cell descriptions of type Descendant/EmptyDescendant.
+   * of cell descriptions of type Descendant.
    *
    * <h2>Augmentation</h2>
-   * Note that a cell description of type Cell is allowed to overwrite an augmentation request
+   * Note that cell descriptions of type Cell are allowed to overwrite an augmentation request
    * by a refinement request if applicable.
    * The refinement event of a cell description of type Cell might be set to
    * an augmentation request in the methods mergeWithNeighbourData(...)
    * as well as in markForAugmentation(...) which is called from within
    * enterCell(...)
+   *
+   * \note Thread-safe.
    */
-  bool markForRefinement(CellDescription& pFine);
+  bool markForRefinement(CellDescription& fineGridCellDescription);
 
   /**
-   * TODO(Dominic): Add docu.
+   * Performs three operations:
+   * 1. Checks if a DeaugmentingChildrenRequestedTriggered event on the coarse
+   * grid parent can be changed to a DeaugmentingChildrenRequested event.
+   * In this case, the triggered request becomes an actual request.
+   * The fine grid children can however still veto this request.
+   * 2.
    *
-   * \note Not thread-safe!
+   * \note Thread-safe.
    */
-  bool markForAugmentation(CellDescription& pFine);
+  bool markForAugmentation(CellDescription& fineGridCellDescription);
 
   /*
    * Change the erasing children request to a change children to descendants
@@ -2004,14 +2023,35 @@ public:
   // MASTER<=>WORKER
   ///////////////////////////////////
   /**
-   * TODO(Dominic): Add docu
+   * \copydoc Solver::prepareMasterCellDescriptionAtMasterWorkerBoundary
+   *
+   * If the cell description is of type Ancestor, we look up
+   * if its top-most parent stores face data during the time stepping
+   * iterations. That's the case if the parent Ancestor is next
+   * to a Cell type cell description (compute cell), or if
+   * itself has to store data for master worker communication.
+   *
+   * In any case, we set the hasToHoldDataForMasterWorkerCommunication flag
+   * on the cell description to true and allocate the required memory.
+   *
+   * Similarly, we check if a cell description of type Cell has such
+   * a top-most parent (of type Ancestor). In this case,
+   * we still need to set the flag but we do not need to allocate additional memory.
+   *
+   * \return if we need to master-worker communication for this cell description.
    */
-  void prepareMasterCellDescriptionAtMasterWorkerBoundary(
+  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  /**
-   * TODO(Dominic): Add docu
+  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
+   *
+   * If the cell description is of type Descendant and
+   * is next to a cell description of type Cell
+   * or is augmented, i.e. has children of type Descendant itself,
+   * we set the hasToHoldDataForMasterWorkerCommunication flag
+   * on the cell description to true and allocate the required
+   * memory.
    */
   void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
@@ -2027,7 +2067,10 @@ public:
       const int                        cellDescriptionsIndex,
       const int                        element) override;
 
-  void mergeWithWorkerMetadata(
+  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
+   * \return if we need to master-worker communication for this cell description.
+   */
+  bool mergeWithWorkerMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
       const int                        element) override;

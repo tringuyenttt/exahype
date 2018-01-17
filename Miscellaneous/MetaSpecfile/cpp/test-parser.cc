@@ -32,29 +32,48 @@ int main(int argc, char** argv) {
 	}
 	
 	exahype::Parser::ParserView view(parser.getParserView(0));
+	mexa::mexafile mf = mexa::fromSpecfile(view.getAllAsOrderedMap(), view.toString());
 	
-	mexa::mexafile mf = mexa::fromSpecfile(view.getAllAsOrderedMap(), "specfile");
+	std::cout << "Read in mexafile:\n" << mf.toString();
 	
-	std::cout << "mf=" << mf.toString();
+	std::cout << "\nTesting string access:";
+	std::cout << "\ntest1 = " << mf("string/test1").get_string();
+	std::cout << "\ntest2 = " << mf("string").get_string("test2");
 	
-	// Testing queries
-	mexa::mexafile mq = mf.query_root("boundaries");
-	std::cout << "mq=" << mq.toString() << "\n";
-	std::cout << "contains left? " <<  mq.contains("left") << "\n";
-	std::cout << "value from left = <" << mq.get("left").get_string() << ">\n";
+
+	std::cout << "\nTesting queries in general:";
+	std::cout << "\nQueried: " << mf.query("boundaries").toString();
+	std::cout << "\nFiltered: " << mf.filter("boundaries").toString();
+	std::cout << "\nSugar: " << mf("boundaries").toString();
 	
-	// testing vector
-	/*
-	std::vector<double> pos = mf.vec("shocktube/right/bmag", 3).get_double();
-	//std::vector<int> pos = mf.vec("shocktube/right/bmag", 3).as_int();
-	for(auto j : pos)
-		std::cout << "vector value: " << j << "\n";
-	*/
+	mexa::value v;
+	std::cout << "\nTesting casting:";
+	v = mf("casting/float").get_value();
+	std::cout << "\nFrom float: "
+		<< "double: " << v.as_double() << ", "
+		<< "int: " << v.as_int() << ", "
+		<< "bool: " << v.as_bool() << ", "
+		<< "string: " << v.as_string();
+	v = mf("casting/int").get_value();
+	std::cout << "\nFrom int:   "
+		<< "double: " << v.as_double() << ", "
+		<< "int: " << v.as_int() << ", "
+		<< "bool: " << v.as_bool() << ", "
+		<< "string: " << v.as_string();
+	v = mf("casting/bool").get_value();
+	std::cout << "\nFrom bool:  "
+		<< "double: " << v.as_double() << ", "
+		<< "int: " << v.as_int() << ", "
+		<< "bool: " << v.as_bool() << ", "
+		<< "string: " << v.as_string();
+
+	std::cout << "\nTesting intvec:\n";
+	std::vector<int> ivec = mf("intvec/beta").vec(3).get_int();
+	for(size_t i=0; i<ivec.size(); i++)
+		std::cout << "ivec[" << i << "] = " << ivec[i] << "\n";
 	
-	// Testing strings
-	/*
-	mexa::mexafile mu  = mf.query_root_require("initialdata");
-	std::cout << "mu=" << mu.toString();
-	std::cout << "named=" << mu("name").toString();
-	*/
+	std::cout << "\nTesting mixedvec as double:\n";
+	std::vector<double> dvec = mf("mixedvec/vel").vec(3).as_double();
+	for(size_t i=0; i<dvec.size(); i++)
+		std::cout << "dvec[" << i << "] = " << dvec[i] << "\n";
 }

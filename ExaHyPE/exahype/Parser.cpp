@@ -21,6 +21,7 @@
 #include <string>
 #include <regex>
 #include <cstdlib> // getenv, exit
+#include <sstream>
 
 #include "tarch/la/ScalarOperations.h"
 
@@ -69,7 +70,21 @@ exahype::Parser::Parser() {
           "globalfixed", exahype::solvers::Solver::TimeStepping::GlobalFixed));
 }
 
+
+
 void exahype::Parser::readFile(const std::string& filename) {
+    std::ifstream inputFile;
+    inputFile.open(filename.c_str());
+    if (!inputFile.good()) {
+      logError("readFile(String)", "cannot open file " << filename);
+      _tokenStream.clear();
+      _interpretationErrorOccured = true;
+      return;
+    }
+    readFile(inputFile, filename);
+}
+
+void exahype::Parser::readFile(std::istream& inputFile, std::string filename) {
    try {
     const int MAX_CHARS_PER_LINE = 65536;
 
@@ -84,15 +99,7 @@ void exahype::Parser::readFile(const std::string& filename) {
     std::smatch match;
 
     _tokenStream.clear();
-
-    std::ifstream inputFile;
-    inputFile.open(filename.c_str());
-    if (!inputFile.good()) {
-      logError("readFile(String)", "cannot open file " << filename);
-      _tokenStream.clear();
-      _interpretationErrorOccured = true;
-      return;
-    }
+    _filename = filename;
 
     int currentlyReadsComment = 0;
     int lineNumber            = 0;
@@ -149,7 +156,7 @@ void exahype::Parser::readFile(const std::string& filename) {
           }
         } // else do nothing
       } else if (currentlyReadsComment<0) {
-        logError("readFile(String)",
+        logError("readFile(istream)",
              "Please remove additional multi-line comment end(s) in line '" << lineNumber << "'.");
          _interpretationErrorOccured = true;
       }
@@ -157,22 +164,19 @@ void exahype::Parser::readFile(const std::string& filename) {
     }
 
     if (currentlyReadsComment>0) {
-      logError("readFile(String)",
+      logError("readFile(istream)",
                "A multi-line comment was not closed after line " << lineNumber);
       _interpretationErrorOccured = true;
     }
    }
   catch (const std::regex_error& e) {
-    logError("readFile(String)", "catched exception " << e.what() );
+    logError("readFile(istream)", "catched exception " << e.what() );
     _interpretationErrorOccured = true;
   }
 
   //  For debugging purposes
   if(std::getenv("EXAHYPE_VERBOSE_PARSER")) { // runtime debugging
-  std::cout << "Parser _tokenStream=" << std::endl;
-  for (std::string str : _tokenStream) {
-    std::cout << "["<<str<<"]" << std::endl;
-  }
+      std::cout << getTokenStreamAsString() << std::endl;
   }
 
   checkValidity();
@@ -185,7 +189,11 @@ void exahype::Parser::checkValidity() {
   // functions have side-effects: might set _interpretationErrorOccured
   getDomainSize();
   getOffset();
-  getSimulationEndTime();
+  if (foundSimulationEndTime()) {
+    getSimulationEndTime();
+  } else {
+    getSimulationTimeSteps();
+  }
 }
 
 bool exahype::Parser::isValid() const {
@@ -479,6 +487,34 @@ double exahype::Parser::getSimulationEndTime() const {
     logError("getSimulationEndTime()",
              "Invalid simulation end-time: " << token);
     result = 1.0;
+    _interpretationErrorOccured = true;
+  }
+  return result;
+}
+
+bool exahype::Parser::foundSimulationEndTime() const {
+  bool found = false;
+  for (auto& token : _tokenStream ) {
+    if ( token.compare("end-time")==0 ) {
+      found = true;
+      break;
+    }
+  }
+  return found;
+}
+
+int exahype::Parser::getSimulationTimeSteps() const {
+  std::string token = getTokenAfter("computational-domain", "time-steps");
+  logDebug("getSimulationEndTime()", "found token " << token);
+
+  int result = -1;
+  try {
+    result = std::stoi(token);
+  } catch (const std::invalid_argument& ia) {}
+
+  if (result < 0) {
+    logError("getSimulationEndTime()",
+             "Invalid simulation timestep: " << token);
     _interpretationErrorOccured = true;
   }
   return result;
@@ -1187,6 +1223,19 @@ void exahype::Parser::checkSolverConsistency(int solverNumber) const {
   }
 }
 
+std::string exahype::Parser::getSpecfileName() const {
+  return _filename;
+}
+
+std::string exahype::Parser::getTokenStreamAsString() const {
+  std::stringstream ret;
+  ret << "Parser _tokenStream=" << std::endl;
+  for (std::string str : _tokenStream) {
+    ret << "["<<str<<"]" << std::endl;
+  }
+  return ret.str();
+}
+
 exahype::Parser::ParserView exahype::Parser::getParserView(int solverNumber) {
   return ParserView(*this, solverNumber);
 }
@@ -1401,12 +1450,19 @@ int exahype::Parser::getNumberOfBackgroundTasks() {
   const std::string Search = "background-tasks";
 
   int result = static_cast<int>(exahype::Parser::getValueFromPropertyString(getSharedMemoryConfiguration(),Search));
-  if (result<-1) {
+  if (result<-2) {
     logWarning("getNumberOfBackgroundTasks()", "invalid number of background tasks (background-tasks field in configuration) " <<
-      "set or no number at all. Use default (1). 0 switches background tasks off despite long-running tasks, while -1 switches background tasks off compleley");
+      "set or no number at all. Use default (1). See BackgroundTasks.h for documentation.");
     result = 1;
   }
   return result;
+}
+
+
+bool exahype::Parser::useManualPinning() {
+  const std::string Search = "manual-pinning";
+
+  return getSharedMemoryConfiguration().find(Search) != std::string::npos;
 }
 
 
@@ -1416,3 +1472,23 @@ bool exahype::Parser::ParserView::isValueValidString(
       "solver", _solverNumberInSpecificationFile + 1, "constants", 1);
   return getValue(key) != "";
 }
+
+const exahype::Parser& exahype::Parser::ParserView::getParser() const {
+  return _parser;
+}
+
+
+std::string exahype::Parser::ParserView::toString() const {
+  std::ostringstream stringstr;
+  toString(stringstr);
+  return stringstr.str();
+}
+
+void exahype::Parser::ParserView::toString(std::ostream& out) const {
+  out << "ParserView(";
+  out << "specfile:" << _parser.getSpecfileName();
+  out << ",";
+  out << "solver:" << _parser.getIdentifier(_solverNumberInSpecificationFile);
+  out <<  ")";
+}
+

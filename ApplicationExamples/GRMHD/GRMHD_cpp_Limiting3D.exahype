@@ -76,8 +76,14 @@ exahype-project GRMHD
     dmp-difference-scaling         = 1e-3 
     steps-till-cured               = 0
 
-    constants                      = dummy:dummy
-
+    constants  = mexa:stuff,
+       initialdata/name:rnsid,
+       boundaries/left:exact,
+       boundaries/right:exact,
+       boundaries/top:exact,
+       boundaries/bottom:exact,
+       boundaries/front:exact,
+       boundaries/back:exact
     // plotters go here
 
   end solver

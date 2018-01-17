@@ -71,7 +71,14 @@ exahype-project GRMHD
     terms const        = flux,ncp,source
     optimisation const = generic
     language const                 = C
-    constants  = foo:bar,blo:dez
+    constants  = mexa:stuff,
+       initialdata/name:alfenwave,
+       boundaries/left:exact,
+       boundaries/right:exact,
+       boundaries/top:exact,
+       boundaries/bottom:exact,
+       boundaries/front:exact,
+       boundaries/back:exact
 
     plot vtk::Cartesian::vertices::binary ConservedWriter
       variables const = 23

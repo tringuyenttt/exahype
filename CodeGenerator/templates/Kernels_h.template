@@ -110,7 +110,7 @@ namespace {{namespaceName}} {
     const tarch::la::Vector<DIMENSIONS,double> &inverseDx
   );
 
-  void adjustPointSolution(
+  void solutionAdjustment(
     {{solverName}}& solver,
     double* luh,
     const tarch::la::Vector<DIMENSIONS,double>& center,

@@ -8,6 +8,7 @@
 #include <sstream>
 #include <cctype>
 #include <algorithm>
+#include <memory>
 #include <map>
 #include <utility>
 #include <vector>
@@ -114,36 +115,57 @@ namespace mexa {
 		value(const value&) = default;
 		value& operator=(const value&) = default;
 		
+		/**
+		 * @name Construct from a type
+		 *
+		 * These friendly constructors allow you to activate the corresponding
+		 * type and store it. In order to allow values to be stored in
+		 * STL containers (copy/move semantics), the undefined type was introduced
+		 * which means the value does not store anything.
+		 */
+		//@{
 		value() : a(Type::UNDEF) {}
 		value(int i) : i(i), a(Type::INT) {}
 		value(double d) : d(d), a(Type::DOUBLE) {}
 		value(bool b) : b(b), a(Type::BOOL) {}
 		value(std::string s) : s(s), a(Type::STRING) {}
+		//@}
 	
 		/// Returns whether the instance holds a given type.
 		bool isActive(Type type) const { return a == type; }
 		/// Checks if this instance holds a given type. If not, raises an exception.
 		void assertActive(Type type) const;
 		
-		// The get_* methods only work if the type is *exactly*
-		// what you asked for. There is no casting taking place, i.e.
-		// you cannot get_double() for something which is an integer.
-		
+		/**
+		 * @name Get active type from the union
+		 *
+		 * These methods work only if the type is *exactly* what you asked
+		 * for. There is no casting taking place, i.e. you cannot get_double()
+		 * for something which is an integer.
+		 */
+		//@{
 		int get_int() const { assertActive(Type::INT); return i; }
 		double get_double() const { assertActive(Type::DOUBLE); return d; }
 		bool get_bool() const { assertActive(Type::BOOL); return b; }
 		std::string get_string() const { assertActive(Type::STRING); return s; }
+		//@}
 		
-		// Instead, the as_* methods allow casting. This works between
-		// the {int,double,bool} types. In contrast, the string type
-		// is always a string representation of the value. However,
-		// a string will never be casted to any of int,bool,double.
-		// This is the job of the parser when creating a mexafile.
-		
+
+		/**
+		 * @name Friendly cast the active type from the union
+		 *
+		 * Instead, the as_* methods allow casting. This works between
+		 * the {int,double,bool} types. In contrast, the string type
+		 * is always a string representation of the value. However,
+		 * a string will never be casted to any of int,bool,double.
+		 * This is the job of the parser when creating a mexafile.
+		 */
+		//@{
 		int as_int() const;
 		double as_double() const;
 		bool as_bool() const;
 		std::string as_string() const;
+		//@}
 		
 		/// To support this idiom, the canCast function explains what can
 		/// be casted and what not. To be used as a replacement for isActive().
@@ -159,6 +181,9 @@ namespace mexa {
 		/// Do not mix this up with get_string() which gives you the
 		/// actual content, i.e. "Bla" in the given example (without quotes).
 		std::string toString() const;
+		
+		/// A string representation of the active type.
+		std::string typeToString() const { return type2str(a); }
 		
 		/// Jus as a helper: A type to string
 		static std::string type2str(Type type);
@@ -185,6 +210,26 @@ namespace mexa {
 	};
 	
 	/**
+	 * The list of key-value pairs is our implementation of an Ordered Map
+	 * which replaces the more obvious std::map<symbol, sourced>.
+	 **/
+	typedef std::vector<assignment>  assignment_list;
+
+	/**
+	 * A poor man's improval of std::shared_ptr which has an empty constructor that
+	 * creates a new instance of T.
+	 **/
+	template<typename T>
+	struct default_ptr {
+		std::shared_ptr<T> data;
+		default_ptr() : data(new T) {}
+		default_ptr(const default_ptr&) = default;
+		default_ptr& operator=(const default_ptr&) = default;
+		T& get() { return *data; }
+		const T& get() const { return *data; }
+	};
+	
+	/**
 	 * The mexafile represents a parameter file in the simple-mexa file format, i.e. it
 	 * is only a map of symbols onto lines/strings (with source information for speaking
 	 * error messages).
@@ -196,32 +241,32 @@ namespace mexa {
 	 * actual getters for several C++ types. In case of errors, we rely on exceptions.
 	 **/
 	struct mexafile {
+		// Currently, copying a mexafile is quite hevay as it results in copying a vector
+		// of strings.
+		assignment_list _assignments;
+		assignment_list& assignments() { return _assignments; }
+		const assignment_list& assignments() const { return _assignments; }
+		
+		// Drop-in replacement which makes movements less expensive, but needs integration.
+		/*
+		std::shared_ptr<assignment_list> _assignments = std::make_shared<assignment_list>();
+		assignment_list& assignments() { return *_assignments; }
+		const assignment_list& assignments() const { return *_assignments; }
+		*/
+		
+		
 		/**
-		 * The list of key-value pairs is our implementation of an Ordered Map
-		 * which replaces the more obvious std::map<symbol, sourced>.
+		 * A source description which tells where this file comes from. Is used in
+		 * toString(), i.e. for debugging output, and filled by the mexafile returning
+		 * methods such as filter() and query().
 		 **/
-		std::vector<assignment> assignments;
+		std::string source = "mexafile";
 		
 		/**
 		 * Add an item to the ordered assignment list.
 		 **/
 		void add(const symbol key, const value val, const sourcemap src);
-		
-		/**
-		 * Obtain an item from the ordered assignment list.
-		 * We return a copy in order to let this be a const function.
-		 **/
-		value get(const symbol key) const;
-		
-		/// Allow also access with call semantics
-		value operator()(const symbol key) const { return get(key); }
-		/// Allow also access with vector semantics
-		value operator[](const symbol key) const { return get(key); }
-		
-		// High level access:
-		vector_value vec(const symbol node, size_t required_length=-1) const;
-		vector_value vec(size_t required_length=-1) const;
-				
+
 		/**
 		 * Returns a string representation which actually is a valid simple-mexa
 		 * file itself (if the input is correct).
@@ -237,27 +282,29 @@ namespace mexa {
 		/**
 		 * Returns true if the assignment list is empty.
 		 **/
-		bool isEmpty() const { return assignments.empty(); }
+		bool isEmpty() const { return assignments().empty(); }
+		
+		/**
+		 * Raises an exception if isEmpty(). Is Chainable.
+		 **/
+		const mexafile& requireNonEmpty() const;
 
 		///////////////////////////////
 		// querying
 		///////////////////////////////
 		
 		/**
-		 * Filter the file for a given symbol. Returns a new mexafile.
+		 * Filter the file for a given symbol. Returns a new mexafile where only the
+		 * selected entries are inside.
 		 **/
-		mexafile query(const symbol root) const;
+		mexafile filter(const symbol root) const;
 		
 		/**
 		* Query and give relative paths to root. Ie. if assignments="a/x=1,a/y=2,b/z=3",
 		* then query(a) = "a/x=1,a/y=2" while query_root(a)="x=1,y=2".
+		* If raiseOnEmpty is given, will fail if the queried list is empty.
 		**/
-		mexafile query_root(const symbol root) const;
-		
-		/**
-		 * As query_root, but aborts if nothing found below the symbol.
-		 **/
-		mexafile query_root_require(const symbol root) const;
+		mexafile query(const symbol root) const;
 
 		/**
 		 * Returns a copy of this mexafile where the symbol `root' is added to
@@ -270,6 +317,87 @@ namespace mexa {
 		 * from every entry in the file.
 		 **/
 		mexafile prefix_remove(const symbol root) const;
+		
+		///////////////////////////////
+		// accessing values
+		///////////////////////////////
+
+		/**
+		 * Obtain a value from the mexafile. This is the main method to extract values.
+		 * This function reads the value from the symbol root, ie. an eq(root, value).
+		 * See the syntactic sugar below for more verbose variants.
+		 * 
+		 * We return a copy in order to let this be a const function.
+		 **/
+		value get() const;
+		
+		/**
+		 * Obtain a vector view of this mexafile. You can require a specific length.
+		 * The length is checked when getting items from the vector_value itself,
+		 * not at construction time.
+		 **/
+		vector_value vec(size_t required_length=-1) const;
+		
+		///////////////////////////////
+		// Syntactic sugar
+		///////////////////////////////
+		
+		/// Allow also access with call semantics
+		mexafile operator()(const symbol key) const { return query(key).requireNonEmpty(); }
+		/// Allow also access with vector semantics
+		mexafile operator[](const symbol key) const { return query(key).requireNonEmpty(); }
+		
+		/**
+		 * Get a value for a given key. This is just an abbreviation for
+		 *   query(key).requireNonEmpty().get().
+		 **/
+		value get(const symbol key) const;
+		/**
+		 * Get a vector at a given key position. This is again an abbreviation
+		 * for query(key).requireNonEmpty().vec().
+		 **/
+		vector_value vec(const symbol node, size_t required_length=-1) const;
+		
+		/**
+		 * An alias to make the semantics more explicit.
+		 **/
+		value get_value() const { return get(); }
+		
+		/**
+		 * @name Shortcuts for accessing the root value as C++ datatype
+		 * @see get() and value() for further information.
+		 */
+		//@{
+		int get_int() const { return get().get_int(); }
+		double get_double() const { return get().get_double(); }
+		bool get_bool() const { return get().get_bool(); }
+		std::string get_string() const { return get().get_string(); }
+		int as_int() const { return get().as_int(); }
+		double as_double() const { return get().as_double(); }
+		bool as_bool() const { return get().as_bool(); }
+		std::string as_string() const { return get().as_string(); }
+		//@}
+		
+		/**
+		 * @name Shortcuts for accessing a key as a C++ datatype
+		 *
+		 * When you want to access scalar data (stored at leafs in the mexafile),
+		 * these are your primary functions. The `get_*` functions require the type
+		 * of the leaf to be exactly the same while the `as_*` functions allow any
+		 * type.
+		 * 
+		 * @see get()
+		 */
+		//@{
+		int get_int(symbol key) const { return get(key).get_int(); }
+		double get_double(symbol key) const { return get(key).get_double(); }
+		bool get_bool(symbol key) const { return get(key).get_bool(); }
+		std::string get_string(symbol key) const { return get(key).get_string(); }
+		int as_int(symbol key) const { return get(key).as_int(); }
+		double as_double(symbol key) const { return get(key).as_double(); }
+		bool as_bool(symbol key) const { return get(key).as_bool(); }
+		std::string as_string(symbol key) const { return get(key).as_string(); }
+		//@}
 	};
 	
 	/**
@@ -278,32 +406,48 @@ namespace mexa {
 	 * mf::vec() method.
 	 **/	
 	class vector_value {
-		mexafile mf;
-		symbol node;
+		mexafile mq;
 		size_t required_length;
+		static constexpr size_t no_required_length = -1;
 		
 		/**
 		 * Calls the get_*() method from the value class on every value
-		 * in the mf.query(node).assignments list. Checks if all types
+		 * in the mq.assignments list. Checks if all types
 		 * match, otherwise raises an exception.
 		 **/
 		template<typename T>
 		std::vector<T> get( T (value::*getter)() const, value::Type type, bool doCast) const;
 	public:
-		vector_value(mexafile mf, symbol node, size_t required_length) : mf(mf), node(node), required_length(required_length) {}
+		vector_value(mexafile mq, size_t required_length=no_required_length);
 		
-		// if you want to be a harsh vector and have all entries to be the same type
+		/**
+		 * @name Get a vector of a given type
+		 *
+		 * if you want to be a harsh vector and have all entries to be the same type
+		 * 
+		 * @see value::get_int() and friends
+		 */
+		//@{
 		std::vector<int> get_int() const;
 		std::vector<double> get_double() const;
 		std::vector<bool> get_bool() const;
 		std::vector<std::string> get_string() const;
+		//@}
 		
-		// if instead you allow casting, i.e. in a vector with [0,0,4.5] you
-		// could read this as ints to [0,0,4] or as doubles to [0.0,0.0,4.5].
+		/**
+		 * @name Allow to cast from any vector values
+		 *
+		 * if instead you allow casting, i.e. in a vector with [0,0,4.5] you
+		 * could read this as ints to [0,0,4] or as doubles to [0.0,0.0,4.5].
+		 * 
+		 * @see value::as_int() and friends
+		 */
+		//@{
 		std::vector<int> as_int() const;
 		std::vector<double> as_double() const;
 		std::vector<bool> as_bool() const;
 		std::vector<std::string> as_string() const;
+		//q}
 	};
 	
 	/**

@@ -46,13 +46,13 @@ exahype::Vertex::Vertex(const Base::PersistentVertex& argument)
 }
 
 bool exahype::Vertex::equalUpToRelativeTolerance(
-    const tarch::la::Vector<DIMENSIONS,double>& first,
-    const tarch::la::Vector<DIMENSIONS,double>& second) {
-  constexpr double tolerance   = tarch::la::NUMERICAL_ZERO_DIFFERENCE;
-  double scaledTolerance =
-      tolerance * std::max( tarch::la::maxAbs(first), tarch::la::maxAbs(second) );
-  scaledTolerance = std::max( scaledTolerance, tolerance );
-  return tarch::la::equals( first, second, scaledTolerance );
+    const tarch::la::Vector<DIMENSIONS,double>& lhs,
+    const tarch::la::Vector<DIMENSIONS,double>& rhs) {
+  double scaling =
+      std::max(
+          1.0, std::max( tarch::la::maxAbs(lhs), tarch::la::maxAbs(rhs) )
+  );
+  return tarch::la::equals( lhs, rhs, scaling*tarch::la::NUMERICAL_ZERO_DIFFERENCE );
 }
 
 tarch::la::Vector<TWO_POWER_D, int>
@@ -167,9 +167,9 @@ void exahype::Vertex::validateThatNeighbourhoodIsValid(
           // Cell 1
           const int element1 = solver->tryGetElement(cellDescriptionsIndex1,solverNumber);
           if (element1!=exahype::solvers::Solver::NotFound) {
-            auto& p1 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex1,element1);
+            auto& p1 = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex1,element1);
             if (
-                p1.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell
+                p1.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
                 &&
                 p1.getIsInside(faceIndex1)
                 &&
@@ -182,9 +182,9 @@ void exahype::Vertex::validateThatNeighbourhoodIsValid(
           // Cell 2
           const int element2 = solver->tryGetElement(cellDescriptionsIndex2,solverNumber);
           if (element2!=exahype::solvers::Solver::NotFound) {
-            auto& p2 = exahype::solvers::ADERDGSolver::getCellDescription(cellDescriptionsIndex2,element2);
+            auto& p2 = exahype::solvers::FiniteVolumesSolver::getCellDescription(cellDescriptionsIndex2,element2);
             if (
-                p2.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell
+                p2.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
                 &&
                 p2.getIsInside(faceIndex2)
                 &&

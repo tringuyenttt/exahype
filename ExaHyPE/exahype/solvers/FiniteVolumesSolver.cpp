@@ -1052,10 +1052,10 @@ void exahype::solvers::FiniteVolumesSolver::dropCellDescriptions(
 ////////////////////////////////////
 // MASTER <=> WORKER
 ////////////////////////////////////
-void exahype::solvers::FiniteVolumesSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
+bool exahype::solvers::FiniteVolumesSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
       const int element) {
-  // do nothing
+  return false;
 }
 
 void exahype::solvers::FiniteVolumesSolver::prepareWorkerCellDescriptionAtMasterWorkerBoundary(
@@ -1081,11 +1081,11 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithMasterMetadata(
   // do nothing
 }
 
-void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerMetadata(
+bool exahype::solvers::FiniteVolumesSolver::mergeWithWorkerMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
       const int                        element) {
-  // do nothing
+  return false;
 }
 
 void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
