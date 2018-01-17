@@ -33,8 +33,7 @@ tarch::logging::Log exahype::solvers::LimitingADERDGSolver::_log("exahype::solve
 int exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell() {
   int result = 0;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG
-    ) {
+    if ( solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG ) {
       result = std::max(
           result,
           static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->getSolver()->
@@ -2047,10 +2046,10 @@ void exahype::solvers::LimitingADERDGSolver::dropNeighbourSolverAndLimiterData(
 /////////////////////////////////////
 // MASTER<=>WORKER
 /////////////////////////////////////
-void exahype::solvers::LimitingADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
+bool exahype::solvers::LimitingADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
     const int cellDescriptionsIndex,
     const int element) {
-  _solver->prepareMasterCellDescriptionAtMasterWorkerBoundary(cellDescriptionsIndex,element);
+  return _solver->prepareMasterCellDescriptionAtMasterWorkerBoundary(cellDescriptionsIndex,element);
 }
 
 void exahype::solvers::LimitingADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerBoundary(
@@ -2075,11 +2074,11 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterMetadata(
       metadata,cellDescriptionsIndex,element);
 }
 
-void exahype::solvers::LimitingADERDGSolver::mergeWithWorkerMetadata(
+bool exahype::solvers::LimitingADERDGSolver::mergeWithWorkerMetadata(
     const exahype::MetadataHeap::HeapEntries& receivedMetadata,
     const int                                 cellDescriptionsIndex,
     const int                                 element) {
-  _solver->mergeWithWorkerMetadata(
+  return _solver->mergeWithWorkerMetadata(
       receivedMetadata,cellDescriptionsIndex,element);
 }
 

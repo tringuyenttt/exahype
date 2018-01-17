@@ -648,8 +648,9 @@ void exahype::runners::Runner::printMeshSetupInfo(
   );
   #else
   logInfo("createGrid()",
-      "grid setup iteration #" << meshSetupIterations <<
-      ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes()
+      "grid setup iteration #" << meshSetupIterations
+      << ", idle-nodes=" << tarch::parallel::NodePool::getInstance().getNumberOfIdleNodes()
+      << ", vertical solver communication=" << repository.getState().getVerticalExchangeOfSolverDataRequired()
   );
   #endif
 
@@ -699,11 +700,15 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   }
 
   // a few extra iterations for the cell status flag spreading
-  logInfo("createGrid()", "more status spreading.");
   int extraIterations =
       std::max (
-          4, // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
+          exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() ?  0 : 4,
+              // 4 extra iteration to spread the augmentation status (and the helper status), one to allocate memory
           exahype::solvers::LimitingADERDGSolver::getMaxMinimumHelperStatusForTroubledCell());
+  if (extraIterations>0) {
+    logInfo("createGrid()", "more status spreading.");
+  }
+
   while (
     (
       extraIterations > 0
@@ -787,7 +792,8 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
         }
         else if (
             _parser.getSkipReductionInBatchedTimeSteps() &&
-            solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping::GlobalFixed)
+            solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping::GlobalFixed) &&
+            repository.getState().getVerticalExchangeOfSolverDataRequired()==false // known after mesh update
         ) {
           /**
            * This computation is optimistic. If we were pessimistic, we had to

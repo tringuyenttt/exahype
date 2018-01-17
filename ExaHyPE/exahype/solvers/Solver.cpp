@@ -494,6 +494,14 @@ int exahype::solvers::Solver::getMaxAdaptiveRefinementDepthOfAllSolvers() {
   return maxDepth;
 }
 
+bool exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() {
+  bool result = true;
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    result &= solver->getMaximumAdaptiveMeshDepth()==0;
+  }
+  return result;
+}
+
 bool exahype::solvers::Solver::oneSolverRequestedMeshUpdate() {
   bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {

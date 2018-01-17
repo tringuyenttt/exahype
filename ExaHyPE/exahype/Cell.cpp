@@ -581,7 +581,7 @@ void exahype::Cell::reduceMetadataToMasterPerCell(
   }
 }
 
-void exahype::Cell::mergeWithMetadataFromWorkerPerCell(
+bool exahype::Cell::mergeWithMetadataFromWorkerPerCell(
     const int                                   workerRank,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const tarch::la::Vector<DIMENSIONS,double>& cellSize,
@@ -595,6 +595,7 @@ void exahype::Cell::mergeWithMetadataFromWorkerPerCell(
     assertionEquals(receivedMetadata.size(),
                     exahype::MasterWorkerCommunicationMetadataPerSolver*solvers::RegisteredSolvers.size());
 
+    bool verticalExchangeOfSolverDataRequired = false;
     if ( isInitialised() ) {
       for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
@@ -609,14 +610,18 @@ void exahype::Cell::mergeWithMetadataFromWorkerPerCell(
               receivedMetadata.begin()+offset,
               receivedMetadata.begin()+offset+exahype::MasterWorkerCommunicationMetadataPerSolver);
 
-          solver->mergeWithWorkerMetadata(
-              metadataPortion,
-              getCellDescriptionsIndex(),element);
+          verticalExchangeOfSolverDataRequired |=
+              solver->mergeWithWorkerMetadata(
+                  metadataPortion,
+                  getCellDescriptionsIndex(),element);
         }
       }
     }
 
     MetadataHeap::getInstance().deleteData(receivedMetadataIndex);
+    return verticalExchangeOfSolverDataRequired;
+  } else {
+    return false;
   }
 }
 

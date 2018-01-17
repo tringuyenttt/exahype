@@ -2023,14 +2023,35 @@ public:
   // MASTER<=>WORKER
   ///////////////////////////////////
   /**
-   * TODO(Dominic): Add docu
+   * \copydoc Solver::prepareMasterCellDescriptionAtMasterWorkerBoundary
+   *
+   * If the cell description is of type Ancestor, we look up
+   * if its top-most parent stores face data during the time stepping
+   * iterations. That's the case if the parent Ancestor is next
+   * to a Cell type cell description (compute cell), or if
+   * itself has to store data for master worker communication.
+   *
+   * In any case, we set the hasToHoldDataForMasterWorkerCommunication flag
+   * on the cell description to true and allocate the required memory.
+   *
+   * Similarly, we check if a cell description of type Cell has such
+   * a top-most parent (of type Ancestor). In this case,
+   * we still need to set the flag but we do not need to allocate additional memory.
+   *
+   * \return if we need to master-worker communication for this cell description.
    */
-  void prepareMasterCellDescriptionAtMasterWorkerBoundary(
+  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
       const int element) override;
 
-  /**
-   * TODO(Dominic): Add docu
+  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
+   *
+   * If the cell description is of type Descendant and
+   * is next to a cell description of type Cell
+   * or is augmented, i.e. has children of type Descendant itself,
+   * we set the hasToHoldDataForMasterWorkerCommunication flag
+   * on the cell description to true and allocate the required
+   * memory.
    */
   void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
@@ -2046,7 +2067,10 @@ public:
       const int                        cellDescriptionsIndex,
       const int                        element) override;
 
-  void mergeWithWorkerMetadata(
+  /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
+   * \return if we need to master-worker communication for this cell description.
+   */
+  bool mergeWithWorkerMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
       const int                        element) override;

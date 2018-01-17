@@ -1396,7 +1396,7 @@ public:
   /////////////////////////////////////
   // MASTER<=>WORKER
   /////////////////////////////////////
-  void prepareMasterCellDescriptionAtMasterWorkerBoundary(
+  bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
       const int element) final override;
 
@@ -1414,7 +1414,7 @@ public:
       const int                        cellDescriptionsIndex,
       const int                        element) final override;
 
-  void mergeWithWorkerMetadata(
+  bool mergeWithWorkerMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
       const int                        element) final override;

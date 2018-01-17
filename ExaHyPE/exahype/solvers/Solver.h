@@ -614,7 +614,7 @@ class exahype::solvers::Solver {
    * Run over all solvers and identify the maximum depth of adaptive
    * refinement employed.
    *
-   * This number directly correlates with the number
+   * This number might correlate with the number
    * of grid iterations to run for performing an erasing operation.
    *
    * \note It is very important that initSolvers
@@ -622,6 +622,12 @@ class exahype::solvers::Solver {
    * method is used.
    */
   static int getMaxAdaptiveRefinementDepthOfAllSolvers();
+
+  /**
+   * Loop over the solver registry and check if no solver
+   * performs adaptive mesh refinement.
+   */
+  static bool allSolversPerformOnlyUniformRefinement();
 
   /**
    * Loop over the solver registry and check if one
@@ -633,6 +639,10 @@ class exahype::solvers::Solver {
    * Loop over the solver registry and check if one
    * of the solver's mesh refinement has not
    * attained a stable state yet.
+   *
+   * TODO(Dominic): Make this a state attribute since
+   * we do not need to know which particular solver
+   * did not attain a stable state.
    */
   static bool oneSolverHasNotAttainedStableState();
 
@@ -1819,14 +1829,17 @@ class exahype::solvers::Solver {
    * that needs to restrict data up to an Ancestor on the
    * master rank. However, this can definitively happen. For example,
    * in situations where a refined cell is augmented as well, i.e.
-   * has virtual children (Descendants).
+   * has virtual children (Descendants). (Still applicable??)
+   *
+   * \return if we need to perform vertical communication of solver face data for the
+   * considered cell description during the time stepping.
    */
-  virtual void prepareMasterCellDescriptionAtMasterWorkerBoundary(
+  virtual bool prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
       const int element) = 0;
 
   /**
-   * TODO(Dominic): Add docu.
+   * Prepare a worker cell description at the master worker boundary.
    */
   virtual void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
         const int cellDescriptionsIndex,
@@ -1840,7 +1853,6 @@ class exahype::solvers::Solver {
    * Otherwise, push exahype::MasterWorkerCommunicationMetadataPerSolver
    * times exahype::InvalidMetadataEntry to the back of the vector.
    *
-   * TODO(Dominic): Do send more information, e.g., the limiter status!
    */
   virtual void appendMasterWorkerCommunicationMetadata(
       MetadataHeap::HeapEntries& metadata,
@@ -1848,7 +1860,7 @@ class exahype::solvers::Solver {
       const int solverNumber) const = 0;
 
   /**
-   * TODO(Dominic): docu
+   * Merge with the master's metadata.
    */
   virtual void mergeWithMasterMetadata(
         const MetadataHeap::HeapEntries& receivedMetadata,
@@ -1856,9 +1868,12 @@ class exahype::solvers::Solver {
         const int                        element) = 0;
 
   /**
-   * TODO(Dominic): docu
+   * Merge with the worker's metadata.
+   *
+   * \return if we need to perform vertical communication of solver face data for the
+   * considered cell description during the time stepping.
    */
-  virtual void mergeWithWorkerMetadata(
+  virtual bool mergeWithWorkerMetadata(
           const MetadataHeap::HeapEntries& receivedMetadata,
           const int                        cellDescriptionsIndex,
           const int                        element) = 0;

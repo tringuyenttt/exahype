@@ -3183,7 +3183,9 @@ void exahype::solvers::ADERDGSolver::prepareWorkerCellDescriptionAtMasterWorkerB
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
   if (cellDescription.getType()==CellDescription::Type::Descendant) {
-    cellDescription.setHasToHoldDataForMasterWorkerCommunication(cellDescription.getIsAugmented());
+    cellDescription.setHasToHoldDataForMasterWorkerCommunication(
+        cellDescription.getIsAugmented() ||
+        cellDescription.getHelperStatus()>=MinimumHelperStatusForAllocatingBoundaryData);
     ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
     ensureNecessaryMemoryIsAllocated(cellDescription);
   }
@@ -3214,17 +3216,19 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterMetadata(
   }
 }
 
-void exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
+bool exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerBoundary(
       const int cellDescriptionsIndex,
       const int element) {
   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,element);
 
+  bool cellDescriptionRequiresVerticalCommunication = false;
   if ( cellDescription.getType()==CellDescription::Type::Ancestor ) {
     Solver::SubcellPosition subcellPosition =
         exahype::amr::computeSubcellPositionOfCellOrAncestorOrEmptyAncestor
         <CellDescription,Heap>(cellDescription);
 
     if (subcellPosition.parentElement!=NotFound) {
+      cellDescriptionRequiresVerticalCommunication = true;
       cellDescription.setHasToHoldDataForMasterWorkerCommunication(true);
       cellDescription.setHelperStatus(MinimumHelperStatusForAllocatingBoundaryData);
 
@@ -3238,92 +3242,57 @@ void exahype::solvers::ADERDGSolver::prepareMasterCellDescriptionAtMasterWorkerB
         <CellDescription,Heap>(cellDescription);
 
     if (subcellPosition.parentElement!=NotFound) { // then: need to restrict face data
+      cellDescriptionRequiresVerticalCommunication = true;
+      cellDescription.setHasToHoldDataForMasterWorkerCommunication(true);
       const int nextParentElement =
           tryGetElement(cellDescriptionsIndex,cellDescription.getSolverNumber());
       CellDescription& nextParent =
           getCellDescription(cellDescription.getParentIndex(),nextParentElement);
       vetoErasingOrDeaugmentingChildrenRequest(nextParent,cellDescriptionsIndex);
     }
-  }
-  else if ( cellDescription.getType()==CellDescription::Type::Descendant ) {
-//    Solver::SubcellPosition subcellPosition =
-//            exahype::amr::computeSubcellPositionOfDescendant
-//            <CellDescription,Heap,true>(cellDescription);
-//
-//    if( subcellPosition.parentElement!=NotFound ) {
-//      CellDescription& topMostParent = getCellDescription(
-//          subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-//
-//      if (
-//          topMostParent.getType()==CellDescription::Type::Cell &&
-//          (topMostParent.getType()==CellDescription::RefinementEvent::None ||
-//          topMostParent.getType()==CellDescription::RefinementEvent::AugmentingRequested)
-//      ) {
-//        topMostParent.setRefinementEvent(CellDescription::RefinementEvent::RefiningRequested);
-//      }
-//
-//      if (
-//          subcellPosition.parentCellDescriptionsIndex==cellDescription.getParentIndex() &&
-//          topMostParent.getRefinementEvent()==CellDescription::RefinementEvent::RefiningRequested
-//      ) {
-//        cellDescription.setType(CellDescription::Type::Cell);
-//        ensureNecessaryMemoryIsAllocated(cellDescription);
-//        prolongateVolumeData(cellDescription,topMostParent,subcellPosition.subcellIndex,initialGrid);
-//
-//        TODO(Dominic): Always send solution data to worker. Worker must expect this send or empty data.
-//      }
-//
-//      // TODO(Dominic):
-//      // 1 Check if topMostParent is Cell.
-//      // 1.1 If so, check if topMostParent is next parent:
-//      // If so, set RefinementRequested event if current event is none.
-//      // 1.2 Check if topMostParent is nextParent. If so, check
-//      // if we need to perform a prolongation of volume data.
-//      // Return back if we need to impose initial data.
-//      // 1.3 Impose initial conditions and send
-//      // solution data away to the worker.
-//    }
-//
-//    // TODO(Dominic): Previous
-//    // do nothing for descendants; wait for info from worker
-//    // see mergeWithWorkerMetadata
-  }
+  } // do nothing for descendants; wait for info from worker
+    // see mergeWithWorkerMetadata
 
+
+  return cellDescriptionRequiresVerticalCommunication;
 }
 
-void exahype::solvers::ADERDGSolver::mergeWithWorkerMetadata(
+bool exahype::solvers::ADERDGSolver::mergeWithWorkerMetadata(
       const MetadataHeap::HeapEntries& receivedMetadata,
       const int                        cellDescriptionsIndex,
       const int                        element) {
-  if (element!=exahype::solvers::Solver::NotFound)  {
-    CellDescription& cellDescription =
-        getCellDescription(cellDescriptionsIndex,element);
+  assertion(element!=exahype::solvers::Solver::NotFound);
+  CellDescription& cellDescription =
+      getCellDescription(cellDescriptionsIndex,element);
 
-    #ifdef Asserts
-    const CellDescription::Type receivedType =
-        static_cast<CellDescription::Type>(receivedMetadata[MasterWorkerCommunicationMetadataCellType].getU());
-    #endif
-    const int workerLimiterStatus            =
-        receivedMetadata[MasterWorkerCommunicationMetadataLimiterStatus].getU();
-    const bool workerHoldsData               =
-        receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData].getU()==1;
+  #ifdef Asserts
+  const CellDescription::Type receivedType =
+      static_cast<CellDescription::Type>(receivedMetadata[MasterWorkerCommunicationMetadataCellType].getU());
+  #endif
+  const int workerLimiterStatus            =
+      receivedMetadata[MasterWorkerCommunicationMetadataLimiterStatus].getU();
+  const bool workerHoldsData               =
+      receivedMetadata[MasterWorkerCommunicationMetadataSendReceiveData].getU()==1;
+  assertion(receivedType==cellDescription.getType());
 
-    assertion(receivedType==cellDescription.getType());
-    if (cellDescription.getType()==CellDescription::Type::Descendant) {
-      cellDescription.setHasToHoldDataForMasterWorkerCommunication(workerHoldsData);
-      ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-      ensureNecessaryMemoryIsAllocated(cellDescription);
-    } else if (
-        cellDescription.getType()==CellDescription::Type::Ancestor ||
-        cellDescription.getType()==CellDescription::Type::Cell) {
-      cellDescription.setLimiterStatus(workerLimiterStatus);
-      const int parentElement =
-          tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber());
-      if (parentElement!=exahype::solvers::Solver::NotFound) {
-        restrictLimiterStatus(cellDescriptionsIndex,element,cellDescription.getParentIndex(),parentElement);
-      }
+  bool cellDescriptionRequiresVerticalCommunication = false;
+  if (cellDescription.getType()==CellDescription::Type::Descendant) {
+    cellDescriptionRequiresVerticalCommunication = true;
+    cellDescription.setHasToHoldDataForMasterWorkerCommunication(workerHoldsData);
+    ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
+    ensureNecessaryMemoryIsAllocated(cellDescription);
+  } else if (
+      cellDescription.getType()==CellDescription::Type::Ancestor ||
+      cellDescription.getType()==CellDescription::Type::Cell) {
+    cellDescription.setLimiterStatus(workerLimiterStatus);
+    const int parentElement =
+        tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber());
+    if (parentElement!=exahype::solvers::Solver::NotFound) {
+      restrictLimiterStatus(cellDescriptionsIndex,element,cellDescription.getParentIndex(),parentElement);
     }
   }
+
+  return cellDescriptionRequiresVerticalCommunication;
 }
 
 ///////////////////////////////////
