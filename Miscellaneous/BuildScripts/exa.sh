@@ -328,6 +328,9 @@ case $CMD in
 	"mexa") # Runs the meta specfile file format utility
 		exec $BuildScripts/../MetaSpecfile/mexa.py $@
 		;;
+	"gmexa") # Runs the meta specfile file format utility
+		exec $BuildScripts/../MetaSpecfile/gmexa.py $@
+		;;
 	*)
 		fail "Could not understand command '$CMD'"
 		;;

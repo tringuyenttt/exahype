@@ -38,13 +38,18 @@ int main(int argc, char** argv) {
 	std::cout << "mf=" << mf.toString();
 	
 	// Testing queries
-	// std::cout << "mf=" << mf.query_root("boundaries").toString();
+	mexa::mexafile mq = mf.query_root("boundaries");
+	std::cout << "mq=" << mq.toString() << "\n";
+	std::cout << "contains left? " <<  mq.contains("left") << "\n";
+	std::cout << "value from left = <" << mq.get("left").get_string() << ">\n";
 	
 	// testing vector
+	/*
 	std::vector<double> pos = mf.vec("shocktube/right/bmag", 3).get_double();
 	//std::vector<int> pos = mf.vec("shocktube/right/bmag", 3).as_int();
 	for(auto j : pos)
 		std::cout << "vector value: " << j << "\n";
+	*/
 	
 	// Testing strings
 	/*
