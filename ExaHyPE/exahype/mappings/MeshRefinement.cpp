@@ -780,9 +780,10 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
     int worker, const exahype::State& workerState,
     exahype::State& masterState) {
   logTraceIn( "mergeWithMaster(...)" );
-  masterState.merge(workerState);
 
   // Merge global solver states
+  masterState.merge(workerState);
+
   for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
     auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
