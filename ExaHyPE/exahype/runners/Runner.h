@@ -194,7 +194,7 @@ class exahype::runners::Runner {
    * @param numberOfStepsToRun Number of steps to run. If you hand in 0, then
    *           it runs one time step plus does a plot.
    */
-  void runOneTimeStepWithFusedAlgorithmicSteps(exahype::repositories::Repository& repository, int numberOfStepsToRun);
+  void runTimeStepsWithFusedAlgorithmicSteps(exahype::repositories::Repository& repository, int numberOfStepsToRun);
 
   /**
    * Run the three (four for MPI) adapters necessary for initialising the

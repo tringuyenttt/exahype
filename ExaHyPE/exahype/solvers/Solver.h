@@ -577,6 +577,11 @@ class exahype::solvers::Solver {
   static double getMinSolverTimeStepSizeOfAllSolvers();
 
   /**
+   * Run over all solvers and identify the minimal time step size.
+   */
+  static double getMaxSolverTimeStepSizeOfAllSolvers();
+
+  /**
    * Run over all solvers and identify the maximal time stamp.
    *
    * On the individual patches, we do use the min time stamp so

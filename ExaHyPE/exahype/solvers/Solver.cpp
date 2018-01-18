@@ -392,6 +392,18 @@ double exahype::solvers::Solver::getMinSolverTimeStampOfAllSolvers() {
   return currentMinTimeStamp;
 }
 
+
+double exahype::solvers::Solver::getMaxSolverTimeStampOfAllSolvers() {
+  double currentMaxTimeStamp = -std::numeric_limits<double>::max(); // "-", min
+
+  for (const auto& p : exahype::solvers::RegisteredSolvers) {
+    currentMaxTimeStamp =
+        std::max(currentMaxTimeStamp, p->getMinTimeStamp());
+  }
+
+  return currentMaxTimeStamp;
+}
+
 double exahype::solvers::Solver::estimateMinNextSolverTimeStampOfAllSolvers() {
   double currentMinTimeStamp = std::numeric_limits<double>::max();
 
@@ -413,18 +425,16 @@ double exahype::solvers::Solver::getMinSolverTimeStepSizeOfAllSolvers() {
   return currentMinTimeStepSize;
 }
 
-
-double exahype::solvers::Solver::getMaxSolverTimeStampOfAllSolvers() {
-  double currentMaxTimeStamp = -std::numeric_limits<double>::max(); // "-", min
+double exahype::solvers::Solver::getMaxSolverTimeStepSizeOfAllSolvers() {
+  double currentMaxTimeStepSize = -std::numeric_limits<double>::max();
 
   for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    currentMaxTimeStamp =
-        std::max(currentMaxTimeStamp, p->getMinTimeStamp());
+    currentMaxTimeStepSize =
+        std::max(currentMaxTimeStepSize, p->getMinTimeStepSize());
   }
 
-  return currentMaxTimeStamp;
+  return currentMaxTimeStepSize;
 }
-
 
 bool exahype::solvers::Solver::allSolversUseTimeSteppingScheme(solvers::Solver::TimeStepping scheme) {
   bool result = true;
