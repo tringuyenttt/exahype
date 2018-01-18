@@ -19,7 +19,7 @@ import networkx as nx
 
 # batteries:
 import os, re, sys, ast, inspect, argparse, base64, pprint, subprocess, collections, types, operator
-from collections import namedtuple, OrderedDict
+from collections import namedtuple, OrderedDict, defaultdict
 from argparse import Namespace as namespace
 from itertools import izip, islice, product
 from functools import wraps
@@ -39,6 +39,8 @@ unpack = lambda f: lambda p: f(*p)
 unpack_namespace = lambda f: lambda ns: f(**vars(ns))
 # The identity function. Don't mix up with pythons internal "id"
 idfunc = lambda x: x
+# A no-operation function which just slurps arguments.
+noop = lambda *args, **kwargs: None
 # A nicer functional list access thing
 first = lambda x: x[0]
 last = lambda x: x[-1]
@@ -813,11 +815,21 @@ class mexagraph:
 		#return map(unpack(node_to_mexafile), )
 		
 	def toFile(self, base_filename):
+		"""
+		Quickly write graph to a file. For more extensive usage examples, see the CLI version
+		below.
+		"""
 		dotfilename = base_filename+".dot"
 		imgfilename = base_filename+".png"
 		nx.nx_agraph.write_dot(self.G, dotfilename)
 		retcode = subprocess.call(["dot", "-Grankdir=LR", "-Tpng", dotfilename, "-o", imgfilename])
 		print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
+	
+	def to_agraph(self):
+		"""
+		Return a pygraphviz instance of the graph.
+		"""
+		return nx.nx_agraph.to_agraph(self.G)
 
 class mexafile:
 	"""
@@ -979,7 +991,7 @@ class mexafile:
 		else:
 			return mexafile(ret)
 	
-	def evaluate(self, inplace=True):
+	def evaluate(self, inplace=True, resolve_equalities=True):
 		"""
 		The evaluation is two-place: First, there is a element-local replacement step.
 		Second, there is a global variable resolving step, using the graph.
@@ -1005,15 +1017,12 @@ class mexafile:
 				name = op.r.node()
 			else:
 				# a dumb way to come up with a number:
-				op_nodes = operations.query(op.l)
-				op_nodes = potentialFlatten2D([opi.r for opi in op_nodes.ops])
-				try:
-					i_op_node = op_nodes.index(op.r)
-					#name = "n%iof%i" % (i_op_node, num_op_nodes)
-					name = "n%i" % i_op_node
-				except:
-					# something weird happened and we can only come up with a element-local name
-					name = "l" + hex(abs(hash( op.r )%2**30))
+				if not hasattr(operations, 'append_counter'):
+					operations.append_counter = defaultdict(lambda: 0)
+				i_op_node = operations.append_counter[op.l]
+				name = "n%i" % i_op_node
+				operations.append_counter[op.l] += 1
+				# import pdb; pdb.set_trace()
 				
 			return mexafile([ Rel(symbol(name).add_prefix(op.l), op.r, 'equals', op.src) ])
 		
@@ -1037,7 +1046,8 @@ class mexafile:
 		self.evaluate_symbol('include', include, inplace=inplace)
 		self.evaluate_symbol('equals', prepare_equal, eliminate=False, inplace=inplace)
 		self.evaluate_symbol('append', append, inplace=inplace)
-		self.evaluate_all_symbols(equalities, inplace=inplace)
+		if resolve_equalities:
+			self.evaluate_all_symbols(equalities, inplace=inplace)
 		
 		# + evaluate strings?
 		
@@ -1086,12 +1096,13 @@ class mexa_cli(object):
 	"""
 	
 	command_registration = {} # maps string -> class
+	subparsers_dest = 'command'
 	
 	def __init__(self):
 		self.parser = argparse.ArgumentParser(description=self.__doc__, epilog=__doc__)
-		subparsers_dest = 'command'
+		
 		subparsers = self.parser.add_subparsers(
-			dest=subparsers_dest,
+			dest=self.subparsers_dest,
 			title="subcommands",
 			#description="valid subcommands",
 			help="Individual meaning:")
@@ -1099,11 +1110,40 @@ class mexa_cli(object):
 		for cmd, cls in self.command_registration.iteritems():
 			subargs = subparsers.add_parser(cmd, help=cls.__doc__, description=cls.__doc__)
 			cls.arguments(subargs) # ask class for setting arguments
-		
+			subargs.add_argument("--pdb", action='store_true', help="Start Python debugger on error")
+
 		args = vars(self.parser.parse_args())
-		
-		target_cls = self.command_registration[ args[subparsers_dest] ]
+
+		if args['pdb']:
+			try:
+				self.run(args)
+			except:
+				# Real PDB interface
+				import pdb, traceback, sys
+				type, value, tb = sys.exc_info()
+				traceback.print_exc()
+				pdb.post_mortem(tb)
+
+				# interactive command line instead
+				if False:
+					import traceback, sys, code
+					type, value, tb = sys.exc_info()
+					traceback.print_exc()
+					last_frame = lambda tb=tb: last_frame(tb.tb_next) if tb.tb_next else tb
+					frame = last_frame().tb_frame
+					ns = dict(frame.f_globals)
+					ns.update(frame.f_locals)
+					code.interact(local=ns)
+		else:
+			self.run(args)
+
+	def run(self, args):
+		"""
+		args being a Python dictionary
+		"""
+		target_cls = self.command_registration[ args[self.subparsers_dest] ]
 		self.job = target_cls(**args)
+
 
 	@classmethod
 	def register_subcommand(cls, subcommand_name):
@@ -1114,8 +1154,14 @@ class mexa_cli(object):
 
 class io_mexafile(object):
 	env_default_key = "env"
+	evaluate_actions = {
+		'all': lambda self: self.mf.evaluate(),
+		'basic': lambda self: self.mf.evaluate(resolve_equalities=False),
+		'none': noop
+	}
+	evaluate_actions_default = 'all'
 	
-	def __init__(self, infile, outfile, root="", evaluate=True, env=False, env_root=None, add=None, **ignored_kwargs):
+	def __init__(self, infile, outfile, root="", evaluate='all', env=False, env_root=None, add=None, **ignored_kwargs):
 		self.outfile = outfile
 		self.mf = mexafile.from_filehandle(infile)
 		
@@ -1149,11 +1195,12 @@ class io_mexafile(object):
 		self.mf.ops = global_mexa_information + mf_cmd_ops + self.mf.ops + env_ops
 		
 		self.evaluate = evaluate
-		if evaluate:
-			self.mf.evaluate()
+		self.evaluate_actions[evaluate](self)
 		
 		#print mf.toPlain()
 		#mf.toGraph("graph")
+		
+		self.output_is_stdout = (self.outfile == sys.stdout)
 	
 	@classmethod
 	def arguments(cls, parser, add_root=True, allow_generation=True):
@@ -1186,23 +1233,113 @@ class plain_mexafile(io_mexafile):
 	check or also invoke the evaluation which yields a simple mexa file with only
 	assignments left.
 	"""	
-	def __init__(self, no_evaluation, graph, *args, **kwargs):
+	def __init__(self, evaluate, *args, **kwargs):
 		#import ipdb; ipdb.set_trace()
-		super(plain_mexafile,self).__init__(evaluate=not no_evaluation, *args, **kwargs)
+		super(plain_mexafile,self).__init__(evaluate=evaluate, *args, **kwargs)
 		self.write("# evaluated = %s\n" % (str(self.evaluate)))
 		self.write(self.mf.toPlain())
 		self.write("\n")
-		
-		# quick and dirty (this is the wrong place, in principle):
-		if graph:
-			self.mf.graph().toFile("graph")
 		
 	@classmethod
 	def arguments(cls, parser):
 		io_mexafile.arguments(parser)
 		group = parser.add_argument_group('plain output arguments')
-		group.add_argument('--no-evaluation', default=False, action='store_false', help='Do not evaluate the file at all')
-		group.add_argument('--graph', default=False, action='store_true', help='Plot a graph')
+		group.add_argument('--evaluate', choices=cls.evaluate_actions, default=cls.evaluate_actions_default, help='Fully resolve equalities, just evaluate basic syntactic sugar or no evaluation at all.')
+
+@mexa_cli.register_subcommand('graph')
+class graph_mexafile(io_mexafile):
+	"""
+	Writes the graph of the mexafile (currently: DOT).
+	tbd: Should support multiple file formats, such as DOT but also others
+	"""
+	# dot file formats we want to support here, taken from
+	# help(pygraphviz.AGraph.draw)
+	formats = [ \
+		'canon', 'cmap', 'cmapx', 'cmapx_np', 'dia', 'dot',
+		'fig', 'gd', 'gd2', 'gif', 'hpgl', 'imap', 'imap_np',
+		'ismap', 'jpe', 'jpeg', 'jpg', 'mif', 'mp', 'pcl', 'pdf',
+		'pic', 'plain', 'plain-ext', 'png', 'ps', 'ps2', 'svg',
+		'svgz', 'vml', 'vmlz', 'vrml', 'vtx', 'wbmp', 'xdot', 'xlib'
+	]
+	default_format = 'plain'
+	
+	def __init__(self, dot=False, format=default_format, *args, **kwargs):
+		super(graph_mexafile,self).__init__(*args, **kwargs)
+		
+		G = self.mf.graph().G
+		A = nx.nx_agraph.to_agraph(G)
+		
+		if dot:
+			if self.output_is_stdout:
+				raise ValueError("Please specify a base output filename with --outfile.")
+			base_filename = self.outfile.name
+			dotfilename = base_filename+".dot"
+			imgfilename = base_filename+"."+format
+			nx.nx_agraph.write_dot(G, dotfilename)
+			retcode = subprocess.call(["dot", "-Grankdir=LR", "-T"+format, dotfilename, "-o", imgfilename])
+			print "Wrote GraphViz output to %s, invoked `dot`, produced %s with exit code %d." % (dotfilename, imgfilename, retcode)
+		else:
+			self.write( A.to_string() )
+		
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser)
+		group = parser.add_argument_group('graph output arguments')
+		group.add_argument('--dot', action='store_true', help='Call dot on the output. Works only if you do not write to stdout but a file instead')
+		group.add_argument('--format', choices=cls.formats, default=cls.default_format, help="Format to call dot with")
+		#group.add_argument('--evaluate', choices=cls.evaluate_actions, default=cls.evaluate_actions_default, help='Fully resolve equalities, just evaluate basic syntactic sugar or no evaluation at all.')
+		#group.add_argument('--graph', default=False, action='store_true', help='Plot a graph')
+
+@mexa_cli.register_subcommand('shell')
+class shell_mexafile(io_mexafile):
+	"""
+	Writes the graph of the mexafile (currently: DOT).
+	tbd: Should support multiple file formats, such as DOT but also others
+	
+	You are given the two variables
+	  mf: The Mexafile object
+	  cli: The command line interface object
+	to play with.
+	
+	Note: The shell command does not allow you to stream input data to stdin/stdout
+	without hazzle. Instead, use --infile. Example usage:
+	
+	$ exa mexa shell --infile <(echo 'foo = (0,1,0)' )
+	Python 2.7.12 ...
+	> print mf
+	mexafile([
+		equals(symbol(foo/n0), 0),
+		equals(symbol(foo/n1), 1)
+	])
+	...
+	"""
+
+	def __init__(self, *args, **kwargs):
+		#import ipdb; ipdb.set_trace()
+		super(shell_mexafile,self).__init__(*args, **kwargs)
+		
+		# expose variables to the shell
+		cli = self
+		mf = self.mf
+
+		try:
+			# show fancy IPython console
+			from IPython import embed
+			embed()
+		except ImportError:
+			# show standard python console
+			import readline, code
+			variables = globals().copy()
+			variables.update(locals())
+			shell = code.InteractiveConsole(variables)
+			shell.interact()
+		
+	@classmethod
+	def arguments(cls, parser):
+		io_mexafile.arguments(parser)
+		group = parser.add_argument_group('shell output arguments')
+		#group.add_argument('--evaluate', choices=cls.evaluate_actions, default=cls.evaluate_actions_default, help='Fully resolve equalities, just evaluate basic syntactic sugar or no evaluation at all.')
+		#group.add_argument('--graph', default=False, action='store_true', help='Plot a graph')
 
 
 @mexa_cli.register_subcommand('encode')

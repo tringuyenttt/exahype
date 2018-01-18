@@ -22,8 +22,8 @@ exahype-project {{ project.project_name }}
   
   computational-domain
     dimension const  = {{ project.computational_domain.dimension }}
-    width            = {{ project.computational_domain|dimlist('width') }}
-    offset           = {{ project.computational_domain|dimlist('offset') }}
+    width            = {{ project.computational_domain.width.keys()|join(", ") }}
+    offset           = {{ project.computational_domain.offset.keys()|join(", ") }}
     end-time         = {{ project.computational_domain.end_time }}
   end computational-domain
 
