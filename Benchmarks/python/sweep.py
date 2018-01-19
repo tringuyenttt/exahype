@@ -58,11 +58,28 @@ def dictProduct(dicts):
     """
     return (dict(zip(dicts, x)) for x in itertools.product(*dicts.values()))
 
+usedHashes = []
+
+def hashDictionary(dictionary):
+    """
+    Hash a dictionary
+    """
+    chain = ""
+    for key,value in dictionary.items():
+        chain += key+","+value+";"
+    
+    result = hashlib.md5(chain.encode()).hexdigest()
+    while result in usedHashes:
+        result = hashlib.md5(chain.encode()).hexdigest()
+    usedHashes.append(result)
+    return result
+
 if __name__ == "__main__":
     import sys,os
     import configparser
     from subprocess import call
     import itertools
+    import hashlib
     
     if haveToPrintHelpMessage(sys.argv):
         print("sample usage: python3 sweep (setup|build|generate) options.sweep")
@@ -115,11 +132,10 @@ if __name__ == "__main__":
         # These hash functions are not robust at all yet.
         # probably have to write my own
         for myTuple in environmentProduct:
-          print(hash(frozenset(myTuple.values())))
+          print(hashDictionary(myTuple))
           
         for myTuple in parametersProduct:
-          print(myTuple.values())
-          print(hash(frozenset(myTuple.values())))
+          print(hashDictionary(myTuple))
           
         # TEST
         # os.environ["MY_TEST_VAR"]="1"
