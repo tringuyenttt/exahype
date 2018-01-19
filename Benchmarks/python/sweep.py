@@ -36,9 +36,33 @@ def parseCores(jobs,cpus):
             cores[i] = int(int(cpus) / int(t))
     return cores
 
+def dictProduct(dicts):
+    """
+    Computes the Cartesian product of a dictionary of lists as 
+    a list of dictionaries.
+    
+    Gladly copied this code from:
+    https://stackoverflow.com/questions/5228158/cartesian-product-of-a-dictionary-of-lists
+    
+    Example input:
+    options = {"number": [1,2,3], "color": ["orange","blue"] }
+    
+    Example output:
+    [ {"number": 1, "color": "orange"},
+      {"number": 1, "color": "blue"},
+      {"number": 2, "color": "orange"},
+      {"number": 2, "color": "blue"},
+      {"number": 3, "color": "orange"},
+      {"number": 3, "color": "blue"}
+    ]
+    """
+    return (dict(zip(dicts, x)) for x in itertools.product(*dicts.values()))
+
 if __name__ == "__main__":
     import sys,os
     import configparser
+    from subprocess import call
+    import itertools
     
     if haveToPrintHelpMessage(sys.argv):
         print("sample usage: python3 sweep (setup|build|generate) options.sweep")
@@ -67,7 +91,7 @@ if __name__ == "__main__":
         for key, value in config["environment"].items():
             environmentspace[key] = value.split(",")
     else:
-        environmentspace["DUMMY_VAR"] = "" # We will later on have a loop nest; we thus need at least one element
+        environmentspace["DUMMY_VAR"] = [""] # We will later on have a loop nest; we thus need at least one element
     
     # parameters
     parameterspace = {}
@@ -75,18 +99,22 @@ if __name__ == "__main__":
         for key, value in config["parameters"].items():
             parameterspace[key] = value.split(",")
     else:
-        parameterspace["DUMMY_VAR"] = ""
+        parameterspace["DUMMY_VAR"] = [""]
     
     # select subprogram
     if subprogram == "build":
-        print(environmentspace)
-        
         # build-specific parameters
         if "dimension" not in parameterspace.keys():
             parameterspace["dimension"] = ["-"]
         if "order" not in parameterspace.keys():
             parameterspace["order"] = ["-"]
-        print(parameterspace)
+        
+        print(list(dictProduct(environmentspace)))
+        print(list(dictProduct(parameterspace)))
+        
+        # TEST
+        # os.environ["MY_TEST_VAR"]="1"
+        # call("export",shell=True)
     elif subprogram == "generate":
         pass
     
