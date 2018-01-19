@@ -84,7 +84,7 @@ def renderSpecificationFile(templateBody,buildParameterDict):
 if __name__ == "__main__":
     import sys,os
     import configparser
-    from subprocess import call
+    import subprocess
     import itertools
     import hashlib
     
@@ -126,20 +126,25 @@ if __name__ == "__main__":
     
     # select subprogram
     if subprogram == "build":
-        templateBody     = None
         templateFileName = workspace["template"]
-        with open(templateFileName, "r") as templateFile:
-            templateBody=templateFile.read()
-        if templateBody!=None:
-            prefix=workspace["output_prefix"]
-            buildSpecificationFileName = prefix + ".exahype-build"
+        exahypeRoot      = workspace["exahype_root"]
+        outputPath       = workspace["output_path"]
         
+        templateBody = None
+        with open(exahypeRoot + "/" + templateFileName, "r") as templateFile:
+            templateBody=templateFile.read()
+        
+        if templateBody!=None:
+            if not os.path.exists(exahypeRoot+"/"+outputPath):
+                os.makedirs(exahypeRoot+"/"+outputPath)
+            if not os.path.exists(exahypeRoot+"/"+outputPath+"/build"):
+                os.makedirs(exahypeRoot+"/"+outputPath+"/build")
+            
             # build-specific parameters
             if "dimension" not in parameterspace.keys():
-                parameterspace["dimension"] = ["-"]
+                parameterspace["dimension"] = [""]
             if "order" not in parameterspace.keys():
-                parameterspace["order"] = ["-"]
-            
+                parameterspace["order"] = [""]
             dimensions = parameterspace["dimension"]
             orders     = parameterspace["order"]
             
@@ -149,18 +154,32 @@ if __name__ == "__main__":
             buildParameterDict = list(parametersProduct)[0]
             
             for environmentDict in environmentProduct:
-                # update the environment
                 for key,value in environmentDict.items():
                     os.environ[key]=value
-                # loop through over build parameters
+                
                 for dimension in dimensions:
                     for order in orders:
                         buildParameterDict["dimension"]=dimension
                         buildParameterDict["order"]    =order
                         
-                        print(renderSpecificationFile(templateBody,buildParameterDict))
+                        buildSpecificationFileBody = renderSpecificationFile(templateBody,buildParameterDict)
                         
-                        #with open(buildSpecificationFileName, "w") as buildSpecificationFile:
+                        prefix=workspace["output_prefix"]
+                        buildSpecificationFileName = outputPath + "/build/" + prefix + "-d" + dimension + "-p" + order + ".exahype-build"
+                        
+                        with open(exahypeRoot + "/" + buildSpecificationFileName, "w") as buildSpecificationFile:
+                            buildSpecificationFile.write(buildSpecificationFileBody)
+                        # run toolkit
+                        toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecificationFileName+")"
+                        process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, shell=True)
+                        (output, err) = process.communicate()
+                        process.wait()
+                        
+                        if "setup build environment ... ok" in str(output):
+                            print(toolkitCommand + " ... ok")
+                        
+                        #subprocess.call("(cd "+workspace["exahype_root"]+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecificationFileName+")",shell=True)
+                        #subprocess.call("make,shell=True)
         else:
             print("ERROR: Couldn't open template file: "+workspace["template"])
                     
