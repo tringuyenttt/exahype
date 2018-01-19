@@ -24,16 +24,8 @@ def haveToPrintHelpMessage(argv):
         result = result or ( arg=="-help" or arg=="-h" )
     return result
 
-def parseOptionValuesAsList(section,option):
-    """
-    Requires special treatment due to the "auto" keyword. 
-    """
-    return section[option].split(",")
-
 def parseCores(jobs,cpus):
     """
-    Similar to parseOptionValuesAsList but requires some special treatment 
-    due to the "auto" keyword.
     If we encounter "auto" as value, the number of cores is chosen as: 
     total number of cpus (per node) / number of tasks (per node).
     """
@@ -88,7 +80,6 @@ if __name__ == "__main__":
     # select subprogram
     if subprogram == "build":
         print(environmentspace)
-        print(parameterspace)
         
         # build-specific parameters
         if "dimension" not in parameterspace.keys():
