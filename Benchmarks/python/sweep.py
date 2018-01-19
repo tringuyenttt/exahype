@@ -63,7 +63,7 @@ def hashDictionary(dictionary):
     Hash a dictionary.
     """
     chain = ""
-    for key,value in dictionary.items():
+    for key,value in sorted(dictionary.items()):
         chain += key+","+value+";"
     
     result = hashlib.md5(chain.encode()).hexdigest()
