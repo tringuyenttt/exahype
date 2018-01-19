@@ -7,9 +7,16 @@
   
   Some paradigms of this template are the following:
   
+   * The Java specfile parser requires all arguments to be exactly in a given order.
+     While the mexa language is able to preserve order, it does not require the input
+     to be given in the same order. This is the main reason for this template.
    * Template data are given as nested dictionaries.
    * Some special filters are used for convenience.
-   * No superflucious comments are made.
+   * All comments are optional and can be specified by (multiline)
+     strings in the ingoing mexa file.
+   * The Java specfile parser is sometimes finicky about number formats, i.e. it does
+     not accept "1" where it expects a float, so "1.0" must be given.
+     Such requirements are fulfilled by the template.
 
   Some Jinja tipps:
   
@@ -42,13 +49,15 @@ exahype-project {{ project.project_name }}
   exahype-path const       = {{ project.exahype_path }}
   output-directory const   = {{ project.output_directory }}
   architecture const       = {{ project.architecture }}
+  {% if project.log_file is defined -%}
   log-file                 = {{ project.log_file }}
+  {% endif -%}
   
   computational-domain
     dimension const  = {{ project.computational_domain.dimension }}
     width            = {{ project.computational_domain.width|tolist|asfloat|join(", ") }}
     offset           = {{ project.computational_domain.offset|tolist|asfloat|join(", ") }}
-    end-time         = {{ project.computational_domain.end_time }}
+    end-time         = {{ project.computational_domain.end_time|asfloat }}
   end computational-domain
 
   shared-memory
@@ -68,12 +77,13 @@ exahype-project {{ project.project_name }}
   global-optimisation
     fuse-algorithmic-steps          = {{ project.optimisation.fuse_algorithmic_steps }}
     fuse-algorithmic-steps-factor   = {{ project.optimisation.fuse_algorithmic_steps_factor }}
-    timestep-batch-factor           = {{ project.optimisation.batch_timesteps }}
-    skip-reduction-in-batched-time-steps = {{ project.optimisation.skip_reduction }}
+    spawn-predictor-as-background-thread = {{ project.optimisation.spawn_predictor_as_background_thread }}
+    timestep-batch-factor           = {{ project.optimisation.timestep_batch_factor }}
+    skip-reduction-in-batched-time-steps = {{ project.optimisation.skip_reduction_in_batched_time_steps }}
     disable-amr-if-grid-has-been-stationary-in-previous-iteration = {{
 	project.optimisation.disable_amr_if_grid_has_been_stationary_in_previous_iteration }}
     double-compression = {{ project.optimisation.double_compression }}
-    spawn-double-compression-as-background-thread = {{ project.optimisation.spawn_double_compression }}
+    spawn-double-compression-as-background-thread = {{ project.optimisation.spawn_double_compression_as_background_thread }}
   end global-optimisation
 
   {% for solver in project.solvers|tolist -%}
@@ -95,16 +105,16 @@ exahype-project {{ project.project_name }}
     time-stepping      = {{ solver.time_stepping}} 
     type const         = {{ solver.kernel.type }}
     terms const        = {{ solver.kernel.terms }}
-    optimisation const = {{ solver.kernel.opt }}
+    optimisation const = {{ solver.kernel.optimisation }}
     language const     = {{ solver.kernel.language }}
 
     {%- if solver.type == "Limiting-ADER-DG" %}
     limiter-type const             = {{ solver.limiter.kernel.type }}
-    limiter-optimisation const     = {{ solver.limiter.kernel.opt }}
+    limiter-optimisation const     = {{ solver.limiter.kernel.optimisation }}
     limiter-language const         = {{ solver.limiter.kernel.language }}
-    dmp-observables                = {{ solver.limiter.observables }}
-    dmp-relaxation-parameter       = {{ solver.limiter.relaxation_parameter }}
-    dmp-difference-scaling         = {{ solver.limiter.difference_scaling }}
+    dmp-observables                = {{ solver.limiter.dmp_observables }}
+    dmp-relaxation-parameter       = {{ solver.limiter.dmp_relaxation_parameter }}
+    dmp-difference-scaling         = {{ solver.limiter.dmp_difference_scaling }}
     steps-till-cured               = {{ solver.limiter.steps_till_cured }}
     {% endif -%}
     {# #}
