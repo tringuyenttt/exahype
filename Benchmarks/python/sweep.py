@@ -18,7 +18,7 @@ def haveToPrintHelpMessage(argv):
     """
     Check if we have to print a help message.
     """
-    result = parseArgument(argv,1)==None or \
+    result = parseArgument(argv,1) not in ["build","generate"] or \
              parseArgument(argv,2)==None
     for arg in argv:
         result = result or ( arg=="-help" or arg=="-h" )
@@ -62,7 +62,7 @@ usedHashes = []
 
 def hashDictionary(dictionary):
     """
-    Hash a dictionary
+    Hash a dictionary.
     """
     chain = ""
     for key,value in dictionary.items():
@@ -73,6 +73,13 @@ def hashDictionary(dictionary):
         result = hashlib.md5(chain.encode()).hexdigest()
     usedHashes.append(result)
     return result
+    
+def renderSpecificationFile(templateBody,buildParameterDict):
+    renderedFile = templateBody
+    
+    for key,value in buildParameterDict.items():
+        renderedFile = renderedFile.replace("{{"+key+"}}", value)
+    return renderedFile
 
 if __name__ == "__main__":
     import sys,os
@@ -82,8 +89,7 @@ if __name__ == "__main__":
     import hashlib
     
     if haveToPrintHelpMessage(sys.argv):
-        print("sample usage: python3 sweep (setup|build|generate) options.sweep")
-        print("hint: you might want to hide python3 sweep behind an alias, e.g. alias sweep=\"python <mypath>/sweep.py\"")
+        print("sample usage:./sweep.py (build|generate) options.sweep")
         sys.exit()
     
     subprogram = parseArgument(sys.argv,1)
@@ -120,30 +126,44 @@ if __name__ == "__main__":
     
     # select subprogram
     if subprogram == "build":
-        # build-specific parameters
-        if "dimension" not in parameterspace.keys():
-            parameterspace["dimension"] = ["-"]
-        if "order" not in parameterspace.keys():
-            parameterspace["order"] = ["-"]
+        templateBody     = None
+        templateFileName = workspace["template"]
+        with open(templateFileName, "r") as templateFile:
+            templateBody=templateFile.read()
+        if templateBody!=None:
+            prefix=workspace["output_prefix"]
+            buildSpecificationFileName = prefix + ".exahype-build"
         
-        dimensions = parameterspace["dimension"]
-        orders     = parameterspace["order"]
-        
-        environmentProduct = dictProduct(environmentspace)
-        parametersProduct  = dictProduct(parameterspace)
-        
-        firstParameterTuple = list(parametersProduct)[0]
-        # put parameters in spec
-        # create compilable instance of the specfile template
-        
-        for myTuple in environmentProduct:
-            for key,value in myTuple.items():
-                os.environ[key]=value
-                
-            for d in dimensions:
-                for p in orders:
-                    print(str(myTuple.items())+","+d+","+p)
-                    # call("make ",shell=True)
+            # build-specific parameters
+            if "dimension" not in parameterspace.keys():
+                parameterspace["dimension"] = ["-"]
+            if "order" not in parameterspace.keys():
+                parameterspace["order"] = ["-"]
+            
+            dimensions = parameterspace["dimension"]
+            orders     = parameterspace["order"]
+            
+            environmentProduct = dictProduct(environmentspace)
+            parametersProduct  = dictProduct(parameterspace)
+            
+            buildParameterDict = list(parametersProduct)[0]
+            
+            for environmentDict in environmentProduct:
+                # update the environment
+                for key,value in environmentDict.items():
+                    os.environ[key]=value
+                # loop through over build parameters
+                for dimension in dimensions:
+                    for order in orders:
+                        buildParameterDict["dimension"]=dimension
+                        buildParameterDict["order"]    =order
+                        
+                        print(renderSpecificationFile(templateBody,buildParameterDict))
+                        
+                        #with open(buildSpecificationFileName, "w") as buildSpecificationFile:
+        else:
+            print("ERROR: Couldn't open template file: "+workspace["template"])
+                    
     elif subprogram == "generate":
         environmentProduct = dictProduct(environmentspace)
         parametersProduct  = dictProduct(parameterspace)
