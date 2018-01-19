@@ -109,9 +109,18 @@ if __name__ == "__main__":
         if "order" not in parameterspace.keys():
             parameterspace["order"] = ["-"]
         
-        print(list(dictProduct(environmentspace)))
-        print(list(dictProduct(parameterspace)))
+        environmentProduct = dictProduct(environmentspace)
+        parametersProduct  = dictProduct(parameterspace)
         
+        # These hash functions are not robust at all yet.
+        # probably have to write my own
+        for myTuple in environmentProduct:
+          print(hash(frozenset(myTuple.values())))
+          
+        for myTuple in parametersProduct:
+          print(myTuple.values())
+          print(hash(frozenset(myTuple.values())))
+          
         # TEST
         # os.environ["MY_TEST_VAR"]="1"
         # call("export",shell=True)
