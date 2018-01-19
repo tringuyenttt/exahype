@@ -126,6 +126,25 @@ if __name__ == "__main__":
         if "order" not in parameterspace.keys():
             parameterspace["order"] = ["-"]
         
+        dimensions = parameterspace["dimension"]
+        orders     = parameterspace["order"]
+        
+        environmentProduct = dictProduct(environmentspace)
+        parametersProduct  = dictProduct(parameterspace)
+        
+        firstParameterTuple = list(parametersProduct)[0]
+        # put parameters in spec
+        # create compilable instance of the specfile template
+        
+        for myTuple in environmentProduct:
+            for key,value in myTuple.items():
+                os.environ[key]=value
+                
+            for d in dimensions:
+                for p in orders:
+                    print(str(myTuple.items())+","+d+","+p)
+                    # call("make ",shell=True)
+    elif subprogram == "generate":
         environmentProduct = dictProduct(environmentspace)
         parametersProduct  = dictProduct(parameterspace)
         
@@ -136,10 +155,4 @@ if __name__ == "__main__":
           
         for myTuple in parametersProduct:
           print(hashDictionary(myTuple))
-          
-        # TEST
-        # os.environ["MY_TEST_VAR"]="1"
-        # call("export",shell=True)
-    elif subprogram == "generate":
-        pass
     
