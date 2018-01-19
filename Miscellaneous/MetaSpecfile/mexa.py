@@ -115,7 +115,6 @@ class NamedFunction:
 	def __repr__(self):
 		return self.name
 
-
 ### end helpers
 
 class term:
@@ -357,7 +356,7 @@ class lang:
 	stringvarcomplex = stringvarchar + "\{("+symb+")\}"
 
 	# rhs parsing:
-	astring = r"(?:" + r'"([^"]+)"'+'|'+r"'([^']+)'" + ')'
+	astring = r"(?:" + r'"([^"]*)"'+'|'+r"'([^']*)'" + ')'
 	anum = r"([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)" # floats/ints; cf https://docs.python.org/3/library/re.html#simulating-scanf
 	yes = r"^(Yes|True|On)"
 	no = r"^(No|False|Off)"
@@ -907,7 +906,7 @@ class mexafile:
 		else:
 			return mexafile(ret)
 		
-	def tree(self, root='', symbol_resolver=None, backref=False):
+	def tree(self, root='', symbol_resolver=None, backref=False, backref_key="$path"):
 		"""
 		Like query, but will result in a nested dictionary structure instead of an oplist.
 		
@@ -917,8 +916,8 @@ class mexafile:
 		"""
 		oplist_absolute = self.query(root) # with absolute paths
 		oplist_relative = oplist_absolute.remove_prefix(root) # relative paths to root
-		# a list with the general structure of the tree, especially parents come before childs
-		# so we can make a dict tree out of it
+		# outline is a list with the general structure of the tree, especially parents come before
+		# childs so we can make a dict tree out of it.
 		outline = sorted(unique(flatten2d([op.l.ancestors() for op in oplist_relative])))
 		
 		# setup the tree outline (nodes)
@@ -929,29 +928,44 @@ class mexafile:
 				if not symp in subtree:
 					subtree[symp] = {}
 				subtree = subtree[symp]
-		
-		# as a placeholder, should be related to a context
-		if not symbol_resolver:
-			symbol_resolver = lambda sym: "REF="+sym.canonical()
-			
-		# backref: Include the full path for each node (not leaf)
-		backref_key = "$path"
-			
+
 		# fill the tree with leafs
 		for abs_op,op in izip(oplist_absolute,oplist_relative):
 			if op.l.isRoot():
 				tree = op.r
 			else:
+				# This reads as following:
+				# when op.l = symbol(solvers/solver/constants/initialdata/name)
+				# then op.l.parent() = symbol(solvers/solver/constants/initialdata)
+				# then op.l.parent().as_str_tuple() =  ('solvers', 'solver', 'constants', 'initialdata')
+				# then parent = tree['solvers']['solver']['constants']['initialdata']
 				parent = reduce(dict.get, op.l.parent().as_str_tuple(), tree) 
 				leaf_name = op.l.node().canonical()
 				parent[leaf_name] = op.r
 				
-				if backref and not backref_key in parent:
+				
+				### Should be done somewhere else
+				### if backref and not backref_key in parent:
 					# we do *not* put the parent in a symbol_resolver but instead
 					# use the canonical description.
 					# Note that the absolute path is the original one in the defining file,
 					# not taking into account the actual mapping (inclusion) of the path.
-					parent[backref_key] = abs_op.l.parent().canonical()
+				### 	parent[backref_key] = c
+				
+		# fill in backrefs if neccessary
+		if backref:
+			def visit(node, path):
+				if backref_key in node:
+					# we have a problem: The backref key is not unique but the data
+					# allready use it.
+					raise ValueError("backref_key=%s already taken in %s" % (backref_key, node))
+				else:
+					node[backref_key] = path.canonical()
+				
+				for k, v in node.iteritems():
+					if isa(v, dict):
+						visit(v, path.sub(k))
+			visit(tree, path=symbol(root))
 
 		return tree
 	
@@ -1509,6 +1523,9 @@ class mexafile_to_exahype_specfile(io_mexafile):
 	parameter_styles = ['embedded', 'adapted', 'referenced']
 	default_parameter_style = 'embedded'
 	
+	# the internal backref key used
+	backref_key = "$path"
+	
 	@classmethod
 	def arguments(cls, parser):
 		io_mexafile.arguments(parser, add_root=False)
@@ -1524,7 +1541,7 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		self.tplfile = './exa-specfile-tpl.exahype'
 		#self.tplfile = './debug-project.jinja'
 		self.exahype_base = self.mf.query(root)
-		self.native = self.exahype_base.tree(backref=True)
+		self.native = self.exahype_base.tree(backref=True, backref_key=self.backref_key)
 		self.write(self.exaspecfile(mf_tree=self.native))
 	
 	def encode_parameters(self, path):
@@ -1628,9 +1645,29 @@ class mexafile_to_exahype_specfile(io_mexafile):
 		
 		@jinja_filter
 		def tolist(adict):
-			# Mexa always stores dict. To treat a dictionary as a list, use this.
-			# Could also loop like for k,v in ... in jinja.
-			return adict.values()
+			"""
+			Mexa always stores dict. To treat a dictionary as a list, use this. It
+			It basically works like the .values() call. An alternative is to
+			loop like "for k,v in thedict" in jinja. The nice feature of this
+			function is that it removes the backrefs.
+			"""
+			# former:
+			## return adict.values()
+			# instead, filter out the $path backref
+			return [ v for k, v in adict.iteritems() if k != self.backref_key ]
+		
+		@jinja_filter
+		def asfloat(something):
+			"""
+			Returns a scalar or vector thing casted as a float string. This is sometimes
+			important when ExaHyPE expects it to be clearly defined as a float.
+			"""
+			if isa(something, int):
+				return float(something)
+			elif isa(something, list):
+				return map(float, something)
+			else:
+				raise ValueError("The asfloat filter can only be used on scalar and vector values. '%s' given." % something)
 		
 		@jinja_filter
 		def dimlist(comp_domain, field):
