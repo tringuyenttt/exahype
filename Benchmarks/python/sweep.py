@@ -58,8 +58,6 @@ def dictProduct(dicts):
     """
     return (dict(zip(dicts, x)) for x in itertools.product(*dicts.values()))
 
-usedHashes = []
-
 def hashDictionary(dictionary):
     """
     Hash a dictionary.
@@ -69,9 +67,6 @@ def hashDictionary(dictionary):
         chain += key+","+value+";"
     
     result = hashlib.md5(chain.encode()).hexdigest()
-    while result in usedHashes:
-        result = hashlib.md5(chain.encode()).hexdigest()
-    usedHashes.append(result)
     return result
     
 def renderSpecificationFile(templateBody,buildParameterDict):
@@ -158,30 +153,56 @@ if __name__ == "__main__":
                     os.environ[key]=value
                 
                 for dimension in dimensions:
+                    # make clean
+                    print("make clean")
+                    process = subprocess.Popen(["make clean"], stdout=subprocess.PIPE, shell=True)
+                    (output, err) = process.communicate()
+                    process.wait()
+                    
                     for order in orders:
                         buildParameterDict["dimension"]=dimension
                         buildParameterDict["order"]    =order
                         
                         buildSpecificationFileBody = renderSpecificationFile(templateBody,buildParameterDict)
                         
-                        prefix=workspace["output_prefix"]
-                        buildSpecificationFileName = outputPath + "/build/" + prefix + "-d" + dimension + "-p" + order + ".exahype-build"
+                        projectName=workspace["project_name"]
+                        buildSpecificationFileName = outputPath + "/build/" + projectName + "-d" + dimension + "-p" + order + ".exahype"
                         
                         with open(exahypeRoot + "/" + buildSpecificationFileName, "w") as buildSpecificationFile:
                             buildSpecificationFile.write(buildSpecificationFileBody)
                         # run toolkit
                         toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecificationFileName+")"
+                        print(toolkitCommand);
                         process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, shell=True)
                         (output, err) = process.communicate()
                         process.wait()
-                        
                         if "setup build environment ... ok" in str(output):
-                            print(toolkitCommand + " ... ok")
+                            print(toolkitCommand+ " ... ok")
+                        else:
+                            print("ERROR: "+toolkitCommand + " ... FAILED!",file=sys.stderr)
+                            sys.exit()
                         
-                        #subprocess.call("(cd "+workspace["exahype_root"]+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecificationFileName+")",shell=True)
-                        #subprocess.call("make,shell=True)
+                        # clean locally & call make
+                        gmake_threads=workspace["gmake_threads"]
+                        makeCommand="rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels; make -j"+gmake_threads
+                        print(makeCommand)
+                        process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, shell=True)
+                        (output, err) = process.communicate()
+                        process.wait()
+                        if "build of ExaHyPE successful" in str(output):
+                            print(makeCommand+ " ... ok")
+                        else:
+                            print("ERROR: "+gmakeCommand + " ... FAILED!",file=sys.stderr)
+                            sys.exit()
+                        
+                        projectPath   = workspace["project_path"]
+                        oldExecutable = exahypeRoot+"/"+projectPath+"/ExaHyPE-"+projectName
+                        newExecutable = exahypeRoot+"/"+outputPath+"/build/ExaHyPE-"+projectName+"-"+hashDictionary(environmentDict)+"-d" + dimension + "-p" + order
+                        moveCommand   = "mv "+oldExecutable+" "+newExecutable
+                        print(moveCommand)
+                        subprocess.call(moveCommand,shell=True)
         else:
-            print("ERROR: Couldn't open template file: "+workspace["template"])
+            print("ERROR: Couldn\'t open template file: "+workspace["template"])
                     
     elif subprogram == "generate":
         environmentProduct = dictProduct(environmentspace)
