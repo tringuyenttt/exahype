@@ -38,6 +38,7 @@ def parseEnvironment(config):
     else:
         print("ERROR: Section 'environment' is missing or empty! (Must contain at least 'SHAREDMEM'.)",file=sys.stderr)
         sys.exit()
+    
     return environmentspace
 
 
@@ -59,6 +60,8 @@ def parseParameters(config):
     else:
         print("ERROR: Section 'parameters' is missing or empty! (Must contain at least 'dimension' and 'order'.)",file=sys.stderr)
         sys.exit()
+    
+    return parameterspace
 
 def dictProduct(dicts):
     """
@@ -93,11 +96,13 @@ def hashDictionary(dictionary):
     result = hashlib.md5(chain.encode()).hexdigest()
     return result
     
-def renderSpecificationFile(templateBody,buildParameterDict):
+def renderSpecificationFile(templateBody,parameterDict,tasks,cores):
     renderedFile = templateBody
     
-    for key,value in buildParameterDict.items():
+    for key,value in parameterDict.items():
         renderedFile = renderedFile.replace("{{"+key+"}}", value)
+    renderedFile = renderedFile.replace("{{tasks}}", value)
+    renderedFile = renderedFile.replace("{{cores}}", value)
     return renderedFile
 
 def build(workspace,machine,environmentspace,parameterspace):
@@ -136,7 +141,7 @@ def build(workspace,machine,environmentspace,parameterspace):
                     buildParameterDict["dimension"]=dimension
                     buildParameterDict["order"]    =order
                     
-                    buildSpecificationFileBody = renderSpecificationFile(templateBody,buildParameterDict)
+                    buildSpecificationFileBody = renderSpecificationFile(templateBody,buildParameterDict,"1","1")
                     
                     projectName=workspace["project_name"]
                     buildSpecificationFileName = outputPath + "/build/" + projectName + "-d" + dimension + "-p" + order + ".exahype"
@@ -194,10 +199,10 @@ def parseCores(jobs,cpus):
     if len(cores)==1 and cores[0]=="auto":
         cores = [""]*len(tasks)
         for i,t in enumerate(tasks):
-            cores[i] = int(int(cpus) / int(t))
+            cores[i] = str(int(int(cpus) / int(t)))
     return cores
 
-def generate(workspace,machine,environmentspace,parameterspace):
+def scripts(workspace,machine,environmentspace,parameterspace):
     """
     Generate specification files and job scripts.
     """
@@ -205,40 +210,41 @@ def generate(workspace,machine,environmentspace,parameterspace):
     exahypeRoot      = workspace["exahype_root"]
     outputPath       = workspace["output_path"]
     
-    jobs  = config["jobs"]
-    nodes = [item.strip() for item in jobs["nodes"].split(",")]
-    tasks = [item.strip() for item in jobs["tasks"].split(",")]
-    cores = parseCores(jobs,machine["num_cpus"]);
+    jobs       = config["jobs"]
+    nodeCounts = [item.strip() for item in jobs["nodes"].split(",")]
+    taskCounts = [item.strip() for item in jobs["tasks"].split(",")]
+    coreCounts = parseCores(jobs,machine["num_cpus"]);
     
     templateBody = None
     with open(templateFileName, "r") as templateFile:
         templateBody=templateFile.read()
     
     if templateBody!=None:
-        if not os.path.exists(outputPath+"/generate"):
-            os.makedirs(outputPath+"/generate")
+        subFolder = "scripts"
+        
+        if not os.path.exists(outputPath+"/"+subFolder):
+            os.makedirs(outputPath+"/"+subFolder)
         
         environmentProduct = dictProduct(environmentspace)
         parametersProduct  = dictProduct(parameterspace)
         
-        buildParameterDict = list(parametersProduct)[0]
-        
-        for environmentDict in environmentProduct:
-            for key,value in environmentDict.items():
-                os.environ[key]=value
+        # specification files
+        for parametersDict in parametersProduct:
+            parametersDictHash = hashDictionary(parametersDict)
             
-            for dimension in dimensions:
-                for order in orders:
-                    buildParameterDict["dimension"]=dimension
-                    buildParameterDict["order"]    =order
-                    
-                    buildSpecificationFileBody = renderSpecificationFile(templateBody,buildParameterDict)
-                    
-                    projectName=workspace["project_name"]
-                    buildSpecificationFileName = outputPath + "/build/" + projectName + "-d" + dimension + "-p" + order + ".exahype"
-                    
-                    with open(buildSpecificationFileName, "w") as buildSpecificationFile:
-                        buildSpecificationFile.write(buildSpecificationFileBody)
+            for tasks in taskCounts:
+                for cores in coreCounts:
+                  specificationFileBody = renderSpecificationFile(templateBody,parametersDict,tasks,cores)
+                  
+                  projectName=workspace["project_name"]
+                  specificationFileName = outputPath + "/" + subFolder + "/" + projectName + "-" + parametersDictHash + "-t"+tasks+"-c"+cores+".exahype"
+                  
+                  with open(specificationFileName, "w") as specificationFile:
+                      specificationFile.write(specificationFileBody)
+        
+        # job scrips
+        #for environmentDict in environmentProduct:
+        #    environmentDictHash = hashDictionary(environmentDict)
 
 
 
@@ -249,7 +255,7 @@ if __name__ == "__main__":
     import itertools
     import hashlib
     
-    subprograms = ["build","generate", "cleanBuild", "cleanGenerate","clean"]
+    subprograms = ["build","scripts", "cleanBuild", "cleanScripts","clean"]
     
     if haveToPrintHelpMessage(sys.argv):
         print("sample usage:./sweep.py ("+"|".join(subprograms)+") options.sweep")
@@ -273,9 +279,9 @@ if __name__ == "__main__":
         clean(workspace)
     elif subprogram == "cleanBuild":
         clean(workspace,"build")
-    elif subprogram == "cleanGenerate":
-        clean(workspace,"generate")
+    elif subprogram == "cleanScripts":
+        clean(workspace,"scripts")
     elif subprogram == "build":
         build(workspace,machine,environmentspace,parameterspace)
-    elif subprogram == "generate":
-        generate(workspace,machine,environmentspace,parameterspace)
+    elif subprogram == "scripts":
+        scripts(workspace,machine,environmentspace,parameterspace)
