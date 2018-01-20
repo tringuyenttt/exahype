@@ -24,17 +24,41 @@ def haveToPrintHelpMessage(argv):
         result = result or ( arg=="-help" or arg=="-h" )
     return result
 
-def parseCores(jobs,cpus):
+def parseEnvironment(config):
     """
-    If we encounter "auto" as value, the number of cores is chosen as: 
-    total number of cpus (per node) / number of tasks (per node).
+    Parse the environment section.
     """
-    cores = jobs["cores"].split(",");
-    if len(cores)==1 and cores[0]=="auto":
-        cores = [""]*len(tasks)
-        for i,t in enumerate(tasks):
-            cores[i] = int(int(cpus) / int(t))
-    return cores
+    environmentspace = {}
+    if "environment" in config and len(config["environment"].keys()):
+        for key, value in config["environment"].items():
+            environmentspace[key] = [x.strip() for x in value.split(",")]
+        if "SHAREDMEM" not in environmentspace:
+            print("ERROR: 'SHAREDMEM' missing in section 'environment'.",file=sys.stderr)
+            sys.exit()
+    else:
+        print("ERROR: Section 'environment' is missing or empty! (Must contain at least 'SHAREDMEM'.)",file=sys.stderr)
+        sys.exit()
+    return environmentspace
+
+
+def parseParameters(config):
+    """
+    Parse the parameters section.
+    """
+    parameterspace = {}
+    if "parameters" in config and len(config["parameters"].keys()):
+        for key, value in config["parameters"].items():
+            parameterspace[key] = [x.strip() for x in value.split(",")]
+            
+        if "order" not in parameterspace:
+            print("ERROR: 'order' missing in section 'parameters'.",file=sys.stderr)
+            sys.exit()
+        elif "dimension" not in parameterspace:
+            print("ERROR: 'dimension' missing in section 'parameters'.",file=sys.stderr)
+            sys.exit()
+    else:
+        print("ERROR: Section 'parameters' is missing or empty! (Must contain at least 'dimension' and 'order'.)",file=sys.stderr)
+        sys.exit()
 
 def dictProduct(dicts):
     """
@@ -85,22 +109,12 @@ def build(workspace,machine,environmentspace,parameterspace):
     outputPath       = workspace["output_path"]
     
     templateBody = None
-    with open(exahypeRoot + "/" + templateFileName, "r") as templateFile:
+    with open(templateFileName, "r") as templateFile:
         templateBody=templateFile.read()
     
     if templateBody!=None:
-        if not os.path.exists(exahypeRoot+"/"+outputPath):
-            os.makedirs(exahypeRoot+"/"+outputPath)
-        if not os.path.exists(exahypeRoot+"/"+outputPath+"/build"):
-            os.makedirs(exahypeRoot+"/"+outputPath+"/build")
-        
-        # build-specific parameters
-        if "dimension" not in parameterspace.keys():
-            parameterspace["dimension"] = [""]
-        if "order" not in parameterspace.keys():
-            parameterspace["order"] = [""]
-        dimensions = parameterspace["dimension"]
-        orders     = parameterspace["order"]
+        if not os.path.exists(outputPath+"/build"):
+            os.makedirs(outputPath+"/build")
         
         environmentProduct = dictProduct(environmentspace)
         parametersProduct  = dictProduct(parameterspace)
@@ -127,7 +141,7 @@ def build(workspace,machine,environmentspace,parameterspace):
                     projectName=workspace["project_name"]
                     buildSpecificationFileName = outputPath + "/build/" + projectName + "-d" + dimension + "-p" + order + ".exahype"
                     
-                    with open(exahypeRoot + "/" + buildSpecificationFileName, "w") as buildSpecificationFile:
+                    with open(buildSpecificationFileName, "w") as buildSpecificationFile:
                         buildSpecificationFile.write(buildSpecificationFileBody)
                     # run toolkit
                     toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecificationFileName+")"
@@ -155,21 +169,78 @@ def build(workspace,machine,environmentspace,parameterspace):
                         sys.exit()
                     
                     projectPath   = workspace["project_path"]
-                    oldExecutable = exahypeRoot+"/"+projectPath+"/ExaHyPE-"+projectName
-                    newExecutable = exahypeRoot+"/"+outputPath+"/build/ExaHyPE-"+projectName+"-"+hashDictionary(environmentDict)+"-d" + dimension + "-p" + order
+                    oldExecutable = projectPath+"/ExaHyPE-"+projectName
+                    newExecutable = outputPath+"/build/ExaHyPE-"+projectName+"-"+hashDictionary(environmentDict)+"-d" + dimension + "-p" + order
                     moveCommand   = "mv "+oldExecutable+" "+newExecutable
                     print(moveCommand)
                     subprocess.call(moveCommand,shell=True)
     else:
-        print("ERROR: Couldn\'t open template file: "+workspace["template"])
+        print("ERROR: Couldn\'t open template file: "+workspace["template"],file=sys.stderr)
 
 def clean(workspace,subFolder=""):
-    exahypeRoot = workspace["exahype_root"]
     outputPath  = workspace["output_path"]
     
-    folder = exahypeRoot+"/"+outputPath+"/"+subFolder
+    folder = outputPath+"/"+subFolder
     print("rm -r "+folder)
     subprocess.call("rm -r "+folder, shell=True)
+
+def parseCores(jobs,cpus):
+    """
+    If we encounter "auto" as value, the number of cores is chosen as: 
+    total number of cpus (per node) / number of tasks (per node).
+    """
+    tasks = [x.strip() for x in jobs["tasks"].split(",")]
+    cores = [x.strip() for x in jobs["cores"].split(",")]
+    if len(cores)==1 and cores[0]=="auto":
+        cores = [""]*len(tasks)
+        for i,t in enumerate(tasks):
+            cores[i] = int(int(cpus) / int(t))
+    return cores
+
+def generate(workspace,machine,environmentspace,parameterspace):
+    """
+    Generate specification files and job scripts.
+    """
+    templateFileName = workspace["template"]
+    exahypeRoot      = workspace["exahype_root"]
+    outputPath       = workspace["output_path"]
+    
+    jobs  = config["jobs"]
+    nodes = [item.strip() for item in jobs["nodes"].split(",")]
+    tasks = [item.strip() for item in jobs["tasks"].split(",")]
+    cores = parseCores(jobs,machine["num_cpus"]);
+    
+    templateBody = None
+    with open(templateFileName, "r") as templateFile:
+        templateBody=templateFile.read()
+    
+    if templateBody!=None:
+        if not os.path.exists(outputPath+"/generate"):
+            os.makedirs(outputPath+"/generate")
+        
+        environmentProduct = dictProduct(environmentspace)
+        parametersProduct  = dictProduct(parameterspace)
+        
+        buildParameterDict = list(parametersProduct)[0]
+        
+        for environmentDict in environmentProduct:
+            for key,value in environmentDict.items():
+                os.environ[key]=value
+            
+            for dimension in dimensions:
+                for order in orders:
+                    buildParameterDict["dimension"]=dimension
+                    buildParameterDict["order"]    =order
+                    
+                    buildSpecificationFileBody = renderSpecificationFile(templateBody,buildParameterDict)
+                    
+                    projectName=workspace["project_name"]
+                    buildSpecificationFileName = outputPath + "/build/" + projectName + "-d" + dimension + "-p" + order + ".exahype"
+                    
+                    with open(buildSpecificationFileName, "w") as buildSpecificationFile:
+                        buildSpecificationFile.write(buildSpecificationFileBody)
+
+
 
 if __name__ == "__main__":
     import sys,os
@@ -194,43 +265,17 @@ if __name__ == "__main__":
     workspace = config["workspace"]
     machine   = config["machine"]
     
-    jobs  = config["jobs"]
-    nodes = jobs["nodes"].split(",");
-    tasks = jobs["tasks"].split(",");
-    cores = parseCores(jobs,machine["num_cpus"]);
-    #print(nodes); print(tasks); print(cores)
-    
-    # environment
-    environmentspace = {}
-    if "environment" in config and len(config["environment"].keys()):
-        for key, value in config["environment"].items():
-            environmentspace[key] = value.split(",")
-    else:
-        environmentspace["DUMMY_VAR"] = [""] # We will later on have a loop nest; we thus need at least one element
-    
-    # parameters
-    parameterspace = {}
-    if "parameters" in config and len(config["parameters"].keys()):
-        for key, value in config["parameters"].items():
-            parameterspace[key] = value.split(",")
-    else:
-        parameterspace["DUMMY_VAR"] = [""]
+    environmentspace = parseEnvironment(config)
+    parameterspace   = parseParameters(config)
     
     # select subprogram
-    if subprogram == "build":
-        build(workspace,machine,environmentspace,parameterspace)
+    if subprogram == "clean":
+        clean(workspace)
     elif subprogram == "cleanBuild":
         clean(workspace,"build")
-    elif subprogram == "clean":
-        clean(workspace)
+    elif subprogram == "cleanGenerate":
+        clean(workspace,"generate")
+    elif subprogram == "build":
+        build(workspace,machine,environmentspace,parameterspace)
     elif subprogram == "generate":
-        environmentProduct = dictProduct(environmentspace)
-        parametersProduct  = dictProduct(parameterspace)
-        
-        # These hash functions are not robust at all yet.
-        # probably have to write my own
-        for myTuple in environmentProduct:
-          print(hashDictionary(myTuple))
-          
-        for myTuple in parametersProduct:
-          print(hashDictionary(myTuple))
+        generate(workspace,machine,environmentspace,parameterspace)
