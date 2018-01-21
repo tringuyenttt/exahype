@@ -232,8 +232,8 @@ def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
     context["output_file"] = outputFileName
     context["error_file"]  = errorFileName
     
-    context["environment"] = json.dumps(environmentDict)
-    context["parameters"]    = json.dumps(parameterDict)
+    context["environment"] = json.dumps(environmentDict).replace("\"","\\\"")
+    context["parameters"]  = json.dumps(parameterDict).replace("\"","\\\"")
     
     context["job_file"]    = jobFileName
     context["app"]        = appName
@@ -364,7 +364,7 @@ def submitJobs(general):
     jobSubmissionTool    = general["job_submission"]
     for file in os.listdir(exahypeRoot + "/" + outputPath + "/" + scriptsFolder):
         if file.endswith(".job"):
-            command=jobSubmissionTool + " " + file
+            command=jobSubmissionTool + " " + exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + file
             print(command)
             process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
             (output, err) = process.communicate()
