@@ -18,8 +18,8 @@ def haveToPrintHelpMessage(argv):
     """
     Check if we have to print a help message.
     """
-    result = parseArgument(argv,1) not in subprograms or \
-             parseArgument(argv,2)==None
+    result = parseArgument(argv,2) not in subprograms or \
+             parseArgument(argv,1)==None
     for arg in argv:
         result = result or ( arg=="-help" or arg=="-h" )
     return result
@@ -96,9 +96,9 @@ def hashDictionary(dictionary):
     result = hashlib.md5(chain.encode()).hexdigest()
     return result
 
-def clean(workspace,subFolder=""):
-    exahypeRoot = workspace["exahype_root"]
-    outputPath  = workspace["output_path"]
+def clean(general,subFolder=""):
+    exahypeRoot = general["exahype_root"]
+    outputPath  = general["output_path"]
     
     folder = exahypeRoot+"/"+outputPath+"/"+subFolder
     print("rm -r "+folder)
@@ -115,7 +115,7 @@ def renderSpecificationFile(templateBody,parameterDict,tasks,cores):
     for key in parameterDict:
         if "{{"+key+"}}" not in templateBody:
             consistent = False
-            print("ERROR: parameter '{{"+key+"}}' not found in specification file template!",file=sys.stderr)
+            print("ERROR: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr)
     if not consistent:
         sys.exit()
     
@@ -124,13 +124,13 @@ def renderSpecificationFile(templateBody,parameterDict,tasks,cores):
     
     return renderedFile
 
-def build(workspace,machine,environmentspace,parameterspace):
+def build(general,environmentspace,parameterspace):
     """
     Build the executables.
     """
-    templateFileName = workspace["spec_template"]
-    exahypeRoot      = workspace["exahype_root"]
-    outputPath       = workspace["output_path"]
+    templateFileName = general["spec_template"]
+    exahypeRoot      = general["exahype_root"]
+    outputPath       = general["output_path"]
     subFolder        = "build"
     
     templateBody = None
@@ -163,13 +163,13 @@ def build(workspace,machine,environmentspace,parameterspace):
                     
                     buildSpecificationFileBody = renderSpecificationFile(templateBody,buildParameterDict,"1","1")
                     
-                    projectName=workspace["project_name"]
-                    buildSpecificationFileName = outputPath+"/"+subFolder+"/"+projectName+"-d"+dimension+"-p"+order+".exahype"
+                    projectName=general["project_name"]
+                    buildSpecFileName = outputPath+"/"+subFolder+"/"+projectName+"-d"+dimension+"-p"+order+".exahype"
                     
-                    with open(buildSpecificationFileName, "w") as buildSpecificationFile:
+                    with open(buildSpecFileName, "w") as buildSpecificationFile:
                         buildSpecificationFile.write(buildSpecificationFileBody)
                     # run toolkit
-                    toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecificationFileName+")"
+                    toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecFileName+")"
                     print(toolkitCommand);
                     process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, shell=True)
                     (output, err) = process.communicate()
@@ -181,7 +181,7 @@ def build(workspace,machine,environmentspace,parameterspace):
                         sys.exit()
                     
                     # clean locally & call make
-                    make_threads=workspace["make_threads"]
+                    make_threads=general["make_threads"]
                     makeCommand="rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels; make -j"+make_threads
                     print(makeCommand)
                     process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, shell=True)
@@ -201,11 +201,12 @@ def build(workspace,machine,environmentspace,parameterspace):
     else:
         print("ERROR: Couldn\'t open template file: "+templateFileName,file=sys.stderr)
 
-def parseCores(jobs,cpus):
+def parseCores(jobs):
     """
     If we encounter "auto" as value, the number of cores is chosen as: 
     total number of cpus (per node) / number of tasks (per node).
     """
+    cpus = jobs["num_cpus"]
     tasks = [x.strip() for x in jobs["tasks"].split(",")]
     cores = [x.strip() for x in jobs["cores"].split(",")]
     if len(cores)==1 and cores[0]=="auto":
@@ -214,11 +215,15 @@ def parseCores(jobs,cpus):
             cores[i] = str(int(int(cpus) / int(t)))
     return cores
 
-def renderJobScript(templateBody,environmenDict,parameterDict,
-                    jobs,jobName,jobFileName,outputFileName,errorFileName,appName,specFileName,
+def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
+                    jobName,jobFileName,outputFileName,errorFileName,appName,specFileName,
                     nodes,tasks,cores,run):
+    """
+    Render a job script.
+    """
     renderedFile = templateBody
     
+    context = {}
     # mandatory
     context["nodes"] = nodes
     context["tasks"] = tasks
@@ -227,12 +232,15 @@ def renderJobScript(templateBody,environmenDict,parameterDict,
     context["output_file"] = outputFileName
     context["error_file"]  = errorFileName
     
+    context["environment"] = json.dumps(environmentDict)
+    context["parameters"]    = json.dumps(parameterDict)
+    
     context["job_file"]    = jobFileName
     context["app"]        = appName
     context["spec_file"]  = specFileName
     
     consistent = True
-    for key in parameterDict:
+    for key in context:
         if "{{"+key+"}}" not in templateBody:
             consistent = False
             print("ERROR: parameter '{{"+key+"}}' not found in job script template!",file=sys.stderr)
@@ -240,101 +248,127 @@ def renderJobScript(templateBody,environmenDict,parameterDict,
         sys.exit()
     
     # optional
-    context["mail"] = jobs["mail"]
-    context["time"] = jobs["time"]
-    context["ranks"] = ranks
+    context["mail"]  = jobs["mail"]
+    context["time"]  = jobs["time"]
+    context["ranks"] = str(int(nodes)*int(tasks))
     
-    for key,value in parameterDict.items():
+    for key,value in context.items():
         renderedFile = renderedFile.replace("{{"+key+"}}", value)
     
     return renderedFile
 
-def scripts(workspace,machine,environmentspace,parameterspace):
+def generateScripts(general,environmentspace,parameterspace):
     """
-    Generate specification files and job scripts.
+    Generate spec files and job scripts.
     """
-    templateFileName = workspace["spec_template"]
-    exahypeRoot      = workspace["exahype_root"]
-    outputPath       = workspace["output_path"]
-    buildFolder      = "build"
-    scriptsFolder    = "scripts"
-    resultsFolder    = "results"
+    exahypeRoot          = general["exahype_root"]
+    outputPath           = general["output_path"]
+    buildFolder          = "build"
+    scriptsFolder        = "scripts"
+    resultsFolder        = "results"
     
     jobs       = config["jobs"]
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = parseCores(jobs,machine["num_cpus"]);
+    coreCounts = parseCores(jobs);
     runs       = int(jobs["runs"])
     
-    templateBody = None
-    with open(exahypeRoot+"/"+templateFileName, "r") as templateFile:
-        templateBody=templateFile.read()
+    specFileTemplatePath  = general["spec_template"]
+    jobScriptTemplatePath = general["job_template"]
     
-    if templateBody!=None:
-        if not os.path.exists(exahypeRoot+"/"+outputPath+"/"+scriptsFolder):
-            os.makedirs(exahypeRoot+"/"+outputPath+"/"+scriptsFolder)
-        if not os.path.exists(exahypeRoot+"/"+outputPath+"/"+resultsFolder):
-            os.makedirs(exahypeRoot+"/"+outputPath+"/"+resultsFolder)
+    specFileTemplate  = None
+    with open(exahypeRoot+"/"+specFileTemplatePath, "r") as templateFile:
+        specFileTemplate=templateFile.read()
+    if specFileTemplate is None:
+        print("ERROR: Couldn\'t open template file: "+specFileTemplatePath,file=sys.stderr)
+        sys.exit()
         
-        # specification files
-        for parametersDict in dictProduct(parameterspace):
-            parametersDictHash = hashDictionary(parametersDict)
+    jobScriptTemplate = None
+    with open(exahypeRoot+"/"+jobScriptTemplatePath, "r") as templateFile:
+        jobScriptTemplate=templateFile.read()
+    if jobScriptTemplate is None:
+        print("ERROR: Couldn\'t open template file: "+jobScriptTemplatePath,file=sys.stderr)
+        sys.exit()
+        
+    if not os.path.exists(exahypeRoot+"/"+outputPath+"/"+scriptsFolder):
+        os.makedirs(exahypeRoot+"/"+outputPath+"/"+scriptsFolder)
+    if not os.path.exists(exahypeRoot+"/"+outputPath+"/"+resultsFolder):
+        os.makedirs(exahypeRoot+"/"+outputPath+"/"+resultsFolder)
+    
+    # spec files
+    for parameterDict in dictProduct(parameterspace):
+        parameterDictHash = hashDictionary(parameterDict)
+        
+        for tasks in taskCounts:
+            for cores in coreCounts:
+              specFileBody = renderSpecificationFile(specFileTemplate,parameterDict,tasks,cores)
+              
+              projectName=general["project_name"]
+              specFileName = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+              
+              with open(specFileName, "w") as specFile:
+                  specFile.write(specFileBody)
+    
+    # check if required builts exist
+    for environmentDict in dictProduct(environmentspace):
+        environmentDictHash = hashDictionary(environmentDict)
+        for parameterDict in dictProduct(parameterspace):
+            dimension = parameterDict["dimension"]
+            order     = parameterDict["order"]
+            appName   = exahypeRoot + "/" + outputPath+"/"+buildFolder + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-d" + dimension + "-p" + order
             
+            if not os.path.exists(appName):
+                print("WARNING: required application '"+appName+"' does not exist!",file=sys.stderr)
+    
+    # generate job scrips
+    for run in range(0,runs):
+        for nodes in nodeCounts:
             for tasks in taskCounts:
                 for cores in coreCounts:
-                  specificationFileBody = renderSpecificationFile(templateBody,parametersDict,tasks,cores)
-                  
-                  projectName=workspace["project_name"]
-                  specificationFileName = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + parametersDictHash + "-t"+tasks+"-c"+cores+".exahype"
-                  
-                  with open(specificationFileName, "w") as specificationFile:
-                      specificationFile.write(specificationFileBody)
-        
-        # check if required builts exist
-        for environmentDict in dictProduct(environmentspace):
-            environmentDictHash = hashDictionary(environmentDict)
-            for parametersDict in dictProduct(parameterspace):
-                dimension       = parametersDict["dimension"]
-                order           = parametersDict["order"]
-                applicationName = exahypeRoot + "/" + outputPath+"/"+buildFolder + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-d" + dimension + "-p" + order
-                
-                if not os.path.exists(applicationName):
-                    print("WARNING: required application '"+applicationName+"' does not exist!",file=sys.stderr)
-        
-        # generate job scrips
-        for run in range(0,runs):
-            for nodes in nodeCounts:
-                for tasks in taskCounts:
-                    for cores in coreCounts:
-                        for environmentDict in dictProduct(environmentspace):
-                            environmentDictHash = hashDictionary(environmentDict)
+                    for environmentDict in dictProduct(environmentspace):
+                        environmentDictHash = hashDictionary(environmentDict)
+                        
+                        for parameterDict in dictProduct(parameterspace):
+                            parameterDictHash = hashDictionary(parameterDict)
                             
-                            for parametersDict in dictProduct(parameterspace):
-                                parametersDictHash = hashDictionary(parametersDict)
-                                
-                                dimension       = parametersDict["dimension"]
-                                order           = parametersDict["order"]
-                                applicationName = exahypeRoot + "/" + outputPath+"/"+buildFolder + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-d" + dimension + "-p" + order
-                                
-                                
-                                specificationFileName = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + \
-                                                        parametersDictHash + "-t"+tasks+"-c"+cores+".exahype"
-                                
-                                jobName        = projectName + "-" + environmentDictHash + "-" + parametersDictHash + \
-                                                 "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
-                                jobFilePrefix  = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + jobName
-                                jobFileName    = jobFilePrefix + ".job"
-                                outputFileName = exahypeRoot + "/" + outputPath + "/" + resultsFolder + "/" + jobName + ".out"
-                                errorFileName  = exahypeRoot + "/" + outputPath + "/" + resultsFolder + "/" + jobName + ".err"
-                                
-                                
-                                print(jobFileName)
-                                # print(outputFileName)
-                                # print(errorFileName)
-                                # jobScriptBody = renderJobScript(templateBody,environmentDict,parametersDict,jobs,nodes,tasks,cores)
+                            dimension = parameterDict["dimension"]
+                            order     = parameterDict["order"]
+                            appName   = exahypeRoot + "/" + outputPath+"/"+buildFolder + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-d" + dimension + "-p" + order
                             
+                            
+                            specFileName = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + \
+                                           parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+                            
+                            jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
+                                             "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
+                            jobFilePrefix  = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + jobName
+                            jobFileName    = jobFilePrefix + ".job"
+                            outputFileName = exahypeRoot + "/" + outputPath + "/" + resultsFolder + "/" + jobName + ".out"
+                            errorFileName  = exahypeRoot + "/" + outputPath + "/" + resultsFolder + "/" + jobName + ".err"
+                            
+                            jobScriptBody = renderJobScript(jobScriptTemplate,environmentDict,parameterDict,jobs,
+                                                            jobName,jobFileName,outputFileName,errorFileName,appName,specFileName,
+                                                            nodes,tasks,cores,run)
+                            with open(jobFileName, "w") as jobFile:
+                                jobFile.write(jobScriptBody)
 
-
+def submitJobs(general):
+    exahypeRoot          = general["exahype_root"]
+    outputPath           = general["output_path"]
+    scriptsFolder        = "scripts"
+    
+    jobScriptFolder = exahypeRoot+"/"+outputPath+"/"+scriptsFolder
+    if not os.path.exists(jobScriptFolder):
+        print("ERROR: Job script folder '"+jobScriptFolder+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
+        
+    jobSubmissionTool    = general["job_submission"]
+    for file in os.listdir(exahypeRoot + "/" + outputPath + "/" + scriptsFolder):
+        if file.endswith(".job"):
+            command=jobSubmissionTool + " " + file
+            print(command)
+            process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+            (output, err) = process.communicate()
+            process.wait()
 
 if __name__ == "__main__":
     import sys,os
@@ -344,33 +378,34 @@ if __name__ == "__main__":
     import hashlib
     import json
     
-    subprograms = ["build","scripts", "cleanBuild", "cleanScripts","clean"]
+    subprograms = ["build","scripts","submit","cleanBuild", "cleanScripts","cleanAll"]
     
     if haveToPrintHelpMessage(sys.argv):
-        print("sample usage:./sweep.py ("+"|".join(subprograms)+") myoptions.ini")
+        print("sample usage:./sweep.py myoptions.ini ("+"|".join(subprograms)+")")
         sys.exit()
     
-    subprogram = parseArgument(sys.argv,1)
-    configFile = parseArgument(sys.argv,2)
+    configFile = parseArgument(sys.argv,1)
+    subprogram = parseArgument(sys.argv,2)
     
     config = configparser.ConfigParser()
     config.optionxform=str
     config.read(configFile)
     
-    workspace = config["workspace"]
-    machine   = config["machine"]
+    general = config["general"]
     
     environmentspace = parseEnvironment(config)
     parameterspace   = parseParameters(config)
     
     # select subprogram
     if subprogram == "clean":
-        clean(workspace)
+        clean(general)
     elif subprogram == "cleanBuild":
-        clean(workspace,"build")
+        clean(general,"build")
     elif subprogram == "cleanScripts":
-        clean(workspace,"scripts")
+        clean(general,"scripts")
     elif subprogram == "build":
-        build(workspace,machine,environmentspace,parameterspace)
+        build(general,environmentspace,parameterspace)
     elif subprogram == "scripts":
-        scripts(workspace,machine,environmentspace,parameterspace)
+        generateScripts(general,environmentspace,parameterspace)
+    elif subprogram == "submit":
+        submitJobs(general)
