@@ -93,7 +93,35 @@ def hashDictionary(dictionary):
     for key,value in sorted(dictionary.items()):
         chain += key+","+value+";"
     
-    result = hashlib.md5(chain.encode()).hexdigest()
+    return hashlib.md5(chain.encode()).hexdigest()
+
+usedEnvironmentDictHashes = []
+usedParameterDictHashes   = []
+
+def hashEnvironmentDict(dictionary):
+    """
+    Hash a dictionary.
+    """
+    result = hashDictionary(dictionary)
+    
+    if result not in usedParameterDictHashes:
+        usedParameterDictHashes.append(result)
+    else:
+        print("ERROR: Hash conflict for environment option sets. Try to resolve it by adding another (dummy) environment variable.",file=sys.stderr)
+        sys.exit()
+    return result
+    
+def hashParameterDict(dictionary):
+    """
+    Hash a dictionary.
+    """
+    result = hashDictionary(dictionary)
+    
+    if result not in usedParameterDictHashes:
+        usedParameterDictHashes.append(result)
+    else:
+        print("ERROR: Hash conflict for parameter option sets. Try to resolve it by adding another (dummy) parameter.",file=sys.stderr)
+        sys.exit()
     return result
 
 def clean(general,subFolder=""):
@@ -146,7 +174,7 @@ def build(general,environmentspace,parameterspace):
         orders     = parameterspace["order"]
         buildParameterDict = list(dictProduct(parameterspace))[0]
         
-        for environmentDict in environmentProduct:
+        for environmentDict in dictProduct(environmentspace):
             for key,value in environmentDict.items():
                 os.environ[key]=value
             
@@ -166,7 +194,7 @@ def build(general,environmentspace,parameterspace):
                     projectName=general["project_name"]
                     buildSpecFileName = outputPath+"/"+subFolder+"/"+projectName+"-d"+dimension+"-p"+order+".exahype"
                     
-                    with open(buildSpecFileName, "w") as buildSpecificationFile:
+                    with open(exahypeRoot + "/" + buildSpecFileName, "w") as buildSpecificationFile:
                         buildSpecificationFile.write(buildSpecificationFileBody)
                     # run toolkit
                     toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecFileName+")"
@@ -194,7 +222,7 @@ def build(general,environmentspace,parameterspace):
                         sys.exit()
                     
                     oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
-                    newExecutable = exahypeRoot + "/" + outputPath+"/"+subFolder + "/ExaHyPE-"+projectName+"-"+hashDictionary(environmentDict)+"-d" + dimension + "-p" + order
+                    newExecutable = exahypeRoot + "/" + outputPath+"/"+subFolder + "/ExaHyPE-"+projectName+"-"+hashEnvironmentDict(environmentDict)+"-d" + dimension + "-p" + order
                     moveCommand   = "mv "+oldExecutable+" "+newExecutable
                     print(moveCommand)
                     subprocess.call(moveCommand,shell=True)
@@ -297,7 +325,7 @@ def generateScripts(general,environmentspace,parameterspace):
     
     # spec files
     for parameterDict in dictProduct(parameterspace):
-        parameterDictHash = hashDictionary(parameterDict)
+        parameterDictHash = hashParameterDict(parameterDict)
         
         for tasks in taskCounts:
             for cores in coreCounts:
@@ -310,15 +338,17 @@ def generateScripts(general,environmentspace,parameterspace):
                   specFile.write(specFileBody)
     
     # check if required builts exist
+    dimensions = parameterspace["dimension"]
+    orders     = parameterspace["order"]
+    
     for environmentDict in dictProduct(environmentspace):
-        environmentDictHash = hashDictionary(environmentDict)
-        for parameterDict in dictProduct(parameterspace):
-            dimension = parameterDict["dimension"]
-            order     = parameterDict["order"]
-            appName   = exahypeRoot + "/" + outputPath+"/"+buildFolder + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-d" + dimension + "-p" + order
-            
-            if not os.path.exists(appName):
-                print("WARNING: required application '"+appName+"' does not exist!",file=sys.stderr)
+        environmentDictHash = hashEnvironmentDict(environmentDict)
+        for order in orders:
+            for dimension in dimensions:
+              appName   = exahypeRoot + "/" + outputPath+"/"+buildFolder + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-d" + dimension + "-p" + order
+              
+              if not os.path.exists(appName):
+                  print("WARNING: required application '"+appName+"' does not exist!",file=sys.stderr)
     
     # generate job scrips
     for run in range(0,runs):
