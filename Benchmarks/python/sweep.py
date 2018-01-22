@@ -625,8 +625,8 @@ def submitJobs():
                             process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
                             (output, err) = process.communicate()
                             process.wait()
-                            jobIds.append(extractJobId(output.decode("UTF_8"))
-                            
+                            jobIds.append(extractJobId(output.decode("UTF_8")))
+    
     submittedJobsPath = exahypeRoot + "/" + outputPath + "/" + \
                         hashSweep(jobs,environmentSpace,parameterSpace) + ".submitted"
     
@@ -641,9 +641,9 @@ def cancelJobs():
     exahypeRoot         = general["exahype_root"]
     outputPath          = general["output_path"]
     jobCancellationTool = general["job_cancellation"]
- 
+    
     submittedJobsPath = exahypeRoot + "/" + outputPath + "/" + \
-                        hashSweep(jobs,environmentSpace,parameterSpace) + ".submitted"    
+                        hashSweep(jobs,environmentSpace,parameterSpace) + ".submitted"
 
     jobIds = None
     with open(submittedJobsPath, "r") as submittedJobsFile:
