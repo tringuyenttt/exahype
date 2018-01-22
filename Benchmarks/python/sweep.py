@@ -41,7 +41,6 @@ def parseEnvironment(config):
     
     return environmentSpace
 
-
 def parseParameters(config):
     """
     Parse the parameters section.
@@ -125,6 +124,10 @@ def hashParameterDict(dictionary):
     return result
 
 def clean(subFolder=""):
+    """
+    Clean the complete output folder or just a subfolder
+    if specified.
+    """
     exahypeRoot = general["exahype_root"]
     outputPath  = general["output_path"]
     
@@ -155,6 +158,10 @@ def renderSpecificationFile(templateBody,parameterDict,tasks,cores):
 def build(buildOnlyMissing=False):
     """
     Build the executables.
+    
+    Args:
+    buildOnlyMissing(bool):
+       Build only missing executables.
     """
     print("currently loaded modules:")
     subprocess.call("module list",shell=True)
@@ -589,6 +596,9 @@ def extractJobId(processOutput):
     return jobId
 
 def submitJobs():
+    """
+    Submit all jobs spanned by the options.
+    """
     exahypeRoot          = general["exahype_root"]
     outputPath           = general["output_path"]
     projectName          = general["project_name"]
@@ -642,6 +652,9 @@ def submitJobs():
     print("job ids are memorised in: "+submittedJobsPath)
 
 def cancelJobs():
+    """
+    Cancel submitted jobs.
+    """
     exahypeRoot         = general["exahype_root"]
     outputPath          = general["output_path"]
     jobCancellationTool = general["job_cancellation"]
@@ -667,6 +680,135 @@ def cancelJobs():
     print(command)
     subprocess.call(command,shell=True)
 
+def parseResultFile(filePath):
+    '''
+    Reads a single sweep job output file and parses the user time spent within each adapter.
+    
+    Args:
+       file_path (str):
+          Path to the sweep job output file.
+
+    Returns:
+       A dict holding for each of the found adapters a nested dict that holds the following key-value pairs:
+          * 'n'       : (int)    Number of times this adapter was used.
+          * 'cputime' : (float) Total CPU time spent within the adapter.
+          * 'usertime': (float) Total user time spent within the adapter.
+          * 'environment':(dictionary(str,str)) Total user time spent within the adapter.
+          * 'parameters' :(dictionary(str,str)) Total user time spent within the adapter.
+    '''
+    result = { }
+    cputimeIndex  = 3
+    usertimeIndex = 5
+    
+    try:
+        fileHandle=open(filePath)
+        for line in fileHandle:
+            if "sweep/environment" in line:
+                value = line.split('|')[-1]
+                result["environment"]=json.loads(value)
+            if "sweep/parameters" in line:
+                value = line.split('|')[-1]
+                result["parameters"]=json.loads(value)
+            anchor = '|'
+            header = '||'
+            if anchor in line and header not in line:
+                segments = line.split('|')
+                adapter = segments[1].strip();
+                result[adapter]             = {}
+                result[adapter]['iterations']     = int(segments[2].strip())
+                result[adapter]['total_cputime']  = float(segments[cputimeIndex ].strip())
+                result[adapter]['total_usertime'] = float(segments[usertimeIndex].strip())
+    except IOError:
+        print ("ERROR: could not parse adapter times for file "+filePath+"!")
+    return result
+
+def getSortingKey(row):
+    keyTuple = ()
+    keys = row[:-3]
+    for key in keys:
+      try:
+          keyTuple += (float(key),)
+      except ValueError:
+          keyTuple += (key,)
+    return keyTuple
+
+def parseResults():
+    """
+    Loop over all ".out" files in the results section and create a table.
+    """
+    exahypeRoot         = general["exahype_root"]
+    outputPath          = general["output_path"]
+    projectName         = general["project_name"]
+    
+    resultsFolderPath = exahypeRoot + "/" + outputPath
+    tablePath         = resultsFolderPath+"/"+projectName+'.csv'
+    try:
+        with open(tablePath, 'w') as csvfile:
+            csvwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            files = [f for f in os.listdir(resultsFolderPath) if os.path.isfile(f) and file.endswith(".out")]
+            
+            print("processed files:")
+            firstFile = True
+            for fileName in files:
+                # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-t1-c1-r1.out
+                match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out$',fileName)
+                prefix              = match.group(1)
+                parameterDictHash   = match.group(2)
+                environmentDictHash = match.group(3)
+                nodes               = match.group(4)
+                tasks               = match.group(5)
+                cores               = match.group(6)
+                run                 = match.group(7)
+                
+                results = parseResultFile(fileName)
+                if len(results):
+                    # write header
+                    if firstFile:
+                        header += sorted(results["environment"])
+                        header += sorted(results["parameters"])
+                        header.append("nodes")
+                        header.append("tasks")
+                        header.append("cores")
+                        header.append("run")
+                        header.append("adapter")
+                        firstAdapter = list(results.keys())[0]
+                        header.append("iterations")
+                        header.append("total_cputime")
+                        header.append("project_name")
+                        csvwriter.writerow(header)
+                    print(resultsFolderPath+"/"+fileName)
+                    
+                    # write rows
+                    for adapter in results:
+                        row=[]
+                        for key in sorted(results["environment"]):
+                            row.append(results["environment"][key])
+                        for key in sorted(results["parameters"]):
+                            row.append(results["parameters"][key])
+                        row.append(nodes)
+                        row.append(tasks)
+                        row.append(cores)
+                        row.append(adapter)
+                        header.append(results["iterations"])
+                        header.append(results["total_cputime"])
+                        header.append(results["project_name"])
+                        csvwriter.writerow(row)
+        
+        # reopen the file and sort it
+        tableFile   = open(filename, 'r')
+        header      = next(tableFile).strip()
+        reader      = csv.reader(datafile,delimiter=',')
+        
+        sortedData = sorted(reader,key=getSortingKey)
+        tableFile.close()
+        
+        with open(filename, 'w') as datafile:
+            writer = csv.writer(datafile, delimiter='&',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(header.split('&'))
+            writer.writerows(sorted_data)
+    except IOError as err:
+        print ("ERROR: could not write file "+tablePath+". Error message: "<<str(err))
+
 if __name__ == "__main__":
     import sys,os
     import configparser
@@ -675,6 +817,9 @@ if __name__ == "__main__":
     import hashlib
     import json
     import codecs
+    
+    import re
+    import csv
     
     subprograms = ["build","buildMissing","scripts","submit","cancel","parseResults","cleanBuild", "cleanScripts","cleanAll"]
     scriptsFolder        = "scripts"
