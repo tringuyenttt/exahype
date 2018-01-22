@@ -578,8 +578,10 @@ def hashSweep(jobs,enviromentSpace,parameterSpace):
 
 def extractJobId(processOutput):
     jobId = "unknown"
-    if "Submitted batch job " in processOutput:
-        jobId = processOutput.split(" ")[-1][:-1]
+    lines = processOutput.split("\n")
+    for line in lines:
+        if "Submitted batch job " in line:
+            jobId = processOutput.split(" ")
     return jobId
 
 def submitJobs():
