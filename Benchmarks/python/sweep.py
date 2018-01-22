@@ -515,7 +515,35 @@ def verifyAllSpecFilesExist(general,environmentSpace,parameterSpace):
               "       Then rerun the 'scripts' subprogram.")
         sys.exit()
 
-def submitJobs(general):
+def hashSweep(job,enviromentSpace,parameterSpace):
+    nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
+    taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
+    coreCounts = parseCores(jobs);
+    runs       = jobs["runs"]
+    
+    chain = ""
+    for value in nodeCounts:
+        chain += value+";"
+    for value in taskCounts:
+        chain += value+";"
+    for value in coreCounts:
+        chain += value+";"
+    chain += runs+";"
+    
+    for environmentDict in dictProduct(environmentSpace):
+        chain += hashDictionary(environmentDict)
+    for parameterDict in dictProduct(parameterSpace):
+        chain += hashDictionary(parameterDict)
+        
+    return hashlib.md5(chain.encode()).hexdigest()
+
+def extractJobId(processOutput):
+    jobId = "unknown"
+    if "Submitted batch job " in processOutput:
+        jobId = processOutput.split(" ")[-1]
+    return jobId
+
+def submitJobs(general,environmentSpace,parameterSpace):
     exahypeRoot          = general["exahype_root"]
     outputPath           = general["output_path"]
     jobSubmissionTool    = general["job_submission"]
@@ -532,6 +560,7 @@ def submitJobs(general):
     verifyAllSpecFilesExist(general,environmentSpace,parameterSpace)
     
     # loop over job scrips
+    jobIds = []
     for run in range(0,runs):
         for nodes in nodeCounts:
             for tasks in taskCounts:
@@ -555,6 +584,39 @@ def submitJobs(general):
                             process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
                             (output, err) = process.communicate()
                             process.wait()
+                            jobIds.append(extractJobId(output))
+                            
+    submittedJobsPath = exahypeRoot + "/" + outputPath + "/" + \
+                        hashSweep(jobs,environmentspace,parameterspace) + ".submitted"
+    with open(submittedJobsPath, "w") as submittedJobsFile:
+        submittedJobsFile.write(json.dumps(jobIds))
+    
+    print("Submitted "+len(jobIds)+" jobs.")
+    print("The corresponding job ids are stored in: "+submittedJobsPath)
+
+def cancelJobs(general,environmentSpace,parameterSpace):
+    exahypeRoot         = general["exahype_root"]
+    outputPath          = general["output_path"]
+    jobCancellationTool = general["job_cancellation"]
+    
+    submittedJobsPath = exahypeRoot + "/" + outputPath + "/" + \
+                        hashSweep(jobs,environmentspace,parameterspace) + ".submitted"
+    
+    jobIds = None
+    with open(submittedJobsPath, "w") as submittedJobsFile:
+        jobIds = json.loads(submittedJobsFile.read())
+    
+    if jobIds==None:
+        print("ERROR: Couldn't find any submitted jobs for current sweep ('"+submittedJobsPath+"').")
+        sys.exit()
+    
+    command = jobCancellationTool + " " + " ".join(jobIds)
+    print(command)
+    subprocess.call(command,shell=True)
+    
+    command = "rm "+submittedJobsPath
+    print(command)
+    subprocess.call(command,shell=True)
 
 if __name__ == "__main__":
     import sys,os
@@ -564,11 +626,10 @@ if __name__ == "__main__":
     import hashlib
     import json
     
-    subprograms = ["build","buildMissing","scripts","submit","cleanBuild", "cleanScripts","cleanAll"]
+    subprograms = ["build","buildMissing","scripts","submit","cancel","parseResults","cleanBuild", "cleanScripts","cleanAll"]
     scriptsFolder        = "scripts"
     buildFolder          = "build"
     resultsFolder        = "results"
-    
     
     if haveToPrintHelpMessage(sys.argv):
         print("sample usage:./sweep.py myoptions.ini ("+"|".join(subprograms)+")")
@@ -600,4 +661,8 @@ if __name__ == "__main__":
     elif subprogram == "scripts":
         generateScripts(general,environmentSpace,parameterSpace)
     elif subprogram == "submit":
-        submitJobs(general)
+        submitJobs(general,environmentSpace,parameterSpace)
+    elif subprogram == "cancel":
+        cancelJobs(general,environmentSpace,parameterSpace)
+    elif subprogram == "parseResults":
+        print("Not implemented yet!")
