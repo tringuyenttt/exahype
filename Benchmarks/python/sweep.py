@@ -152,23 +152,19 @@ def renderSpecificationFile(templateBody,parameterDict,tasks,cores):
     
     return renderedFile
 
-def decodeEscapedString(escapedString):
-    return codecs.getdecoder("unicode_escape")(escapedString)[0]
-
 def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
     """
     Build the executables.
     """
-    print(">Loaded modules:")
+    print("currently loaded modules:")
     subprocess.call("module list",shell=True)
     print("")
-    print(">ExaHyPE build environment:")
+    print("ExaHyPE build environment:")
     exahypeEnv = ["COMPILER", "MODE", "SHAREDMEM", "DISTRIBUTEDMEM", "EXAHYPE_CC", "PROJECT_C_FLAGS", "PROJECT_L_FLAGS", "COMPILER_CFLAGS", "COMPILER_LFLAGS", "FCOMPILER_CFLAGS", "FCOMPILER_LFLAGS"]
     for variable in exahypeEnv:
         if variable in os.environ:
             print(variable+"="+os.environ[variable])
     print("")
-    print(">Building executables..")
     
     templateFileName = general["spec_template"]
     exahypeRoot      = general["exahype_root"]
@@ -219,7 +215,7 @@ def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
                         with open(exahypeRoot + "/" + buildspecFilePath, "w") as buildSpecificationFile:
                             buildSpecificationFile.write(buildSpecFileBody)
                         
-                        print(">>Building executable for " + \
+                        print("building executable for " + \
                           "environment="+str(environmentDict) + \
                           ", dimension="+dimension + \
                           ", order="+order,file=sys.stderr)
@@ -227,14 +223,13 @@ def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
                         toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildspecFilePath+")"
                         print(toolkitCommand,end="",flush=True)
                         process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                        (output, err) = process.communicate()
+                        (output, toolkitErr) = process.communicate()
                         process.wait()
                         if "setup build environment ... ok" in str(output):
-                            print(" ... ok")
-                            print("error output=\n"+decodeEscapedString(str(err)),file=sys.stderr)
+                            print(" [OK]")
                         else:
-                            print(" ... FAILED!")
-                            print("error output=\n"+decodeEscapedString(str(err)),file=sys.stderr)
+                            print(" [FAILED]")
+                            print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                             sys.exit()
                         
                         if firstIteration:
@@ -256,22 +251,24 @@ def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
                         makeCommand="make -j"+make_threads
                         print(makeCommand,end="",flush=True)
                         process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                        (output, err) = process.communicate()
+                        (output, makeErr) = process.communicate()
                         process.wait()
                         if "build of ExaHyPE successful" in str(output):
-                            print(makeCommand+ " ... ok")
-                            print("error output=\n"+decodeEscapedString(str(err)),file=sys.stderr)
+                            print(" [OK]")
                         else:
-                            print("ERROR: "+makeCommand + " ... FAILED!",file=sys.stderr)
-                            print("error output=\n"+decodeEscapedString(str(err)),file=sys.stderr)
+                            print(" [FAILED]")
+                            print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
                             sys.exit()
-                        
+                            
                         moveCommand   = "mv "+oldExecutable+" "+newExecutable
                         print(moveCommand)
                         subprocess.call(moveCommand,shell=True)
-                        print("SUCCESS!\n")
+                        print("--------------------------------------------------------------------------------")
+                        print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
+                        print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
+                        print("--------------------------------------------------------------------------------")
                     else:
-                        print("Skipped building of '"+newExecutable+"' as it already exists.")
+                        print("skipped building of '"+newExecutable+"' as it already exists.")
     else:
         print("ERROR: Couldn\'t open template file: "+templateFileName,file=sys.stderr)
 
