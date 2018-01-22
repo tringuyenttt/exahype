@@ -268,10 +268,10 @@ def build(buildOnlyMissing=False):
                         print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                         print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
                         print("--------------------------------------------------------------------------------")
-                        newExectutables+=1
+                        newExecutables+=1
                     else:
-                        print("skipped building of '"+newExecutables+"' as it already exists.")
-        print("built "+newExecutables+" executables")
+                        print("skipped building of '"+newExecutable+"' as it already exists.")
+        print("built executables: "+str(newExecutables))
     else:
         print("ERROR: couldn\'t open template file: "+templateFileName,file=sys.stderr)
 
@@ -405,7 +405,7 @@ def generateScripts():
         os.makedirs(exahypeRoot+"/"+outputPath+"/"+resultsFolder)
     
     # spec files
-    specFile=0
+    specFiles=0
     for parameterDict in dictProduct(parameterSpace):
         parameterDictHash = hashParameterDict(parameterDict)
         
@@ -419,7 +419,7 @@ def generateScripts():
                   specFile.write(specFileBody)
               specFiles+=1
     
-    print("generated "+specFiles+" specification files.")
+    print("generated specification files: "+str(specFiles))
     
     # check if required executables exist
     verifyAllExecutablesExist(True)
@@ -459,8 +459,7 @@ def generateScripts():
                             
                             jobScripts+=1
 
-    print("generated "+jobScripts+" job scripts")
-
+    print("generated job scripts: "+str(jobScripts))
                              
 def verifyAllJobScriptsExist():
     """
@@ -580,7 +579,7 @@ def hashSweep(jobs,enviromentSpace,parameterSpace):
 def extractJobId(processOutput):
     jobId = "unknown"
     if "Submitted batch job " in processOutput:
-        jobId = processOutput.split(" ")[-1]
+        jobId = processOutput.split(" ")[-1][:-1]
     return jobId
 
 def submitJobs():
