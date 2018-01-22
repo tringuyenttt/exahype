@@ -693,34 +693,39 @@ def parseResultFile(filePath):
           * 'n'       : (int)    Number of times this adapter was used.
           * 'cputime' : (float) Total CPU time spent within the adapter.
           * 'usertime': (float) Total user time spent within the adapter.
+       
+       The dict further holds the following dictionaries:
           * 'environment':(dictionary(str,str)) Total user time spent within the adapter.
           * 'parameters' :(dictionary(str,str)) Total user time spent within the adapter.
     '''
-    result = { }
+    environmentDict = { }
+    parameterDict    = {}
+
+    adapters = { }
     cputimeIndex  = 3
     usertimeIndex = 5
     
     try:
-        fileHandle=open(filePath)
+        fileHandle=codecs.open(filePath,'r','UTF_8')
         for line in fileHandle:
-            if "sweep/environment" in line:
-                value = line.split('|')[-1]
-                result["environment"]=json.loads(value)
-            if "sweep/parameters" in line:
-                value = line.split('|')[-1]
-                result["parameters"]=json.loads(value)
+            if line.startswith("sweep/environment"):
+                value = line.split('=')[-1]
+                environmentDict=json.loads(value)
+            if line.startswith("sweep/parameters"):
+                value = line.split('=')[-1]
+                parameterDict=json.loads(value)
             anchor = '|'
             header = '||'
             if anchor in line and header not in line:
                 segments = line.split('|')
                 adapter = segments[1].strip();
-                result[adapter]             = {}
-                result[adapter]['iterations']     = int(segments[2].strip())
-                result[adapter]['total_cputime']  = float(segments[cputimeIndex ].strip())
-                result[adapter]['total_usertime'] = float(segments[usertimeIndex].strip())
-    except IOError:
-        print ("ERROR: could not parse adapter times for file "+filePath+"!")
-    return result
+                adapters[adapter]             = {}
+                adapters[adapter]['iterations']     = segments[2].strip()
+                adapters[adapter]['total_cputime']  = segments[cputimeIndex ].strip()
+                adapters[adapter]['total_usertime'] = segments[usertimeIndex].strip()
+    except IOError as err:
+        print ("ERROR: could not parse adapter times for file "+filePath+"! Reason: "+str(err))
+    return environmentDict,parameterDict,adapters
 
 def getSortingKey(row):
     keyTuple = ()
@@ -732,7 +737,7 @@ def getSortingKey(row):
           keyTuple += (key,)
     return keyTuple
 
-def parseResults():
+def parseAdapters():
     """
     Loop over all ".out" files in the results section and create a table.
     """
@@ -740,13 +745,13 @@ def parseResults():
     outputPath          = general["output_path"]
     projectName         = general["project_name"]
     
-    resultsFolderPath = exahypeRoot + "/" + outputPath
+    resultsFolderPath = exahypeRoot + "/" + outputPath + "/" + resultsFolder
     tablePath         = resultsFolderPath+"/"+projectName+'.csv'
     try:
         with open(tablePath, 'w') as csvfile:
             csvwriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            files = [f for f in os.listdir(resultsFolderPath) if os.path.isfile(f) and file.endswith(".out")]
-            
+            files = [f for f in os.listdir(resultsFolderPath) if f.endswith(".out")]
+
             print("processed files:")
             firstFile = True
             for fileName in files:
@@ -760,52 +765,59 @@ def parseResults():
                 cores               = match.group(6)
                 run                 = match.group(7)
                 
-                results = parseResultFile(fileName)
-                if len(results):
+                environmentDict,parameterDict,adapters = parseResultFile(resultsFolderPath + "/" + fileName)
+                if len(adapters):
                     # write header
                     if firstFile:
-                        header += sorted(results["environment"])
-                        header += sorted(results["parameters"])
+                        header = []
+                        header += sorted(environmentDict)
+                        header += sorted(parameterDict)
                         header.append("nodes")
                         header.append("tasks")
                         header.append("cores")
-                        header.append("run")
                         header.append("adapter")
-                        firstAdapter = list(results.keys())[0]
+                        header.append("run")
                         header.append("iterations")
                         header.append("total_cputime")
-                        header.append("project_name")
+                        header.append("total_usertime")
                         csvwriter.writerow(header)
+                        firstFile=False
                     print(resultsFolderPath+"/"+fileName)
                     
                     # write rows
-                    for adapter in results:
+                    for adapter in adapters:
                         row=[]
-                        for key in sorted(results["environment"]):
-                            row.append(results["environment"][key])
-                        for key in sorted(results["parameters"]):
-                            row.append(results["parameters"][key])
+                        for key in sorted(environmentDict):
+                            row.append(environmentDict[key])
+                        for key in sorted(parameterDict):
+                            row.append(parameterDict[key])
                         row.append(nodes)
                         row.append(tasks)
                         row.append(cores)
                         row.append(adapter)
-                        header.append(results["iterations"])
-                        header.append(results["total_cputime"])
-                        header.append(results["project_name"])
+                        row.append(run)
+                        row.append(adapters[adapter]["iterations"])
+                        row.append(adapters[adapter]["total_cputime"])
+                        row.append(adapters[adapter]["total_usertime"])
                         csvwriter.writerow(row)
         
         # reopen the file and sort it
-        tableFile   = open(filename, 'r')
-        header      = next(tableFile).strip()
-        reader      = csv.reader(datafile,delimiter=',')
+        tableFile   = open(tablePath, 'r')
+        header      = next(tableFile)
+        header      = header.strip()
+        reader      = csv.reader(tableFile,delimiter=',')
         
         sortedData = sorted(reader,key=getSortingKey)
         tableFile.close()
         
-        with open(filename, 'w') as datafile:
-            writer = csv.writer(datafile, delimiter='&',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(header.split('&'))
-            writer.writerows(sorted_data)
+        with open(tablePath, 'w') as sortedTableFile:
+            writer = csv.writer(sortedTableFile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(header.split(','))
+            writer.writerows(sortedData)
+
+        print("created table:")
+        print(tablePath) 
+
     except IOError as err:
         print ("ERROR: could not write file "+tablePath+". Error message: "<<str(err))
 
@@ -821,7 +833,7 @@ if __name__ == "__main__":
     import re
     import csv
     
-    subprograms = ["build","buildMissing","scripts","submit","cancel","parseResults","cleanBuild", "cleanScripts","cleanAll"]
+    subprograms = ["build","buildMissing","scripts","submit","cancel","parseAdapters","parseMetrics","cleanBuild", "cleanScripts","cleanAll"]
     scriptsFolder        = "scripts"
     buildFolder          = "build"
     resultsFolder        = "results"
@@ -859,5 +871,7 @@ if __name__ == "__main__":
         submitJobs()
     elif subprogram == "cancel":
         cancelJobs()
-    elif subprogram == "parseResults":
+    elif subprogram == "parseAdapters":
+        parseAdapters()
+    elif subprogram == "parseMetrics":
         print("Not implemented yet!")
