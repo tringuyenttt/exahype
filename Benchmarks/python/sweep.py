@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 .. module:: sweep
   :platform: Unix, Windows, Mac
@@ -124,7 +124,7 @@ def hashParameterDict(dictionary):
         sys.exit()
     return result
 
-def clean(general,subFolder=""):
+def clean(subFolder=""):
     exahypeRoot = general["exahype_root"]
     outputPath  = general["output_path"]
     
@@ -152,7 +152,7 @@ def renderSpecificationFile(templateBody,parameterDict,tasks,cores):
     
     return renderedFile
 
-def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
+def build(buildOnlyMissing=False):
     """
     Build the executables.
     """
@@ -188,6 +188,7 @@ def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
         buildParameterDict = list(dictProduct(parameterSpace))[0]
         
         firstIteration = True
+        newExecutables=0
         for environmentDict in dictProduct(environmentSpace):
             for key,value in environmentDict.items():
                 os.environ[key]=value
@@ -267,10 +268,12 @@ def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
                         print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                         print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
                         print("--------------------------------------------------------------------------------")
+                        newExectutables+=1
                     else:
-                        print("skipped building of '"+newExecutable+"' as it already exists.")
+                        print("skipped building of '"+newExecutables+"' as it already exists.")
+        print("built "+newExecutables+" executables")
     else:
-        print("ERROR: Couldn\'t open template file: "+templateFileName,file=sys.stderr)
+        print("ERROR: couldn\'t open template file: "+templateFileName,file=sys.stderr)
 
 def parseCores(jobs):
     """
@@ -328,7 +331,7 @@ def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
     
     return renderedFile
 
-def verifyAllExecutablesExist(general,environmentSpace,parameterSpace,justWarn=False):
+def verifyAllExecutablesExist(justWarn=False):
     exahypeRoot = general["exahype_root"]
     outputPath  = general["output_path"]
     projectName = general["project_name"]
@@ -365,7 +368,7 @@ def verifyAllExecutablesExist(general,environmentSpace,parameterSpace,justWarn=F
               "       Then rerun the 'build' subprogram.",file=sys.stderr)
         sys.exit()
 
-def generateScripts(general,environmentSpace,parameterSpace):
+def generateScripts():
     """
     Generate spec files and job scripts.
     """
@@ -386,14 +389,14 @@ def generateScripts(general,environmentSpace,parameterSpace):
     with open(specFileTemplatePath, "r") as templateFile:
         specFileTemplate=templateFile.read()
     if specFileTemplate is None:
-        print("ERROR: Couldn\'t open template file: "+specFileTemplatePath,file=sys.stderr)
+        print("ERROR: couldn\'t open template file: "+specFileTemplatePath,file=sys.stderr)
         sys.exit()
         
     jobScriptTemplate = None
     with open(jobScriptTemplatePath, "r") as templateFile:
         jobScriptTemplate=templateFile.read()
     if jobScriptTemplate is None:
-        print("ERROR: Couldn\'t open template file: "+jobScriptTemplatePath,file=sys.stderr)
+        print("ERROR: couldn\'t open template file: "+jobScriptTemplatePath,file=sys.stderr)
         sys.exit()
         
     if not os.path.exists(exahypeRoot+"/"+outputPath+"/"+scriptsFolder):
@@ -402,6 +405,7 @@ def generateScripts(general,environmentSpace,parameterSpace):
         os.makedirs(exahypeRoot+"/"+outputPath+"/"+resultsFolder)
     
     # spec files
+    specFile=0
     for parameterDict in dictProduct(parameterSpace):
         parameterDictHash = hashParameterDict(parameterDict)
         
@@ -413,11 +417,15 @@ def generateScripts(general,environmentSpace,parameterSpace):
               
               with open(specFilePath, "w") as specFile:
                   specFile.write(specFileBody)
+              specFiles+=1
+    
+    print("generated "+specFiles+" specification files.")
     
     # check if required executables exist
-    verifyAllExecutablesExist(general,environmentSpace,parameterSpace,True)
+    verifyAllExecutablesExist(True)
     
     # generate job scrips
+    jobScripts = 0
     for run in range(0,runs):
         for nodes in nodeCounts:
             for tasks in taskCounts:
@@ -448,13 +456,19 @@ def generateScripts(general,environmentSpace,parameterSpace):
                                                             nodes,tasks,cores,run)
                             with open(jobFilePath, "w") as jobFile:
                                 jobFile.write(jobScriptBody)
+                            
+                            jobScripts+=1
 
-def verifyAllJobScriptsExist(general,environmentSpace,parameterSpace):
+    print("generated "+jobScripts+" job scripts")
+
+                             
+def verifyAllJobScriptsExist():
     """
     Verify that all job scripts exist.
     """
     exahypeRoot          = general["exahype_root"]
     outputPath           = general["output_path"]
+    projectName          = general["project_name"]
     jobSubmissionTool    = general["job_submission"]
     
     jobs       = config["jobs"]
@@ -502,12 +516,13 @@ def verifyAllJobScriptsExist(general,environmentSpace,parameterSpace):
               "       Then rerun the 'scripts' subprogram.")
         sys.exit()
 
-def verifyAllSpecFilesExist(general,environmentSpace,parameterSpace):
+def verifyAllSpecFilesExist():
     """
     Verify that all ExaHyPE specification files exist.
     """
     exahypeRoot          = general["exahype_root"]
     outputPath           = general["output_path"]
+    projectName          = general["project_name"]
     jobSubmissionTool    = general["job_submission"]
     
     jobs       = config["jobs"]
@@ -540,7 +555,7 @@ def verifyAllSpecFilesExist(general,environmentSpace,parameterSpace):
               "       Then rerun the 'scripts' subprogram.")
         sys.exit()
 
-def hashSweep(job,enviromentSpace,parameterSpace):
+def hashSweep(jobs,enviromentSpace,parameterSpace):
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
     coreCounts = parseCores(jobs);
@@ -568,9 +583,10 @@ def extractJobId(processOutput):
         jobId = processOutput.split(" ")[-1]
     return jobId
 
-def submitJobs(general,environmentSpace,parameterSpace):
+def submitJobs():
     exahypeRoot          = general["exahype_root"]
     outputPath           = general["output_path"]
+    projectName          = general["project_name"]
     jobSubmissionTool    = general["job_submission"]
     
     jobs       = config["jobs"]
@@ -580,9 +596,9 @@ def submitJobs(general,environmentSpace,parameterSpace):
     runs       = int(jobs["runs"])
     
     # verify everything is fine
-    verifyAllExecutablesExist(general,environmentSpace,parameterSpace)
-    verifyAllJobScriptsExist(general,environmentSpace,parameterSpace)
-    verifyAllSpecFilesExist(general,environmentSpace,parameterSpace)
+    verifyAllExecutablesExist()
+    verifyAllJobScriptsExist()
+    verifyAllSpecFilesExist()
     
     # loop over job scrips
     jobIds = []
@@ -609,36 +625,40 @@ def submitJobs(general,environmentSpace,parameterSpace):
                             process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
                             (output, err) = process.communicate()
                             process.wait()
-                            jobIds.append(extractJobId(output))
+                            jobIds.append(extractJobId(output.decode("UTF_8"))
                             
     submittedJobsPath = exahypeRoot + "/" + outputPath + "/" + \
-                        hashSweep(jobs,environmentspace,parameterspace) + ".submitted"
+                        hashSweep(jobs,environmentSpace,parameterSpace) + ".submitted"
+    
+    print(jobIds)
     with open(submittedJobsPath, "w") as submittedJobsFile:
         submittedJobsFile.write(json.dumps(jobIds))
     
-    print("Submitted "+len(jobIds)+" jobs.")
-    print("The corresponding job ids are stored in: "+submittedJobsPath)
+    print("submitted "+str(len(jobIds))+" jobs")
+    print("job ids are memorised in: "+submittedJobsPath)
 
-def cancelJobs(general,environmentSpace,parameterSpace):
+def cancelJobs():
     exahypeRoot         = general["exahype_root"]
     outputPath          = general["output_path"]
     jobCancellationTool = general["job_cancellation"]
-    
+ 
     submittedJobsPath = exahypeRoot + "/" + outputPath + "/" + \
-                        hashSweep(jobs,environmentspace,parameterspace) + ".submitted"
-    
+                        hashSweep(jobs,environmentSpace,parameterSpace) + ".submitted"    
+
     jobIds = None
-    with open(submittedJobsPath, "w") as submittedJobsFile:
+    with open(submittedJobsPath, "r") as submittedJobsFile:
         jobIds = json.loads(submittedJobsFile.read())
     
     if jobIds==None:
-        print("ERROR: Couldn't find any submitted jobs for current sweep ('"+submittedJobsPath+"').")
+        print("ERROR: couldn't find any submitted jobs for current sweep ('"+submittedJobsPath+"').")
         sys.exit()
-    
-    command = jobCancellationTool + " " + " ".join(jobIds)
-    print(command)
-    subprocess.call(command,shell=True)
-    
+     
+    for jobId in jobIds:
+        command = jobCancellationTool + " " + jobId
+        print(command)
+        subprocess.call(command,shell=True)
+    print("cancelled "+str(len(jobIds))+" jobs")    
+
     command = "rm "+submittedJobsPath
     print(command)
     subprocess.call(command,shell=True)
@@ -668,8 +688,8 @@ if __name__ == "__main__":
     config.optionxform=str
     config.read(configFile)
     
-    general = config["general"]
-    
+    general          = config["general"]
+    jobs             = config["jobs"]
     environmentSpace = parseEnvironment(config)
     parameterSpace   = parseParameters(config)
     
@@ -677,18 +697,18 @@ if __name__ == "__main__":
     if subprogram == "clean":
         clean(general)
     elif subprogram == "cleanBuild":
-        clean(general,"build")
+        clean("build")
     elif subprogram == "cleanScripts":
-        clean(general,"scripts")
+        clean("scripts")
     elif subprogram == "build":
-        build(general,environmentSpace,parameterSpace)
+        build()
     elif subprogram == "buildMissing":
-        build(general,environmentSpace,parameterSpace,True)
+        build(True)
     elif subprogram == "scripts":
-        generateScripts(general,environmentSpace,parameterSpace)
+        generateScripts()
     elif subprogram == "submit":
-        submitJobs(general,environmentSpace,parameterSpace)
+        submitJobs()
     elif subprogram == "cancel":
-        cancelJobs(general,environmentSpace,parameterSpace)
+        cancelJobs()
     elif subprogram == "parseResults":
         print("Not implemented yet!")
