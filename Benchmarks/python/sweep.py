@@ -152,6 +152,9 @@ def renderSpecificationFile(templateBody,parameterDict,tasks,cores):
     
     return renderedFile
 
+def decodeEscapedString(escapedString):
+    return codecs.getdecoder("unicode_escape")(escapedString)[0]
+
 def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
     """
     Build the executables.
@@ -165,7 +168,7 @@ def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
         if variable in os.environ:
             print(variable+"="+os.environ[variable])
     print("")
-    print(">Building required executables..")
+    print(">Building executables..")
     
     templateFileName = general["spec_template"]
     exahypeRoot      = general["exahype_root"]
@@ -188,16 +191,18 @@ def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
         orders     = parameterSpace["order"]
         buildParameterDict = list(dictProduct(parameterSpace))[0]
         
+        firstIteration = True
         for environmentDict in dictProduct(environmentSpace):
             for key,value in environmentDict.items():
                 os.environ[key]=value
             
             for dimension in dimensions:
-                # make clean
-                print("make clean")
-                process = subprocess.Popen(["make clean"], stdout=subprocess.PIPE, shell=True)
-                (output, err) = process.communicate()
-                process.wait()
+                if not firstIteration:
+                    command = "make clean"
+                    print(command)
+                    process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                    (output, err) = process.communicate()
+                    process.wait()
                 
                 for order in orders:
                     oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
@@ -213,29 +218,52 @@ def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
                         
                         with open(exahypeRoot + "/" + buildspecFilePath, "w") as buildSpecificationFile:
                             buildSpecificationFile.write(buildSpecFileBody)
+                        
+                        print(">>Building executable for " + \
+                          "environment="+str(environmentDict) + \
+                          ", dimension="+dimension + \
+                          ", order="+order,file=sys.stderr)
                         # run toolkit
                         toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildspecFilePath+")"
-                        print(toolkitCommand);
-                        process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, shell=True)
+                        print(toolkitCommand,end="",flush=True)
+                        process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, err) = process.communicate()
                         process.wait()
                         if "setup build environment ... ok" in str(output):
-                            print(toolkitCommand+ " ... ok")
+                            print(" ... ok")
+                            print("error output=\n"+decodeEscapedString(str(err)),file=sys.stderr)
                         else:
-                            print("ERROR: "+toolkitCommand + " ... FAILED!",file=sys.stderr)
+                            print(" ... FAILED!")
+                            print("error output=\n"+decodeEscapedString(str(err)),file=sys.stderr)
                             sys.exit()
                         
-                        # clean locally & call make
+                        if firstIteration:
+                            command = "make clean"
+                            print(command)
+                            process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                            (output, err) = process.communicate()
+                            process.wait()
+                            firstIteration = False
+                        else: # clean application folder only
+                            command = "rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels"
+                            print(command)
+                            process = subprocess.Popen(["make clean"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                            process.communicate()
+                            process.wait()
+                        
+                        # call make
                         make_threads=general["make_threads"]
-                        makeCommand="rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels; make -j"+make_threads
-                        print(makeCommand)
-                        process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, shell=True)
+                        makeCommand="make -j"+make_threads
+                        print(makeCommand,end="",flush=True)
+                        process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, err) = process.communicate()
                         process.wait()
                         if "build of ExaHyPE successful" in str(output):
                             print(makeCommand+ " ... ok")
+                            print("error output=\n"+decodeEscapedString(str(err)),file=sys.stderr)
                         else:
                             print("ERROR: "+makeCommand + " ... FAILED!",file=sys.stderr)
+                            print("error output=\n"+decodeEscapedString(str(err)),file=sys.stderr)
                             sys.exit()
                         
                         moveCommand   = "mv "+oldExecutable+" "+newExecutable
@@ -243,7 +271,7 @@ def build(general,environmentSpace,parameterSpace,buildOnlyMissing=False):
                         subprocess.call(moveCommand,shell=True)
                         print("SUCCESS!\n")
                     else:
-                        print("Skipped building of '"+newExecutable+"' since it already exists.")
+                        print("Skipped building of '"+newExecutable+"' as it already exists.")
     else:
         print("ERROR: Couldn\'t open template file: "+templateFileName,file=sys.stderr)
 
@@ -625,6 +653,7 @@ if __name__ == "__main__":
     import itertools
     import hashlib
     import json
+    import codecs
     
     subprograms = ["build","buildMissing","scripts","submit","cancel","parseResults","cleanBuild", "cleanScripts","cleanAll"]
     scriptsFolder        = "scripts"
