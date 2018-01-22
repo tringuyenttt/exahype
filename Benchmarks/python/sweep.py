@@ -833,13 +833,44 @@ if __name__ == "__main__":
     import re
     import csv
     
-    subprograms = ["build","buildMissing","scripts","submit","cancel","parseAdapters","parseMetrics","cleanBuild", "cleanScripts","cleanAll"]
+    subprograms = ["build","buildMissing","scripts","submit","cancel","parseAdapters","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
     scriptsFolder        = "scripts"
     buildFolder          = "build"
     resultsFolder        = "results"
     
     if haveToPrintHelpMessage(sys.argv):
-        print("sample usage:./sweep.py myoptions.ini ("+"|".join(subprograms)+")")
+        info = \
+"""sweep.py:
+
+run:
+
+./sweep.py myoptions.ini <subprogram>
+
+available subprograms:
+
+* build         - build all executables
+* buildMissing  - build only missing executables
+* scripts       - submit the generated jobs
+* cancel        - cancel the submitted jobs
+* parseAdapters - read the job output and parse adapter times
+* parseMetrics  - read the job output and parse likwid metrics
+* cleanAll      - remove the whole sweep benchmark suite
+* cleanBuild    - remove the build subfolder
+* cleanScripts  - remove the scripts subfolder
+* cleanResults  - remove the results subfolder
+
+typical workflow:
+
+./sweep.py myoptions.ini build
+./sweep.py myoptions.ini scripts
+./sweep.py myoptions.ini submit
+
+(after jobs have finished)
+
+./sweep.py myoptions.ini parseAdapters
+
+"""
+        print(info)
         sys.exit()
     
     configFile = parseArgument(sys.argv,1)
@@ -861,6 +892,8 @@ if __name__ == "__main__":
         clean("build")
     elif subprogram == "cleanScripts":
         clean("scripts")
+    elif subprogram == "cleanResults":
+      clean("results")
     elif subprogram == "build":
         build()
     elif subprogram == "buildMissing":
