@@ -448,6 +448,10 @@ def generateScripts():
     verifyAllExecutablesExist(True)
     
     # generate job scrips
+    buildFolderPath = exahypeRoot+"/"+outputPath+"/"+buildFolder
+    scriptsFolderPath = exahypeRoot+"/"+outputPath+"/"+scriptsFolder
+    resultsFolderPath = exahypeRoot+"/"+outputPath+"/"+resultsFolder
+    
     jobScripts = 0
     for run in range(0,runs):
         for nodes in nodeCounts:
@@ -464,17 +468,17 @@ def generateScripts():
                             dimension    = parameterDict["dimension"]
                             order        = parameterDict["order"]
                             
-                            executable   = exahypeRoot + "/" + buildFolder + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
+                            executable   = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
                                            architecture +"-"+ optimisation +"-d" + dimension + "-p" + order
-                            specFilePath = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + \
+                            specFilePath = scriptsFolderPath + "/" + projectName + "-" + \
                                            parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
                             
                             jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
                                              "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
-                            jobFilePrefix  = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + jobName
+                            jobFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobFilePath    = jobFilePrefix + ".job"
-                            outputFileName = exahypeRoot + "/" + outputPath + "/" + resultsFolder + "/" + jobName + ".out"
-                            errorFileName  = exahypeRoot + "/" + outputPath + "/" + resultsFolder + "/" + jobName + ".err"
+                            outputFileName = resultsFolderPath + "/" + jobName + ".out"
+                            errorFileName  = resultsFolderPath + "/" + jobName + ".err"
                             
                             jobScriptBody = renderJobScript(jobScriptTemplate,environmentDict,parameterDict,jobs,
                                                             jobName,jobFilePath,outputFileName,errorFileName,executable,specFilePath,
