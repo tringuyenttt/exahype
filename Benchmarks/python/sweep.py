@@ -775,6 +775,7 @@ def parseAdapterTimes():
 
             print("processed files:")
             firstFile = True
+            knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
             for fileName in files:
                 # example: Euler-088f94514ee5a8f92076289bf648454e-26b5e7ccb0354b843aad07aa61fd110d-n1-t1-c1-r1.out
                 match = re.search('^(.+)-(.+)-(.+)-n([0-9]+)-t([0-9]+)-c([0-9]+)-r([0-9]+).out$',fileName)
@@ -792,7 +793,11 @@ def parseAdapterTimes():
                     if firstFile:
                         header = []
                         header += sorted(environmentDict)
-                        header += sorted(parameterDict)
+                        for parameter in knownParameters:
+                            header.append(parameter)
+                        for parameter in sorted(parameterDict):
+                            if parameter not in knownParameters:
+                                header.append(parameter)
                         header.append("nodes")
                         header.append("tasks")
                         header.append("cores")
@@ -810,8 +815,11 @@ def parseAdapterTimes():
                         row=[]
                         for key in sorted(environmentDict):
                             row.append(environmentDict[key])
-                        for key in sorted(parameterDict):
+                        for key in knownParameters:
                             row.append(parameterDict[key])
+                        for key in sorted(parameterDict):
+                            if parameter not in knownParameters:
+                                row.append(parameterDict[key])
                         row.append(nodes)
                         row.append(tasks)
                         row.append(cores)
