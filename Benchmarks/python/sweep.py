@@ -824,7 +824,7 @@ def parseAdapterTimes():
                         for key in knownParameters:
                             row.append(parameterDict[key])
                         for key in sorted(parameterDict):
-                            if parameter not in knownParameters:
+                            if key not in knownParameters:
                                 row.append(parameterDict[key])
                         row.append(nodes)
                         row.append(tasks)
@@ -1018,7 +1018,7 @@ def parseLikwidMetrics():
                         for key in knownParameters:
                             row.append(parameterDict[key])
                         for key in sorted(parameterDict):
-                            if parameter not in knownParameters:
+                            if key not in knownParameters:
                                 row.append(parameterDict[key])
                         row.append(nodes)
                         row.append(tasks)
