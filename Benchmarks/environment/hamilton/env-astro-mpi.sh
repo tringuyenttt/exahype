@@ -19,4 +19,4 @@ export DISTRIBUTEDMEM=MPI
 export GPROF=off
 
 # optimised kernels
-export USE_IPO=off
+export USE_IPO=on
