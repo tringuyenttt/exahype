@@ -282,19 +282,6 @@ def build(buildOnlyMissing=False):
 
     print("built executables: "+str(executables))
 
-def parseCores(jobs):
-    """
-    If we encounter "auto" as value, the number of cores is chosen as: 
-    total number of cpus (per node) / number of tasks (per node).
-    """
-    cpus = jobs["num_cpus"]
-    tasks = [x.strip() for x in jobs["tasks"].split(",")]
-    cores = [x.strip() for x in jobs["cores"].split(",")]
-    if len(cores)==1 and cores[0]=="auto":
-        cores = [""]*len(tasks)
-        for i,t in enumerate(tasks):
-            cores[i] = str(int(int(cpus) / int(t)))
-    return cores
 
 def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
                     jobName,jobFilePath,outputFileName,errorFileName,appName,specFilePath,
@@ -398,9 +385,10 @@ def generateScripts():
     projectName   = general["project_name"]
     
     jobs       = config["jobs"]
+    cpus       = jobs["num_cpus"]
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = parseCores(jobs);
+    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     runs       = int(jobs["runs"])
     
     specFileTemplatePath  = exahypeRoot+"/"+general["spec_template"]
@@ -433,7 +421,10 @@ def generateScripts():
         parameterDictHash = hashDictionary(parameterDict)
         
         for tasks in taskCounts:
-            for cores in coreCounts:
+            for parsedCores in coreCounts:
+              cores = parsedCores
+              if parsedCores=="auto":
+                 cores=str(int(int(cpus) / int(tasks)))
               specFileBody = renderSpecFile(specFileTemplate,parameterDict,tasks,cores)
               
               specFilePath = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
@@ -456,7 +447,10 @@ def generateScripts():
     for run in range(0,runs):
         for nodes in nodeCounts:
             for tasks in taskCounts:
-                for cores in coreCounts:
+                for parsedCores in coreCounts:
+                    cores = parsedCores
+                    if parsedCores=="auto":
+                        cores=str(int(int(cpus) / int(tasks)))
                     for environmentDict in dictProduct(environmentSpace):
                         environmentDictHash = hashDictionary(environmentDict)
                         
@@ -514,7 +508,10 @@ def verifyAllJobScriptsExist():
     for run in range(0,runs):
         for nodes in nodeCounts:
             for tasks in taskCounts:
-                for cores in coreCounts:
+                for parsedCores in coreCounts:
+                    cores = parsedCores
+                    if parsedCores=="auto":
+                        cores=str(int(int(cpus) / int(tasks)))
                     for environmentDict in dictProduct(environmentSpace):
                         environmentDictHash = hashDictionary(environmentDict)
                         
@@ -567,16 +564,20 @@ def verifyAllSpecFilesExist():
         parameterDictHash = hashDictionary(parameterDict)
         
         for tasks in taskCounts:
-            for cores in coreCounts:
-              specFilePath = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+            for parsedCores in coreCounts:
+                cores = parsedCores
+                if parsedCores=="auto":
+                    cores=str(int(int(cpus) / int(tasks)))
+                
+                specFilePath = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
               
-              if not os.path.exists(specFilePath):
-                  allSpecFilesExist = False
-                  print("ERROR: specification file for \n" + \
-                        "parameters="+str(parameterDict) + \
-                        ", tasks="+tasks + \
-                        ", cores="+cores + \
-                        " does not exist! ('"+specFilePath+"')",file=sys.stderr)
+                if not os.path.exists(specFilePath):
+                     allSpecFilesExist = False
+                     print("ERROR: specification file for \n" + \
+                           "parameters="+str(parameterDict) + \
+                           ", tasks="+tasks + \
+                           ", cores="+cores + \
+                           " does not exist! ('"+specFilePath+"')",file=sys.stderr)
     
     if not allSpecFilesExist:
         print("ERROR: subprogram failed! Please adopt your sweep options file according to the error messages.\n" + \
@@ -641,7 +642,10 @@ def submitJobs():
     for run in range(0,runs):
         for nodes in nodeCounts:
             for tasks in taskCounts:
-                for cores in coreCounts:
+                for parsedCores in coreCounts:
+                    cores = parsedCores
+                    if parsedCores=="auto":
+                        cores=str(int(int(cpus) / int(tasks)))
                     for environmentDict in dictProduct(environmentSpace):
                         environmentDictHash = hashDictionary(environmentDict)
                         
