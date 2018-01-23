@@ -240,6 +240,13 @@ def build(buildOnlyMissing=False):
                                 print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                                 sys.exit()
 
+                            # clean application folder only
+                            command = "rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels"
+                            print(command)
+                            process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                            process.communicate()
+                            process.wait()
+                            
                             if firstIteration:
                                 command = "make clean"
                                 print(command)
@@ -247,12 +254,6 @@ def build(buildOnlyMissing=False):
                                 (output, err) = process.communicate()
                                 process.wait()
                                 firstIteration = False
-                            else: # clean application folder only
-                                command = "rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels"
-                                print(command)
-                                process = subprocess.Popen(["make clean"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                                process.communicate()
-                                process.wait()
 
                             # call make
                             make_threads=general["make_threads"]
