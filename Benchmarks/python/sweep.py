@@ -494,9 +494,10 @@ def verifyAllJobScriptsExist():
     jobSubmissionTool    = general["job_submission"]
     
     jobs       = config["jobs"]
+    cpus       = jobs["num_cpus"]
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = parseCores(jobs);
+    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     runs       = int(jobs["runs"])
     
     scriptFolderPath = exahypeRoot+"/"+outputPath+"/"+scriptsFolder
@@ -551,8 +552,9 @@ def verifyAllSpecFilesExist():
     jobSubmissionTool    = general["job_submission"]
     
     jobs       = config["jobs"]
+    cpus       = jobs["num_cpus"]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = parseCores(jobs);
+    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     
     scriptFolderPath = exahypeRoot+"/"+outputPath+"/"+scriptsFolder
     if not os.path.exists(scriptFolderPath):
@@ -587,7 +589,7 @@ def verifyAllSpecFilesExist():
 def hashSweep(jobs,enviromentSpace,parameterSpace):
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = parseCores(jobs);
+    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     runs       = jobs["runs"]
     
     chain = ""
@@ -627,9 +629,10 @@ def submitJobs():
     jobSubmissionTool    = general["job_submission"]
     
     jobs       = config["jobs"]
+    cpus       = jobs["num_cpus"]
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
-    coreCounts = parseCores(jobs);
+    coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     runs       = int(jobs["runs"])
     
     # verify everything is fine
