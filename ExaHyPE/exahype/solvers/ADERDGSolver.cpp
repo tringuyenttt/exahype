@@ -1995,13 +1995,14 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           cellDescription.getSize());
       #endif
 
+      /*
       for (int i=0; i<getTempSpaceTimeUnknownsSize(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
         assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeUnknowns[0][i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
       } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
       for (int i=0; i<getSpaceTimeFluxUnknownsPerCell(); i++) {
         assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeFluxUnknowns[0][i]), cellDescription.toString(),"performPredictionAndVolumeIntegral",i);
       } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
-
+*/
       #if defined(Debug) || defined(Asserts)
       if(usePaddedData_nVar()) {
         //TODO JMG add assert ignoring padding
