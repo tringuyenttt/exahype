@@ -135,7 +135,7 @@ def clean(subFolder=""):
     print("rm -r "+folder)
     subprocess.call("rm -r "+folder, shell=True)
 
-def renderSpecificationFile(templateBody,parameterDict,tasks,cores):
+def renderSpecFile(templateBody,parameterDict,tasks,cores):
     renderedFile = templateBody
     
     context = dict(parameterDict)
@@ -143,11 +143,19 @@ def renderSpecificationFile(templateBody,parameterDict,tasks,cores):
     context["cores"] = cores
     
     consistent = True
+    # verify options file parameters can be found in template file
+    keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",templateBody)]
     for key in parameterDict:
-        if "{{"+key+"}}" not in templateBody:
+        if key not in keysInTemplate:
             consistent = False
             print("ERROR: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr)
+    # verify template parameters are defined in options file
+    for key in keysInTemplate:
+        if key not in context:
+            consistent = False
+            print("ERROR: specification file template parameter '{{"+key+"}}' not defined in sweep options file!",file=sys.stderr)
     if not consistent:
+        print("ERROR: subprogram aborted as specification file template and sweep options file are inconsistent.",file=sys.stderr)
         sys.exit()
     
     for key,value in parameterDict.items():
@@ -219,7 +227,7 @@ def build(buildOnlyMissing=False):
                     buildParameterDict["dimension"]=dimension
                     buildParameterDict["order"]    =order
                         
-                    buildSpecFileBody = renderSpecificationFile(templateBody,buildParameterDict,"1","1")
+                    buildSpecFileBody = renderSpecFile(templateBody,buildParameterDict,"1","1")
                         
                     buildspecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-d"+dimension+"-p"+order+".exahype"
                         
@@ -323,17 +331,26 @@ def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
     context["spec_file"]  = specFilePath
     
     consistent = True
+    # verify all mandatory(!) sweep options are defined in template
+    keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",templateBody)]
     for key in context:
-        if "{{"+key+"}}" not in templateBody:
+        if key not in keysInTemplate:
             consistent = False
             print("ERROR: parameter '{{"+key+"}}' not found in job script template!",file=sys.stderr)
-    if not consistent:
-        sys.exit()
     
-    # optional
+    # put optional sweep options in context
     context["mail"]  = jobs["mail"]
     context["time"]  = jobs["time"]
     context["ranks"] = str(int(nodes)*int(tasks))
+    
+    # now verify template parameters are defined in options file
+    for key in keysInTemplate:
+        if key not in context:
+            consistent = False
+            print("ERROR: job script template parameter '{{"+key+"}}' not defined in sweep options file!",file=sys.stderr)
+    if not consistent:
+        print("ERROR: subprogram aborted as job script template and sweep options file are inconsistent.",file=sys.stderr)
+        sys.exit()
     
     for key,value in context.items():
         renderedFile = renderedFile.replace("{{"+key+"}}", value)
@@ -422,7 +439,7 @@ def generateScripts():
         
         for tasks in taskCounts:
             for cores in coreCounts:
-              specFileBody = renderSpecificationFile(specFileTemplate,parameterDict,tasks,cores)
+              specFileBody = renderSpecFile(specFileTemplate,parameterDict,tasks,cores)
               
               specFilePath = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
               
