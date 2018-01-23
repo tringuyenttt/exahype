@@ -678,6 +678,11 @@ def submitJobs():
     
     print("submitted "+str(len(jobIds))+" jobs")
     print("job ids are memorised in: "+submittedJobsPath)
+    command="cp "+configFile+" "+submittedJobsPath.replace(".submitted",".ini")
+    print(command)
+    process = subprocess.Popen([command], stdout=subprocess.PIPE, shell=True)
+    (output, err) = process.communicate()
+    process.wait()
 
 def cancelJobs():
     """
@@ -705,6 +710,7 @@ def cancelJobs():
     print("cancelled "+str(len(jobIds))+" jobs")    
 
     command = "rm "+submittedJobsPath
+    command = "rm "+submittedJobsPath.replace(".submitted",".ini")
     print(command)
     subprocess.call(command,shell=True)
 
