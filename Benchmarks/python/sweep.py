@@ -608,8 +608,11 @@ def extractJobId(processOutput):
     jobId = "unknown"
     lines = processOutput.split("\n")
     for line in lines:
+        # SLURM
+        # hamilton: "Submitted batch job 67586"
+        # coolmuc:  "Submitted batch job 67586 on cluster mpp3"
         if "Submitted batch job " in line:
-            jobId = line.split(" ")[-1]
+            jobId = line.strip().split(" ")[3]
     return jobId
 
 def submitJobs():
