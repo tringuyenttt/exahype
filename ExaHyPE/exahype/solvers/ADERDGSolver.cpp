@@ -1774,6 +1774,7 @@ void exahype::solvers::ADERDGSolver::validateNoNansInADERDGSolver(
   assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictor()),cellDescription.toString());
   assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuation()),cellDescription.toString());
 
+  #if defined(Debug) || defined(Asserts)
   for (int i=0; i<dataPerCell; i++) {
     assertion4(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),
         cellDescription.toString(),toString(),methodTraceOfCaller,i);
@@ -1792,7 +1793,8 @@ void exahype::solvers::ADERDGSolver::validateNoNansInADERDGSolver(
   for (int i=0; i<unknownsPerCellBoundary; i++) {
     assertion4(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(lFhbnd[i]),
         cellDescription.toString(),toString(),methodTraceOfCaller,i);
-  } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+  }
+  #endif
 }
 
 bool exahype::solvers::ADERDGSolver::evaluateRefinementCriterionAfterSolutionUpdate(
@@ -1960,11 +1962,14 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
       // face DoF (basisSize**(DIMENSIONS-1))
       double* lQhbnd = DataHeap::getInstance().getData(cellDescription.getExtrapolatedPredictor()).data();
       double* lFhbnd = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
+      #if defined(Debug) || defined(Asserts)
       for (int i=0; i<getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
         assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-      } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+      } 
+      #endif
 
       deltaDistribution(cellDescription.getCorrectorTimeStamp() , cellDescription.getCorrectorTimeStepSize(), cellDescription.getOffset()+0.5*cellDescription.getSize(), cellDescription.getSize(), tempPointForceSources);
+
       // luh, t, dt, cell cell center, cell size, data allocation for forceVect
 
       #ifdef OPT_KERNELS
@@ -1995,23 +2000,23 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
           cellDescription.getSize());
       #endif
 
+      #if defined(Debug) || defined(Asserts)
       for (int i=0; i<getTempSpaceTimeUnknownsSize(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
         assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeUnknowns[0][i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-      } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+      }
       for (int i=0; i<getSpaceTimeFluxUnknownsPerCell(); i++) {
         assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeFluxUnknowns[0][i]), cellDescription.toString(),"performPredictionAndVolumeIntegral",i);
-      } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
-
-      #if defined(Debug) || defined(Asserts)
+      }
+      
       if(usePaddedData_nVar()) {
         //TODO JMG add assert ignoring padding
       } else {
         //    for (int i=0; i<getDataPerCell(); i++) {
         //    assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempUnknowns[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-        //    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+        //    }
         //    for (int i=0; i<getFluxUnknownsPerCell(); i++) {
         //      assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempFluxUnknowns[i]),cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-        //    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+        //    }
       }
       #endif
 
@@ -2221,9 +2226,11 @@ void exahype::solvers::ADERDGSolver::adjustSolution(
       cellDescription.getCorrectorTimeStamp(),
       cellDescription.getCorrectorTimeStepSize());
 
+    #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getUnknownsPerCell(); i++) {
       assertion3(std::isfinite(luh[i]),cellDescription.toString(),"setInitialConditions(...)",i);
-    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+    }
+    #endif
   }
 }
 
@@ -2237,21 +2244,24 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       double* solution  = DataHeap::getInstance().getData(cellDescription.getPreviousSolution()).data();
       std::copy(newSolution,newSolution+getUnknownsPerCell(),solution); // Copy (current solution) in old solution field.
 
+      #if defined(Debug) || defined(Asserts)
       for (int i=0; i<getDataPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize()==0.0 is an initial condition
         assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(solution[i]),cellDescription.toString(),"updateSolution(...)",i);
-      } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+      } 
+      #endif
     }
 
     double* update       = exahype::DataHeap::getInstance().getData(cellDescription.getUpdate()).data();
     double* fluctuations = exahype::DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
 
+    #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getUnknownsPerCell(); i++) {
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution",i);
-    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
-
+    } 
     for (int i=0; i<getBndFluxTotalSize(); i++) {
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(fluctuations[i]),cellDescription.toString(),"updateSolution",i);
-    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+    } 
+    #endif
     //TODO JMG move everything to inverseDx and use Peano to get it when Dominic implemente it
     #ifdef OPT_KERNELS
     double* dx = &cellDescription.getSize()[0];
@@ -2268,9 +2278,11 @@ void exahype::solvers::ADERDGSolver::updateSolution(
     surfaceIntegral(update,fluctuations,cellDescription.getSize());
     #endif
 
+    #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getUnknownsPerCell(); i++) {
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || std::isfinite(update[i]),cellDescription.toString(),"updateSolution(...)",i);
-    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+    } 
+    #endif
 
     assertion1(cellDescription.getCorrectorTimeStamp()<std::numeric_limits<double>::max(),cellDescription.toString());
     assertion1(cellDescription.getCorrectorTimeStepSize()<std::numeric_limits<double>::max(),cellDescription.toString());
@@ -2283,9 +2295,11 @@ void exahype::solvers::ADERDGSolver::updateSolution(
         cellDescription.getCorrectorTimeStamp()+cellDescription.getCorrectorTimeStepSize(),
         cellDescription.getCorrectorTimeStepSize());
 
+    #if defined(Debug) || defined(Asserts)
     for (int i=0; i<getDataPerCell(); i++) {
       assertion3(std::isfinite(newSolution[i]),cellDescription.toString(),"updateSolution(...)",i);
-    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+    }
+    #endif
   }
   assertion(cellDescription.getRefinementEvent()==CellDescription::None);
 
@@ -2361,14 +2375,15 @@ void exahype::solvers::ADERDGSolver::prepareFaceDataOfAncestor(CellDescription& 
   double* F = DataHeap::getInstance().getData(cellDescription.getFluctuation()).data();
   #endif
 
+  #if defined(Debug) || defined(Asserts)
   for(int i=0; i<getBndTotalSize(); ++i) {
     assertion2(tarch::la::equals(Q[i],0.0),i,Q[i]);
-  }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
-
+  }
 
   for(int i=0; i<getBndFluxTotalSize(); ++i) {
     assertion2(tarch::la::equals(F[i],0.0),i,F[i]);
-  }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
+  }
+  #endif
 
   // observables min and max
   const int numberOfObservables = getDMPObservables();
@@ -2885,26 +2900,29 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     assertion3(pLeft.getCorrectorTimeStepSize()>=0.0,pLeft.toString(),faceIndexLeft,normalDirection);
     assertion3(pRight.getCorrectorTimeStepSize()>=0.0,pRight.toString(),faceIndexRight,normalDirection);
 
+    #if defined(Debug) || defined(Asserts)
     for(int i=0; i<dataPerFace; ++i) {
       assertion5(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || std::isfinite(QL[i]),pLeft.toString(),faceIndexLeft,normalDirection,i,QL[i]);
       assertion5(tarch::la::equals(pRight.getCorrectorTimeStepSize(),0.0) || std::isfinite(QR[i]),pRight.toString(),faceIndexRight,normalDirection,i,QR[i]);
-    }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
-
+    }
     for(int i=0; i<dofPerFace; ++i) {
       assertion5(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || std::isfinite(FL[i]),pLeft.toString(),faceIndexLeft,normalDirection,i,FL[i]);
       assertion5(tarch::la::equals(pRight.getCorrectorTimeStepSize(),0.0) || std::isfinite(FR[i]),pRight.toString(),faceIndexRight,normalDirection,i,FR[i]);
-    }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
-
+    }
+    #endif
+    
     riemannSolver(
         FL,FR,QL,QR,
         std::min(pLeft.getCorrectorTimeStepSize(),
             pRight.getCorrectorTimeStepSize()),
         normalDirection, false, -1);
 
+    #if defined(Debug) || defined(Asserts)
     for(int i=0; i<dofPerFace; ++i) {
       assertion8(tarch::la::equals(pLeft.getCorrectorTimeStepSize(),0.0) || (std::isfinite(FL[i]) && std::isfinite(FR[i])),
                  pLeft.toString(),faceIndexLeft,pRight.toString(),faceIndexRight,normalDirection,i,FL[i],FR[i]);
-    }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
+    }  
+    #endif
 
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getExtrapolatedPredictor()),pLeft.toString());
     assertion1(DataHeap::getInstance().isValidIndex(pLeft.getFluctuation()),pLeft.toString());
@@ -2958,15 +2976,17 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(
   const int normalDirection = (faceIndex - faceIndex % 2)/2;
   assertion2(normalDirection<DIMENSIONS,faceIndex,normalDirection);
   
+  #if defined(Debug) || defined(Asserts)
   for(int i=0; i<dataPerFace; ++i) {
     assertion5(std::isfinite(QIn[i]), p.toString(),
         faceIndex, normalDirection, i, QIn[i]);
-  }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
+  }
 
   for(int i=0; i<dofPerFace; ++i) {
     assertion5(std::isfinite(FIn[i]), p.toString(),
         faceIndex, normalDirection, i, FIn[i]);
-  }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
+  } 
+  #endif
 
   // Synchronise time stepping.
   synchroniseTimeStepping(p);
@@ -2987,14 +3007,16 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(
   assertion4(std::isfinite(p.getCorrectorTimeStamp()),p.toString(),faceIndex,normalDirection,p.getCorrectorTimeStamp());
   assertion4(std::isfinite(p.getCorrectorTimeStepSize()),p.toString(),faceIndex,normalDirection,p.getCorrectorTimeStepSize());
   assertion4(p.getCorrectorTimeStepSize()>=0.0, p.toString(),faceIndex, normalDirection,p.getCorrectorTimeStepSize());
+  #if defined(Debug) || defined(Asserts)
   for(int i=0; i<dataPerFace; ++i) {
     assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(QIn[i]),p.toString(),faceIndex,normalDirection,i,QIn[i]);
     assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(QOut[i]),p.toString(),faceIndex,normalDirection,i,QOut[i]);
-  }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
+  }
   for(int i=0; i<dofPerFace; ++i) {
     assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),faceIndex,normalDirection,i,FIn[i]);
     assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FOut[i]),p.toString(),faceIndex,normalDirection,i,FOut[i]);
-  }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
+  }  
+  #endif
 
   // @todo(Dominic): Add to docu why we need this. Left or right inpclut
   if (faceIndex % 2 == 0) {
@@ -3007,10 +3029,12 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(
         normalDirection,true,faceIndex);
   }
 
+  #if defined(Debug) || defined(Asserts)
   for(int i=0; i<dofPerFace; ++i) {
     assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),faceIndex,normalDirection,i,FIn[i]);
     assertion5(tarch::la::equals(p.getCorrectorTimeStepSize(),0.0) || std::isfinite(FOut[i]),p.toString(),faceIndex,normalDirection,i,FOut[i]);
-  }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
+  }
+  #endif
 }
 
 #ifdef Parallel
@@ -3608,6 +3632,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
       cellDescription.getCorrectorTimeStepSize(),
       normalDirection,false,-1);
 
+  #if defined(Debug) || defined(Asserts)
   for (int ii = 0; ii<dataPerFace; ii++) {
     assertion10(std::isfinite(QR[ii]), cellDescription.toString(),
         faceIndex, normalDirection, indexOfQValues, indexOfFValues,
@@ -3615,7 +3640,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     assertion10(std::isfinite(QL[ii]), cellDescription.toString(),
         faceIndex, normalDirection, indexOfQValues, indexOfFValues,
         ii, QR[ii], QL[ii], FR[ii], FL[ii]);
-  }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
+  }
 
   for (int ii = 0; ii<dofPerFace; ii++) {
     assertion10(std::isfinite(FR[ii]), cellDescription.toString(),
@@ -3624,7 +3649,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
     assertion10(std::isfinite(FL[ii]), cellDescription.toString(),
         faceIndex, normalDirection, indexOfQValues, indexOfFValues,
         ii, QR[ii], QL[ii], FR[ii], FL[ii]);
-  }  // Dead code elimination will get rid of this loop if Asserts flag is not set.
+  }
+  #endif
 }
 
 void exahype::solvers::ADERDGSolver::dropNeighbourData(
@@ -4268,11 +4294,13 @@ void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
   double* lQhbnd = DataHeap::getInstance().getData(_cellDescription.getExtrapolatedPredictor()).data();
   double* lFhbnd = DataHeap::getInstance().getData(_cellDescription.getFluctuation()).data();
 
+  #if defined(Debug) || defined(Asserts)
   for (int i=0; i<_solver.getUnknownsPerCell(); i++) { // cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
     assertion3(
         tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(luh[i]),_cellDescription.toString(),
         "exahype::solvers::ADERDGSolver::PredictionTask::operator()",i);
-  } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set
+  }
+  #endif
 
   _solver.deltaDistribution(_cellDescription.getCorrectorTimeStamp(),_cellDescription.getCorrectorTimeStepSize(), _cellDescription.getOffset()+0.5*_cellDescription.getSize(),_cellDescription.getSize(),tempPointForceSources);
   // luh, t, dt, cell cell center, cell size, data allocation for forceVect
@@ -4305,23 +4333,23 @@ void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
       _cellDescription.getSize());
   #endif
 
+  #if defined(Debug) || defined(Asserts)
   for (int i=0; i<_solver.getTempSpaceTimeUnknownsSize(); i++) { // _cellDescription.getCorrectorTimeStepSize==0.0 is an initial condition
     assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeUnknowns[0][i]),_cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-  } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+  }
   for (int i=0; i<_solver.getSpaceTimeFluxUnknownsPerCell(); i++) {
     assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempSpaceTimeFluxUnknowns[0][i]), _cellDescription.toString(),"performPredictionAndVolumeIntegral",i);
-  } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
-
-  #if defined(Debug) || defined(Asserts)
+  }
+  
   if(_solver.usePaddedData_nVar()) {
     //TODO JMG add assert ignoring padding
   } else {
     //    for (int i=0; i<getDataPerCell(); i++) {
     //    assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempUnknowns[i]),_cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-    //    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+    //    }
     //    for (int i=0; i<getFluxUnknownsPerCell(); i++) {
     //      assertion3(tarch::la::equals(_cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(tempFluxUnknowns[i]),_cellDescription.toString(),"performPredictionAndVolumeIntegral(...)",i);
-    //    } // Dead code elimination will get rid of this loop if Asserts/Debug flags are not set.
+    //    }
   }
   #endif
 
