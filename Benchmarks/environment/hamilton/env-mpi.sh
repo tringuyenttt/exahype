@@ -8,10 +8,9 @@ module load gcc/4.9.1
 
 export TBB_SHLIB="-L/ddn/apps/Cluster-Apps/intel/xe_2017.2/tbb/lib/intel64/gcc4.7 -ltbb"
 
-export EXAHYPE_CC="mpicc"
-export COMPILER_CFLAGS=" DnoParallelExchangePackedRecordsAtBoundary -DnoParallelExchangePackedRecordsBetweenMasterAndWorker -DnoParallelExchangePackedRecordsInHeaps -DnoParallelExchangePackedRecordsThroughoutJoinsAndForks "
 
-export MODE=Release
+export EXAHYPE_CC="mpicc -DnoParallelExchangePackedRecordsAtBoundary -DnoParallelExchangePackedRecordsBetweenMasterAndWorker -DnoParallelExchangePackedRecordsInHeaps -DnoParallelExchangePackedRecordsThroughoutJoinsAndForks"
+export MODE=RELEASE
 export COMPILER=Intel
 export DISTRIBUTEDMEM=MPI
 export GPROF=off

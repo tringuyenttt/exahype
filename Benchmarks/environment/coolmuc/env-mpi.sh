@@ -10,8 +10,7 @@ module switch mpi.intel/2017
 module load gsl
 
 export EXAHYPE_CC="mpicc"
-export COMPILER_CFLAGS=" DnoParallelExchangePackedRecordsAtBoundary -DnoParallelExchangePackedRecordsBetweenMasterAndWorker -DnoParallelExchangePackedRecordsInHeaps -DnoParallelExchangePackedRecordsThroughoutJoinsAndForks "
-export COMPILER_LFLAGS=" -lgsl -lgslcblas -lm "
+export COMPILER_CFLAGS="-DnoParallelExchangePackedRecordsAtBoundary -DnoParallelExchangePackedRecordsBetweenMasterAndWorker -DnoParallelExchangePackedRecordsInHeaps -DnoParallelExchangePackedRecordsThroughoutJoinsAndForks "
 
 export MODE=Release
 export COMPILER=Intel

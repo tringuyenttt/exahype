@@ -7,11 +7,11 @@
 # cd to the Peano basedir. Thus script can be executed from anywhere.
 cd $(dirname "$0")
 
-SVN_URL="svn://svn.code.sf.net/p/peano/code/trunk/src"
+#SVN_URL="svn://svn.code.sf.net/p/peano/code/trunk/src"
 
 # if you experience the svn protocol blocked or not working, try this.
 # Source: https://sourceforge.net/p/peano/code/HEAD/tree/
-SVN_ALT_URL="https://svn.code.sf.net/p/peano/code/trunk/src"
+SVN_URL="https://svn.code.sf.net/p/peano/code/trunk/src"
 
 if test -e .svn
 then
