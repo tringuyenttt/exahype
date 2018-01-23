@@ -213,9 +213,9 @@ def build(buildOnlyMissing=False):
                                 
                             buildSpecFileBody = renderSpecFile(templateBody,buildParameterDict,"1","1")
                                 
-                            buildspecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-d"+dimension+"-p"+order+".exahype"
+                            buildSpecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-"+architecture+"-"+optimisation+"-d"+dimension+"-p"+order+".exahype"
                                 
-                            with open(exahypeRoot + "/" + buildspecFilePath, "w") as buildSpecificationFile:
+                            with open(exahypeRoot + "/" + buildSpecFilePath, "w") as buildSpecificationFile:
                                 buildSpecificationFile.write(buildSpecFileBody)
                                 
                             print("building executable for " + \
@@ -226,7 +226,7 @@ def build(buildOnlyMissing=False):
                                   ", order="+order,\
                                   file=sys.stderr)
                             # run toolkit
-                            toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildspecFilePath+")"
+                            toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildSpecFilePath+")"
                             print(toolkitCommand,end="",flush=True)
                             process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                             (output, toolkitErr) = process.communicate()
