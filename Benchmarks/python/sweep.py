@@ -178,10 +178,10 @@ def build(buildOnlyMissing=False):
         print("create directory:"+buildFolderPath)
         os.makedirs(buildFolderPath)
         
-    dimensions    = parameterSpace["dimension"]
-    orders        = parameterSpace["order"]
     architectures = parameterSpace["architecture"]
     optimisations = parameterSpace["optimisation"]
+    dimensions    = parameterSpace["dimension"]
+    orders        = parameterSpace["order"]
     buildParameterDict = list(dictProduct(parameterSpace))[0]
         
     firstIteration = True
@@ -349,8 +349,10 @@ def verifyAllExecutablesExist(justWarn=False):
     outputPath  = general["output_path"]
     projectName = general["project_name"]
     
-    dimensions = parameterSpace["dimension"]
-    orders     = parameterSpace["order"]
+    architectures = parameterSpace["architecture"]
+    optimisations = parameterSpace["optimisation"]
+    dimensions    = parameterSpace["dimension"]
+    orders        = parameterSpace["order"]
     
     messageType = "ERROR"
     if justWarn:
@@ -364,19 +366,21 @@ def verifyAllExecutablesExist(justWarn=False):
     allExecutablesExist = True
     for environmentDict in dictProduct(environmentSpace):
         environmentDictHash = hashDictionary(environmentDict)
-        for dimension in dimensions:
-            for order in orders:
-                executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
-                                architecture+"-"+optimisation+"-d" + dimension + "-p" + order
+        for architecture in architectures:
+            for optimisation in optimisations:
+                for dimension in dimensions:
+                    for order in orders:
+                        executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
+                                     architecture+"-"+optimisation+"-d" + dimension + "-p" + order
                 
-                if not os.path.exists(executable):
-                    allExecutablesExist = False
-                    print(messageType+ ": application for " + \
-                          "environment="+str(environmentDict) + \
-                          ", dimension="+dimension + \
-                          ", order="+order + \
-                          " does not exist! ('"+executable+"')",file=sys.stderr)
-    
+                        if not os.path.exists(executable):
+                            allExecutablesExist = False
+                            print(messageType+ ": application for " + \
+                                  "environment="+str(environmentDict) + \
+                                  ", dimension="+dimension + \
+                                  ", order="+order + \
+                                  " does not exist! ('"+executable+"')",file=sys.stderr)
+            
     if not justWarn and not allExecutablesExist:
         print("ERROR: subprogram failed as not all executables exist. Please adopt your options file according to the error messages.\n" + \
               "       Then rerun the 'build' subprogram.",file=sys.stderr)
@@ -457,8 +461,8 @@ def generateScripts():
                             dimension    = parameterDict["dimension"]
                             order        = parameterDict["order"]
                             
-                            executable   = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
-                                           architecture+"-"+optimisation+"-d" + dimension + "-p" + order
+                            executable   = exahypeRoot + "/" + buildFolder + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
+                                           architecture +"-"+ optimisation +"-d" + dimension + "-p" + order
                             specFilePath = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + \
                                            parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
                             
