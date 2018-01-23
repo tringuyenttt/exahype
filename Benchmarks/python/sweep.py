@@ -100,35 +100,6 @@ def hashDictionary(dictionary):
     
     return hashlib.md5(chain.encode()).hexdigest()
 
-usedEnvironmentDictHashes = []
-usedParameterDictHashes   = []
-
-def hashEnvironmentDict(dictionary):
-    """
-    Hash a dictionary.
-    """
-    result = hashDictionary(dictionary)
-    
-    if result not in usedParameterDictHashes:
-        usedParameterDictHashes.append(result)
-    else:
-        print("ERROR: Hash conflict for environment option sets. Try to resolve it by adding another (dummy) environment variable.",file=sys.stderr)
-        sys.exit()
-    return result
-    
-def hashParameterDict(dictionary):
-    """
-    Hash a dictionary.
-    """
-    result = hashDictionary(dictionary)
-    
-    if result not in usedParameterDictHashes:
-        usedParameterDictHashes.append(result)
-    else:
-        print("ERROR: Hash conflict for parameter option sets. Try to resolve it by adding another (dummy) parameter.",file=sys.stderr)
-        sys.exit()
-    return result
-
 def clean(subFolder=""):
     """
     Clean the complete output folder or just a subfolder
@@ -218,7 +189,8 @@ def build(buildOnlyMissing=False):
     for environmentDict in dictProduct(environmentSpace):
         for key,value in environmentDict.items():
             os.environ[key]=value
-            
+        environmentDictHash = hashDictionary(environmentDict)   
+        
         for architecture in architectures:
             for optimisation in optimisations:
                 for dimension in dimensions:
@@ -230,12 +202,14 @@ def build(buildOnlyMissing=False):
                         process.wait()
                     for order in orders:
                         oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
-                        executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+hashEnvironmentDict(environmentDict)+"-"+\
+                        executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
                                      architecture+"-"+optimisation+"-d" + dimension + "-p" + order
                             
                         if not os.path.exists(executable) or not buildOnlyMissing:
-                            buildParameterDict["dimension"]=dimension
-                            buildParameterDict["order"]    =order
+                            buildParameterDict["optimisation"]=optimisation
+                            buildParameterDict["architecture"]=architecture
+                            buildParameterDict["dimension"]   =dimension
+                            buildParameterDict["order"]       =order
                                 
                             buildSpecFileBody = renderSpecFile(templateBody,buildParameterDict,"1","1")
                                 
@@ -246,8 +220,11 @@ def build(buildOnlyMissing=False):
                                 
                             print("building executable for " + \
                                   "environment="+str(environmentDict) + \
+                                  ", architecture="+architecture + \
+                                  ", optimisation="+optimisation + \
                                   ", dimension="+dimension + \
-                                  ", order="+order,file=sys.stderr)
+                                  ", order="+order,\
+                                  file=sys.stderr)
                             # run toolkit
                             toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildspecFilePath+")"
                             print(toolkitCommand,end="",flush=True)
@@ -386,10 +363,10 @@ def verifyAllExecutablesExist(justWarn=False):
     
     allExecutablesExist = True
     for environmentDict in dictProduct(environmentSpace):
-        environmentDictHash = hashEnvironmentDict(environmentDict)
+        environmentDictHash = hashDictionary(environmentDict)
         for dimension in dimensions:
             for order in orders:
-                executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+hashEnvironmentDict(environmentDict)+"-"+\
+                executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
                                 architecture+"-"+optimisation+"-d" + dimension + "-p" + order
                 
                 if not os.path.exists(executable):
@@ -446,7 +423,7 @@ def generateScripts():
     # spec files
     specFiles=0
     for parameterDict in dictProduct(parameterSpace):
-        parameterDictHash = hashParameterDict(parameterDict)
+        parameterDictHash = hashDictionary(parameterDict)
         
         for tasks in taskCounts:
             for cores in coreCounts:
@@ -480,7 +457,7 @@ def generateScripts():
                             dimension    = parameterDict["dimension"]
                             order        = parameterDict["order"]
                             
-                            executable   = buildFolderPath + "/ExaHyPE-"+projectName+"-"+hashEnvironmentDict(environmentDict)+"-"+\
+                            executable   = buildFolderPath + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-"+\
                                            architecture+"-"+optimisation+"-d" + dimension + "-p" + order
                             specFilePath = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + \
                                            parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
@@ -576,7 +553,7 @@ def verifyAllSpecFilesExist():
     
     allSpecFilesExist = True
     for parameterDict in dictProduct(parameterSpace):
-        parameterDictHash = hashParameterDict(parameterDict)
+        parameterDictHash = hashDictionary(parameterDict)
         
         for tasks in taskCounts:
             for cores in coreCounts:
