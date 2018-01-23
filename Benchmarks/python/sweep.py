@@ -116,16 +116,17 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
     renderedFile = templateBody
     
     context = dict(parameterDict)
-    context["tasks"] = tasks
-    context["cores"] = cores
     
     consistent = True
-    # verify options file parameters can be found in template file
+    # verify mandatory options file parameters can be found in template file
     keysInTemplate = [m.group(2) for m in re.finditer("(\{\{((\w|-)+)\}\})",templateBody)]
     for key in parameterDict:
         if key not in keysInTemplate:
             consistent = False
-            print("ERROR: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr)
+            print("ERROR: parameter '{{"+key+"}}' not found in spec file template!",file=sys.stderr) 
+    # optional parameters
+    context["tasks"] = tasks
+    context["cores"] = cores
     # verify template parameters are defined in options file
     for key in keysInTemplate:
         if key not in context:
@@ -135,7 +136,7 @@ def renderSpecFile(templateBody,parameterDict,tasks,cores):
         print("ERROR: subprogram aborted as specification file template and sweep options file are inconsistent.",file=sys.stderr)
         sys.exit()
     
-    for key,value in parameterDict.items():
+    for key,value in context.items():
         renderedFile = renderedFile.replace("{{"+key+"}}", value)
     
     return renderedFile
@@ -235,6 +236,7 @@ def build(buildOnlyMissing=False):
                                 print(" [OK]")
                             else:
                                 print(" [FAILED]")
+                                print("toolkit output=\n"+output.decode('UTF-8'),file=sys.stderr)
                                 print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
                                 sys.exit()
 
