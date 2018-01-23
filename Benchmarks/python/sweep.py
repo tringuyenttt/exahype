@@ -56,6 +56,12 @@ def parseParameters(config):
         elif "dimension" not in parameterSpace:
             print("ERROR: 'dimension' missing in section 'parameters'.",file=sys.stderr)
             sys.exit()
+        elif "optimisation" not in parameterSpace:
+            print("ERROR: 'optimisation' missing in section 'parameters'.",file=sys.stderr)
+            sys.exit()
+        elif "architecture" not in parameterSpace:
+            print("ERROR: 'architecture' missing in section 'parameters'.",file=sys.stderr)
+            sys.exit()
     else:
         print("ERROR: Section 'parameters' is missing or empty! (Must contain at least 'dimension' and 'order'.)",file=sys.stderr)
         sys.exit()
@@ -201,96 +207,100 @@ def build(buildOnlyMissing=False):
         print("create directory:"+buildFolderPath)
         os.makedirs(buildFolderPath)
         
-    dimensions = parameterSpace["dimension"]
-    orders     = parameterSpace["order"]
+    dimensions    = parameterSpace["dimension"]
+    orders        = parameterSpace["order"]
+    architectures = parameterSpace["architecture"]
+    optimisations = parameterSpace["optimisation"]
     buildParameterDict = list(dictProduct(parameterSpace))[0]
         
     firstIteration = True
-    newExecutables=0
+    executables=0
     for environmentDict in dictProduct(environmentSpace):
         for key,value in environmentDict.items():
             os.environ[key]=value
             
-        for dimension in dimensions:
-            if not firstIteration:
-                command = "make clean"
-                print(command)
-                process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                (output, err) = process.communicate()
-                process.wait()
-                
-            for order in orders:
-                oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
-                newExecutable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+hashEnvironmentDict(environmentDict)+"-d" + dimension + "-p" + order
-                    
-                if not os.path.exists(newExecutable) or not buildOnlyMissing:
-                    buildParameterDict["dimension"]=dimension
-                    buildParameterDict["order"]    =order
-                        
-                    buildSpecFileBody = renderSpecFile(templateBody,buildParameterDict,"1","1")
-                        
-                    buildspecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-d"+dimension+"-p"+order+".exahype"
-                        
-                    with open(exahypeRoot + "/" + buildspecFilePath, "w") as buildSpecificationFile:
-                        buildSpecificationFile.write(buildSpecFileBody)
-                        
-                    print("building executable for " + \
-                          "environment="+str(environmentDict) + \
-                          ", dimension="+dimension + \
-                          ", order="+order,file=sys.stderr)
-                    # run toolkit
-                    toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildspecFilePath+")"
-                    print(toolkitCommand,end="",flush=True)
-                    process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                    (output, toolkitErr) = process.communicate()
-                    process.wait()
-                    if "setup build environment ... ok" in str(output):
-                        print(" [OK]")
-                    else:
-                        print(" [FAILED]")
-                        print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
-                        sys.exit()
-
-                    if firstIteration:
+        for architecture in architectures:
+            for optimisation in optimisations:
+                for dimension in dimensions:
+                    if not firstIteration:
                         command = "make clean"
                         print(command)
                         process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, err) = process.communicate()
                         process.wait()
-                        firstIteration = False
-                    else: # clean application folder only
-                        command = "rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels"
-                        print(command)
-                        process = subprocess.Popen(["make clean"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                        process.communicate()
-                        process.wait()
+                    for order in orders:
+                        oldExecutable = exahypeRoot + "/" + projectPath+"/ExaHyPE-"+projectName
+                        executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+hashEnvironmentDict(environmentDict)+"-"+\
+                                     architecture+"-"+optimisation+"-d" + dimension + "-p" + order
+                            
+                        if not os.path.exists(executable) or not buildOnlyMissing:
+                            buildParameterDict["dimension"]=dimension
+                            buildParameterDict["order"]    =order
+                                
+                            buildSpecFileBody = renderSpecFile(templateBody,buildParameterDict,"1","1")
+                                
+                            buildspecFilePath = outputPath+"/"+buildFolder+"/"+projectName+"-d"+dimension+"-p"+order+".exahype"
+                                
+                            with open(exahypeRoot + "/" + buildspecFilePath, "w") as buildSpecificationFile:
+                                buildSpecificationFile.write(buildSpecFileBody)
+                                
+                            print("building executable for " + \
+                                  "environment="+str(environmentDict) + \
+                                  ", dimension="+dimension + \
+                                  ", order="+order,file=sys.stderr)
+                            # run toolkit
+                            toolkitCommand = "(cd "+exahypeRoot+" && java -jar Toolkit/dist/ExaHyPE.jar --not-interactive "+buildspecFilePath+")"
+                            print(toolkitCommand,end="",flush=True)
+                            process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                            (output, toolkitErr) = process.communicate()
+                            process.wait()
+                            if "setup build environment ... ok" in str(output):
+                                print(" [OK]")
+                            else:
+                                print(" [FAILED]")
+                                print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
+                                sys.exit()
 
-                    # call make
-                    make_threads=general["make_threads"]
-                    makeCommand="make -j"+make_threads
-                    print(makeCommand,end="",flush=True)
-                    process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                    (output, makeErr) = process.communicate()
-                    process.wait()
-                    if "build of ExaHyPE successful" in str(output):
-                        print(" [OK]")
-                    else:
-                        print(" [FAILED]")
-                        print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
-                        sys.exit()
+                            if firstIteration:
+                                command = "make clean"
+                                print(command)
+                                process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                                (output, err) = process.communicate()
+                                process.wait()
+                                firstIteration = False
+                            else: # clean application folder only
+                                command = "rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels"
+                                print(command)
+                                process = subprocess.Popen(["make clean"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                                process.communicate()
+                                process.wait()
 
-                    moveCommand   = "mv "+oldExecutable+" "+newExecutable
-                    print(moveCommand)
-                    subprocess.call(moveCommand,shell=True)
-                    print("--------------------------------------------------------------------------------")
-                    print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
-                    print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
-                    print("--------------------------------------------------------------------------------")
-                    newExecutables+=1
-                else:
-                    print("skipped building of '"+newExecutable+"' as it already exists.")
+                            # call make
+                            make_threads=general["make_threads"]
+                            makeCommand="make -j"+make_threads
+                            print(makeCommand,end="",flush=True)
+                            process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                            (output, makeErr) = process.communicate()
+                            process.wait()
+                            if "build of ExaHyPE successful" in str(output):
+                                print(" [OK]")
+                            else:
+                                print(" [FAILED]")
+                                print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
+                                sys.exit()
 
-    print("built executables: "+str(newExecutables))
+                            moveCommand   = "mv "+oldExecutable+" "+executable
+                            print(moveCommand)
+                            subprocess.call(moveCommand,shell=True)
+                            print("--------------------------------------------------------------------------------")
+                            print("toolkit errors/warnings=\n"+toolkitErr.decode('UTF-8'),file=sys.stderr)
+                            print("make errors/warnings=\n"+makeErr.decode('UTF-8'),file=sys.stderr)
+                            print("--------------------------------------------------------------------------------")
+                            executables+=1
+                        else:
+                            print("skipped building of '"+executable+"' as it already exists.")
+
+    print("built executables: "+str(executables))
 
 def parseCores(jobs):
     """
@@ -326,9 +336,9 @@ def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
     context["environment"] = json.dumps(environmentDict).replace("\"","\\\"")
     context["parameters"]  = json.dumps(parameterDict).replace("\"","\\\"")
     
-    context["job_file"]    = jobFilePath
-    context["app"]        = appName
-    context["spec_file"]  = specFilePath
+    context["job_file"]  = jobFilePath
+    context["app"]       = appName
+    context["spec_file"] = specFilePath
     
     consistent = True
     # verify all mandatory(!) sweep options are defined in template
@@ -379,15 +389,16 @@ def verifyAllExecutablesExist(justWarn=False):
         environmentDictHash = hashEnvironmentDict(environmentDict)
         for dimension in dimensions:
             for order in orders:
-                appName   = exahypeRoot + "/" + outputPath+"/"+buildFolder + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-d" + dimension + "-p" + order
+                executable = buildFolderPath + "/ExaHyPE-"+projectName+"-"+hashEnvironmentDict(environmentDict)+"-"+\
+                                architecture+"-"+optimisation+"-d" + dimension + "-p" + order
                 
-                if not os.path.exists(appName):
+                if not os.path.exists(executable):
                     allExecutablesExist = False
                     print(messageType+ ": application for " + \
                           "environment="+str(environmentDict) + \
                           ", dimension="+dimension + \
                           ", order="+order + \
-                          " does not exist! ('"+appName+"')",file=sys.stderr)
+                          " does not exist! ('"+executable+"')",file=sys.stderr)
     
     if not justWarn and not allExecutablesExist:
         print("ERROR: subprogram failed as not all executables exist. Please adopt your options file according to the error messages.\n" + \
@@ -464,11 +475,13 @@ def generateScripts():
                         for parameterDict in dictProduct(parameterSpace):
                             parameterDictHash = hashDictionary(parameterDict)
                             
-                            dimension = parameterDict["dimension"]
-                            order     = parameterDict["order"]
-                            appName   = exahypeRoot + "/" + outputPath+"/"+buildFolder + "/ExaHyPE-"+projectName+"-"+environmentDictHash+"-d" + dimension + "-p" + order
+                            architecture = parameterDict["architecture"]
+                            optimisation = parameterDict["optimisation"]
+                            dimension    = parameterDict["dimension"]
+                            order        = parameterDict["order"]
                             
-                            
+                            executable   = buildFolderPath + "/ExaHyPE-"+projectName+"-"+hashEnvironmentDict(environmentDict)+"-"+\
+                                           architecture+"-"+optimisation+"-d" + dimension + "-p" + order
                             specFilePath = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + \
                                            parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
                             
@@ -480,7 +493,7 @@ def generateScripts():
                             errorFileName  = exahypeRoot + "/" + outputPath + "/" + resultsFolder + "/" + jobName + ".err"
                             
                             jobScriptBody = renderJobScript(jobScriptTemplate,environmentDict,parameterDict,jobs,
-                                                            jobName,jobFilePath,outputFileName,errorFileName,appName,specFilePath,
+                                                            jobName,jobFilePath,outputFileName,errorFileName,executable,specFilePath,
                                                             nodes,tasks,cores,run)
                             with open(jobFilePath, "w") as jobFile:
                                 jobFile.write(jobScriptBody)
