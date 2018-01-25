@@ -44,7 +44,7 @@ bool GridDemonstrator::GridDemonstrator_ADERDG::isPhysicallyAdmissible(
 	// a single NS with some atmosphere thickness
 	bool atmoNS = true;
 	if(atmoNS) {
-		double rnd = ((double) rand() / (RAND_MAX)); // random \in [0,1]
+		double rnd = solution[0]; // randomness moved into adjustPointSolution, isPhysicallyAdmissible shall be deterministic
 		
 		// limit around this shell:
 		double radius_shell = 10 + rnd * 4;
@@ -112,6 +112,9 @@ void GridDemonstrator::GridDemonstrator_ADERDG::adjustPointSolution(const double
   if (tarch::la::equals(t,0.0)) {
     Q[0] = 0.0;
   }
+  
+  // to introduce per timestep randomness:
+  Q[0] = ((double) rand() / (RAND_MAX)); // random \in [0,1]
 }
 
 void GridDemonstrator::GridDemonstrator_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
