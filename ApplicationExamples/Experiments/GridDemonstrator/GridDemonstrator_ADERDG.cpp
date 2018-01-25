@@ -1,19 +1,19 @@
-#include "GridDemonstraor_ADERDG.h"
+#include "GridDemonstrator_ADERDG.h"
 
-#include "GridDemonstraor_ADERDG_Variables.h"
+#include "GridDemonstrator_ADERDG_Variables.h"
 
 #include <math.h>
 #include <random>
 
 
-tarch::logging::Log GridDemonstrator::GridDemonstraor_ADERDG::_log( "GridDemonstrator::GridDemonstraor_ADERDG" );
+tarch::logging::Log GridDemonstrator::GridDemonstrator_ADERDG::_log( "GridDemonstrator::GridDemonstrator_ADERDG" );
 
 
-void GridDemonstrator::GridDemonstraor_ADERDG::init(std::vector<std::string>& cmdlineargs) {
+void GridDemonstrator::GridDemonstrator_ADERDG::init(std::vector<std::string>& cmdlineargs) {
   // @todo Please implement/augment if required
 }
 
-bool GridDemonstrator::GridDemonstraor_ADERDG::isPhysicallyAdmissible(
+bool GridDemonstrator::GridDemonstrator_ADERDG::isPhysicallyAdmissible(
       const double* const solution,
       const double* const observablesMin,const double* const observablesMax,const int numberOfObservables,
       const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,
@@ -105,7 +105,7 @@ bool GridDemonstrator::GridDemonstraor_ADERDG::isPhysicallyAdmissible(
 
 }
 
-void GridDemonstrator::GridDemonstraor_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
+void GridDemonstrator::GridDemonstrator_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 1 + 0
   // @todo Please implement/augment if required
@@ -114,7 +114,7 @@ void GridDemonstrator::GridDemonstraor_ADERDG::adjustPointSolution(const double*
   }
 }
 
-void GridDemonstrator::GridDemonstraor_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
+void GridDemonstrator::GridDemonstrator_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,
   const double * const fluxIn,const double* const stateIn,
   double *fluxOut,double* stateOut) {
   // Dimensions                        = 2
@@ -126,7 +126,7 @@ void GridDemonstrator::GridDemonstraor_ADERDG::boundaryValues(const double* cons
   fluxOut[0] = 0.0;
 }
 
-exahype::solvers::Solver::RefinementControl GridDemonstrator::GridDemonstraor_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+exahype::solvers::Solver::RefinementControl GridDemonstrator::GridDemonstrator_ADERDG::refinementCriterion(const double* luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -138,7 +138,7 @@ exahype::solvers::Solver::RefinementControl GridDemonstrator::GridDemonstraor_AD
 //*****************************************************************************
 
 
-void GridDemonstrator::GridDemonstraor_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
+void GridDemonstrator::GridDemonstrator_ADERDG::eigenvalues(const double* const Q,const int d,double* lambda) {
   // Dimensions                        = 2
   // Number of variables + parameters  = 1 + 0
   
@@ -150,7 +150,7 @@ void GridDemonstrator::GridDemonstraor_ADERDG::eigenvalues(const double* const Q
 
 
 //You can either implement this method or modify fusedSource
-void GridDemonstrator::GridDemonstraor_ADERDG::algebraicSource(const double* const Q,double* S) {
+void GridDemonstrator::GridDemonstrator_ADERDG::algebraicSource(const double* const Q,double* S) {
   // @todo Please implement/augment if required
   S[0] = 0.0;
 }
