@@ -367,33 +367,34 @@ def verifyAllExecutablesExist(justWarn=False):
         sys.exit()
 
 def verifySweepAgreesWithHistoricExperiments():
-"""
-If there are any previous experiments ensure that the sweep 
-parameter spaces contain the same axes.
-"""
-    previousSweeps = [f for f in os.listdir(historyFolderPath) if f.endswith(".ini")]
-    print(previousSweeps)
+    """
+    If there are any previous experiments ensure that the sweep 
+    parameter spaces contain the same axes.
+    """
+    if os.path.exists(historyFolderPath):
+        previousSweeps = [f for f in os.listdir(historyFolderPath) if f.endswith(".ini")]
+        print(previousSweeps)
     
-    for f in files:
-        otherConfig = configparser.ConfigParser()
-        otherConfig.optionxform=str
-        otherConfig.read(f)
+        for f in previousSweeps:
+            otherConfig = configparser.ConfigParser()
+            otherConfig.optionxform=str
+            otherConfig.read(historyFolderPath + "/" + f)
         
-        otherEnvironmentSpace = parseEnvironment(otherConfig)
-        otherParameterSpace   = parseParameters(otherConfig)
+            otherEnvironmentSpace = parseEnvironment(otherConfig)
+            otherParameterSpace   = parseParameters(otherConfig)
         
-        environmentSpaceIntersection = set(environmenSpace.keys()).intersection(otherEnvironmentSpace.keys())
-        parameterSpaceIntersection   = set(parameterSpace.keys()).intersection(otherParameterSpace.keys())
-        if len(set(environmentSpace.keys()) is not len(environmentSpaceIntersection):
-              print("ERROR: subprogram failed as environment variables differ from previous experiments found in the output folder.",file=sys.stderr)
-              print("environment variables found for CURRENT experiment: "+ str(environmentSpace.keys()))
-              print("environment variables used in PREVIOUS experiment: "+ str(environmentSpace.keys()))
-              sys.exit()
-        if len(set(parameterSpace.keys()) is not len(parameterSpaceIntersection):
-              print("ERROR: subprogram failed as parameters differ from previous experiments found in the output folder.",file=sys.stderr)
-              print("parameters found for CURRENT experiment: "+ str(otherParameterSpace.keys()))
-              print("parameters used in PREVIOUS experiment: "+ str(otherParameterSpace.keys()))
-              sys.exit()
+            environmentSpaceIntersection = set(environmentSpace.keys()).intersection(otherEnvironmentSpace.keys())
+            parameterSpaceIntersection   = set(parameterSpace.keys()).intersection(otherParameterSpace.keys())
+            if len(set(environmentSpace.keys()))!=len(environmentSpaceIntersection):
+                print("ERROR: subprogram failed as environment variables differ from previous experiments found in the output folder.",file=sys.stderr)
+                print("environment variables found for CURRENT experiment: " + ", ".join(sorted(environmentSpace.keys())))
+                print("environment variables used in PREVIOUS experiment:  " + ", ".join(sorted(otherEnvironmentSpace.keys())))
+                sys.exit()
+            if len(set(parameterSpace.keys()))!=len(parameterSpaceIntersection):
+                print("ERROR: subprogram failed as parameters differ from previous experiments found in the output folder.",file=sys.stderr)
+                print("parameters found for CURRENT experiment: "+ ", ".join(sorted(parameterSpace.keys())))
+                print("parameters used in PREVIOUS experiment:  "+ ", ".join(sorted(otherParameterSpace.keys())))
+                sys.exit()
 
 def generateScripts():
     """
@@ -1123,9 +1124,7 @@ typical workflow:
     jobs             = config["jobs"]
     environmentSpace = parseEnvironment(config)
     parameterSpace   = parseParameters(config)
-    
-    verifySweepAgreesWithHistoricExperiments()
-    
+     
     exahypeRoot      = general["exahype_root"]
     outputPath       = general["output_path"]
     projectPath      = general["project_path"]
@@ -1135,6 +1134,8 @@ typical workflow:
     scriptsFolderPath = exahypeRoot+"/"+outputPath+"/scripts"
     resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
     historyFolderPath = exahypeRoot+"/"+outputPath+"/history"
+    
+    verifySweepAgreesWithHistoricExperiments()
     
     # select subprogram
     if subprogram == "clean":
