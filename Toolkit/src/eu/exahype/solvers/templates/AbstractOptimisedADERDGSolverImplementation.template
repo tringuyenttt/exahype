@@ -62,15 +62,7 @@ void {{project}}::{{abstractSolver}}::spaceTimePredictor(double* lQhbnd,double* 
 {%- if  isLinear %}
   {{optNamespace}}::spaceTimePredictorLinear(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, tempSpaceTimeUnknowns[0] /*lQi*/, tempSpaceTimeFluxUnknowns[0] /*lFi*/, &tempSpaceTimeFluxUnknowns[0][lSi_offset] /*lSi*/, tempUnknowns /*lQhi*/, tempFluxUnknowns /*lFhi*/, &tempFluxUnknowns[lShi_offset] /*lShi*/, tempSpaceTimeFluxUnknowns[1] /*gradQ*/, tempPointForceSources[0] /*PSi*/, tempPointForceSources[1] /*PSderivatives*/, luh, inverseDx, dt);
 {%- else %}
-{%- if noTimeAveraging %}
-  //No Time Averaging scheme
-  {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %} {%- if enableDeepProfiler %}, _profiler.get(){% endif %}); //lSi, gradQ
-  {{optNamespace}}::extrapolatorNonlinear(tempSpaceTimeUnknowns[0], tempSpaceTimeFluxUnknowns[0], lQhbnd, lFhbnd);
-{%- else %}
-  {{optNamespace}}::picardLoopNonlinear(*static_cast<{{solver}}*>(this), luh, dt, inverseDx, tempSpaceTimeUnknowns[0], tempSpaceTimeUnknowns[1], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], {% if useNCP %}tempSpaceTimeFluxUnknowns[1]{% else %}nullptr{% endif %} {%- if enableDeepProfiler %}, _profiler.get(){% endif %}); //lSi, gradQ
-  {{optNamespace}}::predictorNonlinear(tempSpaceTimeUnknowns[0], tempSpaceTimeFluxUnknowns[0], &tempSpaceTimeFluxUnknowns[0][lSi_offset], tempUnknowns, tempFluxUnknowns, &tempFluxUnknowns[lShi_offset]);
-  {{optNamespace}}::extrapolatorNonlinear(tempUnknowns, tempFluxUnknowns, lQhbnd, lFhbnd);
-{%- endif %}
+  {{optNamespace}}::spaceTimePredictorNonLinear(*static_cast<{{solver}}*>(this), lQhbnd, lFhbnd, tempSpaceTimeUnknowns[0] /*lQi*/,tempSpaceTimeUnknowns[1] /*rhs*/, tempSpaceTimeFluxUnknowns[0] /*lFi*/, &tempSpaceTimeFluxUnknowns[0][lSi_offset] /*lSi*/, tempUnknowns /*lQhi*/, tempFluxUnknowns /*lFhi*/, &tempFluxUnknowns[lShi_offset] /*lShi*/, tempSpaceTimeFluxUnknowns[1] /*gradQ*/, luh, inverseDx, dt);
 {%- endif %}
   
 {%- if enableProfiler %}

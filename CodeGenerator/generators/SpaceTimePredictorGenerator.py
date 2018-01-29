@@ -32,10 +32,8 @@ class SpaceTimePredictorGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename_picard       = "picard.cpp"
-    m_filename_predictor    = "predictor.cpp"
-    m_filename_extrapolator = "extrapolatedPredictor.cpp"
     m_filename_linear       = "spaceTimePredictorLinear.cpp"
+    m_filename_nonlinear    = "spaceTimePredictorNonLinear.cpp"
     
     m_filename_asm_picard   = "asm_stp" 
 
@@ -66,12 +64,7 @@ class SpaceTimePredictorGenerator:
             self.m_context["gemm_rhs_z"] = gemmName+"_rhs_z"
             self.m_context["gemm_lqi"]   = gemmName+"_lqi"
             
-            TemplatingUtils.renderAsFile("spaceTimePredictor_picard_cpp.template", self.m_filename_picard, self.m_context)
-            if(self.m_context["noTimeAveraging"]):
-                TemplatingUtils.renderAsFile("spaceTimePredictor_extrapolator_noTimeAveraging_cpp.template", self.m_filename_extrapolator, self.m_context)
-            else:
-                TemplatingUtils.renderAsFile("spaceTimePredictor_predictor_cpp.template", self.m_filename_predictor, self.m_context)
-                TemplatingUtils.renderAsFile("spaceTimePredictor_extrapolator_cpp.template", self.m_filename_extrapolator, self.m_context)
+            TemplatingUtils.renderAsFile("spaceTimePredictorNonLinear_cpp.template", self.m_filename_nonlinear, self.m_context)
             
         # generates gemms
         if(self.m_context["useLibxsmm"]):
