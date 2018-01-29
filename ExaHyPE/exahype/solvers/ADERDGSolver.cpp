@@ -1952,7 +1952,7 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
       lock.free();
 
       PredictionTask predictionTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( predictionTask, false ); // TODO(Dominic): Long running or not?
+      peano::datatraversal::TaskSet spawnedSet( predictionTask, tarch::multicore::TaskType::Default ); // TODO(Dominic): Long running or not?
     }
     else { // TODO(Dominic): Just run predictionTask manually as soon as we know there is not much difference in speed
       // persistent fields
