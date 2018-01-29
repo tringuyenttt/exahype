@@ -35,8 +35,9 @@ namespace {{solverNamespace}} {
 namespace {{namespaceName}} {
 {% endfor %}
 {% if isLinear %}
-  void spaceTimePredictorLinear(
+  void fusedSpaceTimePredictorVolumeIntegral(
     {{solverName}}& solver,
+    double* restrict lduh,
     double* restrict lQhbnd, 
     double* restrict lFhbnd,
     double* restrict lQi,
@@ -53,8 +54,9 @@ namespace {{namespaceName}} {
     const double dt
   );
 {% else %}
-  void spaceTimePredictorNonLinear(
+  void fusedSpaceTimePredictorVolumeIntegral(
     {{solverName}}& solver,
+    double* restrict lduh,
     double* restrict lQhbnd, 
     double* restrict lFhbnd,
     double* restrict lQi,

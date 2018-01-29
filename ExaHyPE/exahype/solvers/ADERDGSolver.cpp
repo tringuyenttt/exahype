@@ -1973,20 +1973,14 @@ void exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegral(
       // luh, t, dt, cell cell center, cell size, data allocation for forceVect
 
       #ifdef OPT_KERNELS
-      tarch::la::Vector<DIMENSIONS,double> invDx = tarch::la::invertEntries(cellDescription.getSize());
-      spaceTimePredictor(
+      fusedSpaceTimePredictorVolumeIntegral(
+          lduh,
           lQhbnd,lFhbnd,
           tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
           luh,
-          invDx,
+          tarch::la::invertEntries(cellDescription.getSize()),
           cellDescription.getPredictorTimeStepSize(),
           tempPointForceSources);
-
-      volumeIntegral(
-          lduh,
-          tempSpaceTimeFluxUnknowns[0],
-          tempFluxUnknowns,
-          invDx);
       #else // OPT_KERNELS not defined
       spaceTimePredictor(
           lQhbnd,lFhbnd,
@@ -2031,19 +2025,9 @@ double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cell
     const double* luh = exahype::DataHeap::getInstance().getData(cellDescription.getSolution()).data();
 
     validateNoNansInADERDGSolver(cellDescription,"computeTimeStepSizes(...)");
-      //TODO JMG move everything to inverseDx and use Peano to get it when Dominic implemente it
     #ifdef OPT_KERNELS
-    double* dx = &cellDescription.getSize()[0];
-    #if DIMENSIONS==2
-    double inverseDx[2];
-    #else
-    double inverseDx[3];
-    inverseDx[2] = 1.0/dx[2];
-    #endif
-    inverseDx[0] = 1.0/dx[0];
-    inverseDx[1] = 1.0/dx[1];
     double admissibleTimeStepSize =
-        stableTimeStepSize(luh,&inverseDx[0]); //TODO JMG use cellDescription.getInverseSize() when implemented
+        stableTimeStepSize(luh,tarch::la::invertEntries(cellDescription.getSize()));
     #else
     double admissibleTimeStepSize =
         stableTimeStepSize(luh,cellDescription.getSize());
@@ -2262,18 +2246,8 @@ void exahype::solvers::ADERDGSolver::updateSolution(
       assertion3(tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0)  || tarch::la::equals(cellDescription.getCorrectorTimeStepSize(),0.0) || std::isfinite(fluctuations[i]),cellDescription.toString(),"updateSolution",i);
     } 
     #endif
-    //TODO JMG move everything to inverseDx and use Peano to get it when Dominic implemente it
     #ifdef OPT_KERNELS
-    double* dx = &cellDescription.getSize()[0];
-    #if DIMENSIONS==2
-    double inverseDx[2];
-    #else
-    double inverseDx[3];
-    inverseDx[2] = 1.0/dx[2];
-    #endif
-    inverseDx[0] = 1.0/dx[0];
-    inverseDx[1] = 1.0/dx[1];
-    surfaceIntegral(update,fluctuations,&inverseDx[0]); //TODO JMG use cellDescription.getInverseSize() when implemented
+    surfaceIntegral(update,fluctuations,tarch::la::invertEntries(cellDescription.getSize()));
     #else
     surfaceIntegral(update,fluctuations,cellDescription.getSize());
     #endif
@@ -4306,20 +4280,14 @@ void exahype::solvers::ADERDGSolver::PredictionTask::operator()() {
   // luh, t, dt, cell cell center, cell size, data allocation for forceVect
 
   #ifdef OPT_KERNELS
-  tarch::la::Vector<DIMENSIONS,double> invDx = tarch::la::invertEntries(_cellDescription.getSize());
-  _solver.spaceTimePredictor(
-      lQhbnd,lFhbnd,
-      tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
-      luh,
-      invDx,
-      _cellDescription.getPredictorTimeStepSize(),
-      tempPointForceSources);
-
-  _solver.volumeIntegral(
-      lduh,
-      tempSpaceTimeFluxUnknowns[0],
-      tempFluxUnknowns,
-      invDx);
+  _solver.fusedSpaceTimePredictorVolumeIntegral(
+          lduh,
+          lQhbnd,lFhbnd,
+          tempSpaceTimeUnknowns,tempSpaceTimeFluxUnknowns,tempUnknowns,tempFluxUnknowns,
+          luh,
+          tarch::la::invertEntries(_cellDescription.getSize()),
+          _cellDescription.getPredictorTimeStepSize(),
+          tempPointForceSources);
   #else // OPT_KERNELS not defined
   _solver.spaceTimePredictor(
       lQhbnd,lFhbnd,
