@@ -54,6 +54,9 @@ buildinfo.h
 *.vtu
 *.pvd
 *.log-file
+*.png
+*.webm
+*.svg
 
 # Any kind of archives
 *.zip
