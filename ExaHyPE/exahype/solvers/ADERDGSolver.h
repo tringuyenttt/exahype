@@ -1084,18 +1084,6 @@ public:
                               const double dt) = 0;
 
   /**
-   * @brief Computes the volume flux contribution to the cell update.
-   *
-   * @param[inout] lduh      Cell-local update DoF.
-   * @param[in]    cellSize  Extent of the cell in each coordinate direction.
-   * @param[dt]    dt        Time step size.
-   */
-  virtual void volumeIntegral(
-      double* lduh, 
-      const double* const lFi, const double* const lFhi, //take both lFi and lFhi, depending on the time averaging setting lFi may be unused or lFhi may be nullptr
-      const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
-
-  /**
    * @brief Computes the surface integral contributions
    * to the cell update.
    *
@@ -1157,7 +1145,40 @@ public:
                                   const int faceIndex,
                                   const int direction) = 0;
 
-
+#ifdef OPT_KERNELS
+  /**
+   * @brief Computes cell-local predictor space-time, volume, and face DoF + perform volume integral
+   *
+   * Computes the cell-local space-time predictor lQi, the space-time volume
+   *flux lFi,
+   * the predictor lQhi, the volume flux lFhi, the boundary
+   * extrapolated predictor lQhbnd and normal flux lFhbnd.
+   *
+   * @param[inout] lduh      Cell-local update DoF.
+   * @param[inout] lQi       Space-time predictor DoF.
+   * @param[in]    lQi_old   Old space-time predictor DoF - only used in Picard loop.
+   * @param[in]    rhs       The right-hand side vector - only used in Picard loop.
+   * @param[in]    rhs_0     Constant term of the right-hand side - only used in Picard loop.
+   * @param[inout] lFi       Space-time flux DoF.
+   * @param[inout] lQhi      Predictor DoF
+   * @param[inout] lFhi      Volume flux DoF.
+   * @param[out]   luh       Solution DoF.
+   * @param[in]    cellSize     Extent of the cell in each coordinate direction.
+   * @param[in]    dt     Time step size.
+   */
+  virtual void fusedSpaceTimePredictorVolumeIntegral(
+      double* lduh,
+      double*  lQhbnd, double* lFhbnd,
+      double** tempSpaceTimeUnknowns,
+      double** tempSpaceTimeFluxUnknowns,
+      double*  tempUnknowns,
+      double*  tempFluxUnknowns,
+      const double* const luh,
+      const tarch::la::Vector<DIMENSIONS, 
+      double>& cellSize, 
+      const double dt,
+      double** tempPointForceSources) = 0;
+#else
   /**
    * @brief Computes cell-local predictor space-time, volume, and face DoF.
    *
@@ -1187,7 +1208,21 @@ public:
       const tarch::la::Vector<DIMENSIONS, 
       double>& cellSize, 
       const double dt,
-      double** tempPointForceSources) = 0;
+      double** tempPointForceSources) = 0;  
+      
+  /**
+   * @brief Computes the volume flux contribution to the cell update.
+   *
+   * @param[inout] lduh      Cell-local update DoF.
+   * @param[in]    cellSize  Extent of the cell in each coordinate direction.
+   * @param[dt]    dt        Time step size.
+   */
+  virtual void volumeIntegral(
+      double* lduh, 
+      const double* const lFi, const double* const lFhi, //take both lFi and lFhi, depending on the time averaging setting lFi may be unused or lFhi may be nullptr
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize) = 0;
+#endif      
+  
 
   /**
    * \brief Returns a stable time step size.

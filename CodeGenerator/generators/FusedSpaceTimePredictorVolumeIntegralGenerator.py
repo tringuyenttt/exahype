@@ -28,16 +28,13 @@ from utils import TemplatingUtils
 from utils.MatmulConfig import MatmulConfig
 
 
-class SpaceTimePredictorGenerator:
+class FusedSpaceTimePredictorVolumeIntegralGenerator:
     m_context = {}
 
     # name of generated output file
-    m_filename_picard       = "picard.cpp"
-    m_filename_predictor    = "predictor.cpp"
-    m_filename_extrapolator = "extrapolatedPredictor.cpp"
-    m_filename_linear       = "spaceTimePredictorLinear.cpp"
+    m_filename       = "fusedSpaceTimePredictorVolumeIntegral.cpp"
     
-    m_filename_asm_picard   = "asm_stp" 
+    m_filename_asm   = "asm_fstpvi" 
 
     
     def __init__(self, i_config):
@@ -58,20 +55,20 @@ class SpaceTimePredictorGenerator:
             self.m_context["gemm_flux_x"] = gemmName+"_flux_x"
             self.m_context["gemm_flux_y"] = gemmName+"_flux_y"
             self.m_context["gemm_flux_z"] = gemmName+"_flux_z"
-            TemplatingUtils.renderAsFile("spaceTimePredictorLinear_cpp.template", self.m_filename_linear, self.m_context)
+            TemplatingUtils.renderAsFile("fusedSPTVI_linear_cpp.template", self.m_filename, self.m_context)
         else:
             self.m_context["nDof_seq"] = range(0,self.m_context["nDof"])
             self.m_context["gemm_rhs_x"] = gemmName+"_rhs_x"
             self.m_context["gemm_rhs_y"] = gemmName+"_rhs_y"
             self.m_context["gemm_rhs_z"] = gemmName+"_rhs_z"
             self.m_context["gemm_lqi"]   = gemmName+"_lqi"
+            self.m_context["gemm_x"] = gemmName+"_lduh_x"
+            self.m_context["gemm_y"] = gemmName+"_lduh_y"
+            self.m_context["gemm_z"] = gemmName+"_lduh_z"             
+            self.m_context["i_seq"] = range(0,self.m_context["nDof"])
+            self.m_context["j_seq"] = range(0,self.m_context["nDof"]) if (self.m_context["nDim"] >= 3) else [0]
             
-            TemplatingUtils.renderAsFile("spaceTimePredictor_picard_cpp.template", self.m_filename_picard, self.m_context)
-            if(self.m_context["noTimeAveraging"]):
-                TemplatingUtils.renderAsFile("spaceTimePredictor_extrapolator_noTimeAveraging_cpp.template", self.m_filename_extrapolator, self.m_context)
-            else:
-                TemplatingUtils.renderAsFile("spaceTimePredictor_predictor_cpp.template", self.m_filename_predictor, self.m_context)
-                TemplatingUtils.renderAsFile("spaceTimePredictor_extrapolator_cpp.template", self.m_filename_extrapolator, self.m_context)
+            TemplatingUtils.renderAsFile("fusedSPTVI_nonlinear_cpp.template", self.m_filename, self.m_context)
             
         # generates gemms
         if(self.m_context["useLibxsmm"]):
@@ -330,6 +327,93 @@ class SpaceTimePredictorGenerator:
                                                 # type
                                                 "gemm")
                     l_matmulList.append(l_matmul)
+                # (1) MATMUL( lFhi_x(:,:,j,k), TRANSPOSE(Kxi) )
+                l_matmul_x = MatmulConfig(  # M
+                                            self.m_context["nVar"],       \
+                                            # N
+                                            self.m_context["nDof"],       \
+                                            # K
+                                            self.m_context["nDof"],       \
+                                            # LDA
+                                            self.m_context["nVarPad"],    \
+                                            # LDB
+                                            self.m_context["nDofPad"],    \
+                                            # LDC
+                                            self.m_context["nVar"],       \
+                                            # alpha 
+                                            1,                            \
+                                            # beta
+                                            1,                            \
+                                            # alignment A
+                                            0,                            \
+                                            # alignment C
+                                            0,                            \
+                                            # name
+                                            "lduh_x",                     \
+                                            # prefetching
+                                            "nopf",                       \
+                                            # type
+                                            "gemm")
+                l_matmulList.append(l_matmul_x)
+
+                # (2) MATMUL( lFhi_y(:,:,i,k), TRANSPOSE(Kxi) )
+                l_matmul_y = MatmulConfig(  # M
+                                            self.m_context["nVar"],                         \
+                                            # N
+                                            self.m_context["nDof"],                         \
+                                            # K
+                                            self.m_context["nDof"],                         \
+                                            # LDA
+                                            self.m_context["nVarPad"],                      \
+                                            # LDB
+                                            self.m_context["nDofPad"],                      \
+                                            # LDC
+                                            self.m_context["nVar"]*self.m_context["nDof"],  \
+                                            # alpha 
+                                            1,                                              \
+                                            # beta
+                                            1,                                              \
+                                            # alignment A
+                                            0,                                              \
+                                            # alignment C
+                                            0,                                              \
+                                            # name
+                                            "lduh_y",                                       \
+                                            # prefetching
+                                            "nopf",                                         \
+                                            # type
+                                            "gemm")
+                l_matmulList.append(l_matmul_y)
+
+                if(self.m_context["nDim"]>=3):
+                    # (3) MATMUL( lFhi_z(:,:,i,j), TRANSPOSE(Kxi) )
+                    l_matmul_z = MatmulConfig(  # M
+                                                self.m_context["nVar"],                             \
+                                                # N
+                                                self.m_context["nDof"],                             \
+                                                # K
+                                                self.m_context["nDof"],                             \
+                                                # LDA
+                                                self.m_context["nVarPad"],                          \
+                                                # LDB
+                                                self.m_context["nDofPad"],                          \
+                                                # LDC
+                                                self.m_context["nVar"]*(self.m_context["nDof"]**2), \
+                                                # alpha 
+                                                1,                                                  \
+                                                # beta
+                                                1,                                                  \
+                                                # alignment A
+                                                0,                                                  \
+                                                # alignment C
+                                                0,                                                  \
+                                                # name
+                                                "lduh_z",                                           \
+                                                # prefetching
+                                                "nopf",                                             \
+                                                # type
+                                                "gemm")
+                    l_matmulList.append(l_matmul_z)
             if(self.m_context["useNCP"]):
                 l_matmul = MatmulConfig(    # M
                                             self.m_context["nVar"],    \
@@ -441,4 +525,4 @@ class SpaceTimePredictorGenerator:
                                         "gemm")
             l_matmulList.append(l_matmul)
             
-        Backend.generateAssemblerCode(self.m_filename_asm_picard, l_matmulList)
+        Backend.generateAssemblerCode(self.m_filename_asm, l_matmulList)

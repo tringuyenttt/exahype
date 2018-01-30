@@ -18,6 +18,7 @@
 #include "exahype/Cell.h"
 
 #include "tarch/multicore/Lock.h"
+#include "tarch/multicore/BackgroundTasks.h"
 
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
@@ -118,11 +119,13 @@ void exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated() {
 
   tarch::multicore::Lock lock(exahype::BackgroundThreadSemaphore);
   finishedWait = _NumberOfTriggeredTasks == 0;
-  if (!finishedWait) {
-    logInfo("waitUntilAllBackgroundTasksHaveTerminated", "Waiting for background tasks to complete");
-  }
   lock.free();
-  tarch::multicore::BooleanSemaphore::sendTaskToBack();
+  if (!finishedWait) {
+    logInfo("waitUntilAllBackgroundTasksHaveTerminated",
+            "Waiting for " << tarch::multicore::getNumberOfWaitingBackgroundTasks() <<
+            " background tasks to complete"
+            );
+  }
 
 
   while (!finishedWait) {
@@ -130,6 +133,7 @@ void exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated() {
     finishedWait = _NumberOfTriggeredTasks == 0;
     lock.free();
 
+    tarch::multicore::processBackgroundTasks();
     tarch::multicore::BooleanSemaphore::sendTaskToBack();
   }
 }

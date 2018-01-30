@@ -92,7 +92,8 @@ def dictProduct(dicts):
 
 def hashDictionary(dictionary):
     """
-    Hash a dictionary.
+    Hash a dictionary. Sort the dictionary according
+    to the keys beforehand.
     """
     chain = ""
     for key,value in sorted(dictionary.items()):
@@ -105,9 +106,6 @@ def clean(subFolder=""):
     Clean the complete output folder or just a subfolder
     if specified.
     """
-    exahypeRoot = general["exahype_root"]
-    outputPath  = general["output_path"]
-    
     folder = exahypeRoot+"/"+outputPath+"/"+subFolder
     print("rm -r "+folder)
     subprocess.call("rm -r "+folder, shell=True)
@@ -160,10 +158,6 @@ def build(buildOnlyMissing=False):
     print("")
     
     templateFileName = general["spec_template"]
-    exahypeRoot      = general["exahype_root"]
-    outputPath       = general["output_path"]
-    projectPath      = general["project_path"]
-    projectName      = general["project_name"]
     
     templateBody = None
     try:
@@ -173,10 +167,8 @@ def build(buildOnlyMissing=False):
         print("ERROR: couldn\'t open template file: "+templateFileName,file=sys.stderr)
         sys.exit()
     
-    buildFolderPath = exahypeRoot+"/"+outputPath+"/"+buildFolder
-        
     if not os.path.exists(buildFolderPath):
-        print("create directory:"+buildFolderPath)
+        print("create directory "+buildFolderPath)
         os.makedirs(buildFolderPath)
         
     architectures = parameterSpace["architecture"]
@@ -335,10 +327,9 @@ def renderJobScript(templateBody,environmentDict,parameterDict,jobs,
     return renderedFile
 
 def verifyAllExecutablesExist(justWarn=False):
-    exahypeRoot = general["exahype_root"]
-    outputPath  = general["output_path"]
-    projectName = general["project_name"]
-    
+    """
+    Verify that all executables exist.
+    """
     architectures = parameterSpace["architecture"]
     optimisations = parameterSpace["optimisation"]
     dimensions    = parameterSpace["dimension"]
@@ -348,7 +339,6 @@ def verifyAllExecutablesExist(justWarn=False):
     if justWarn:
       messageType = "WARNING"
     
-    buildFolderPath = exahypeRoot+"/"+outputPath+"/"+buildFolder
     if not justWarn and not os.path.exists(buildFolderPath):
         print("ERROR: build folder '"+buildFolderPath+"' doesn't exist! Please run subprogram 'build' beforehand.",file=sys.stderr)
         sys.exit()
@@ -376,15 +366,40 @@ def verifyAllExecutablesExist(justWarn=False):
               "       Then rerun the 'build' subprogram.",file=sys.stderr)
         sys.exit()
 
+def verifySweepAgreesWithHistoricExperiments():
+    """
+    If there are any previous experiments ensure that the sweep 
+    parameter spaces contain the same axes.
+    """
+    if os.path.exists(historyFolderPath):
+        previousSweeps = [f for f in os.listdir(historyFolderPath) if f.endswith(".ini")]
+        print(previousSweeps)
+    
+        for f in previousSweeps:
+            otherConfig = configparser.ConfigParser()
+            otherConfig.optionxform=str
+            otherConfig.read(historyFolderPath + "/" + f)
+        
+            otherEnvironmentSpace = parseEnvironment(otherConfig)
+            otherParameterSpace   = parseParameters(otherConfig)
+        
+            environmentSpaceIntersection = set(environmentSpace.keys()).intersection(otherEnvironmentSpace.keys())
+            parameterSpaceIntersection   = set(parameterSpace.keys()).intersection(otherParameterSpace.keys())
+            if len(set(environmentSpace.keys()))!=len(environmentSpaceIntersection):
+                print("ERROR: subprogram failed as environment variables differ from previous experiments found in the output folder.",file=sys.stderr)
+                print("environment variables found for CURRENT experiment: " + ", ".join(sorted(environmentSpace.keys())))
+                print("environment variables used in PREVIOUS experiment:  " + ", ".join(sorted(otherEnvironmentSpace.keys())))
+                sys.exit()
+            if len(set(parameterSpace.keys()))!=len(parameterSpaceIntersection):
+                print("ERROR: subprogram failed as parameters differ from previous experiments found in the output folder.",file=sys.stderr)
+                print("parameters found for CURRENT experiment: "+ ", ".join(sorted(parameterSpace.keys())))
+                print("parameters used in PREVIOUS experiment:  "+ ", ".join(sorted(otherParameterSpace.keys())))
+                sys.exit()
+
 def generateScripts():
     """
     Generate spec files and job scripts.
     """
-    exahypeRoot   = general["exahype_root"]
-    outputPath    = general["output_path"]
-    projectName   = general["project_name"]
-    
-    jobs       = config["jobs"]
     cpus       = jobs["num_cpus"]
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
@@ -410,10 +425,9 @@ def generateScripts():
         print("ERROR: couldn\'t open template file: "+jobScriptTemplatePath,file=sys.stderr)
         sys.exit()
         
-    if not os.path.exists(exahypeRoot+"/"+outputPath+"/"+scriptsFolder):
-        os.makedirs(exahypeRoot+"/"+outputPath+"/"+scriptsFolder)
-    if not os.path.exists(exahypeRoot+"/"+outputPath+"/"+resultsFolder):
-        os.makedirs(exahypeRoot+"/"+outputPath+"/"+resultsFolder)
+    if not os.path.exists(scriptsFolderPath):
+        print("create directory "+scriptsFolderPath)
+        os.makedirs(scriptsFolderPath)
     
     # spec files
     specFiles=0
@@ -427,7 +441,7 @@ def generateScripts():
                  cores=str(int(int(cpus) / int(tasks)))
               specFileBody = renderSpecFile(specFileTemplate,parameterDict,tasks,cores)
               
-              specFilePath = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+              specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
               
               with open(specFilePath, "w") as specFile:
                   specFile.write(specFileBody)
@@ -439,10 +453,6 @@ def generateScripts():
     verifyAllExecutablesExist(True)
     
     # generate job scrips
-    buildFolderPath = exahypeRoot+"/"+outputPath+"/"+buildFolder
-    scriptsFolderPath = exahypeRoot+"/"+outputPath+"/"+scriptsFolder
-    resultsFolderPath = exahypeRoot+"/"+outputPath+"/"+resultsFolder
-    
     jobScripts = 0
     for run in range(0,runs):
         for nodes in nodeCounts:
@@ -488,19 +498,12 @@ def verifyAllJobScriptsExist():
     """
     Verify that all job scripts exist.
     """
-    exahypeRoot          = general["exahype_root"]
-    outputPath           = general["output_path"]
-    projectName          = general["project_name"]
-    jobSubmissionTool    = general["job_submission"]
-    
-    jobs       = config["jobs"]
     cpus       = jobs["num_cpus"]
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
     coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     runs       = int(jobs["runs"])
     
-    scriptFolderPath = exahypeRoot+"/"+outputPath+"/"+scriptsFolder
     if not os.path.exists(scriptFolderPath):
         print("ERROR: job script folder '"+scriptFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
         sys.exit()
@@ -524,7 +527,7 @@ def verifyAllJobScriptsExist():
                             
                             jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
                                              "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
-                            jobFilePrefix  = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + jobName
+                            jobFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobFilePath    = jobFilePrefix + ".job"
                             
                             if not os.path.exists(jobFilePath):
@@ -546,17 +549,10 @@ def verifyAllSpecFilesExist():
     """
     Verify that all ExaHyPE specification files exist.
     """
-    exahypeRoot          = general["exahype_root"]
-    outputPath           = general["output_path"]
-    projectName          = general["project_name"]
-    jobSubmissionTool    = general["job_submission"]
-    
-    jobs       = config["jobs"]
     cpus       = jobs["num_cpus"]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
     coreCounts = [x.strip() for x in jobs["cores"].split(",")]
     
-    scriptFolderPath = exahypeRoot+"/"+outputPath+"/"+scriptsFolder
     if not os.path.exists(scriptFolderPath):
         print("ERROR: job script folder '"+scriptFolderPath+"' doesn't exist! Please run subprogram 'scripts' beforehand.",file=sys.stderr)
         sys.exit()
@@ -571,7 +567,7 @@ def verifyAllSpecFilesExist():
                 if parsedCores=="auto":
                     cores=str(int(int(cpus) / int(tasks)))
                 
-                specFilePath = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
+                specFilePath = scriptsFolderPath + "/" + projectName + "-" + parameterDictHash + "-t"+tasks+"-c"+cores+".exahype"
               
                 if not os.path.exists(specFilePath):
                      allSpecFilesExist = False
@@ -586,7 +582,7 @@ def verifyAllSpecFilesExist():
               "       Then rerun the 'scripts' subprogram.")
         sys.exit()
 
-def hashSweep(jobs,enviromentSpace,parameterSpace):
+def hashSweep():
     nodeCounts = [x.strip() for x in jobs["nodes"].split(",")]
     taskCounts = [x.strip() for x in jobs["tasks"].split(",")]
     coreCounts = [x.strip() for x in jobs["cores"].split(",")]
@@ -623,9 +619,6 @@ def submitJobs():
     """
     Submit all jobs spanned by the options.
     """
-    exahypeRoot          = general["exahype_root"]
-    outputPath           = general["output_path"]
-    projectName          = general["project_name"]
     jobSubmissionTool    = general["job_submission"]
     
     jobs       = config["jobs"]
@@ -639,6 +632,10 @@ def submitJobs():
     verifyAllExecutablesExist()
     verifyAllJobScriptsExist()
     verifyAllSpecFilesExist()
+    
+    if not os.path.exists(resultsFolderPath):
+        print("create directory "+resultsFolderPath)
+        os.makedirs(resultsFolderPath)
     
     # loop over job scrips
     jobIds = []
@@ -660,7 +657,7 @@ def submitJobs():
                             
                             jobName        = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
                                              "-n" + nodes + "-t"+tasks+"-c"+cores+"-r"+str(run)
-                            jobFilePrefix  = exahypeRoot + "/" + outputPath + "/" + scriptsFolder + "/" + jobName
+                            jobFilePrefix  = scriptsFolderPath + "/" + jobName
                             jobFilePath    = jobFilePrefix + ".job"
                             
                             command=jobSubmissionTool + " " + jobFilePath
@@ -670,8 +667,11 @@ def submitJobs():
                             process.wait()
                             jobIds.append(extractJobId(output.decode("UTF_8")))
     
-    submittedJobsPath = exahypeRoot + "/" + outputPath + "/" + \
-                        hashSweep(jobs,environmentSpace,parameterSpace) + ".submitted"
+    if not os.path.exists(historyFolderPath):
+        print("create directory "+historyFolderPath)
+        os.makedirs(historyFolderPath)
+    
+    submittedJobsPath = historyFolderPath + "/" + hashSweep() + ".submitted"
     
     with open(submittedJobsPath, "w") as submittedJobsFile:
         submittedJobsFile.write(json.dumps(jobIds))
@@ -688,13 +688,10 @@ def cancelJobs():
     """
     Cancel submitted jobs.
     """
-    exahypeRoot         = general["exahype_root"]
-    outputPath          = general["output_path"]
-    jobCancellationTool = general["job_cancellation"]
+    jobCancellationTool    = general["job_cancellation"]
     
-    submittedJobsPath = exahypeRoot + "/" + outputPath + "/" + \
-                        hashSweep(jobs,environmentSpace,parameterSpace) + ".submitted"
-
+    submittedJobsPath = historyFolderPath + "/" + hashSweep() + ".submitted"
+    
     jobIds = None
     try:
         with open(submittedJobsPath, "r") as submittedJobsFile:
@@ -734,7 +731,7 @@ def parseResultFile(filePath):
     '''
     environmentDict = {}
     parameterDict   = {}
-
+    
     adapters = {}
     cputimeIndex  = 3
     usertimeIndex = 5
@@ -775,11 +772,6 @@ def parseAdapterTimes():
     """
     Loop over all ".out" files in the results section and create a table.
     """
-    exahypeRoot         = general["exahype_root"]
-    outputPath          = general["output_path"]
-    projectName         = general["project_name"]
-    
-    resultsFolderPath = exahypeRoot + "/" + outputPath + "/" + resultsFolder
     tablePath         = resultsFolderPath+"/"+projectName+'.csv'
     try:
         with open(tablePath, 'w') as csvfile:
@@ -972,11 +964,6 @@ def parseLikwidMetrics():
     """
     Loop over all ".out.likwid" files in the results section and create a table.
     """
-    exahypeRoot         = general["exahype_root"]
-    outputPath          = general["output_path"]
-    projectName         = general["project_name"]
-    
-    resultsFolderPath = exahypeRoot + "/" + outputPath + "/" + resultsFolder
     tablePath         = resultsFolderPath+"/"+projectName+'-likwid.csv'
     try:
         with open(tablePath, 'w') as csvfile:
@@ -1067,9 +1054,6 @@ if __name__ == "__main__":
     import csv
     
     subprograms = ["build","buildMissing","scripts","submit","cancel","parseAdapters","parseMetrics","cleanBuild", "cleanScripts","cleanResults","cleanAll"]
-    scriptsFolder        = "scripts"
-    buildFolder          = "build"
-    resultsFolder        = "results"
     
     knownParameters   = ["architecture", "optimisation", "dimension", "order" ]
     
@@ -1113,6 +1097,7 @@ available subprograms:
 * cleanBuild    - remove the build subfolder
 * cleanScripts  - remove the scripts subfolder
 * cleanResults  - remove the results subfolder
+* cleanHistory  - clean the submission history
 
 typical workflow:
 
@@ -1139,6 +1124,18 @@ typical workflow:
     jobs             = config["jobs"]
     environmentSpace = parseEnvironment(config)
     parameterSpace   = parseParameters(config)
+     
+    exahypeRoot      = general["exahype_root"]
+    outputPath       = general["output_path"]
+    projectPath      = general["project_path"]
+    projectName      = general["project_name"]
+    
+    buildFolderPath   = exahypeRoot+"/"+outputPath+"/build"
+    scriptsFolderPath = exahypeRoot+"/"+outputPath+"/scripts"
+    resultsFolderPath = exahypeRoot+"/"+outputPath+"/results"
+    historyFolderPath = exahypeRoot+"/"+outputPath+"/history"
+    
+    verifySweepAgreesWithHistoricExperiments()
     
     # select subprogram
     if subprogram == "clean":
@@ -1149,6 +1146,8 @@ typical workflow:
         clean("scripts")
     elif subprogram == "cleanResults":
       clean("results")
+    elif subprogram == "cleanHistory":
+      clean("history")
     elif subprogram == "build":
         build()
     elif subprogram == "buildMissing":

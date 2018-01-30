@@ -2021,7 +2021,7 @@ void exahype::solvers::FiniteVolumesSolver::compress(CellDescription& cellDescri
       lock.free();
 
       CompressionTask myTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( myTask,false );
+      peano::datatraversal::TaskSet spawnedSet( myTask,tarch::multicore::TaskType::Background );
     }
     else {
       determineUnknownAverages(cellDescription);
