@@ -4365,7 +4365,7 @@ void exahype::solvers::ADERDGSolver::compress(CellDescription& cellDescription) 
       lock.free();
 
       CompressionTask myTask( *this, cellDescription );
-      peano::datatraversal::TaskSet spawnedSet( myTask, tarch::multicore::TaskType::RunAsSoonAsPossible );
+      peano::datatraversal::TaskSet spawnedSet( myTask, tarch::multicore::TaskType::Background );
     }
     else {
       determineUnknownAverages(cellDescription);
