@@ -2047,7 +2047,7 @@ void exahype::solvers::FiniteVolumesSolver::uncompress(CellDescription& cellDesc
     }
     lock.free();
 
-    tarch::multicore::BooleanSemaphore::sendTaskToBack();
+    tarch::multicore::processBackgroundTasks();
   }
   #else
   bool uncompress = CompressionAccuracy>0.0

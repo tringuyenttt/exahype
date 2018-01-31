@@ -4391,7 +4391,8 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
       }
     lock.free();
 
-    tarch::multicore::BooleanSemaphore::sendTaskToBack();
+//    tarch::multicore::BooleanSemaphore::sendTaskToBack();
+    tarch::multicore::processBackgroundTasks();
   }
   #else
   bool uncompress = CompressionAccuracy>0.0

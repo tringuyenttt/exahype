@@ -134,7 +134,7 @@ void exahype::solvers::Solver::waitUntilAllBackgroundTasksHaveTerminated() {
     lock.free();
 
     tarch::multicore::processBackgroundTasks();
-    tarch::multicore::BooleanSemaphore::sendTaskToBack();
+   //tarch::multicore::BooleanSemaphore::sendTaskToBack();
   }
 }
 
