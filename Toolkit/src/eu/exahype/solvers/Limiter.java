@@ -40,10 +40,6 @@ public class Limiter implements Solver {
     return solverName;
   }
   
-  private String getAbstractSolverName() {
-    return "Abstract"+getSolverName();
-  }
-  
   @Override
   public void writeHeader(java.io.BufferedWriter writer) throws IOException, IllegalArgumentException {
     throw new IllegalArgumentException("eu.exahype.solvers.Limiter::writeHeader should not be called"); //No user implementation required
