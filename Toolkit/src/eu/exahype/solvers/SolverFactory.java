@@ -61,32 +61,6 @@ public class SolverFactory {
             numberOfVariables, numberOfParameters, namingSchemeNames, order, _microarchitecture,
             _enableProfiler, _enableDeepProfiler, hasConstants, kernel);
       }
-    	
-/*      
-      // TODO JMG Clean
-      // else if (!isFortran && kernel.equals( eu.exahype.solvers.OptimisedFluxesLinearADER_DGinC.Identifier )) {
-        // return new eu.exahype.solvers.OptimisedFluxesLinearADER_DGinC(_dimensions,
-            // numberOfVariables, numberOfParameters, order, _microarchitecture,
-            // _enableProfiler, hasConstants);
-      // }
-      else if (!isFortran && kernel.isKernelType( eu.exahype.solvers.OptimisedADERDG.Identifier )) {
-        return new eu.exahype.solvers.OptimisedADERDG(_projectName, solvername, _dimensions,
-            numberOfVariables, numberOfParameters, namingSchemeNames, order, _microarchitecture,
-            _enableProfiler, _enableDeepProfiler, hasConstants, kernel);
-        
-      }
-      // TODO JMG Clean when confirmed legacy
-      // else if (!isFortran && kernel.equals( eu.exahype.solvers.KernelEuler2d.Identifier )) {
-        // return new eu.exahype.solvers.KernelEuler2d(_projectName, solvername);
-      // }
-      else if (isFortran && kernel.isKernelType( eu.exahype.solvers.UserDefinedADER_DGinFortran.Identifier )) {
-        return new eu.exahype.solvers.UserDefinedADER_DGinFortran(_projectName, solvername);
-      }
-      else if (!isFortran && kernel.isKernelType( eu.exahype.solvers.UserDefinedADER_DGinC.Identifier )) {
-        return new eu.exahype.solvers.UserDefinedADER_DGinC(_projectName, solvername, numberOfVariables,
-            numberOfParameters, order, hasConstants, _enableProfiler);
-      }
-*/      
       System.err.println("ERROR: solver configuration is not supported: "+kernel.toString() );
       return null;
     } catch(Exception e) {
@@ -131,6 +105,15 @@ public class SolverFactory {
         }
       System.err.println("ERROR: solver configuration is not supported: "+kernel.toString() );
       return null;
+    } catch(Exception e) {
+      System.err.println("ERROR: can't create the solver. Error: "+e );
+      return null;
+    }
+  }
+  
+  public Solver createLimiterSolver(String solvername, ADERDGKernel aderdgKernel, FiniteVolumesKernel FVKernel) { //take the kernel to know if generic or optimised
+    try {
+      return new eu.exahype.solvers.Limiter(_projectName, solvername); //TODO JMG optimized vs generic
     } catch(Exception e) {
       System.err.println("ERROR: can't create the solver. Error: "+e );
       return null;
