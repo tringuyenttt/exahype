@@ -2812,6 +2812,8 @@ void exahype::solvers::ADERDGSolver::mergeNeighbours(
     [&] () -> void {
       uncompress(cellDescriptionRight);
     },
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
     true
   );
 
@@ -4577,7 +4579,12 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       getUnknownsPerCellBoundary(),
       CompressionAccuracy
       );},
-      true
+    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+    true
   );
 
   assertion(1<=compressionOfPreviousSolution);
@@ -4764,6 +4771,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
         #endif
       }
     },
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
     true
   );
 }
@@ -4909,6 +4921,11 @@ void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
         lock.free();
       }
     },
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
     true
   );
 }
