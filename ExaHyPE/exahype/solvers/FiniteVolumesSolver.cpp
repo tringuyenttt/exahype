@@ -879,7 +879,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighbours(
         uncompress(cellDescription2);
       },
       peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-      peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	  peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
       true
     );
 
@@ -1909,9 +1909,9 @@ void exahype::solvers::FiniteVolumesSolver::putUnknownsIntoByteStream(
         #endif
       }
     },
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 }
@@ -2016,7 +2016,7 @@ void exahype::solvers::FiniteVolumesSolver::pullUnknownsFromByteStream(
 	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
 	peano::datatraversal::TaskSet::TaskType::RunAsSoonAsPossible,
-    true
+	true
   );
 }
 
