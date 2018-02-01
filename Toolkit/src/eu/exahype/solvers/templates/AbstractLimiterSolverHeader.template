@@ -10,15 +10,22 @@
 // ========================
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
+#include "{{ADERDGAbstractSolver}}.h"
+#include "{{FVAbstractSolver}}.h"
 
 namespace {{project}}{
   class {{abstractSolver}};
 }
 
-class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSolver {
+class {{project}}::{{abstractSolver}}: public exahype::solvers::LimitingADERDGSolver {  
   public:
+    static constexpr int NumberOfVariables  = {{project}}::{{ADERDGAbstractSolver}}::NumberOfVariables;
+    static constexpr int Order              = {{project}}::{{ADERDGAbstractSolver}}::Order;
+    static constexpr int GhostLayerWidth    = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
   
     {{abstractSolver}}(std::unique_ptr<exahype::solvers::ADERDGSolver> solver, std::unique_ptr<exahype::solvers::FiniteVolumesSolver> limiter, const double DMPRelaxationParameter, const double DMPDifferenceScaling, const int iterationsToCureTroubledCell);
+    
+    void projectOnFVLimiterSpace(const double* const luh, double* const lim) override;
 };
 
 #endif // __{{abstractSolver}}_CLASS_HEADER__

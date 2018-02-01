@@ -18,3 +18,6 @@
   exahype::solvers::LimitingADERDGSolver("LimitingADERDG" /* identifier */, std::move(solver), std::move(limiter), DMPRelaxationParameter, DMPDifferenceScaling, iterationsToCureTroubledCell) {
 }
 
+void {{project}}::{{abstractSolver}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) {
+  kernels::limiter::generic::c::projectOnFVLimiterSpace(luh, NumberOfVariables, Order+1, GhostLayerWidth, lim);
+}

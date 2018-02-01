@@ -841,11 +841,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
         _limiter->swapSolutionAndPreviousSolution(limiterPatch);
         double* limiterSolution = DataHeap::getInstance().getData(
             limiterPatch.getSolution()).data();
-        kernels::limiter::generic::c::projectOnFVLimiterSpace( // TODO(Dominic): Add virtual method. The current implementation depends on a particular kernel.
-            solverSolution,_solver->getNumberOfVariables(),
-            _solver->getNodesPerCoordinateAxis(),
-            _limiter->getGhostLayerWidth(),
-            limiterSolution);
+        projectOnFVLimiterSpace(solverSolution, limiterSolution);
       }
       else { // solverPatch.getLimiterStatus()>=ADERDGSolver::MinimumLimiterStatusForActiveFVPatch
         assertion1(limiterElement!=Solver::NotFound,solverPatch.toString());

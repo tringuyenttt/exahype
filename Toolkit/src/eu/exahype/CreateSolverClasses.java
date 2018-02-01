@@ -218,7 +218,7 @@ public class CreateSolverClasses extends DepthFirstAdapter {
           solverNameADERDG, aderdgKernel,isFortran,variablesSolver.getNumberOfVariables(),variablesSolver.getNumberOfParameters(),variablesSolver.getNamingSchemeNames(),order,hasConstants);
       Solver solverFV = solverFactory.createFiniteVolumesSolver(
           solverNameFV, FVKernel,isFortran,variablesLimiter.getNumberOfVariables(),variablesLimiter.getNumberOfParameters(),variablesLimiter.getNamingSchemeNames(),patchSize,hasConstants);
-      Solver solverLimiter = solverFactory.createLimiterSolver(solverNameLimiter, aderdgKernel, FVKernel);
+      Solver solverLimiter = solverFactory.createLimiterSolver(solverNameLimiter, aderdgKernel, FVKernel, solverAderdg, solverFV);
 
       valid  = validate(variablesSolver,order,aderdgKernel.toString(),language,solverName,solverAderdg);
       valid &= validate(variablesLimiter,patchSize,FVKernel.toString(),limiterLanguage,solverName,solverFV);

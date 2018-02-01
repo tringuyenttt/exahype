@@ -21,7 +21,7 @@ public class Limiter implements Solver {
   private Context        context;
   private TemplateEngine templateEngine;
   
-  public Limiter(String projectName, String solverName) 
+  public Limiter(String projectName, String solverName, Solver ADERDGSolver, Solver FVSolver) 
       throws IOException, IllegalArgumentException {    
     
     this.solverName                 = solverName;
@@ -30,9 +30,11 @@ public class Limiter implements Solver {
     context = new Context();
     
     //String
-    context.put("project"           , projectName);
-    context.put("solver"            , solverName);
-    context.put("abstractSolver"    , getAbstractSolverName());
+    context.put("project"             , projectName);
+    context.put("solver"              , solverName);
+    context.put("abstractSolver"      , getAbstractSolverName());
+    context.put("ADERDGAbstractSolver", ADERDGSolver.getAbstractSolverName());
+    context.put("FVAbstractSolver"    , FVSolver.getAbstractSolverName());
   }
     
   @Override
