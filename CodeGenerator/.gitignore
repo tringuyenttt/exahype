@@ -1,6 +1,0 @@
-# Ignore the dependencies source code and sym link if present
-dependencies
-
-markupsafe
-jinja2
-libxsmm_gemm_generator
