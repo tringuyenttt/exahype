@@ -77,30 +77,31 @@ java -jar ~/workspace/peano/pdt/pdt.jar --generate-gluecode exahype/exahype.spec
 I assume that the ExaHyPE release repository is checked out to ~/git/ExaHyPE-Release.
 
 
-git diff HEAD master
-git config --global user.email "tobias.weinzierl@durham.ac.uk"
-git config --global user.name "Tobias Weinzierl"
 
+X. Preparation (usually not required)
+  git config --global user.email "tobias.weinzierl@durham.ac.uk"
+  git config --global user.name "Tobias Weinzierl"
 
-A.1  Switch to the release branch within the ExaHyPE repository
-    - Select Demonstrators:
-       
-git merge HEAD master
+A Prepare ExaHyPE repository
+  - Switch to branch release within ExaHyPE
+  - Select git rebase master
 
-A.1. Update the guidebook
+B.1. Update the guidebook
     - Change into the directory holding your guidebook and build with `make release`.
       The release target builds the PDF without annotations.
-    - Copy the PDF over: `cp guidebook.pdf ~/git/ExaHyPE-Release`
+    - Copy the PDF over: `cp guidebook.pdf ~/git/ExaHyPE-Engine`
 
-A.2. Build the toolkit
+B.2. Build the toolkit
     - Change into Toolkit
-      `./build.sh && cp dist/* ~/git/ExaHyPE-Release`
+      `./build.sh && cp dist/* ~/git/ExaHyPE-Engine`
 
-B.1. Move it over to the release branch 
+C.1 Clean up
+    - Remove all directories that are not under version control in the release branch (Miscellaneous, e.g.)
+    - Clean up Java
+     `find . -name "*.o" -delete`
+     `find . -name "*.class" -delete`
 
-B.2. Clean-up release branch and create snapshots
-  `find . -name "*.o" -delete`
-  `find . -name "*.class" -delete`
+C.1 Create snapshots
   tar -czhvf ExaHyPE.tar.gz --exclude=.svn --exclude=*.o Peano ExaHyPE LICENSE.txt
   tar -czvf ExaHyPE-without-Peano.tar.gz --exclude=.svn --exclude=*.o --exclude Peano/peano --exclude Peano/tarch Peano ExaHyPE LICENSE.txt
 
