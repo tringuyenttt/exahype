@@ -1,8 +1,0 @@
-for extension in "" "-batch-noskip-exchange" "-batch-noskip-noexchange" "-batch-skip-exchange" "-batch-skip-noexchange" "-noexchange"
-do
-  python ../../../PerformanceAnalysis/plotRuntime.py -table x16-0$extension.results.table x16-1$extension.results.table x16-2$extension.results.table x16-3$extension.results.table x16-4$extension.results.table x16-5$extension.results.table -adapter MeshRefinement InitialConditionAndTimeStepSizeComputation ADERDGTimeStep -dimension 2 -xaxislabel "MPI ranks" -experimentdescription "h=0.7" "h=0.3" "h=0.1" "h=0.05" "h=0.01" "h=0.005" -output 16-ranks-per-node$extension -singlecore 16   -meshsize 0.7 0.3 0.1 0.05 0.01 0.005
-
-  python ../../../PerformanceAnalysis/plotRuntime.py -table x8-0$extension.results.table  x8-1$extension.results.table  x8-2$extension.results.table  x8-3$extension.results.table  x8-4$extension.results.table  x8-5$extension.results.table  -adapter MeshRefinement InitialConditionAndTimeStepSizeComputation ADERDGTimeStep -dimension 2 -xaxislabel "MPI ranks" -experimentdescription "h=0.7" "h=0.3" "h=0.1" "h=0.05" "h=0.01" "h=0.005" -output 8-ranks-per-node$extension -singlecore 8     -meshsize 0.7 0.3 0.1 0.05 0.01 0.005
-
-  python ../../../PerformanceAnalysis/plotRuntime.py -table x4-0$extension.results.table  x4-1$extension.results.table  x4-2$extension.results.table  x4-3$extension.results.table  x4-4$extension.results.table  x4-5$extension.results.table  -adapter MeshRefinement InitialConditionAndTimeStepSizeComputation ADERDGTimeStep -dimension 2 -xaxislabel "MPI ranks" -experimentdescription "h=0.7" "h=0.3" "h=0.1" "h=0.05" "h=0.01" "h=0.005" -output 4-ranks-per-node$extension -singlecore 4     -meshsize 0.7 0.3 0.1 0.05 0.01 0.005
-done

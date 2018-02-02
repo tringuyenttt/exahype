@@ -1,1 +1,0 @@
-../MHD/InitialDataAdapter.h

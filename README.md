@@ -38,11 +38,7 @@ Additionally the CodeGenerator requires:
 * Jinja2 (https://github.com/pallets/jinja.git) a python3 template engine to generate the optimised kernel
 * MarkupSafe (https://github.com/pallets/markupsafe.git), a dependency from Jinja2.
 
-A script is provided to import all the dependencies locally.
-In contrast to the CodeGenerator, the build of libxsmm 
-requires Python 2. It fails with Python 3.
-So, make sure that "python" does refer
-to a Python 2 binary.
+A script is provided to import all the dependencies locally
 
 Quick installation:
 
@@ -105,17 +101,19 @@ C.1 Clean up
      `find . -name "*.o" -delete`
      `find . -name "*.class" -delete`
 
-C.2 Create snapshots
+C.1 Create snapshots
   tar -czhvf ExaHyPE.tar.gz --exclude=.svn --exclude=*.o Peano ExaHyPE LICENSE.txt
   tar -czvf ExaHyPE-without-Peano.tar.gz --exclude=.svn --exclude=*.o --exclude Peano/peano --exclude Peano/tarch Peano ExaHyPE LICENSE.txt
 
-C.3 Commit and push
+B.3. Push
 
-D. Make release snapshot from release branch (new directory)
+C. Make release snapshot from release branch
 
   git clone -b release --single-branch https://gitlab.lrz.de/exahype/ExaHyPE-Engine.git
-  cd ExaHyPE-Engine
+
   git push --mirror https://github.com/exahype/exahype.git
+
+
 
 
 
