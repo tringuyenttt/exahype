@@ -76,6 +76,17 @@ java -jar ~/workspace/peano/pdt/pdt.jar --generate-gluecode exahype/exahype.spec
 
 I assume that the ExaHyPE release repository is checked out to ~/git/ExaHyPE-Release.
 
+
+git diff HEAD master
+git config --global user.email "tobias.weinzierl@durham.ac.uk"
+git config --global user.name "Tobias Weinzierl"
+
+
+A.1  Switch to the release branch within the ExaHyPE repository
+    - Select Demonstrators:
+       
+git merge HEAD master
+
 A.1. Update the guidebook
     - Change into the directory holding your guidebook and build with `make release`.
       The release target builds the PDF without annotations.
@@ -87,7 +98,7 @@ A.2. Build the toolkit
 
 B.1. Move it over to the release branch 
 
-B.2. Clean-up release branch
+B.2. Clean-up release branch and create snapshots
   `find . -name "*.o" -delete`
   `find . -name "*.class" -delete`
   tar -czhvf ExaHyPE.tar.gz --exclude=.svn --exclude=*.o Peano ExaHyPE LICENSE.txt
